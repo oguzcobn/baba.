@@ -329,3 +329,22 @@ test.describe('HAYAT. name-aware avatars',()=>{
     await expect(page.locator('.life-av')).toContainText('👨');
   });
 });
+
+test.describe('Manager Career five European leagues',()=>{
+  test.use({viewport:{width:390,height:844}});
+  test.beforeEach(async({page})=>await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');localStorage.removeItem('baba_career_save');}));
+  test('selects England and builds a 38-week career without altering save version',async({page})=>{
+    await page.goto(BASE+'#career');
+    await expect(page.locator('.cr-league-pick')).toHaveCount(6);
+    await page.locator('[data-league="en"]').click();
+    await expect(page.locator('[data-league="en"]')).toHaveAttribute('aria-pressed','true');
+    await expect(page.locator('.cr-clubsel option')).toHaveCount(20);
+    await page.locator('[data-s="club"]').click();
+    const save=await page.evaluate(()=>JSON.parse(localStorage.getItem('baba_career_save')));
+    expect(save.league).toBe('en');
+    expect(save.teams).toHaveLength(20);
+    expect(save.fix).toHaveLength(38);
+    expect(save.v).toBe(1);
+    await expect(page.locator('.cr-head')).toContainText('Premier League');
+  });
+});
