@@ -168,3 +168,6 @@ body.dark .life-game,[data-theme=dark] .life-game{--lg-cream:#1c1322;--lg-ink:#f
 .life-game .life-meter:hover{transform:translateY(-2px);box-shadow:0 12px 24px -18px rgba(58,27,61,.4)}
 @media (max-width:560px){.life-scene{min-height:195px;aspect-ratio:auto}.life-scene-art{width:100%;height:100%;object-fit:cover;object-position:center}.life-scene-copy{top:13px;left:13px}.life-scene-copy strong{font-size:24px}.life-scene-caption{right:8px;bottom:8px;font-size:10px}}
 @media (prefers-reduced-motion:reduce){.life-scene *{animation:none!important;transition:none!important}.life-game .life-act,.life-game .life-meter{transition:none!important}.life-game .life-act:hover,.life-game .life-meter:hover{transform:none!important}}
+
+.life-game button.life-scene-caption{position:absolute;right:12px;bottom:12px;z-index:2;background:rgba(255,250,241,.92);color:#36273d;border:1px solid rgba(53,36,61,.14);font-size:11px;padding:8px 13px;cursor:pointer;pointer-events:auto}
+.life-game button.life-scene-caption:focus-visible{outline:3px solid #215e8f;outline-offset:2px}
