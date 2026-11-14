@@ -257,6 +257,7 @@ test.describe('HAYAT. animated city scene',()=>{
         world:{joined:false,hide:false,applied:[]},monthsPlayed:0,ended:false
       }));
     });
+    await page.emulateMedia({reducedMotion:'reduce'});
     await page.goto(BASE+'#hayat-oyunu');
     const scene=page.locator('.life-scene');
     await expect(scene).toBeVisible();
@@ -266,11 +267,13 @@ test.describe('HAYAT. animated city scene',()=>{
       sceneWidth:document.querySelector('.life-scene').getBoundingClientRect().width,
       screenWidth:document.documentElement.clientWidth,
       game:JSON.parse(localStorage.getItem('baba_life_game_v1')),
+      motionPreference:matchMedia('(prefers-reduced-motion: reduce)').matches,
       animation:getComputedStyle(document.querySelector('.life-scene-car')).animationName
     }));
     expect(result.sceneWidth).toBeLessThanOrEqual(result.screenWidth);
     expect(result.game.cash).toBe(60200);
     expect(result.game.version).toBe(2);
+    expect(result.motionPreference).toBe(true);
     expect(result.animation).toBe('none');
     await page.locator('.life-scene-caption').click();
     await expect(page.locator('.life-map')).toBeVisible();
