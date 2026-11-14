@@ -55,7 +55,25 @@ const Career = (() => {
   const GOALS = () => ({ long: T('ceza sahası dışından müthiş bir şutla', 'with a stunning strike from outside the box'), cross: T('kanattan gelen ortada kafayla', 'with a header from a cross'), through: T('ara pasla kaleciyle karşı karşıya kalıp soğukkanlı bir vuruşla', 'one-on-one after a through ball, coolly'), corner: T('kornerden gelen topta', 'from a corner'), pen: T('penaltıdan', 'from the penalty spot'), rebound: T('dönen topu tamamlayarak', 'by tucking in the rebound'), fk: T('frikikten kavisli bir vuruşla', 'with a curling free kick'), cutin: T('içeri kat edip uzak köşeye plase vuruşla', 'cutting inside and curling into the far corner'), cutback: T('çizgiden geri çıkan topa vurarak', 'from a cutback'), target: T('pivotun indirdiği topa ilk vuruşla', 'first time from the target man’s lay-off') });
   const GW = { dengeli: { long: 1, cross: 1, through: 1.2, corner: .6, pen: .4, rebound: .8, fk: .3, cutin: .8, cutback: 1, target: .6 }, kisa: { through: 1.8, cutback: 1.4, rebound: 1, cutin: 1, long: .6, cross: .5, corner: .5, pen: .5, fk: .3, target: .3 }, kanat: { cross: 2.6, cutback: 2, corner: .9, cutin: 1.2, through: .6, long: .5, rebound: .9, pen: .4, fk: .3, target: .5 }, arapas: { through: 3, cutin: .8, long: .6, cutback: .8, cross: .5, rebound: .6, corner: .5, pen: .5, fk: .3, target: .4 }, uzun: { target: 2.6, cross: 1.6, corner: 1, rebound: 1.2, long: 1, through: .5, cutback: .4, pen: .4, fk: .4, cutin: .3 }, kontra: { through: 2.8, cutin: 1, long: .8, cutback: 1, cross: .5, rebound: .5, corner: .4, pen: .5, fk: .3, target: .4 } };
   const clubs = () => (typeof DRAFT_CLUBS !== 'undefined' ? DRAFT_CLUBS : []);
-  const CLUB = id => clubs().find(c => c.id === id);
+  // Illustrative, unlicensed club universes with generated fictional squads.
+  const EURO_LEAGUES = {"en":{"name":"Premier League","flag":"🏴","clubs":["Arsenal","Aston Villa","Bournemouth","Brentford","Brighton","Burnley","Chelsea","Crystal Palace","Everton","Fulham","Leeds United","Liverpool","Manchester City","Manchester United","Newcastle United","Nottingham Forest","Sunderland","Tottenham","West Ham","Wolves"]},"es":{"name":"LaLiga","flag":"🇪🇸","clubs":["Real Madrid","Barcelona","Atlético Madrid","Athletic Club","Real Sociedad","Villarreal","Real Betis","Sevilla","Valencia","Celta Vigo","Osasuna","Getafe","Rayo Vallecano","Mallorca","Espanyol","Girona","Alavés","Elche","Levante","Real Oviedo"]},"it":{"name":"Serie A","flag":"🇮🇹","clubs":["Inter","AC Milan","Juventus","Napoli","Roma","Lazio","Atalanta","Fiorentina","Bologna","Torino","Genoa","Udinese","Sassuolo","Parma","Cagliari","Lecce","Verona","Pisa","Cremonese","Como"]},"de":{"name":"Bundesliga","flag":"🇩🇪","clubs":["Bayern München","Borussia Dortmund","Bayer Leverkusen","RB Leipzig","Eintracht Frankfurt","VfB Stuttgart","Wolfsburg","Freiburg","Mainz 05","Werder Bremen","Borussia Mönchengladbach","Augsburg","Union Berlin","Hoffenheim","Heidenheim","Hamburger SV","Köln","St. Pauli"]},"fr":{"name":"Ligue 1","flag":"🇫🇷","clubs":["Paris Saint-Germain","Marseille","Monaco","Lyon","Lille","Nice","Lens","Rennes","Strasbourg","Toulouse","Nantes","Brest","Auxerre","Angers","Le Havre","Metz","Lorient","Paris FC"]}};
+  const FIRST = ['Alex','Lucas','Marco','Daniel','Leo','Noah','Oscar','Gabriel','Victor','Elias','Julian','Mateo','Adrian','Felix','Hugo','Rafael','Luca','Theo','Max','Nico'];
+  const LAST = ['Silva','Martin','Garcia','Müller','Rossi','Costa','Fernandez','Moreau','Andersson','Kovacs','Santos','Lopez','Dubois','Novak','Schmidt','Ricci','Williams','Meyer','Alvarez','Pereira'];
+  function euroClubs(key) {
+    const league=EURO_LEAGUES[key]; if(!league) return [];
+    return league.clubs.map((name,i)=>{
+      const seed=hash(key+':'+name), strength=clamp(68+seed%15+(i<5?4:0),65,89);
+      const pos=['KL','KL','ST','ST','ST','ST','BK','BK','BK','BK','OS','OS','OS','OS','OS','OS','KN','KN','KN','KN','FV','FV','FV'];
+      const players=pos.map((p,j)=>{const n=seed+j*47;return [FIRST[n%FIRST.length]+' '+LAST[(n*7+j*11)%LAST.length],p,clamp(strength-8+n%15,59,92),'FC27'];});
+      return {id:key+'-'+i,name,short:name.split(' ').map(x=>x[0]).join('').slice(0,3).toUpperCase(),c1:['#192f52','#8a2c46','#136b63','#6e4e9b','#bc782a'][i%5],c2:'#f2f2e9',players};
+    });
+  }
+  let setupLeague='tr';
+  const careerClubs=()=>setupLeague==='tr'?clubs():euroClubs(setupLeague);
+  const activeClubs=()=>S&&S.league&&S.league!=='tr'?euroClubs(S.league):clubs();
+  const activeWeeks=()=>S&&S.fix?S.fix.length:EURO_LEAGUES[setupLeague]?(EURO_LEAGUES[setupLeague].clubs.length-1)*2:34;
+  const leagueName=k=>k==='tr'?T('Süper Lig','Super League'):(EURO_LEAGUES[k]||EURO_LEAGUES.en).name;
+  const CLUB = id => activeClubs().find(c => c.id === id);
   const NAT = n => (typeof DRAFT_NAT !== 'undefined' && DRAFT_NAT[n]) || 'TR';
 
   /* ---------------- oyuncu modeli ---------------- */
@@ -138,17 +156,17 @@ const Career = (() => {
     S.xi = F.map((_, i) => xi[i] || null);
   }
   function starterSquad() {
-    const want = { KL: 2, ST: 4, BK: 4, OS: 6, KN: 4, FV: 3 }, pool = clubs().flatMap(c => c.players.filter(p => p[3] === 'FC27' && p[2] >= 66 && p[2] <= 75).map(p => ({ c: c.id, name: p[0], pos: p[1], r: p[2] }))), out = [];
+    const want = { KL: 2, ST: 4, BK: 4, OS: 6, KN: 4, FV: 3 }, pool = careerClubs().flatMap(c => c.players.filter(p => p[3] === 'FC27' && p[2] >= 66 && p[2] <= 75).map(p => ({ c: c.id, name: p[0], pos: p[1], r: p[2] }))), out = [];
     for (const [pos, n] of Object.entries(want)) pool.filter(p => p.pos === pos).sort(() => Math.random() - .5).slice(0, n).forEach(p => out.push(p));
     return out;
   }
   function create(kind, clubId) {
     const cid = (typeof ClubID !== 'undefined' && ClubID.get()) || null;
-    S = { v: VER, created: Date.now(), kind, season: 1, year: 2026, week: 0, budget: 20, formation: '4-3-3', roles: {}, ment: 'dengeli', squad: [], xi: [], removed: [], added: {}, results: [], news: [], pending: null,
+    S = { v: VER, created: Date.now(), kind, league: setupLeague, season: 1, year: 2026, week: 0, budget: 20, formation: '4-3-3', roles: {}, ment: 'dengeli', squad: [], xi: [], removed: [], added: {}, results: [], news: [], pending: null,
       sponsor: null, offers: null, fac: { train: 0, med: 0, stadium: 0 }, pop: 40, scout: null, scouted: [], history: [], fin: null, ticketDisc: 0, matchLog: null };
     let mine;
     if (kind === 'club') {
-      const c = CLUB(clubId); mine = { id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, kit: 'duz', me: true };
+      const c = careerClubs().find(x=>x.id===clubId); mine = { id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, kit: 'duz', me: true };
       S.squad = c.players.filter(p => p[3] === 'FC27').map(p => mkPlayer(p[0], p[1], p[2]));
       const st = avg(S.squad.map(p => p.r)); S.budget = Math.round(clamp((st - 68) * 3.2, 8, 45)); S.pop = clamp(Math.round((st - 62) * 3.2), 25, 85);
       S.replaced = null;
@@ -166,13 +184,13 @@ const Career = (() => {
         S.budget = 25;
       }
       // en zayıf kulübün yerini al
-      const weakest = clubs().map(c => ({ c, s: avg(clubXI(c).map(p => p.r)) })).sort((a, b) => a.s - b.s)[0];
+      const weakest = careerClubs().map(c => ({ c, s: avg(clubXI(c).map(p => p.r)) })).sort((a, b) => a.s - b.s)[0];
       S.replaced = weakest ? weakest.c.id : null;
     }
-    S.teams = clubs().filter(c => c.id !== (kind === 'club' ? clubId : S.replaced)).map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2 })).concat([mine]);
-    while (S.teams.length > 18) S.teams.splice(S.teams.findIndex(t => !t.me), 1);
+    S.teams = careerClubs().filter(c => c.id !== (kind === 'club' ? clubId : S.replaced)).map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2 })).concat([mine]);
+    while (S.teams.length > careerClubs().length) S.teams.splice(S.teams.findIndex(t => !t.me), 1);
     S.fix = fixtures(S.teams.map(t => t.id).sort(() => Math.random() - .5)); S.table = freshTable();
-    S.rev = kind === 'club' ? clamp(S.squad.reduce((a, p) => a + wage(p), 0) * WEEKS * 1.02 / estIncome(), 1, 5) : 1;
+    S.rev = kind === 'club' ? clamp(S.squad.reduce((a, p) => a + wage(p), 0) * activeWeeks() * 1.02 / estIncome(), 1, 5) : 1;
     autoXI(); S.offers = sponsorOffers();
     news(kind === 'club' ? T(`${mine.name} yönetimi seni teknik direktör olarak açıkladı. Hedef: üst sıralar!`, `${mine.name} have appointed you as manager. The target: the top of the table!`)
       : T(`${mine.name} kuruldu ve ${S.replaced ? CLUB(S.replaced).name + ' yerine ' : ''}Süper Lig'e katıldı.`, `${mine.name} has been founded and joins the Süper Lig${S.replaced ? ' in place of ' + CLUB(S.replaced).name : ''}.`), 'big');
@@ -192,7 +210,7 @@ const Career = (() => {
   const facCost = k => FAC()[k][3] * (S.fac[k] + 1);
   const capacity = () => Math.round(8000 + S.pop * 250 + S.fac.stadium * 7000);
   // kulüp büyüklüğü: büyük kulüplerin gelirleri maaş yüküyle orantılıdır
-  const estIncome = () => capacity() * Math.min(1, .45 + S.pop / 140) * 15 / 1e6 * 17 + S.pop * .0018 * WEEKS + 8 * (.5 + S.pop / 100) + 4;
+  const estIncome = () => capacity() * Math.min(1, .45 + S.pop / 140) * 15 / 1e6 * 17 + S.pop * .0018 * activeWeeks() + 8 * (.5 + S.pop / 100) + 4;
 
   /* ---------------- maç motoru ---------------- */
   const SCW = { FV: 3, KN: 2.2, OS: 1.3, ST: .35, BK: .45, KL: 0 }, ASW = { FV: 1.6, KN: 3.4, OS: 3, ST: .35, BK: 1.6, KL: .05 };
@@ -384,7 +402,7 @@ const Career = (() => {
     if (S.scout) { S.scout.left--; if (S.scout.left <= 0) { const R = REG()[S.scout.region]; S.scouted = Array.from({ length: 3 }, () => regen(S.scout.region)); news(T(`🔭 ${R.n} raporu geldi: 3 genç yetenek bulundu.`, `🔭 The ${R.n} scouting report is in: 3 young talents found.`), 'good'); S.scout = null; } }
     news(`${won ? '✅' : draw ? '➖' : '❌'} ${T('Hafta', 'Week')} ${w + 1}: ${teamName(mr.h)} ${mr.gh}–${mr.ga} ${teamName(mr.a)}`, won ? 'good' : draw ? '' : 'bad');
     S.week++;
-    if (S.week >= WEEKS) seasonEnd(); else rollEvent();
+    if (S.week >= activeWeeks()) seasonEnd(); else rollEvent();
     autoFixXI(); save();
   }
   // yardımcı antrenör: hızlı simülasyonda çok yorgun oyuncuyu aynı mevkideki dinç yedekle değiştirir
@@ -412,7 +430,7 @@ const Career = (() => {
     const gone = [];
     S.squad.forEach(p => {
       p.age++;
-      if (p.age <= 21 && p.r < p.pot) p.r = Math.min(p.pot, p.r + Math.max(1, Math.round((p.pot - p.r) * .25 * (.6 + p.apps / WEEKS) * (1 + S.fac.train * .12))));
+      if (p.age <= 21 && p.r < p.pot) p.r = Math.min(p.pot, p.r + Math.max(1, Math.round((p.pot - p.r) * .25 * (.6 + p.apps / activeWeeks()) * (1 + S.fac.train * .12))));
       else if (p.age >= 32) p.r = Math.max(50, p.r - (1 + rnd(p.age >= 34 ? 3 : 2)));
       p.cond = 100; p.inj = 0; p.sus = 0; p.yc = 0; p.sg = 0; p.sa = 0; p.apps = 0; p.prog = 0; p.morale = clamp(p.morale + 5, 30, 90);
       if (p.age >= 37 || (p.age >= 35 && chance(.4))) gone.push(p);
@@ -496,16 +514,18 @@ const Career = (() => {
       <p class="eyebrow">BABA. / ${T('Oyunlar', 'Games')} / ${T('Menajerlik Kariyeri', 'Manager Career')}</p>
       <h1 class="display">${T('Menajerlik<br><em>kariyeri.</em>', 'Manager<br><em>career.</em>')}</h1>
       <p class="cr-lead">${T('Draft’tan bağımsız, sezonlar boyu süren bir kariyer: bütçe, transfer, kondisyon, sakatlık, sponsorlar, tesisler, altyapı ve canlı maç müdahalesi.', 'A multi-season career, separate from the Draft: budget, transfers, fitness, injuries, sponsors, facilities, academy and live match control.')}</p>
+      <section class="cr-league-setup"><p class="eyebrow">FM CLASSIC · ${T('LİG SEÇİMİ','LEAGUE SELECT')}</p><h2>${T('Kariyerine nerede başlayacaksın?','Where will your career begin?')}</h2><div class="cr-league-list">${[['tr','🇹🇷',T('Süper Lig','Super League')],...Object.entries(EURO_LEAGUES).map(([k,v])=>[k,v.flag,v.name])].map(([k,flag,name])=>`<button class="cr-league-pick ${setupLeague===k?'on':''}" data-league="${k}" aria-pressed="${setupLeague===k}"><span>${flag}</span><strong>${name}</strong><small>${k==='tr'?18:EURO_LEAGUES[k].clubs.length} ${T('takım','clubs')}</small></button>`).join('')}</div><p class="cr-data-note">${T('Avrupa kulüpleri örnek simülasyon evrenidir; kadrolar kurgusaldır, resmi EA FC 27 verisi değildir.','European clubs are an illustrative simulation universe; squads are fictional, not official EA FC 27 data.')}</p></section>
       <div class="cr-choices">
         <article class="cr-choice"><span class="cr-ico">🏗️</span><h2>${T('Yeni Kariyer Başlat', 'Start a New Career')}</h2><p>${T('Kendi kulübünü kur: başlangıç kadrosu (23 oyuncu) ve 25 M€ bütçe. Ligin en zayıf takımının yerini alırsın.', 'Found your own club: a 23-man starting squad and a €25M budget. You replace the league’s weakest side.')}</p>
           <details class="cr-idwrap"><summary>🛡️ ${T('Kulüp kimliğini ayarla (isim, renk, forma, şehir, logo)', 'Set up your club identity (name, colours, kit, city, crest)')}</summary><div class="cr-idhost"></div></details>
           <button class="pill big" data-s="new">${T('Kulübümü kur', 'Found my club')} →</button></article>
         <article class="cr-choice"><span class="cr-ico">🏟️</span><h2>${T('Mevcut Kulübü Çalıştır', 'Manage an Existing Club')}</h2><p>${T('Süper Lig kulüplerinden birinin başına geç: gerçek kadro, kulübün gücüne göre bütçe.', 'Take charge of a Süper Lig club: real squad, budget by club size.')}</p>
-          <select class="cr-clubsel">${clubs().map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><button class="pill big" data-s="club">${T('Göreve başla', 'Take the job')} →</button></article>
+          <select class="cr-clubsel">${careerClubs().map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><button class="pill big" data-s="club">${T('Göreve başla', 'Take the job')} →</button></article>
         <article class="cr-choice ${dn ? '' : 'off'}"><span class="cr-ico">📥</span><h2>${T('Son Draft Kadromu Aktar', 'Import My Last Draft Squad')}</h2><p>${dn ? T(`Draft’ta kurduğun ${dn} kişilik kadro kariyerine taşınır; eksikler altyapıdan tamamlanır. Bütçe 12 M€.`, `Your ${dn}-player Draft squad moves into the career; gaps are filled from the academy. Budget €12M.`) : T('Önce Draft modunda bir kadro kur.', 'Build a squad in Draft mode first.')}</p>
           ${dn ? `<button class="pill big" data-s="draft">${T('Kadromu aktar', 'Import squad')} →</button>` : `<a class="pill big ghost" href="#draft">${T('Draft Moduna git', 'Go to Draft mode')} →</a>`}</article>
       </div></section>`;
     const idh = host.querySelector('.cr-idhost'); if (idh && typeof ClubID !== 'undefined') ClubID.editor(idh);
+    host.querySelectorAll('[data-league]').forEach(b=>b.onclick=()=>{setupLeague=b.dataset.league;startScreen();});
     host.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const k = b.dataset.s; if (k === 'club') create('club', host.querySelector('.cr-clubsel').value); else create(k === 'draft' ? 'draft' : 'new'); tab = 'center'; render(); window.scrollTo(0, 0); });
   }
 
@@ -516,8 +536,8 @@ const Career = (() => {
     if (m.identity && typeof ClubID !== 'undefined' && ClubID.get()) { const c = ClubID.get(); Object.assign(m, { name: c.name || m.name, short: c.short || ClubID.autoShort(c.name) || m.short, c1: c.c1, c2: c.c2, kit: c.kit }); }
     const body = tab === 'squad' ? squadTab() : tab === 'transfer' ? transferTab() : tab === 'league' ? leagueTab() : tab === 'club' ? clubTab() : centerTab();
     host.innerHTML = `<section id="career-section" class="cr">
-      <header class="cr-head">${logoOf(m, 58)}<div class="cr-id"><p class="eyebrow">${T('Menajerlik Kariyeri', 'Manager Career')} · ${T('Sezon', 'Season')} ${S.season} (${S.year}/${String(S.year + 1).slice(2)})</p><h1>${esc(m.name)}</h1></div>
-        <div class="cr-kpis"><span class="chip">💰 <b>${M(S.budget)}</b></span><span class="chip">📅 ${T('Hafta', 'Week')} <b>${Math.min(S.week + 1, WEEKS)}/${WEEKS}</b></span><span class="chip">🏆 <b>${rank}.</b></span><span class="chip">⭐ <b>${rating()}</b></span></div></header>
+      <header class="cr-head">${logoOf(m, 58)}<div class="cr-id"><p class="eyebrow">${leagueName(S.league)} · ${T('Sezon', 'Season')} ${S.season} (${S.year}/${String(S.year + 1).slice(2)})</p><h1>${esc(m.name)}</h1></div>
+        <div class="cr-kpis"><span class="chip">💰 <b>${M(S.budget)}</b></span><span class="chip">📅 ${T('Hafta', 'Week')} <b>${Math.min(S.week + 1, activeWeeks())}/${activeWeeks()}</b></span><span class="chip">🏆 <b>${rank}.</b></span><span class="chip">⭐ <b>${rating()}</b></span></div></header>
       <nav class="cr-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</nav>
       <div class="cr-body">${body}</div></section>`;
     bind();
@@ -546,7 +566,7 @@ const Career = (() => {
       <div>
         <article class="cr-card"><p class="eyebrow">${T('Kulüp özeti', 'Club summary')}</p><div class="cr-stats"><div><small>${T('Bütçe', 'Budget')}</small><b>${M(S.budget)}</b></div><div><small>${T('Takım reytingi', 'Team rating')}</small><b>${rating()}</b></div><div><small>${T('Lig sırası', 'League position')}</small><b>${rank}.</b></div><div><small>${T('Popülarite', 'Popularity')}</small><b>${Math.round(S.pop)}</b></div><div><small>${T('Kadro', 'Squad')}</small><b>${S.squad.length}</b></div><div><small>${T('Haftalık maaş', 'Weekly wages')}</small><b>${M(S.squad.reduce((a, p) => a + wage(p), 0))}</b></div></div>
           ${S.sponsor ? `<p class="muted sm">${T('Sponsor', 'Sponsor')}: <b>${esc(S.sponsor.name)}</b></p>` : ''}</article>
-        <article class="cr-card"><p class="eyebrow">${T('Haberler', 'News')}</p><ul class="cr-news">${S.news.slice(0, 10).map(n => `<li class="${n.k}"><small>S${n.s} · ${T('H', 'W')}${Math.min(n.w + 1, WEEKS)}</small>${esc(n.t)}</li>`).join('')}</ul></article>
+        <article class="cr-card"><p class="eyebrow">${T('Haberler', 'News')}</p><ul class="cr-news">${S.news.slice(0, 10).map(n => `<li class="${n.k}"><small>S${n.s} · ${T('H', 'W')}${Math.min(n.w + 1, activeWeeks())}</small>${esc(n.t)}</li>`).join('')}</ul></article>
       </div></div>`;
   }
 
@@ -580,11 +600,11 @@ const Career = (() => {
   }
 
   function leagueTab() {
-    const w = fxWeek == null ? Math.min(S.week, WEEKS - 1) : fxWeek, res = S.results[w];
+    const w = fxWeek == null ? Math.min(S.week, activeWeeks() - 1) : fxWeek, res = S.results[w];
     return `<div class="cr-grid2"><div><article class="cr-card"><p class="eyebrow">${T('Puan durumu', 'League table')}</p><div class="cr-table-wrap"><table class="cr-table league"><thead><tr><th>#</th><th>${T('Takım', 'Team')}</th><th>O</th><th>G</th><th>B</th><th>M</th><th>${T('A', 'GD')}</th><th>P</th><th>${T('Form', 'Form')}</th></tr></thead><tbody>
       ${sorted().map((t, i) => { const r = S.table[t.id]; return `<tr class="${t.me ? 'me' : ''} ${i < 2 ? 'cl' : i >= 15 ? 'rel' : ''}"><td>${i + 1}</td><td><span class="dot" style="background:${t.c1}"></span>${esc(t.name)}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf - r.ga}</td><td><b>${r.pts}</b></td><td class="form">${r.form.map(f => `<i class="${f}">${f}</i>`).join('')}</td></tr>`; }).join('')}</tbody></table></div>
       <p class="muted sm">🟦 ${T('İlk 2: Avrupa', 'Top 2: Europe')} · 🟥 ${T('Son 3: küme düşme hattı', 'Bottom 3: relegation zone')}</p></article></div>
-      <div><article class="cr-card"><p class="eyebrow">${T('Fikstür', 'Fixtures')}</p><div class="cr-row"><button class="pill sm ghost" data-fw="-1" ${w <= 0 ? 'disabled' : ''}>←</button><b>${T('Hafta', 'Week')} ${w + 1}</b><button class="pill sm ghost" data-fw="1" ${w >= WEEKS - 1 ? 'disabled' : ''}>→</button></div>
+      <div><article class="cr-card"><p class="eyebrow">${T('Fikstür', 'Fixtures')}</p><div class="cr-row"><button class="pill sm ghost" data-fw="-1" ${w <= 0 ? 'disabled' : ''}>←</button><b>${T('Hafta', 'Week')} ${w + 1}</b><button class="pill sm ghost" data-fw="1" ${w >= activeWeeks() - 1 ? 'disabled' : ''}>→</button></div>
         <ul class="cr-fix">${S.fix[w].map(([h, a], i) => { const r = res && res[i]; const mine = h === me().id || a === me().id; return `<li class="${mine ? 'me' : ''}"><span>${esc(teamName(h))}</span><b>${r ? r.gh + ' – ' + r.ga : '–'}</b><span>${esc(teamName(a))}</span></li>`; }).join('')}</ul></article>
         <article class="cr-card"><p class="eyebrow">${T('Takımımızın golcüleri', 'Our scorers')}</p><ol class="cr-scorers">${S.squad.filter(p => p.sg || p.sa).sort((a, b) => b.sg - a.sg || b.sa - a.sa).slice(0, 8).map(p => `<li><b>${esc(p.name)}</b><span>⚽ ${p.sg} · 🅰️ ${p.sa}</span></li>`).join('') || `<li class="muted">${T('Henüz gol yok', 'No goals yet')}</li>`}</ol></article>
         ${S.history.length ? `<article class="cr-card"><p class="eyebrow">${T('Geçmiş sezonlar', 'Past seasons')}</p><ul class="cr-news">${S.history.map(h => `<li>${h.champ ? '🏆' : ''} ${T('Sezon', 'Season')} ${h.season} (${h.year}) · ${h.rank}. · ${h.pts} ${T('puan', 'pts')} · ${esc(h.top)}</li>`).join('')}</ul></article>` : ''}</div></div>`;
@@ -630,11 +650,11 @@ const Career = (() => {
     $('[data-sign]').forEach(b => b.onclick = () => { const p = S.scouted[+b.dataset.sign], c = Math.round(value(p) * .6 * 10) / 10; if (S.budget < c) return toast(T('Bütçe yetersiz', 'Not enough budget')); if (S.squad.length >= MAXSQ) return toast(T('Kadro dolu', 'Squad full')); S.budget -= c; S.squad.push(p); S.scouted.splice(+b.dataset.sign, 1); news(T(`🌟 Genç yetenek ${p.name} imzaladı (POT ${p.pot}).`, `🌟 Young talent ${p.name} signs (POT ${p.pot}).`), 'good'); save(); render(); });
     $('[data-scout]').forEach(b => b.onclick = () => { const r = REG()[b.dataset.scout]; S.budget -= r.cost; S.scout = { region: b.dataset.scout, left: 3 }; S.scouted = []; news(T(`🔭 Gözlemci ${r.n} bölgesine gönderildi.`, `🔭 Scout sent to ${r.n}.`)); save(); render(); });
     $('[data-fac]').forEach(b => b.onclick = () => { const k = b.dataset.fac, c = facCost(k); if (S.budget < c) return; S.budget -= c; S.fac[k]++; news(T(`🏗️ ${FAC()[k][0]} seviye ${S.fac[k]} oldu.`, `🏗️ ${FAC()[k][0]} upgraded to level ${S.fac[k]}.`), 'good'); save(); render(); });
-    $('[data-fw]').forEach(b => b.onclick = () => { const w = fxWeek == null ? Math.min(S.week, WEEKS - 1) : fxWeek; fxWeek = clamp(w + +b.dataset.fw, 0, WEEKS - 1); render(); });
+    $('[data-fw]').forEach(b => b.onclick = () => { const w = fxWeek == null ? Math.min(S.week, activeWeeks() - 1) : fxWeek; fxWeek = clamp(w + +b.dataset.fw, 0, activeWeeks() - 1); render(); });
     const idh = host.querySelector('.cr-idhost'); if (idh && typeof ClubID !== 'undefined') ClubID.editor(idh, () => { const h = host.querySelector('.cr-head'); if (h) { const m = me(), c = ClubID.get(); Object.assign(m, { name: c.name || m.name, c1: c.c1, c2: c.c2, kit: c.kit, short: c.short || ClubID.autoShort(c.name) }); h.querySelector('h1').textContent = m.name; save(); } });
   }
 
-  function open(el) { host = el; S = load(); tab = 'center'; fxWeek = null; selSlot = null; render(); }
+  function open(el) { host = el; S = load(); setupLeague=S&&S.league||'tr'; tab = 'center'; fxWeek = null; selSlot = null; render(); }
   // test ve diğer modüller için küçük bir API
-  return { open, state: () => S, _sim: (n) => { for (let i = 0; i < (n || 1) && S && S.week < WEEKS; i++) { if (!S.sponsor && S.offers) { S.sponsor = S.offers[0]; S.budget += S.sponsor.up; S.offers = null; } if (S.pending && S.pending.kind === 'event') resolve(S.pending.ch[0][1]); rotate(); liveMatch(null, true); } } };
+  return { open, state: () => S, _sim: (n) => { for (let i = 0; i < (n || 1) && S && S.week < activeWeeks(); i++) { if (!S.sponsor && S.offers) { S.sponsor = S.offers[0]; S.budget += S.sponsor.up; S.offers = null; } if (S.pending && S.pending.kind === 'event') resolve(S.pending.ch[0][1]); rotate(); liveMatch(null, true); } } };
 })();
