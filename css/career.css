@@ -171,3 +171,24 @@ body.dark-mode .mode-switch{background:#0d111c;border-color:#1a2033}body.dark-mo
 .cr-pitch2d[hidden]{display:none}
 .cr-live .pill.ghost.on{background:rgba(255,255,255,.16)}
 @media (max-width:520px){.cr-pitch2d{height:clamp(260px,46vh,520px)}.cr-live .cr-feed{min-height:90px;max-height:24vh}.cr-live-bar .pill{padding:9px 12px;font-size:13px}}
+
+/* FM-classic inspired data-dense football management skin, original styling. */
+.cr{--cr-deep:#12222e;--cr-accent:#c9ef70;gap:14px}
+.cr-start{background:linear-gradient(155deg,#10212d,#244341);color:#f5f8f3;border-radius:24px;padding:clamp(16px,3vw,30px)}
+.cr-start .cr-lead{color:#c0d4d1}
+.cr-league-setup{background:rgba(6,17,26,.32);border:1px solid rgba(196,220,218,.22);padding:18px;border-radius:20px}
+.cr-league-setup h2{font-size:clamp(19px,3vw,28px);margin:6px 0 16px}
+.cr-league-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.cr-league-pick{min-width:0;min-height:85px;border:1px solid rgba(196,220,218,.24);background:#203440;color:#e6f1ed;border-radius:13px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:4px;padding:12px;cursor:pointer;text-align:left;touch-action:manipulation}
+.cr-league-pick>span{font-size:23px}.cr-league-pick strong{font-size:13px;overflow-wrap:anywhere}.cr-league-pick small{font-size:11px;color:#b6cac9}
+.cr-league-pick.on{border-color:var(--cr-accent);background:linear-gradient(135deg,#294c48,#253d3a);box-shadow:inset 0 0 0 1px var(--cr-accent)}
+.cr-league-pick:focus-visible{outline:3px solid var(--cr-accent);outline-offset:3px}
+.cr-data-note{font-size:12px;line-height:1.5;color:#b8ccc9;margin:12px 0 0}
+.cr-start .cr-choice{background:#1b303c;border-color:rgba(204,226,224,.2);color:#f5f8f3;border-radius:17px}
+.cr-start .cr-choice p{color:#b9cfcb}.cr-start .cr-choice select{color:#182d35;background:#fff}
+.cr-head{background:linear-gradient(118deg,#101c2c,#1d4145 75%,#365b48);border:1px solid rgba(205,235,221,.2);border-radius:22px;box-shadow:0 16px 42px -26px #101c2c}
+.cr-tabs{scrollbar-width:thin}.cr-tabs button{touch-action:manipulation}
+.cr-card{box-shadow:0 12px 28px -24px rgba(10,30,39,.6)}
+@media(max-width:650px){.cr-league-list{grid-template-columns:repeat(2,minmax(0,1fr))}.cr-start{padding:15px}.cr-league-setup{padding:13px}.cr-league-pick{min-height:77px}}
+@media(max-width:350px){.cr-league-pick{padding:9px}}
+@media(prefers-reduced-motion:reduce){.cr-league-pick{transition:none}}
