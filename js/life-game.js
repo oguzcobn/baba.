@@ -56,13 +56,31 @@ const LifeGame = (() => {
 
   /* ---------------- 3) ilişkiler: kişilik, uyum ---------------- */
   const NAMES = ['Deniz', 'Ece', 'Mert', 'Zeynep', 'Can', 'Elif', 'Kerem', 'Defne', 'Arda', 'Selin', 'Emre', 'Ada', 'Bora', 'Nil', 'Kaan', 'Lara', 'Ozan', 'Mira', 'Efe', 'Yağmur', 'Alex', 'Leyla', 'Tuna', 'Asya'];
+  // Names provide a visual default only. The player's explicit avatar always wins.
+  const FEMALE_NAMES = new Set(['ece','zeynep','elif','defne','selin','ada','nil','lara','mira','yağmur','leyla','asya','ayşe','fatma','zehra','esra','merve','seda','dilara','lale','ela','nicole','sophie','emma','olivia','alice','anna','mary','sarah','julia','sofia','emily']);
+  const MALE_NAMES = new Set(['mert','can','kerem','arda','emre','bora','kaan','ozan','efe','oğuzhan','mehmet','ahmet','ali','mustafa','burak','berk','umut','john','jack','james','oliver','william','thomas','daniel']);
+  const nameKey = name => String(name || '').trim().toLocaleLowerCase('tr-TR').split(/\\s+/)[0];
+  const avatarForName = (name, age) => {
+    const key = nameKey(name);
+    if (FEMALE_NAMES.has(key)) return age != null && age < 12 ? '👧' : '👩';
+    if (MALE_NAMES.has(key)) return age != null && age < 12 ? '👦' : '👨';
+    return age != null && age < 12 ? '🧒' : '🧑';
+  };
+  const personAvatar = p => {
+    const guessed = avatarForName(p.name, p.role === 'cocuk' ? Math.floor((p.months || 0) / 12) : p.age);
+    // Correct legacy random mismatches without overriding deliberately chosen custom looks.
+    const generic = ['🧑','👩','👨','🧔','👱','👩‍🦱','🧑‍🦰','👨‍🦳'];
+    return p.avatarLocked || (p.emoji && !generic.includes(p.emoji)) ? (p.emoji || guessed) : guessed;
+  };
   const LIKES = () => [T('Müzik', 'Music'), T('Futbol', 'Football'), T('Sinema', 'Cinema'), T('Doğa', 'Nature'), T('Yemek', 'Cooking'), T('Teknoloji', 'Technology'), T('Kitap', 'Books'), T('Seyahat', 'Travel'), T('Sanat', 'Art'), T('Spor', 'Sport')];
   const TRAITS = () => ({ ext: [T('İçe dönük', 'Introverted'), T('Dışa dönük', 'Outgoing')], agr: [T('Sert', 'Blunt'), T('Uyumlu', 'Agreeable')], con: [T('Rahat', 'Easy-going'), T('Disiplinli', 'Disciplined')], neu: [T('Sakin', 'Calm'), T('Hassas', 'Sensitive')], ope: [T('Gelenekçi', 'Traditional'), T('Meraklı', 'Curious')] });
   const newTraits = () => ({ ext: rand(101), agr: rand(101), con: rand(101), neu: rand(101), ope: rand(101) });
   const traitText = tr => Object.entries(TRAITS()).map(([k, [lo, hi]]) => tr[k] >= 60 ? hi : tr[k] <= 40 ? lo : null).filter(Boolean).slice(0, 3).join(' · ') || T('Dengeli', 'Balanced');
   function npc(role, extra) {
     const L = LIKES(); const likes = [pick(L), pick(L)].filter((v, i, a) => a.indexOf(v) === i);
-    return Object.assign({ id: uid(), name: pick(NAMES), emoji: pick(['🧑', '👩', '👨', '🧔', '👱', '👩‍🦱', '🧑‍🦰', '👨‍🦳']), role, traits: newTraits(), likes, bond: 20, history: [], age: 22 + rand(14) }, extra || {});
+    const person = Object.assign({ id: uid(), name: pick(NAMES), role, traits: newTraits(), likes, bond: 20, history: [], age: 22 + rand(14) }, extra || {});
+    person.emoji = person.emoji || avatarForName(person.name, role === 'cocuk' ? Math.floor((person.months || 0) / 12) : person.age);
+    return person;
   }
   function compat(p) {
     const me = state.traits, t = p.traits; let d = 0; for (const k of ['ext', 'agr', 'con', 'ope']) d += Math.abs(me[k] - t[k]); d += Math.abs((100 - me.neu) - (100 - t.neu)) * .5;
@@ -77,7 +95,7 @@ const LifeGame = (() => {
   let state = load(), host = null, tab = 'home', place = null, modal = null;
   function base(name) {
     return {
-      version: 2, name: String(name || T('Oyuncu', 'Player')).slice(0, 32), avatar: '🧑', age: 18, month: 1, year: 2026, cash: 45000, savings: 10000, credit: 650,
+      version: 2, name: String(name || T('Oyuncu', 'Player')).slice(0, 32), avatar: avatarForName(name), age: 18, month: 1, year: 2026, cash: 45000, savings: 10000, credit: 650,
       stats: { health: 80, happiness: 70, energy: 100, stress: 18, knowledge: 15, social: 15, logic: 15, creativity: 15, fitness: 40 },
       traits: newTraits(), likes: [], edu: 0, studying: null, exp: 0, job: null, career: [], company: null, loans: [], props: [],
       invest: { fund: 0, gold: 0, crypto: 0 }, prices: { fund: 100, gold: 100, crypto: 100 }, insurance: false,
@@ -320,7 +338,7 @@ const LifeGame = (() => {
   }
   function meetSomeone() {
     const p = npc('tanidik'), c = compat(p);
-    showModal(`<p class="life-k">${T('Yeni biriyle tanıştın', 'You met someone new')}</p><div class="life-person-big"><span>${p.emoji}</span><div><h3>${esc(p.name)}, ${p.age}</h3><p>${esc(traitText(p.traits))}</p><p>${T('Sevdikleri', 'Likes')}: ${esc(p.likes.join(', '))}</p><p class="life-compat">${T('Uyum', 'Compatibility')} <b>${c}%</b></p></div></div>
+    showModal(`<p class="life-k">${T('Yeni biriyle tanıştın', 'You met someone new')}</p><div class="life-person-big"><span>${personAvatar(p)}</span><div><h3>${esc(p.name)}, ${p.age}</h3><p>${esc(traitText(p.traits))}</p><p>${T('Sevdikleri', 'Likes')}: ${esc(p.likes.join(', '))}</p><p class="life-compat">${T('Uyum', 'Compatibility')} <b>${c}%</b></p></div></div>
       <div class="life-choices"><button data-k="friend">${T('Numarasını al, arkadaş ol', 'Swap numbers, become friends')}</button><button data-k="bye">${T('Kibarca vedalaş', 'Politely say goodbye')}</button></div>`, m => {
       m.querySelector('[data-k=friend]').onclick = () => { p.role = 'arkadas'; p.bond = 25 + Math.round(c / 5); p.met = state.month + '/' + state.year; p.history.unshift(T(`${dn(state.location)}’de tanıştınız`, `You met in ${dn(state.location)}`)); state.people.push(p); chg({ social: 3, happiness: 4 }); note(T(`${p.name} ile arkadaş oldun.`, `You became friends with ${p.name}.`)); closeModal(); save(); render(); };
       m.querySelector('[data-k=bye]').onclick = closeModal;
@@ -530,7 +548,7 @@ const LifeGame = (() => {
   function people() {
     const rel = state.people.filter(p => !['eski', 'yetiskin', 'tanidik'].includes(p.role)), p0 = partner(state);
     const card = p => { const c = compat(p), kid = p.role === 'cocuk';
-      return `<article class="life-pcard ${p.role}"><div class="life-ph"><span>${kid ? (p.months < 36 ? '👶' : p.months < 144 ? '🧒' : '🧑') : p.emoji}</span><div><h3>${esc(p.name)}${p.member ? ' <small class="life-real">🌍 ' + T('gerçek oyuncu', 'real player') + '</small>' : ''}</h3><p>${kid ? `${Math.floor(p.months / 12)} ${T('yaş', 'yrs')} · ${kidStage(p.months)}` : { arkadas: T('Arkadaş', 'Friend'), partner: T('Sevgili', 'Partner'), es: T('Eşin', 'Spouse') }[p.role]} · ${esc(traitText(p.traits))}</p></div></div>
+      return `<article class="life-pcard ${p.role}"><div class="life-ph"><span>${kid && p.months < 36 ? '👶' : personAvatar(p)}</span><div><h3>${esc(p.name)}${p.member ? ' <small class="life-real">🌍 ' + T('gerçek oyuncu', 'real player') + '</small>' : ''}</h3><p>${kid ? `${Math.floor(p.months / 12)} ${T('yaş', 'yrs')} · ${kidStage(p.months)}` : { arkadas: T('Arkadaş', 'Friend'), partner: T('Sevgili', 'Partner'), es: T('Eşin', 'Spouse') }[p.role]} · ${esc(traitText(p.traits))}</p></div></div>
         <div class="life-bond"><span>${T('Bağ', 'Bond')}</span><i><b style="width:${p.bond}%"></b></i><em>${p.bond}</em></div>
         ${kid ? `<p class="life-small">${T('Mutluluk', 'Happiness')} ${p.mood || 70} · ${p.months >= 72 ? T('Notlar', 'Grades') + ' ' + (p.grade || 70) : ''}${p.talent ? ' · 🌟 ' + T('yetenekli', 'gifted') : ''}</p>` : `<p class="life-small">${T('Sevdikleri', 'Likes')}: ${esc(p.likes.join(', '))} · ${T('Uyum', 'Compatibility')} ${c}%</p>`}
         ${p.history.length ? `<p class="life-mem">“${esc(p.history[0])}”</p>` : ''}
@@ -559,7 +577,7 @@ const LifeGame = (() => {
   }
   function story() {
     return `<h2>📖 ${T('Hayat hikâyen', 'Your life story')}</h2><p>${T(`${state.choices} karar verdin. ${state.age} yaşındasın. ${state.monthsPlayed} ay yaşadın.`, `You’ve made ${state.choices} decisions. You’re ${state.age}. You’ve lived ${state.monthsPlayed} months.`)}</p>
-      <h3>${T('Kimliğin', 'Who you are')}</h3><div class="life-prefs"><label>${T('Simgen', 'Your icon')}<select data-pref="avatar">${['🧑', '👩', '👨', '🧔', '👱', '👩‍🦱', '🧑‍🦰', '👨‍🦳', '🧕', '🧑‍🎤'].map(a => `<option ${state.avatar === a ? 'selected' : ''}>${a}</option>`).join('')}</select></label>
+      <h3>${T('Kimliğin', 'Who you are')}</h3><div class="life-prefs"><label>${T('Simgen', 'Your icon')}<select data-pref="avatar">${['🧑', '👩', '👨', '👧', '👦', '🧔', '👱', '👩‍🦱', '👩‍🦰', '👨‍🦳', '🧕', '🧑‍🎤'].map(a => `<option ${state.avatar === a ? 'selected' : ''}>${a}</option>`).join('')}</select></label>
         ${[['food', T('Sevdiğin yemek', 'Favourite food'), ['Mantı', 'Pizza', 'Sushi', 'Köfte', 'Lahmacun', 'Makarna', 'Salata']], ['music', T('Sevdiğin müzik', 'Favourite music'), ['Rock', 'Pop', 'Rap', 'Caz', 'Klasik', 'Elektronik', 'Türkçe pop']], ['team', T('Tuttuğun takım', 'Your team'), ['Trabzonspor', 'Galatasaray', 'Fenerbahçe', 'Beşiktaş', 'Bursaspor', T('Takım tutmuyorum', 'No team')]]].map(([k, l, arr]) => `<label>${l}<select data-pref="${k}">${arr.map(x => `<option ${state.prefs[k] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>`).join('')}</div>
       <div class="life-log">${state.log.map(x => `<p>${esc(x)}</p>`).join('')}</div>${btn(T('Yeni bir hayat başlat', 'Start a new life'), 'reset')}`;
   }
@@ -628,8 +646,8 @@ const LifeGame = (() => {
     if (!state) {
       host.innerHTML = `<section class="life-game life-intro">${COVER()}<p class="eyebrow">BABA. / ${T('YENİ OYUN', 'NEW GAME')}</p><h1>${T('HAYAT', 'LIFE')}<span>.</span></h1><p>${T('Liman Şehri’nde bir hayat: ev, iş, aşk, aile, para ve beklenmedik olaylar. Her karar hikâyeni değiştirir.', 'A life in Harbour City: home, work, love, family, money and the unexpected. Every decision changes your story.')}</p>
         <div class="life-feat">${[['🗺️', T('Yaşayan şehir', 'A living city')], ['💼', T('Kariyer ve ekonomi', 'Career and economy')], ['❤️', T('İlişkiler ve aile', 'Relationships and family')], ['⚡', T('Dinamik olaylar', 'Dynamic events')], ['🌍', T('Arkadaşlarla dünya', 'A world with friends')]].map(([e, t]) => `<span>${e} ${t}</span>`).join('')}</div>
-        <label>${T('Karakterinin adı', 'Your character’s name')} <input id="lifeName" maxlength="32" placeholder="${T('İsmin', 'Your name')}"></label><button id="lifeStart" class="primary">${T('Hayatımı başlat', 'Start my life')} →</button><small>${T('Oyun kurgusaldır. Kayıtlar yalnızca bu cihazın tarayıcısında tutulur.', 'This game is fictional. Your save stays in this device’s browser.')}</small></section>`;
-      host.querySelector('#lifeStart').onclick = () => { state = create(host.querySelector('#lifeName').value.trim()); makeMarket(); save(); render(); };
+        <label>${T('Karakterinin adı', 'Your character’s name')} <input id="lifeName" maxlength="32" placeholder="${T('İsmin', 'Your name')}"></label><div class="life-avatar-picker"><span class="life-k">${T('Karakter görünümü', 'Character appearance')}</span><div class="life-avatar-options" role="group" aria-label="${T('Avatar seç', 'Choose avatar')}">${[['auto', T('Otomatik', 'Automatic'), '🧑'], ['👩', T('Kadın', 'Woman'), '👩'], ['👨', T('Erkek', 'Man'), '👨']].map(([v,l,e]) => `<label class="life-avatar-option"><input type="radio" name="lifeAvatar" value="${v}" ${v === 'auto' ? 'checked' : ''}><span class="life-avatar-face">${e}</span><small>${l}</small></label>`).join('')}</div></div><button id="lifeStart" class="primary">${T('Hayatımı başlat', 'Start my life')} →</button><small>${T('Oyun kurgusaldır. Kayıtlar yalnızca bu cihazın tarayıcısında tutulur.', 'This game is fictional. Your save stays in this device’s browser.')}</small></section>`;
+      host.querySelector('#lifeStart').onclick = () => { state = create(host.querySelector('#lifeName').value.trim()); const chosen = host.querySelector('input[name="lifeAvatar"]:checked'); if (chosen && chosen.value !== 'auto') state.avatar = chosen.value; makeMarket(); save(); render(); };
     } else { render(); if (state.pending) renderEvent(); if (state.world.joined) worldLoad().then(() => { if (tab === 'world' || tab === 'city') render(); }); }
   }
   function open(el) { host = el; state = load(); if (state && state.version === 2) save(); tab = 'home'; place = null; start(); }
