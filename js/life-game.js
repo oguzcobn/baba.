@@ -429,6 +429,52 @@ const LifeGame = (() => {
   const ACTIVITIES = () => [T('sinemaya gittiniz', 'went to the cinema'), T('maça gittiniz', 'went to a match'), T('sahilde kahve içtiniz', 'had coffee on the seafront'), T('konsere gittiniz', 'went to a gig'), T('pikniğe gittiniz', 'went for a picnic')];
 
   /* ---------------- ekranlar ---------------- */
+  /* Decorative, lightweight 2.5D city: no changes to the game state or save schema. */
+  function lifeScene() {
+    return `<section class="life-scene" aria-label="${T("Yaşayan şehir manzarası", "Living city scene")}">
+      <div class="life-scene-copy"><span class="life-scene-kicker">${T("HAYATIN DEVAM EDİYOR", "YOUR STORY CONTINUES")}</span><strong>${esc(dn(state.location))}</strong><span>${T("Her ay yeni bir hikâye", "A new story every month")}</span></div>
+      <svg class="life-scene-art" viewBox="0 0 720 300" role="img" aria-label="${T("Üç boyutlu görünümlü binalar, deniz ve hareketli şehir hayatı", "Isometric buildings, sea and animated city life")}">
+        <defs>
+          <linearGradient id="lifeSceneSky" x2="0" y2="1"><stop stop-color="#ffe4ad"/><stop offset=".62" stop-color="#ffbd9a"/><stop offset="1" stop-color="#e68b9c"/></linearGradient>
+          <linearGradient id="lifeSceneWater" x2="0" y2="1"><stop stop-color="#65cbd1"/><stop offset="1" stop-color="#215e8f"/></linearGradient>
+          <linearGradient id="lifeSceneRoad" x2="0" y2="1"><stop stop-color="#b7a29b"/><stop offset="1" stop-color="#756b82"/></linearGradient>
+          <filter id="lifeSceneShadow" x="-40%" y="-60%" width="180%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+        </defs>
+        <rect width="720" height="300" fill="url(#lifeSceneSky)"/>
+        <circle cx="588" cy="64" r="35" fill="#fff4c5" opacity=".9" class="life-scene-sun"/>
+        <path d="M0 157 Q160 132 270 163 T550 155 T720 161 V300 H0Z" fill="#b5c8ae" opacity=".7"/>
+        <path d="M0 193 Q245 163 385 199 Q565 217 720 180 V300 H0Z" fill="url(#lifeSceneWater)"/>
+        <g class="life-scene-ripples" fill="none" stroke="#e2fff6" stroke-width="2" opacity=".6"><path d="M20 232q28-8 58 0m62 25q40-8 77 0m65-38q42-8 86 0m44 46q42-8 83 0m64-36q55-10 112 0"/></g>
+        <ellipse cx="360" cy="281" rx="266" ry="18" fill="#302d4e" opacity=".2" filter="url(#lifeSceneShadow)"/>
+        <path d="M110 222L360 126L644 230L382 299Z" fill="#edceab" stroke="#fff0ce" stroke-width="4"/>
+        <path d="M148 225L363 150L599 233L382 284Z" fill="url(#lifeSceneRoad)"/>
+        <path d="M156 226L363 156L588 233L382 277Z" fill="none" stroke="#fff1dc" stroke-width="3" stroke-dasharray="16 12" opacity=".8"/>
+        <g class="life-scene-building life-scene-building-a">
+          <path d="M217 164l52-22 47 20-52 22Z" fill="#fff1d6"/>
+          <path d="M217 164v-66l47 20v66Z" fill="#dba58b"/>
+          <path d="M264 184v-66l52-22v66Z" fill="#a76578"/>
+          <path d="M217 98l52-22 47 20-52 22Z" fill="#65445c"/>
+          <g fill="#fff6c9"><path d="M230 120l11 5v15l-11-5Zm19 8l10 4v15l-10-4ZM230 150l11 5v15l-11-5Zm19 8l10 4v15l-10-4Z"/></g>
+          <g fill="#ffdfab"><path d="M278 129l12-5v16l-12 5Zm20-8l11-5v16l-11 5ZM278 157l12-5v16l-12 5Zm20-8l11-5v16l-11 5Z"/></g>
+          <path d="M264 184v-66" stroke="#754c67" stroke-width="2"/>
+        </g>
+        <g class="life-scene-building life-scene-building-b">
+          <path d="M399 147l63-25 51 21-64 26Z" fill="#fff4d8"/>
+          <path d="M399 147V76l50 22v71Z" fill="#efba8c"/>
+          <path d="M449 169V98l64-25v70Z" fill="#e48b87"/>
+          <path d="M399 76l63-27 51 24-64 25Z" fill="#49556b"/>
+          <g fill="#fff8d5"><path d="M410 102l11 5v17l-11-5Zm23 9l10 4v17l-10-4ZM410 133l11 5v17l-11-5Zm23 9l10 4v17l-10-4Z"/></g>
+          <g fill="#f9e2af"><path d="M464 108l12-5v17l-12 5Zm23-9l12-5v17l-12 5ZM464 138l12-5v17l-12 5Zm23-9l12-5v17l-12 5Z"/></g>
+        </g>
+        <g class="life-scene-tree" transform="translate(148 193)"><path d="M0 0v29" stroke="#795e5b" stroke-width="5"/><circle cy="-8" r="20" fill="#58a48b"/><circle cx="10" cy="-15" r="12" fill="#80c4a1"/></g>
+        <g class="life-scene-tree" transform="translate(539 201)"><path d="M0 0v27" stroke="#795e5b" stroke-width="5"/><circle cy="-7" r="19" fill="#58a48b"/><circle cx="9" cy="-14" r="11" fill="#80c4a1"/></g>
+        <g class="life-scene-car"><path d="M309 251l34-12 27 9-35 13Z" fill="#fa715f"/><path d="M317 245l12-11 21-7 11 18-28 10Z" fill="#ffe4c4"/><path d="M329 234l7 13 20-6-6-14Z" fill="#6b91a9"/><ellipse cx="321" cy="254" rx="6" ry="4" fill="#33374f"/><ellipse cx="348" cy="261" rx="6" ry="4" fill="#33374f"/></g>
+        <g class="life-scene-person"><ellipse cx="382" cy="214" rx="7" ry="3" fill="#302c50" opacity=".3"/><path d="M382 196v15m-5-4l5-5 5 5m-5 4l-5 9m5-9 6 8" fill="none" stroke="#414063" stroke-width="3" stroke-linecap="round"/><circle cx="382" cy="193" r="5" fill="#ffe0b2"/><path d="M379 199h6l2 11h-10Z" fill="#ff8064"/></g>
+        <g class="life-scene-person life-scene-person-b"><ellipse cx="485" cy="240" rx="6" ry="2.5" fill="#302c50" opacity=".25"/><circle cx="485" cy="222" r="4" fill="#f8cea7"/><path d="M483 228h5l1 12h-7Z" fill="#435b87"/></g>
+      </svg>
+      <button type="button" class="life-scene-caption" data-action="tab:city">${T("Şehir yaşamını keşfet →", "Explore city life →")}</button>
+    </section>`;
+  }
   function top() {
     const e = ECO()[state.economy.phase];
     return `<header class="life-top"><div class="life-id"><span class="life-av">${esc(state.avatar)}</span><div><p class="eyebrow">BABA. / ${T('OYUNLAR', 'GAMES')} · ${T('HAYAT.', 'LIFE.')}</p><h1>${esc(state.name)}<span>.</span></h1><p>${state.job ? esc(jobTitle(state.job)) + ' · ' + esc(state.job.company || '') : state.company ? '🚀 ' + esc(state.company.name) : T('İş arıyor', 'Job-hunting')} · 📍 ${esc(dn(state.location))}</p></div></div>
@@ -439,7 +485,7 @@ const LifeGame = (() => {
   const btn = (label, action, cls) => `<button class="${cls || ''}" data-action="${action}">${label}</button>`;
   function home() {
     const pl = PLACE_ACT();
-    return `${meters()}<div class="life-hero-row"><div class="life-energy"><b>${S().energy}</b><span>${T('bu ayki enerjin', 'energy left this month')}</span></div>${btn('⏭ ' + T('Ayı bitir', 'End the month'), 'month', 'primary big')}</div>
+    return `${lifeScene()}${meters()}<div class="life-hero-row"><div class="life-energy"><b>${S().energy}</b><span>${T('bu ayki enerjin', 'energy left this month')}</span></div>${btn('⏭ ' + T('Ayı bitir', 'End the month'), 'month', 'primary big')}</div>
       <h2>${T('Bugün ne yapacaksın?', 'What will you do today?')}</h2>
       <div class="life-actions">${[['study', '📚 ' + T('Kurs al', 'Take a course'), T('4.500 ₺ · 15 enerji · bilgi', '₺4,500 · 15 energy · knowledge')], ['work', '💼 ' + T('Fazla mesai', 'Overtime'), T('18 enerji · performans', '18 energy · performance')], ['side', '🧾 ' + T('Serbest iş', 'Freelance gig'), T('22 enerji · ek gelir', '22 energy · extra income')], ['exercise', '🏃 ' + T('Spor', 'Exercise'), T('12 enerji · sağlık', '12 energy · health')], ['cook', '🍳 ' + T('Yemek yap', 'Cook'), T('600 ₺ · mutluluk', '₺600 · happiness')], ['rest', '🛌 ' + T('Dinlen', 'Rest'), T('enerji ve stres', 'energy and stress')]].map(([id, t, d]) => `<button class="life-act" data-action="do:${id}"><b>${t}</b><small>${d}</small></button>`).join('')}</div>
       <h2>📍 ${esc(dn(state.location))} ${T('semtindesin', '— where you are')}</h2><div class="life-actions">${DIST[state.location].places.map(p => (pl[p] || []).map(([id, t]) => `<button class="life-act place" data-action="do:${id}"><b>${PLACE[p][0]} ${esc(T(...PLACE[p][1]))}</b><small>${esc(t)}</small></button>`).join('')).join('')}</div>`;
