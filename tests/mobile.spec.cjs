@@ -285,6 +285,10 @@ test.describe('HAYAT. premium mobile navigation',()=>{
   test.beforeEach(async({page})=>{await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));});
   test('shows all seven readable navigation tiles and preserves pinch zoom accessibility',async({page})=>{
     await page.goto(BASE+'#hayat-oyunu');
+    if(await page.locator('#lifeStart').isVisible()){
+      await page.locator('#lifeName').fill('Mobil Test');
+      await page.locator('#lifeStart').click();
+    }
     const tabs=page.locator('.life-tabs .life-nav-item');
     await expect(tabs).toHaveCount(7);
     await expect(tabs.first()).toHaveAttribute('aria-current','page');
