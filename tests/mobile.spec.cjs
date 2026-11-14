@@ -272,5 +272,7 @@ test.describe('HAYAT. animated city scene',()=>{
     expect(result.game.cash).toBe(60200);
     expect(result.game.version).toBe(2);
     expect(result.animation).toBe('none');
+    await page.locator('.life-scene-caption').click();
+    await expect(page.locator('.life-map')).toBeVisible();
   });
 });
