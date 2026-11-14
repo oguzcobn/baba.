@@ -197,3 +197,16 @@ body.dark .life-game,[data-theme=dark] .life-game{--lg-cream:#1c1322;--lg-ink:#f
 @media(max-width:440px){.life-game .life-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}.life-game .life-tabs .life-nav-item{min-height:65px;padding:7px 3px;border-radius:14px}.life-game .life-tabs .life-nav-item .life-nav-icon{height:26px;font-size:20px}.life-game .life-tabs .life-nav-item .life-nav-label{font-size:11px}.life-game .life-top{padding:17px}.life-game .life-time{width:100%;align-items:flex-start;text-align:left}.life-game .life-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.life-game .life-actions .life-act{padding:12px;min-height:85px}}
 @media(max-width:340px){.life-game .life-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.life-game .life-actions{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.life-game .life-tabs .life-nav-item,.life-game .life-tabs .life-nav-item.on .life-nav-icon{transition:none!important;transform:none!important}}
+
+/* Character creator: expressive portrait cards with clear selection states. */
+.life-avatar-picker{margin:14px 0 18px;padding:15px;border-radius:20px;background:linear-gradient(135deg,rgba(255,181,128,.13),rgba(86,58,112,.09));border:1px solid var(--lg-line)}
+.life-avatar-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:10px}
+.life-avatar-option{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;min-height:92px;padding:12px 6px;border-radius:16px;border:2px solid var(--lg-line);background:var(--lg-card);cursor:pointer;transition:border-color .18s,transform .18s,box-shadow .18s}
+.life-avatar-option:has(input:checked){border-color:#e68a63;box-shadow:0 8px 24px -14px rgba(225,108,72,.6);transform:translateY(-2px)}
+.life-avatar-option:has(input:focus-visible){outline:3px solid #e68a63;outline-offset:3px}
+.life-avatar-option input{position:absolute;opacity:0;width:1px;height:1px}
+.life-avatar-face{font-size:34px;line-height:1.2}
+.life-avatar-option small{font-size:12px;font-weight:750}
+.life-game .life-pcard .life-ph>span{display:grid;place-items:center;min-width:52px;min-height:52px;border-radius:16px;background:linear-gradient(145deg,#fff0dc,#f5c6ad);box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+@media(max-width:370px){.life-avatar-options{gap:5px}.life-avatar-option{padding:8px 3px;min-height:78px}.life-avatar-face{font-size:28px}}
+@media(prefers-reduced-motion:reduce){.life-avatar-option{transition:none}.life-avatar-option:has(input:checked){transform:none}}
