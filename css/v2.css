@@ -237,7 +237,8 @@ body.locked .nav-links,body.locked #lockBtn{display:none}
 .vd-acts a.bb-btn{text-decoration:none;display:inline-flex;align-items:center}
 .vd-frame{position:relative;width:100%;height:max(520px,calc(100dvh - 150px));border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#dff1d6}
 .vd-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
-.vd-frame:fullscreen,.vd-frame:-webkit-full-screen{border-radius:0;border:0;height:100%}
+.vd-frame:fullscreen{border-radius:0;border:0;height:100%;width:100%}
+.vd-frame:-webkit-full-screen{border-radius:0;border:0;height:100%;width:100%}
 @media(max-width:700px){.vd-frame{height:max(480px,calc(100dvh - 120px))}}
 
 /* ---------- Seyahat › Antalya kalkışlı en ucuz uçuşlar ---------- */
@@ -270,3 +271,12 @@ body.locked .nav-links,body.locked #lockBtn{display:none}
 .fl-list b{font-size:15px}.fl-list small{grid-column:3;font-size:12px;color:#8ea0cf}.fl-list em{grid-row:1/span 2;grid-column:4;font-style:normal;font-weight:900;color:#ceff00}
 .fl-note{margin:14px 2px 0;font-size:12.5px;color:#8ea0cf;line-height:1.5}
 @media(max-width:600px){.fl-grid{grid-template-columns:1fr 1fr;gap:8px}.fl-card{padding:14px;min-height:0;border-radius:18px}.fl-card h3{font-size:18px;margin-top:6px}.fl-price{font-size:21px}.fl-meta{font-size:12px}.fl-go{gap:4px}.fl-go a{font-size:11.5px;padding:6px 8px}.fl-flag{font-size:18px}.fl-code{font-size:10.5px}}
+
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){
+  .vadi-page{padding-block:8px}
+  .vadi-page .gp-head{margin-bottom:8px}
+  .vadi-page .gp-head .eyebrow,.vadi-page .gp-head h1{display:none}
+  .vadi-page .bb-body{gap:8px}
+  .vd-bar{margin-bottom:0}
+  .vd-frame{min-height:0;height:100dvh}
+}

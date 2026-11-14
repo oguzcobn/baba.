@@ -185,11 +185,22 @@ const App = (() => {
   function vadi() {
     const b = shell('Empires of<br>the Valley', `<div class="vd-bar"><p class="bb-tip">${T('Vadide küçük bir köyden medeniyete. Kayıtlar bu cihazda tutulur.', 'From a small village in the valley to a civilisation. Saves are kept on this device.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${VADI_URL}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
       <div class="vd-frame"><iframe src="${VADI_URL}" title="Empires of the Valley" allow="fullscreen; autoplay" allowfullscreen loading="eager"></iframe></div>
-      <p class="bb-tip">${T('Kısayollar: Boşluk duraklat · 1/2/3 hız · B inşa · R yol · G ordu hareketi · Esc iptal. Telefonda dar geliyorsa “Yeni sekmede aç”ı kullan.', 'Shortcuts: Space pause · 1/2/3 speed · B build · R road · G move troops · Esc cancel. If it feels cramped on a phone, use “Open in a new tab”.')}</p>`, T('Strateji · şehir kurma', 'Strategy · city-building'));
+      <p class="bb-tip">${T('Kısayollar: Boşluk duraklat · 1/2/3 hız · B inşa · R yol · G ordu hareketi · Esc iptal. Telefonda “Tam ekran”a dokunup cihazı yan çevir.', 'Shortcuts: Space pause · 1/2/3 speed · B build · R road · G move troops · Esc cancel. On your phone, tap “Full screen” and turn your device sideways.')}</p>`, T('Strateji · şehir kurma', 'Strategy · city-building'));
+    b.closest('.game-page').classList.add('vadi-page');
     const fr = b.querySelector('.vd-frame'), fb = b.querySelector('[data-a=full]');
     const req = fr.requestFullscreen || fr.webkitRequestFullscreen;
-    if (!req) fb.hidden = true;
-    else fb.onclick = () => { click(); try { const p = req.call(fr); if (p && p.catch) p.catch(() => {}); } catch (e) {} };
+    fb.onclick = async () => {
+      click();
+      if (req) {
+        try {
+          await req.call(fr);
+          return;
+        } catch {
+          // Browsers without iframe fullscreen can open the same game directly.
+        }
+      }
+      location.href = VADI_URL;
+    };
   }
 
   /* ==================== 2048 ==================== */
