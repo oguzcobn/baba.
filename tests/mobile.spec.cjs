@@ -279,3 +279,26 @@ test.describe('HAYAT. animated city scene',()=>{
     await expect(page.locator('.life-map')).toBeVisible();
   });
 });
+
+test.describe('HAYAT. premium mobile navigation',()=>{
+  test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  test.beforeEach(async({page})=>{await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));});
+  test('shows all seven readable navigation tiles and preserves pinch zoom accessibility',async({page})=>{
+    await page.goto(BASE+'#hayat-oyunu');
+    const tabs=page.locator('.life-tabs .life-nav-item');
+    await expect(tabs).toHaveCount(7);
+    await expect(tabs.first()).toHaveAttribute('aria-current','page');
+    const metrics=await page.evaluate(()=>({
+      tiles:[...document.querySelectorAll('.life-nav-item')].map(el=>({width:el.getBoundingClientRect().width,height:el.getBoundingClientRect().height,touch:getComputedStyle(el).touchAction})),
+      viewport:document.querySelector('meta[name="viewport"]').content,
+      bodyWidth:document.documentElement.scrollWidth,
+      screenWidth:document.documentElement.clientWidth
+    }));
+    expect(metrics.tiles.every(x=>x.height>=44&&x.width>=44&&x.touch==='manipulation')).toBeTruthy();
+    expect(metrics.viewport).not.toContain('user-scalable=no');
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.screenWidth+1);
+    await tabs.nth(2).click();
+    await expect(tabs.nth(2)).toHaveAttribute('aria-current','page');
+    await expect(page.locator('.life-top')).toBeVisible();
+  });
+});
