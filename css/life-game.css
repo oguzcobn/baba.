@@ -171,3 +171,29 @@ body.dark .life-game,[data-theme=dark] .life-game{--lg-cream:#1c1322;--lg-ink:#f
 
 .life-game button.life-scene-caption{position:absolute;right:12px;bottom:12px;z-index:2;background:rgba(255,250,241,.92);color:#36273d;border:1px solid rgba(53,36,61,.14);font-size:11px;padding:8px 13px;cursor:pointer;pointer-events:auto}
 .life-game button.life-scene-caption:focus-visible{outline:3px solid #215e8f;outline-offset:2px}
+
+/* HAYAT. premium simulation HUD: navigable, responsive, reduced-motion friendly. */
+.life-game{--life-gold:#e6a85b;--life-panel-shadow:0 16px 42px -28px rgba(34,22,48,.5);--life-focus:#ff9a60}
+.life-game .life-top{position:relative;overflow:hidden;align-items:center;border:1px solid rgba(255,255,255,.17);border-radius:26px;padding:clamp(18px,3vw,28px);background:radial-gradient(ellipse at 85% 8%,rgba(255,189,122,.36),transparent 42%),linear-gradient(125deg,#23152f 0%,#4d254a 52%,#9d4457 100%);box-shadow:0 18px 48px -28px rgba(47,20,58,.8)}
+.life-game .life-top::after{content:"";position:absolute;width:230px;height:230px;border:1px solid rgba(255,255,255,.12);border-radius:50%;right:-85px;top:-150px;pointer-events:none;box-shadow:0 0 0 26px rgba(255,255,255,.025),0 0 0 52px rgba(255,255,255,.018)}
+.life-game .life-top .life-av{border:1px solid rgba(255,255,255,.2);background:linear-gradient(145deg,rgba(255,255,255,.24),rgba(255,255,255,.06));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 22px rgba(15,8,30,.2)}
+.life-game .life-top h1{letter-spacing:-.045em;overflow-wrap:anywhere}
+.life-game .life-time{padding:12px 15px;border:1px solid rgba(255,255,255,.2);border-radius:17px;background:rgba(25,15,35,.18);backdrop-filter:blur(10px)}
+.life-game .life-tabs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;padding:12px 0 14px;overflow:visible;scrollbar-width:auto}
+.life-game .life-tabs .life-nav-item{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-width:0;min-height:74px;padding:9px 4px;border:1px solid var(--lg-line);border-radius:17px;background:var(--lg-card);color:var(--lg-mute);box-shadow:0 7px 20px -17px rgba(37,24,47,.5);transition:transform .18s ease,box-shadow .18s ease,background .18s ease,border-color .18s ease;touch-action:manipulation}
+.life-game .life-tabs .life-nav-item .life-nav-icon{display:grid;place-items:center;width:32px;height:32px;font-size:22px;line-height:1;filter:saturate(.85)}
+.life-game .life-tabs .life-nav-item .life-nav-label{font-size:clamp(10px,1.15vw,12px);line-height:1.15;font-weight:750;white-space:normal;text-align:center;overflow-wrap:anywhere}
+.life-game .life-tabs .life-nav-item.on{background:linear-gradient(155deg,#38213f,#593055);border-color:#b57e8b;color:#fff;box-shadow:0 12px 24px -16px rgba(47,20,58,.75),inset 0 1px 0 rgba(255,255,255,.14)}
+.life-game .life-tabs .life-nav-item.on .life-nav-icon{filter:none;transform:translateY(-1px)}
+.life-game .life-tabs .life-nav-item:focus-visible{outline:3px solid var(--life-focus);outline-offset:2px}
+.life-game .life-tabs .life-nav-item:hover:not(.on){border-color:#d9a68b;transform:translateY(-2px)}
+.life-game .life-body{min-width:0}
+.life-game .life-meter,.life-game .life-dpanel{box-shadow:var(--life-panel-shadow);border-radius:18px}
+.life-game .life-actions .life-act{position:relative;min-height:92px;padding:16px;border-radius:19px;background:linear-gradient(145deg,var(--lg-card),color-mix(in srgb,var(--lg-card) 90%,var(--lg-sun2)));border:1px solid var(--lg-line);box-shadow:var(--life-panel-shadow)}
+.life-game .life-actions .life-act:focus-visible,.life-game button:focus-visible{outline:3px solid var(--life-focus);outline-offset:2px}
+.life-game .life-hero-row{border-radius:19px}
+.life-game button,.life-game [data-action]{touch-action:manipulation}
+@media(max-width:780px){.life-game .life-tabs{grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.life-game .life-tabs .life-nav-item{min-height:69px}.life-game .life-top{gap:14px}}
+@media(max-width:440px){.life-game .life-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}.life-game .life-tabs .life-nav-item{min-height:65px;padding:7px 3px;border-radius:14px}.life-game .life-tabs .life-nav-item .life-nav-icon{height:26px;font-size:20px}.life-game .life-tabs .life-nav-item .life-nav-label{font-size:11px}.life-game .life-top{padding:17px}.life-game .life-time{width:100%;align-items:flex-start;text-align:left}.life-game .life-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.life-game .life-actions .life-act{padding:12px;min-height:85px}}
+@media(max-width:340px){.life-game .life-tabs{grid-template-columns:repeat(3,minmax(0,1fr))}.life-game .life-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.life-game .life-tabs .life-nav-item,.life-game .life-tabs .life-nav-item.on .life-nav-icon{transition:none!important;transform:none!important}}
