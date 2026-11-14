@@ -329,3 +329,26 @@ test.describe('HAYAT. name-aware avatars',()=>{
     await expect(page.locator('.life-av')).toContainText('👨');
   });
 });
+
+test.describe('Manager Career professional operations room',()=>{
+  test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+  test.beforeEach(async({page})=>await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+  test('opens manager career and keeps all five menu sections accessible',async({page})=>{
+    await page.goto(BASE+'#career');
+    await expect(page.locator('#career-section')).toBeVisible({timeout:15000});
+    const tiles=page.locator('.cr-tabs .cr-nav-tile');
+    await expect(tiles).toHaveCount(5);
+    await expect(page.locator('.cr-command')).toBeVisible();
+    await expect(page.locator('.cr-command-metrics>div')).toHaveCount(4);
+    const dims=await page.evaluate(()=>({screen:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth,tiles:[...document.querySelectorAll('.cr-nav-tile')].map(el=>({w:el.getBoundingClientRect().width,h:el.getBoundingClientRect().height}))}));
+    expect(dims.scroll).toBeLessThanOrEqual(dims.screen+3);
+    expect(dims.tiles.every(x=>x.w>=44&&x.h>=44)).toBeTruthy();
+    await tiles.nth(1).click();
+    await expect(tiles.nth(1)).toHaveAttribute('aria-selected','true');
+    await tiles.first().click();
+    await expect(page.locator('.cr-command')).toBeVisible();
+    await expect(page.locator('.cr-advice').first()).toBeVisible();
+    await page.locator('.cr-advice').first().click();
+    await expect(page.locator('.cr-tabs .cr-nav-tile.on')).not.toHaveAttribute('data-tab','center');
+  });
+});
