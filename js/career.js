@@ -518,10 +518,38 @@ const Career = (() => {
     host.innerHTML = `<section id="career-section" class="cr">
       <header class="cr-head">${logoOf(m, 58)}<div class="cr-id"><p class="eyebrow">${T('Menajerlik Kariyeri', 'Manager Career')} · ${T('Sezon', 'Season')} ${S.season} (${S.year}/${String(S.year + 1).slice(2)})</p><h1>${esc(m.name)}</h1></div>
         <div class="cr-kpis"><span class="chip">💰 <b>${M(S.budget)}</b></span><span class="chip">📅 ${T('Hafta', 'Week')} <b>${Math.min(S.week + 1, WEEKS)}/${WEEKS}</b></span><span class="chip">🏆 <b>${rank}.</b></span><span class="chip">⭐ <b>${rating()}</b></span></div></header>
-      <nav class="cr-tabs" role="tablist">${tabs.map(([k, l]) => `<button role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-tab="${k}">${l}</button>`).join('')}</nav>
+      <nav class="cr-tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" class="cr-nav-tile ${tab === k ? 'on' : ''}" data-tab="${k}"><span class="cr-nav-icon" aria-hidden="true">${l.split(' ')[0]}</span><span class="cr-nav-text">${l.slice(l.indexOf(' ') + 1)}</span></button>`).join('')}</nav>
       <div class="cr-body">${body}</div></section>`;
     bind();
-    const tb = host.querySelector('.cr-tabs'), on = tb && tb.querySelector('.on'); if (on) tb.scrollLeft = on.offsetLeft - 16;
+    // Responsive grid keeps all five sections visible without horizontal scrolling.
+  }
+
+  /* Manager's desk: recommendations derived from live squad data, never cached in saves. */
+  function managerDesk() {
+    const active = S.xi.map(P).filter(Boolean);
+    const tired = active.filter(p => p.cond < 70);
+    const unavailable = active.filter(p => !avail(p));
+    const avgCondition = active.length ? Math.round(avg(active.map(p => p.cond))) : 0;
+    const avgMorale = S.squad.length ? Math.round(avg(S.squad.map(p => p.morale))) : 0;
+    const wages = S.squad.reduce((a, p) => a + wage(p), 0);
+    const readiness = Math.round(clamp((active.length / 11) * 55 + avgCondition * .3 + avgMorale * .15 - unavailable.length * 8, 0, 100));
+    const suggestions = [];
+    if (active.length < 11 || unavailable.length) suggestions.push({ icon: '🧩', title: T('İlk 11 kontrolü', 'Check starting XI'), desc: T(`${11 - active.length} boş yer · ${unavailable.length} cezalı/sakat oyuncu`, `${11 - active.length} empty slots · ${unavailable.length} unavailable players`), tab: 'squad' });
+    if (tired.length) suggestions.push({ icon: '🩺', title: T('Rotasyon gerekli', 'Rotation recommended'), desc: T(`${tired.length} oyuncu %70 kondisyonun altında`, `${tired.length} starters below 70% fitness`), tab: 'squad' });
+    if (S.squad.length < 20 && S.budget > 1) suggestions.push({ icon: '🔎', title: T('Kadro derinliği', 'Squad depth'), desc: T('Yedek alternatifleri için transfer pazarını incele', 'Explore transfer options for squad depth'), tab: 'transfer' });
+    if (S.budget < wages * 12) suggestions.push({ icon: '💼', title: T('Finansal planlama', 'Financial planning'), desc: T('Bütçe 12 haftalık maaşın altında', 'Budget covers fewer than 12 weeks of wages'), tab: 'club' });
+    if (!suggestions.length) suggestions.push({ icon: '✨', title: T('Maça hazırsın', 'Ready for kick-off'), desc: T('Kadron dengeli görünüyor; taktiklerini gözden geçir', 'Your squad looks balanced; review your tactics'), tab: 'squad' });
+    const fmt = n => Number.isFinite(n) ? n : 0;
+    return `<section class="cr-command" aria-label="${T('Menajer kontrol merkezi', 'Manager command centre')}">
+      <div class="cr-command-heading"><div><p class="cr-command-kicker">MANAGER HQ / ${T('HAFTA', 'WEEK')} ${Math.min(S.week + 1, WEEKS)}</p><h2>${T('Maç haftası brifingi', 'Matchweek briefing')}</h2><p>${T('Kararların sahaya yansır. Önce takımının durumunu kontrol et.', 'Your decisions shape results. Start with your squad readiness.')}</p></div><div class="cr-readiness" role="img" aria-label="${T('Hazırlık puanı', 'Readiness score')} ${readiness}/100" style="--readiness:${readiness}%"><strong>${readiness}</strong><small>${T('HAZIRLIK', 'READINESS')}</small></div></div>
+      <div class="cr-command-metrics">
+        <div><span>⚡ ${T('Kondisyon', 'Fitness')}</span><strong>${fmt(avgCondition)}<small>%</small></strong><div class="cr-meter"><i style="width:${fmt(avgCondition)}%"></i></div></div>
+        <div><span>🤝 ${T('Moral', 'Morale')}</span><strong>${fmt(avgMorale)}<small>%</small></strong><div class="cr-meter"><i style="width:${fmt(avgMorale)}%"></i></div></div>
+        <div><span>🧠 ${T('Taktik', 'Tactics')}</span><strong>${esc(S.formation)}</strong><small>${esc(PLANS()[S.style] || PLANS().dengeli)}</small></div>
+        <div><span>💶 ${T('Maaş / hafta', 'Weekly wages')}</span><strong>${M(wages)}</strong><small>${T('Kalan bütçe', 'Available budget')}: ${M(S.budget)}</small></div>
+      </div>
+      <div class="cr-command-advice"><h3>${T('Teknik ekibin önerileri', 'Backroom staff advice')}</h3><div class="cr-advice-grid">${suggestions.slice(0, 3).map(a => `<button class="cr-advice" data-tab="${a.tab}"><span class="cr-advice-icon">${a.icon}</span><span><b>${a.title}</b><small>${a.desc}</small></span><span aria-hidden="true">↗</span></button>`).join('')}</div></div>
+    </section>`;
   }
 
   function centerTab() {
@@ -534,7 +562,7 @@ const Career = (() => {
     else if (pend && pend.kind === 'event') card = `<article class="cr-card big event"><p class="eyebrow">${T('Karar zamanı', 'Decision time')}</p><h2>${esc(pend.t)}</h2><p>${esc(pend.d)}</p><div class="cr-row">${pend.ch.map(([l, a]) => `<button class="pill ${a.endsWith('ok') || a === 'basin1' || a === 'kavgaceza' ? '' : 'ghost'}" data-ev="${a}">${esc(l)}</button>`).join('')}</div></article>`;
     const opAD = fx ? oppAD(fx.opp) : null, mAD = myAD(S.xi);
     const last = S.matchLog;
-    return `<div class="cr-grid2">
+    return `${managerDesk()}<div class="cr-grid2">
       <div>${card}
         ${fx && !pend && S.sponsor ? `<article class="cr-card next"><p class="eyebrow">${T('Sıradaki maç', 'Next match')} · ${T('Hafta', 'Week')} ${S.week + 1} · ${fx.home ? T('İç saha', 'Home') : T('Deplasman', 'Away')}</p>
           <div class="cr-vs"><div>${logoOf(me(), 52)}<b>${esc(me().short)}</b><small>${Math.round((mAD.att + mAD.def) / 2)}</small></div><span>vs</span><div>${logoOf(fx.opp, 52)}<b>${esc(fx.opp.short || fx.opp.name)}</b><small>${Math.round((opAD.att + opAD.def) / 2)}</small></div></div>
