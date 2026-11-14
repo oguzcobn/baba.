@@ -306,3 +306,26 @@ test.describe('HAYAT. premium mobile navigation',()=>{
     await expect(page.locator('.life-top')).toBeVisible();
   });
 });
+
+test.describe('HAYAT. name-aware avatars',()=>{
+  test.use({viewport:{width:390,height:844}});
+  test.beforeEach(async({page})=>{await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');localStorage.removeItem('baba_life_game_v1');});});
+  for(const [name,expected] of [['Zeynep','👩'],['Ayşe','👩'],['Elif','👩'],['Mert','👨']]){
+    test(name+' gets a consistent default portrait',async({page})=>{
+      await page.goto(BASE+'#hayat-oyunu');
+      await page.locator('#lifeName').fill(name);
+      await page.locator('#lifeStart').click();
+      await expect(page.locator('.life-av')).toContainText(expected);
+      const save=await page.evaluate(()=>JSON.parse(localStorage.getItem('baba_life_game_v1')));
+      expect(save.avatar).toBe(expected);
+      expect(save.version).toBe(2);
+    });
+  }
+  test('manual choice overrides the name-based default',async({page})=>{
+    await page.goto(BASE+'#hayat-oyunu');
+    await page.locator('#lifeName').fill('Zeynep');
+    await page.locator('input[name="lifeAvatar"][value="👨"]').check();
+    await page.locator('#lifeStart').click();
+    await expect(page.locator('.life-av')).toContainText('👨');
+  });
+});
