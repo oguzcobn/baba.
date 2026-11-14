@@ -59,7 +59,7 @@ const LifeGame = (() => {
   // Names provide a visual default only. The player's explicit avatar always wins.
   const FEMALE_NAMES = new Set(['ece','zeynep','elif','defne','selin','ada','nil','lara','mira','yağmur','leyla','asya','ayşe','fatma','zehra','esra','merve','seda','dilara','lale','ela','nicole','sophie','emma','olivia','alice','anna','mary','sarah','julia','sofia','emily']);
   const MALE_NAMES = new Set(['mert','can','kerem','arda','emre','bora','kaan','ozan','efe','oğuzhan','mehmet','ahmet','ali','mustafa','burak','berk','umut','john','jack','james','oliver','william','thomas','daniel']);
-  const nameKey = name => String(name || '').trim().toLocaleLowerCase('tr-TR').split(/\\s+/)[0];
+  const nameKey = name => String(name || '').trim().toLocaleLowerCase('tr-TR').split(/\s+/)[0];
   const avatarForName = (name, age) => {
     const key = nameKey(name);
     if (FEMALE_NAMES.has(key)) return age != null && age < 12 ? '👧' : '👩';
