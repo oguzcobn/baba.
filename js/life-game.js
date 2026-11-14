@@ -472,7 +472,7 @@ const LifeGame = (() => {
         <g class="life-scene-person"><ellipse cx="382" cy="214" rx="7" ry="3" fill="#302c50" opacity=".3"/><path d="M382 196v15m-5-4l5-5 5 5m-5 4l-5 9m5-9 6 8" fill="none" stroke="#414063" stroke-width="3" stroke-linecap="round"/><circle cx="382" cy="193" r="5" fill="#ffe0b2"/><path d="M379 199h6l2 11h-10Z" fill="#ff8064"/></g>
         <g class="life-scene-person life-scene-person-b"><ellipse cx="485" cy="240" rx="6" ry="2.5" fill="#302c50" opacity=".25"/><circle cx="485" cy="222" r="4" fill="#f8cea7"/><path d="M483 228h5l1 12h-7Z" fill="#435b87"/></g>
       </svg>
-      <span class="life-scene-caption">${T("Şehir yaşamını keşfet →", "Explore city life →")}</span>
+      <button type="button" class="life-scene-caption" data-action="tab:city">${T("Şehir yaşamını keşfet →", "Explore city life →")}</button>
     </section>`;
   }
   function top() {
