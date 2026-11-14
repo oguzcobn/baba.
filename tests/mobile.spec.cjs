@@ -239,3 +239,38 @@ test.describe('Manager career is a separate mode',()=>{
   await expect(page.locator('.cr-table.league tr.me')).toBeVisible();
  });
 });
+
+
+test.describe('HAYAT. animated city scene',()=>{
+  test.use({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  test.beforeEach(async({page})=>await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+  test('keeps saved life data and fits the city scene on mobile',async({page})=>{
+    await page.addInitScript(()=>{
+      localStorage.setItem('baba_life_game_v1',JSON.stringify({
+        version:2,name:'Sahne Testi',avatar:'🧑',age:18,month:9,year:2026,cash:60200,
+        savings:0,credit:650,stats:{health:88,happiness:100,energy:79,stress:28,knowledge:15,social:45,logic:15,creativity:15,fitness:40},
+        traits:{ext:50,agr:50,con:50,neu:50,ope:50},likes:[],edu:0,studying:null,exp:0,
+        job:null,career:[],company:null,loans:[],props:[],invest:{fund:0,gold:0,crypto:0},
+        prices:{fund:100,gold:100,crypto:100},insurance:false,home:{district:'eski',own:null,rent:7500,shared:true},
+        location:'eski',transport:'toplu',car:0,economy:{phase:'buyume',months:0,rate:42},people:[],
+        pending:null,market:[],marketAt:-99,choices:0,log:[],prefs:{food:'Mantı',music:'Pop',film:'Komedi',team:'Trabzonspor'},
+        world:{joined:false,hide:false,applied:[]},monthsPlayed:0,ended:false
+      }));
+    });
+    await page.goto(BASE+'#hayat-oyunu');
+    const scene=page.locator('.life-scene');
+    await expect(scene).toBeVisible();
+    await expect(page.locator('.life-scene-art')).toBeVisible();
+    await expect(page.locator('.life-top')).toContainText('Sahne Testi');
+    const result=await page.evaluate(()=>({
+      sceneWidth:document.querySelector('.life-scene').getBoundingClientRect().width,
+      screenWidth:document.documentElement.clientWidth,
+      game:JSON.parse(localStorage.getItem('baba_life_game_v1')),
+      animation:getComputedStyle(document.querySelector('.life-scene-car')).animationName
+    }));
+    expect(result.sceneWidth).toBeLessThanOrEqual(result.screenWidth);
+    expect(result.game.cash).toBe(60200);
+    expect(result.game.version).toBe(2);
+    expect(result.animation).toBe('none');
+  });
+});
