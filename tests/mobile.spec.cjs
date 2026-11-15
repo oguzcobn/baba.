@@ -407,3 +407,33 @@ test.describe('Football visual accessibility regression',()=>{
   await expect(page.locator('#careerRoot .cr-squad')).toBeVisible({timeout:15000});
  });
 });
+
+
+test.describe('Career live match full screen layout',()=>{
+ test.use({viewport:{width:1440,height:900}});
+ test('uses the available viewport for the 2D pitch and retains accessible controls',async({page})=>{
+  await page.addInitScript(()=>{
+    sessionStorage.setItem('baba_ok','1');
+    localStorage.removeItem('baba_career_save');
+  });
+  await page.goto(BASE+'#career');
+  await expect(page.locator('#careerRoot .cr-start')).toBeVisible({timeout:15000});
+  await page.locator('#careerRoot [data-s=new]').click();
+  await page.locator('#careerRoot [data-sp="0"]').click();
+  await page.locator('#careerRoot [data-a=live]').click();
+  await expect(page.locator('.cr-live-ov')).toBeVisible();
+  if(await page.locator('.cr-pitch2d[hidden]').count())await page.locator('.cr-live [data-l=tv]').click();
+  await expect(page.locator('.cr-pitch2d canvas')).toBeVisible({timeout:15000});
+  const geometry=await page.evaluate(()=>{
+    const overlay=document.querySelector('.cr-live-ov').getBoundingClientRect();
+    const pitch=document.querySelector('.cr-pitch2d').getBoundingClientRect();
+    const controls=document.querySelector('.cr-dyn').getBoundingClientRect();
+    return {viewport:innerWidth,overlay:overlay.width,pitch:pitch.width,controls:controls.width,pitchHeight:pitch.height};
+  });
+  expect(geometry.overlay).toBeGreaterThan(geometry.viewport*.9);
+  expect(geometry.pitch).toBeGreaterThan(geometry.viewport*.55);
+  expect(geometry.pitchHeight).toBeGreaterThan(350);
+  expect(geometry.controls).toBeGreaterThan(230);
+  await expect(page.locator('.cr-live [data-l=skip]')).toBeVisible();
+ });
+});
