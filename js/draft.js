@@ -280,6 +280,31 @@ const Draft = (() => {
     try {
       if (typeof DRAFT_CLUBS === 'undefined' || !DRAFT_CLUBS.length) return '';
       const allPicked = picked();
+      if (activeTab === 'stats' && S.last) {
+        const L = S.last;
+        const views = [['scorers','⚽',T('Gol kralı','Top scorer')],['assists','🎯',T('Asist lideri','Assist leader')],['poy','⭐',T('Yılın oyuncusu','Player of the season')],['gk','🧤',T('Altın eldiven','Golden glove')],['mine','👕',T('Takımım','My team')],['table','🏆',T('Puan durumu','Standings')]];
+        const view = views.some(v => v[0] === S.seasonView) ? S.seasonView : 'scorers';
+        const pl = k => Array.isArray(L[k]) ? L[k] : [];
+        const list = view === 'mine' ? pl('mine').slice().sort((a,b)=>(b.g+b.a)-(a.g+a.a)) : pl(view);
+        const players = view === 'table' ? [] : list;
+        const index = Math.max(0, Math.min(Number(S.seasonHero)||0, players.length-1));
+        const hero = players[index] || null;
+        const val = p => view==='assists' ? p.a : view==='gk' ? p.cs : view==='poy' ? Math.round(p.score*10)/10 : view==='mine' ? p.g+p.a : p.g;
+        const unit = view==='assists'?T('asist','assists'):view==='gk'?T('gol yemedi','clean sheets'):view==='poy'?T('performans puanı','performance score'):view==='mine'?T('gol katkısı','goal contributions'):T('gol','goals');
+        const crestOf = p => { const c = DRAFT_CLUBS.find(x => x.name === p.team) || CLUB(p.tid); return c ? crest(c) : '⚽'; };
+        const rankRows = (Array.isArray(L.table)?L.table:[]).slice(0,8);
+        const right = view==='table' ? rankRows.map((t,i)=>`<div class='ss-row ${t.me?'mine':''}'><span>${i+1}</span><b>${esc(TN(t.name))}</b><strong>${t.p} ${T('puan','pts')}</strong></div>`).join('') :
+          list.slice(0,7).map((p,i)=>`<button type='button' class='ss-row ${i===index?'on':''}' data-season-player='${i}' aria-pressed='${i===index}'><span>${i+1}</span><b>${esc(p.name)}</b><small>${esc(TN(p.team))}</small><strong>${val(p)}</strong></button>`).join('');
+        const title = views.find(v => v[0]===view)[2];
+        const teamBlock = `<div class='ss-team'><span class='eyebrow'>${T('KENDİ TAKIMIM','MY TEAM')}</span><h3>${L.rank}. ${T('sıra','place')} · ${L.pts} ${T('puan','points')}</h3><p>${L.w}G ${L.d}B ${L.l}M · ${L.gf}:${L.ga}</p><button type='button' data-season-view='mine'>${T('Oyuncularımın performansı','Squad performance')} →</button></div>`;
+        const featured = view==='table' ? `<div class='ss-standing'><span class='ss-big'>#${L.rank}</span><h3>${T('Sezon sıralaman','Your final standing')}</h3><p>${L.pts} / 102 ${T('puan','points')}</p><div class='ss-metrics'><span>${L.gf} ${T('atılan gol','scored')}</span><span>${L.ga} ${T('yenilen gol','conceded')}</span><span>${L.gf-L.ga} ${T('averaj','goal difference')}</span></div></div>` : hero ? (()=>{
+          const club = DRAFT_CLUBS.find(x=>x.name===hero.team)||CLUB(hero.tid);
+          const c1 = club&&club.c1||'#286c5a', c2=club&&club.c2||'#c6e4d0';
+          const number = hashStr(hero.name)%29+1;
+          return `<div class='ss-player'><div class='ss-player-info'><div class='ss-club'>${crestOf(hero)} <span>${esc(TN(hero.team))}</span></div><h3>${esc(hero.name)}</h3><p>${PZ(hero.pos)} · OVR ${hero.r}</p><div class='ss-big'>${val(hero)} <small>${unit}</small></div><div class='ss-metrics'><span>${hero.apps||0} ${T('maç','apps')}</span><span>${hero.g||0} ${T('gol','goals')}</span><span>${hero.a||0} ${T('asist','assists')}</span>${hero.pos==='KL'?`<span>${hero.cs||0} ${T('gol yemedi','clean sheets')}</span>`:''}</div></div><div class='ss-kit' style='--a:${c1};--b:${c2}'><svg viewBox='0 0 190 210' role='img' aria-label='${T('Oyuncu forması','Player jersey')}'><defs><linearGradient id='ssKit' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='var(--a)'/><stop offset='100%' stop-color='var(--b)'/></linearGradient></defs><path d='M53 25 L78 13 Q95 24 112 13 L137 25 L178 66 L148 94 L138 76 L138 190 L52 190 L52 76 L42 94 L12 66 Z' fill='url(#ssKit)' stroke='#bdd6c5' stroke-width='2.5'/><text x='95' y='122' text-anchor='middle' fill='white' font-size='48' font-weight='900'>${number}</text></svg></div></div>`;
+        })() : `<p>${T('Bu kategoride sezon verisi yok.','No season data in this category.')}</p>`;
+        return `<section class='ss-showcase'><header class='ss-head'><div><span class='eyebrow'>${T('SEZON TAMAMLANDI','SEASON COMPLETE')}</span><h2>${T('Sezonun hikâyesi','Season story')}</h2></div><b>${L.rank}. ${T('sıra','place')} · ${L.pts}/102 ${T('puan','points')}</b></header><div class='ss-layout'><nav class='ss-menu' aria-label='${T('Sezon ayrıntıları','Season details')}'>${views.map(([id,ico,label])=>`<button type='button' data-season-view='${id}' class='${view===id?'on':''}' aria-pressed='${view===id}'><span>${ico}</span><b>${label}</b></button>`).join('')}</nav><div class='ss-feature'><div class='ss-feature-head'><span class='eyebrow'>${title}</span><small>${T('Tamamlanan sezon verileri','Completed season statistics')}</small></div>${featured}</div><aside class='ss-leaders'><div class='ss-leaders-head'><b>${view==='table'?T('LİG SIRALAMASI','STANDINGS'):T('SEZON LİDERLERİ','SEASON LEADERS')}</b><span>TOP ${view==='table'?'8':'7'}</span></div><div class='ss-list'>${right}</div>${teamBlock}</aside></div></section>`;
+      }
       let hero = null;
       if (allPicked.length > 0) {
         if (activeHeroIdx >= allPicked.length || activeHeroIdx < 0) activeHeroIdx = 0;
@@ -412,6 +437,8 @@ const Draft = (() => {
       activeHeroIdx = (activeHeroIdx + dir + allP.length) % allP.length;
       render();
     });
+    el.querySelectorAll('[data-season-view]').forEach(b => b.onclick = () => { S.seasonView = b.dataset.seasonView; S.seasonHero = 0; save(); renderStats(); });
+    el.querySelectorAll('[data-season-player]').forEach(b => b.onclick = () => { S.seasonHero = Number(b.dataset.seasonPlayer) || 0; save(); renderStats(); });
     el.querySelectorAll('[data-dock]').forEach(b => b.onclick = () => {
       const target = b.dataset.dock;
       if (target === 'reset') { S = fresh(S.mode); activeHeroIdx = 0; return render(); }
