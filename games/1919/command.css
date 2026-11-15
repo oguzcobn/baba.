@@ -1,0 +1,99 @@
+
+/* 1919 COMMAND EDITION — progressive, accessible interface */
+:root{--war-ink:#0b1413;--war-brass:#d9b978;--war-green:#203a30}
+#app{max-width:1740px}
+#app .top{position:sticky;top:0;z-index:12;backdrop-filter:blur(18px)}
+#app .hero{background:linear-gradient(96deg,#0e1718fa 5%,#0f2420c9 60%,#0e231e78),radial-gradient(ellipse at 90% 50%,#b68a4b88,transparent 55%),repeating-linear-gradient(130deg,#314536 0,#314536 2px,#192d25 2px,#192d25 6px);border-color:#ad9262}
+#app .hero h1{font-size:clamp(32px,6vw,84px);max-width:900px}
+#app .hero .eyebrow{font-size:12px}
+#app .panel{border-radius:9px}
+#app .layout{grid-template-columns:minmax(0,2.4fr) minmax(295px,.85fr);gap:15px}
+#app .layout>section>.panel:first-child{padding:15px}
+#app .mapwrap{min-height:420px;background:#263b36;border-radius:9px}
+#app .mapwrap svg{min-height:420px;max-height:660px}
+#app .province{transition:filter .12s}
+#app .province-label{font-size:13px;fill:#fff4d2;stroke:#16251f;stroke-width:3.5}
+#app .province.selected{stroke:#ffe69a;stroke-width:4}
+#app .statbar{position:sticky;top:76px;z-index:8;box-shadow:0 12px 30px #0007}
+#app .stat{border:0;background:transparent;border-right:1px solid #445747}
+#app .stat:last-child{border-right:0}
+#app .battle-layout{display:block}
+#app .battlefield{height:auto;aspect-ratio:16/9;max-height:calc(100vh - 180px);overflow:hidden;border:1px solid #947d53}
+#app .battlefield canvas{height:100%;aspect-ratio:auto;object-fit:fill}
+#app .battle-layout aside{display:none}
+#app .battle-layout>div:first-child{width:100%}
+#app .battle-guide{padding:10px 15px;margin:8px 0}
+#app .battle-guide p{font-size:12px}
+#app .battle-layout .notice{display:none}
+#app .battle-layout .actions{display:flex;align-items:center;justify-content:center;padding:8px;border:1px solid #8b815c;border-radius:9px;background:linear-gradient(#273a2e,#16251e)}
+#app .battle-layout .actions button{min-width:90px}
+#app .battle-layout .tactbar{margin:5px 0}
+#app .mission{margin:14px 0}
+#app button:focus-visible,#app [role=button]:focus-visible{outline:3px solid #e5ca84;outline-offset:2px}
+.command-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 12px}
+.command-top h2{font-size:clamp(24px,2.8vw,39px);margin:0}
+.command-top .sub{font-size:12px;color:#aebcae;letter-spacing:.08em}
+.command-flag{display:inline-flex;align-items:center;gap:9px;color:#e9d5aa;background:#304638;border:1px solid #697960;padding:7px 12px;border-radius:8px;font-size:12px}
+.war-region-box{border:1px solid #827850;border-radius:10px;padding:13px;background:linear-gradient(145deg,#394632,#1b2b23)}
+.war-region-box h3{margin:0;font:700 27px Georgia;color:#f3d69f}
+.war-region-box .ownership{font-size:12px;color:#c9cdb7}
+.war-region-box .numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+.war-region-box .numbers span{text-align:center;background:#0e1b17a6;padding:9px 4px;border:1px solid #53624b;border-radius:6px;font-size:11px}
+.war-region-box .numbers b{display:block;font-size:23px;color:#e9cb8b}
+.war-region-box .big-action{width:100%;background:linear-gradient(#e8cc91,#c2a05b);color:#18251f;font-weight:800;border:none;margin-bottom:7px;min-height:46px}
+.war-region-box .secondary-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.war-region-box .secondary-actions button{font-size:12px;padding:8px 3px}
+.war-region-box button:disabled{opacity:.3}
+.war-region-box .target-choice{margin:8px 0}
+.war-region-box .target-choice select{width:100%;padding:10px;background:#1c3028;color:#e8e0ca;border:1px solid #79836d;border-radius:7px}
+.war-region-box .hint{color:#c1cbb7;font-size:11px;margin:7px 0}
+.command-path{display:flex;flex-wrap:wrap;gap:8px;margin-top:7px}
+.command-path>span{border:1px solid #536650;padding:7px 11px;border-radius:7px;font-size:12px}
+.war-legend{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}
+.war-legend span{font-size:10px;padding:4px 9px;border:1px solid #748069;border-radius:16px;background:#23372d}
+.war-map-options{display:flex;gap:6px;flex-wrap:wrap}
+.war-map-options button{font-size:12px;padding:8px 12px}
+.war-intel{display:flex;gap:9px;align-items:center;justify-content:space-between;padding:12px;border:1px solid #54654f;border-radius:8px;background:#1c3029;margin:10px 0}
+.war-intel p{margin:0;font-size:12px}
+.war-intel strong{color:#efd399}
+.war-intel button{white-space:nowrap}
+.war-turn-button{border:0;background:#d9b978;color:#1b261d;font-weight:900;min-height:43px}
+.war-rail{border:1px solid #445a4c;border-radius:8px;margin-top:12px;padding:11px;background:#182821}
+.war-rail h3{font:700 16px Georgia;color:#f1d499}
+.war-rail p{font-size:12px;color:#bcc9b6}
+.war-view-tabs{display:flex;gap:4px;background:#14231c;border:1px solid #54614d;border-radius:9px;padding:5px}
+.war-view-tabs button{flex:1;padding:9px 5px;font-size:12px;border:0;background:transparent}
+.war-view-tabs button[aria-pressed=true]{background:#ad9160;color:#17241d;font-weight:800}
+#warGuide{position:relative;overflow:hidden;border:1px solid #8f7b55;border-left:5px solid #e9d190;border-radius:10px;padding:16px;background:#27372d}
+#warGuide>small{font-size:10px;letter-spacing:.22em;color:#e0be76;font-weight:800}
+#warGuide h3{font-family:Georgia;font-size:23px;color:#f5dfa9;margin:8px 0 4px}
+#warGuide p{font-size:13px;color:#e1e7d5;margin:0}
+#warGuide .guide-bottom{display:flex;gap:7px;flex-wrap:wrap;margin-top:12px}
+#warGuide .guide-bottom button{font-size:12px}
+.battle-cmd-hud{position:relative;z-index:5;margin-top:8px;background:#14241df5;border:1px solid #957c54;border-radius:10px;padding:10px}
+.battle-cmd-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.battle-cmd-head strong{font:700 16px Georgia;color:#f1d397}
+.battle-cmd-head small{font-size:11px}
+.battle-meter{height:9px;border-radius:9px;overflow:hidden;background:#954a3e;margin:7px 0}
+.battle-meter>div{height:100%;background:#83b98a;transition:width .3s}
+.battle-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.battle-card{border:1px solid #6a7661;background:linear-gradient(155deg,#354438,#1a2822);border-radius:6px;min-height:100px;display:flex;flex-direction:column;align-items:flex-start;padding:8px;gap:3px;cursor:pointer;color:#f3e5c5;text-align:left}
+.battle-card[aria-pressed=true]{border:2px solid #f0d59b;background:#5e6044}
+.battle-card i{font-size:24px;font-style:normal;line-height:1}
+.battle-card b{font-size:13px;line-height:1.1}
+.battle-card small{font-size:10px}
+.battle-card .health{height:4px;background:#1b231b;width:100%;overflow:hidden;border-radius:3px}
+.battle-card .health em{display:block;height:100%;background:#89c08c}
+.battle-card .health.warning em{background:#da995f}
+.battle-command-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin:10px 0 0}
+.battle-command-row button{font-size:11px;min-height:42px;padding:5px}
+.battle-command-row button.primary{font-weight:800}
+.battle-command-row button[aria-pressed=true]{border-color:#ffe2a7;background:#596344}
+.battle-mini-status{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:11px;color:#d6d4ba;margin:9px 0 0}
+.battle-mini-status strong{color:#e4bd75}
+.battle-minimap{width:118px;height:75px;background:#263e35;border:1px solid #bca677;border-radius:6px}
+.battle-shortcuts{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.battle-shortcuts button{font-size:11px}
+.war-help-toast{position:fixed;right:18px;bottom:18px;max-width:300px;z-index:20;background:#243b2edc;border:1px solid #c6a772;color:#f7eedb;padding:14px;border-radius:12px;box-shadow:0 8px 30px #0007}
+@media(max-width:900px){#app .layout{grid-template-columns:1fr}#app .mapwrap,#app .mapwrap svg{min-height:300px}#app .statbar{top:52px}#app .battlefield{max-height:70vh}#app .hero{min-height:240px}}
+@media(max-width:600px){#app .top{position:relative}#app .statbar{position:static}#app .battlefield{aspect-ratio:4/3;min-height:290px;max-height:none}.command-top{flex-direction:column;align-items:flex-start}.battle-card{min-height:87px;padding:6px}.battle-card b{font-size:11px}.battle-card small{font-size:9px}.battle-cmd-hud{padding:6px}.battle-command-row{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.battle-command-row button{font-size:10px;padding:4px 1px}.war-intel{flex-direction:column;align-items:stretch}.war-region-box .numbers b{font-size:18px}#app .mapwrap svg{min-height:260px}.war-guide{padding:11px}#app .hero{margin-top:5px}}
