@@ -402,9 +402,32 @@ body.dark-mode .lang-sw button.on{background:#fff;color:#111}
 .sc-you{font-size:.5em;font-weight:700;color:#7b1e3b}
 /* Draft: yedek ↔ ilk 11 değiştirme */
 .slot.full[data-slot],.bslot.full[data-b]{cursor:pointer}
-.slot.swap-src,.bslot.swap-src{outline:3px solid #ff4d00;outline-offset:2px;transform:translate(-50%,-50%) scale(1.06)}
+.slot.swap-src,.bslot.swap-src{outline:3px solid #ff4d00;outline-offset:2px}
+.slot.swap-src{transform:translate(-50%,-50%) scale(1.06)}
+.bslot.swap-src{transform:scale(1.02)}
 .bslot.swap-src{transform:scale(1.04)}
 .slot.swap-ok,.bslot.swap-ok{outline:3px solid #ceff00;outline-offset:2px;animation:swapPulse 1s ease-in-out infinite}
 @keyframes swapPulse{50%{outline-color:rgba(206,255,0,.35)}}
 .swap-help{width:100%;margin:6px 0 0}
 .dr-flash{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:150;background:#111;color:#fff;padding:12px 18px;border-radius:14px;font-weight:700;max-width:calc(100vw - 32px);text-align:center;animation:slotIn .3s ease}
+
+/* Draft: compact, touch-friendly squad building on narrow phones. */
+@media(max-width:520px){
+  .dr-hero .display{font-size:clamp(34px,10vw,54px);overflow-wrap:anywhere}
+  .dr-grid,.dr-left,.dr-right,.draw-box,.pick-panel{min-width:0}
+  .dr-meta{gap:6px}.dr-meta .chip{max-width:100%;font-size:12px}
+  .club-head{flex-wrap:wrap}.club-head h3{font-size:clamp(20px,6vw,28px);overflow-wrap:anywhere}
+  .plist{max-height:min(48dvh,380px);overscroll-behavior:contain}
+  .pl{min-width:0;gap:8px;min-height:52px}.pl b{font-size:14px;min-width:0;overflow-wrap:anywhere}
+  .pitch{border-radius:18px;min-width:0}
+  .slot{width:clamp(44px,18%,72px);min-height:42px;border-radius:8px;padding:3px;font-size:11px}
+  .slot b{font-size:10px;overflow-wrap:anywhere;max-width:100%}
+  .slot small{font-size:9px;line-height:1.1}
+  .bench{flex-wrap:wrap}.bench .eyebrow{width:100%}.bslot{min-width:0}
+  .coaches{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .seg2{width:100%;border-radius:16px}.seg2 button{flex:1 1 auto;padding:12px 8px;min-height:44px}
+  .dr-actions button{min-height:44px}
+  .db-showcase .db-hero-name{font-size:clamp(26px,8vw,42px);overflow-wrap:anywhere}
+  .db-showcase .db-stage{min-width:0;grid-template-columns:minmax(0,1fr)}
+  .db-showcase .db-player-pills{flex-wrap:wrap;justify-content:center}
+}
