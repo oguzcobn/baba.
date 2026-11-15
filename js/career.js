@@ -534,7 +534,21 @@ const Career = (() => {
     else if (pend && pend.kind === 'event') card = `<article class="cr-card big event"><p class="eyebrow">${T('Karar zamanı', 'Decision time')}</p><h2>${esc(pend.t)}</h2><p>${esc(pend.d)}</p><div class="cr-row">${pend.ch.map(([l, a]) => `<button class="pill ${a.endsWith('ok') || a === 'basin1' || a === 'kavgaceza' ? '' : 'ghost'}" data-ev="${a}">${esc(l)}</button>`).join('')}</div></article>`;
     const opAD = fx ? oppAD(fx.opp) : null, mAD = myAD(S.xi);
     const last = S.matchLog;
-    return `<div class="cr-grid2">
+    const clubColor = /^#[0-9a-fA-F]{3,8}$/.test(me().c1 || '') ? me().c1 : '#59e13b';
+    const featured = S.squad.filter(p => Number.isFinite(p.r)).slice().sort((a,b) => b.r - a.r).slice(0,3);
+    const myForm = (S.table[me().id] && Array.isArray(S.table[me().id].form)) ? S.table[me().id].form.slice(-5) : [];
+    const showcase = `<section class="cr-team-spotlight" style="--team-accent:${clubColor}" aria-label="${T('Kulüp vitrini','Club showcase')}">
+      <div class="cr-spotlight-copy">
+        <p class="cr-spotlight-kicker">BABA. / ${T('KULÜP MERKEZİ','CLUB CENTRE')} · ${S.year}/${String(S.year+1).slice(-2)}</p>
+        <div class="cr-spotlight-identity">${logoOf(me(),76)}<div><small>${T('TAKIMININ HİKÂYESİNİ YAZ','WRITE YOUR CLUB STORY')}</small><h2>${esc(me().name)}</h2><p>${T('Her hafta yeni bir karar. Her maç yeni bir mücadele.','A new decision each week. A new challenge every match.')}</p></div></div>
+        <div class="cr-spotlight-metrics"><div><span>${T('LİG SIRASI','LEAGUE RANK')}</span><strong>#${rank}</strong></div><div><span>${T('TAKIM GÜCÜ','TEAM RATING')}</span><strong>${rating()}</strong></div><div><span>${T('SEZON','SEASON')}</span><strong>${S.season}</strong></div></div>
+        <div class="cr-spotlight-actions"><button type="button" class="pill" data-tab="squad">${T('Kadroyu yönet','Manage squad')} →</button><button type="button" class="pill ghost" data-tab="league">${T('Puan durumu','Standings')}</button></div>
+      </div>
+      <div class="cr-spotlight-side"><p class="cr-spotlight-kicker">${T('ÖNE ÇIKAN OYUNCULAR','KEY PLAYERS')}</p>
+        <div class="cr-spotlight-players">${featured.map((p,i)=>`<div class="cr-featured-player"><div class="cr-featured-shirt" aria-hidden="true"><span>${i+7}</span></div><div class="cr-featured-info"><b>${esc(p.name)}</b><small>${PZ(p.pos)} · ${p.age} ${T('yaş','yrs')}</small></div><strong>${p.r}</strong></div>`).join('')}</div>
+        <div class="cr-spotlight-form"><span>${T('SON MAÇLAR','RECENT FORM')}</span><div>${myForm.length?myForm.map(x=>`<i class="${x}">${x}</i>`).join(''):'<small>—</small>'}</div></div>
+      </div></section>`;
+    return showcase + `<div class="cr-grid2">
       <div>${card}
         ${fx && !pend && S.sponsor ? `<article class="cr-card next"><p class="eyebrow">${T('Sıradaki maç', 'Next match')} · ${T('Hafta', 'Week')} ${S.week + 1} · ${fx.home ? T('İç saha', 'Home') : T('Deplasman', 'Away')}</p>
           <div class="cr-vs"><div>${logoOf(me(), 52)}<b>${esc(me().short)}</b><small>${Math.round((mAD.att + mAD.def) / 2)}</small></div><span>vs</span><div>${logoOf(fx.opp, 52)}<b>${esc(fx.opp.short || fx.opp.name)}</b><small>${Math.round((opAD.att + opAD.def) / 2)}</small></div></div>
