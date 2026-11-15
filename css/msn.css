@@ -320,7 +320,7 @@ body:has(.ms-dock.open) .ms-toasts{right:auto;left:16px}
   .ms-dock.open{z-index:10050!important;position:fixed;inset:0 0 0 0!important;display:flex;align-items:stretch;justify-content:flex-end;pointer-events:auto}
   .ms-dock.open .ms-panel{
     flex:1;min-height:0;max-height:none!important;width:100%;
-    height:100dvh;max-height:100dvh!important;box-sizing:border-box;overflow:hidden;
+    height:100%;max-height:100%!important;box-sizing:border-box;overflow:hidden;
     border-radius:0;display:flex;flex-direction:column;
   }
   .ms-dock.open .ms-mini,.ms-dock.open .ms-app.compact,.ms-dock.open .ms-app.compact .ms-chat{
@@ -337,4 +337,7 @@ body:has(.ms-dock.open) .ms-toasts{right:auto;left:16px}
     background:#fff;
   }
   .ms-dock.open .ms-app.compact .ms-in{font-size:16px;min-height:44px}
+  .ms-dock.open .ms-panel,.ms-dock.open .ms-mini,.ms-dock.open .ms-app.compact{flex:1 1 auto;min-height:0}
+  .ms-dock.open .ms-app.compact .ms-comp{margin-top:auto}
+  .ms-dock.open{height:100dvh;max-height:100dvh;overflow:hidden}
 }
