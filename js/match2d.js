@@ -120,7 +120,7 @@ const Match2D = (() => {
     const fx = { bubbles: [], cards: [], shakeUntil: 0, aim: null };
     // Playwright testleri için isteğe bağlı tanılama (normal oyuncularda kapalı)
     const diagnostics = window.__BABA_MATCH_TEST__ === true ? { frames: [], goals: [], passes: [], shots: [], runs: [], states: [], fouls: [], stadium: { margin: STAND, width: cv.width, height: cv.height }, done: false } : null;
-    if (diagnostics) { window.__BABA_MATCH_DIAGNOSTICS__=diagnostics;diagnostics.targetFPS=targetFPS;diagnostics.importantHome=bigHomeMatch;diagnostics.chants=bigHomeMatch?chants.slice():[]; }
+    if (diagnostics) { window.__BABA_MATCH_DIAGNOSTICS__=diagnostics;diagnostics.targetFPS=targetFPS;diagnostics.renderFrames=0;diagnostics.stadiumDraws=0;diagnostics.importantHome=bigHomeMatch;diagnostics.chants=bigHomeMatch?chants.slice():[]; }
     let lastSample = 0;
 
     const toField = (side, pt) => dir[side] > 0 ? { x: pt.x, y: pt.y } : { x: W - pt.x, y: H - pt.y }; // kendi-hücum çerçevesi ↔ saha (kendinin tersi)
@@ -709,6 +709,7 @@ const Match2D = (() => {
       if (!closed && (LIVE || ci < clips.length)) raf = requestAnimationFrame(tick);
     }
     function draw() {
+      if (diagnostics) diagnostics.renderFrames++;
       const s = SC;
       const now = performance.now();
       if (now-stadiumFrameAt>=95) {
@@ -716,6 +717,7 @@ const Match2D = (() => {
         if(vert)ctx.setTransform(0,s,-s,0,(H+STAND)*s,STAND*s);
         else ctx.setTransform(s,0,0,s,STAND*s,STAND*s);
         drawStadium(now);stadiumFrameAt=now;stadiumPaints++;
+        if (diagnostics) diagnostics.stadiumDraws=stadiumPaints;
       }
       ctx=screenCtx;ctx.setTransform(1,0,0,1,0,0);
       ctx.drawImage(stadiumBuffer,0,0);
