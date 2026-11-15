@@ -318,7 +318,7 @@ const Match2D = (() => {
         L.push(...getTo(Wm, { x: 76 + rnd(6), y: flank }, T(`Top kanatta ${tn(Wm)}'de`, `It's out wide to ${tn(Wm)}`)));
         const runs = [{ p: S, at: { x: 92 + rnd(3), y: set === 'cross' ? (flank < 34 ? 40 : 28) : 34 + (Math.random() - .5) * 6 }, sp: runSp(S) }];
         if (fb) runs.push({ p: fb, at: { x: 95, y: flank < 34 ? 3 : 65 }, sp: runSp(fb) });
-        L.push({ k: 'hold', d: .45, runs, txt: fb ? T(`${tn(fb)} bindirmeye çıkıyor!`, `${tn(fb)} overlaps!`) : '' });
+        L.push({ k: 'hold', d: 3.4, runs, txt: fb ? T(`${tn(fb)} bindirmeye çıkıyor!`, `${tn(fb)} overlaps!`) : '' });
         let crosser = Wm;
         if (fb && !has(Wm, 'SPEED_DRIBBLER') && Math.random() < .6) { L.push(passTo(fb, { x: 95, y: flank < 34 ? 3 : 65 }, { through: true, txt: T(`${tn(Wm)} bindiren ${tn(fb)}'i gördü`, `${tn(Wm)} releases the overlapping ${tn(fb)}`) })); crosser = fb; }
         else L.push({ k: 'carry', to: Wm, at: { x: 96, y: flank < 34 ? 4 : 64 }, txt: T(`${tn(Wm)} çizgiye iniyor`, `${tn(Wm)} gets to the byline`) });
@@ -355,7 +355,7 @@ const Match2D = (() => {
       if (set === 'corner') {
         const sh = wpick(live(att).filter(p => p.pos === 'FV' || p.pos === 'KN' || p.pos === 'OS'), p => SCW[p.pos] || 1);
         L.push(...getTo(sh, { x: 84, y: 30 + rnd(8) }, T(`${tn(sh)} ceza sahası önünde`, `${tn(sh)} on the edge of the box`)));
-        L.push({ k: 'shot', out: 'corner', gy: Math.random() < .5 ? GY0 + 1 : GY1 - 1, txt: T(`${tn(sh)}'in şutu savunmadan sekti…`, `${tn(sh)}'s shot is deflected…`) });
+        L.push({ k: 'shot', shooter: sh, out: 'corner', gy: Math.random() < .5 ? GY0 + 1 : GY1 - 1, txt: T(`${tn(sh)}'in şutu savunmadan sekti…`, `${tn(sh)}'s shot is deflected…`) });
         return L;
       }
       if (set === 'fk' || set === 'pen' || set === 'red') {
@@ -488,7 +488,7 @@ const Match2D = (() => {
       if (beat.k === 'aim') { fx.aim = { from: { x: ball.x, y: ball.y }, to: AF(beat.at) }; }
       if (beat.k === 'lose') { const d = beat.by; if (d) { d.run = null; d.tx = ball.x; d.ty = ball.y; d.sp = 8; } }
       if (beat.k === 'shot') {
-        const shooter = plan && plan.shooter;
+        const shooter = beat.shooter || (plan && plan.shooter);
         if (shooter && state === 'PLAYING' && !beat.pen && !beat.fk) {
           const at = AF(shooter), ballAt = AF(ball);
           const maxDistance = shooter.pos === 'ST' || shooter.pos === 'BK' ? 18 : shooter.pos === 'OS' ? 28 : 29;
@@ -537,7 +537,7 @@ const Match2D = (() => {
       if (beat.k === 'result') showResult(beat);
     }
     function startShot(b) {
-      const S = plan.shooter, kp = live(def()).find(p => p.pos === 'KL'), out = b.out;
+      const S = b.shooter || plan.shooter, kp = live(def()).find(p => p.pos === 'KL'), out = b.out;
       const gx = dir[att] > 0 ? (out === 'goal' ? W + 1.2 : out === 'miss' ? W + .5 : W - .4) : (out === 'goal' ? -1.2 : out === 'miss' ? -.5 : .4);
       let gy = dir[att] > 0 ? b.gy : H - b.gy;
       if (b.far && holder) { const fy = AF(ball).y < 34 ? GY1 - .7 : GY0 + .7; if (out === 'goal' || out === 'save') gy = dir[att] > 0 ? fy : H - fy; }
