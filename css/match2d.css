@@ -59,3 +59,29 @@ body.m2d-open{overflow:hidden}
 .m2d-embed .m2d-top,.m2d-embed .m2d-analytics,.m2d-embed .m2d-com,.m2d-embed .m2d-bar{display:none!important}
 .m2d-embed .m2d-pitch{height:100%}
 .m2d-embed .m2d-flash b{font-size:clamp(30px,7vw,64px)}
+
+
+/* BABA. Replay Studio — original football-manager match UI, not copied assets */
+.m2d-ov:not(.m2d-embed){background:rgba(4,14,23,.94);backdrop-filter:blur(12px)}
+.m2d-ov:not(.m2d-embed) .m2d{width:min(1600px,100%);color:#effaff}
+.m2d-ov:not(.m2d-embed) .m2d-top{
+ background:linear-gradient(110deg,#102b41,#0c1b2d 62%,#143d44);
+ border:1px solid #356076;border-radius:18px;padding:clamp(10px,1.5vw,20px);
+ box-shadow:0 14px 36px #0004;min-height:65px;
+}
+.m2d-ov:not(.m2d-embed) .m2d-sc{color:#fff;font-size:clamp(27px,3vw,47px);font-weight:950;letter-spacing:-.06em}
+.m2d-ov:not(.m2d-embed) .m2d-min{background:#a3efb8;color:#083023;font-weight:900;border-radius:10px}
+.m2d-ov:not(.m2d-embed) .m2d-pitch{background:#0e2633;border:1px solid #31546a;border-radius:18px;padding:8px;box-shadow:inset 0 0 20px #061421}
+.m2d-ov:not(.m2d-embed) .m2d-pitch canvas{box-shadow:0 14px 32px #0006}
+.m2d-ov:not(.m2d-embed) .m2d-com{background:#142e40;color:#ecf8fb;border:1px solid #3a6173;border-left:5px solid #91e6a6}
+.m2d-ov:not(.m2d-embed) .m2d-com p{color:#ecf8fb}
+.m2d-ov:not(.m2d-embed) .m2d-com p.goal{color:#97f3af}
+.m2d-ov:not(.m2d-embed) .m2d-com p.miss{color:#ffd8a1}
+.m2d-ov:not(.m2d-embed) .m2d-cm{color:#abf0bb}
+.m2d-ov:not(.m2d-embed) .m2d-analytics{background:#102638;border:1px solid #315568;border-radius:13px;padding:10px;color:#dbeef6}
+.m2d-ov:not(.m2d-embed) .m2d-analytics strong{color:#fff}
+.m2d-ov:not(.m2d-embed) .m2d-bar{background:#102638;border:1px solid #315568;border-radius:14px;padding:8px}
+.m2d-ov:not(.m2d-embed) .m2d-bar button{border:1px solid #416a7b;background:#19394e;color:#eaf9ff;min-height:40px}
+.m2d-ov:not(.m2d-embed) .m2d-bar button.pr{background:#9deeb1;color:#0c291b;border-color:#9deeb1}
+.m2d-ov:not(.m2d-embed) .m2d-bar button:focus-visible{outline:3px solid #a9f4bb;outline-offset:2px}
+@media(max-width:560px){.m2d-ov:not(.m2d-embed) .m2d-top{min-height:55px}.m2d-ov:not(.m2d-embed) .m2d-pitch{padding:4px}.m2d-ov:not(.m2d-embed) .m2d-com{font-size:13px}.m2d-ov:not(.m2d-embed) .m2d-bar{padding:5px}}
