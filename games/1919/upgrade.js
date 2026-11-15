@@ -113,7 +113,7 @@ const cv=document.getElementById("field");if(!cv)return;
 terrain=null;terrainType="";battleSpeed=1;
 const layout=app.querySelector(".battle-layout");
 if(layout){layout.insertAdjacentHTML("beforebegin",'<div class="battle-guide"><div><b>🎖 CEPHE EMRİ: Birliklerini yönet</b><p>1. Soldaki dost birliklerini seç. 2. Savaş alanında hedef konuma tıkla. 3. Mevzi tut veya hücum emrini kullan. Düşmana yeterince yaklaşınca ateş başlar.</p></div><button id="battleHelp">? Yardım</button></div>');
-layout.querySelector("#battleHelp")?.addEventListener("click",showHelp);
+document.getElementById("battleHelp")?.addEventListener("click",showHelp);
 }
 const actions=app.querySelector(".battle-layout .actions");if(actions){actions.insertAdjacentHTML("afterend",'<div class="tactbar"><button data-speed="1" class="primary">▶ 1× Normal</button><button data-speed="2">▶▶ 2× Hızlı</button><button data-speed="3">▶▶▶ 3× Çok Hızlı</button></div><p class="info-hotkey">Dokunarak oynama desteklenir · <b>1–4</b> birlik seçer · <b>Boşluk</b> duraklatır · Sağ tıkla emir ver</p>');app.querySelectorAll("[data-speed]").forEach(btn=>btn.onclick=()=>{battleSpeed=+btn.dataset.speed;app.querySelectorAll("[data-speed]").forEach(x=>x.classList.toggle("primary",x===btn))})}
 cv.oncontextmenu=ev=>ev.preventDefault();
