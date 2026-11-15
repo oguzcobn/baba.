@@ -182,10 +182,20 @@ const App = (() => {
 
   /* ==================== 1919 — İSTİKLAL HARBİ ==================== */
   function istiklal1919() {
-    const src = 'games/1919/index.html';
+    const src = 'games/1919/index.html?v=83';
     const b = shell('1919: İstiklal Harbi', `<div class="vd-bar"><p class="bb-tip">${T('I. Dünya Savaşı ve Millî Mücadele temalı strateji: sefer haritası, altı tarihsel muharebe ve gerçek zamanlı birlik emirleri.', 'A historical strategy game: campaign map, six battles and real-time unit orders.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${src}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div><div class="vd-frame"><iframe src="${src}" title="1919: İstiklal Harbi" allow="fullscreen" allowfullscreen loading="eager"></iframe></div><p class="bb-tip">${T('Seferde şehir seç; birlik üretip komşu bölgeye ilerle. Muharebede birlik seçip haritada hedefe dokun. Telefon ve bilgisayarda oynanabilir.', 'Select provinces and move armies. In battle, select a unit and tap a destination. Works on phones and desktops.')}</p>`, T('Tarihî strateji · 1914–1922','Historical strategy · 1914–1922'));
     b.closest('.game-page').classList.add('vadi-page');
     const frame = b.querySelector('.vd-frame');
+    const iframe = frame.querySelector('iframe');
+    iframe.addEventListener('load', () => {
+      try {
+        const d = iframe.contentDocument;
+        if (d && !d.querySelector('#app .top')) {
+          const error = d.querySelector('#boot-error');
+          if (error) error.textContent = T('Oyun başlatılamadı. Sayfayı yenile.', 'Game failed to start. Reload the page.');
+        }
+      } catch (_) {}
+    });
     b.querySelector('[data-a=full]').onclick = async () => {
       click();
       try { await frame.requestFullscreen(); }
