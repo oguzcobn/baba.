@@ -224,6 +224,25 @@ const Match2D = (() => {
     }
 
     /* --------- karar mekanizması: decidePlayerAction() --------- */
+    /* The engine must assess pass corridors and receiver arrival times together.
+       FIFA/FM-inspired principles only — no proprietary engine code or assets. */
+    const passQuality = (from, target) => {
+      if (!from || !target || target === from || target.off || target.leaving) return -1e6;
+      const distance = dist(from, target), forward = (target.x - from.x) * dir[att];
+      if (distance < 2 || distance > 50) return -1e5;
+      const rivals = live(def());
+      const closest = rivals.reduce((v, p) => Math.min(v, dist(p, target)), 99);
+      const dx = target.x - from.x, dy = target.y - from.y, d2 = dx * dx + dy * dy || 1;
+      const risk = rivals.reduce((risk, p) => {
+        const u = clamp(((p.x - from.x) * dx + (p.y - from.y) * dy) / d2, 0, 1);
+        const gap = Math.hypot(p.x - (from.x + u * dx), p.y - (from.y + u * dy));
+        return risk + (u > .08 && u < .92 && gap < 3 ? (3 - gap) * 4.5 : 0);
+      }, 0);
+      return Math.min(15, forward) * .22 + Math.min(8, closest) * .5 - distance * .08
+        - (distance > 30 ? (distance - 30) * .42 : 0) - risk;
+    };
+    const choosePass = (from, choices) =>
+      choices.filter(p => p && p !== from && !p.off).sort((a, b) => passQuality(from, b) - passQuality(from, a))[0] || null;
     const passTo = (to, at, o2) => Object.assign({ k: 'pass', to, at }, o2 || {});
     const towards = (p, at, m) => { const a = AF(p), dx = at.x - a.x, dy = at.y - a.y, L = Math.hypot(dx, dy) || 1, k = Math.min(1, m / L); return { x: a.x + dx * k, y: a.y + dy * k }; };
     function decidePlayerAction() {
@@ -237,8 +256,8 @@ const Match2D = (() => {
         if (longOk) { const tgt = wpick(mates.filter(p => p.pos === 'FV' || p.pos === 'KN'), p => has(p, 'AERIAL_THREAT') ? 3 : 1); if (tgt) return [passTo(tgt, { x: clamp(AF(tgt).x + 6, 55, 84), y: AF(tgt).y }, { lob: true, txt: T(`${tn(holder)} uzun diyagonal topu gönderdi`, `${tn(holder)} sends a long diagonal`) })]; }
         if (pressed) { const back = mates.filter(p => (p.pos === 'KL' || p.pos === 'ST') && laneOpen(holder, p)).sort((x, y) => dist(x, holder) - dist(y, holder))[0]; if (back) return [passTo(back, AF(back), { txt: T(`${tn(holder)} baskı altında, geri döndü`, `${tn(holder)} under pressure, plays it back`) })]; }
         const opts = mates.filter(p => (p.pos === 'OS' || p.pos === 'BK' || p.pos === 'ST') && laneOpen(holder, p) && AF(p).x > a.x - 8);
-        const t = wpick(opts.length ? opts : mates.filter(p => p.pos !== 'KL'), p => ({ OS: 3, BK: 2, ST: 1 })[p.pos] || .5);
-        return [passTo(t, { x: clamp(AF(t).x + 3, 6, 60), y: AF(t).y }, { txt: T(`${tn(holder)} → ${tn(t)}`, `${tn(holder)} finds ${tn(t)}`) })];
+        const t = choosePass(holder, opts.length ? opts : mates.filter(p => p.pos !== 'KL'));
+        return t ? [passTo(t, AF(t), { txt: T(`${tn(holder)} → ${tn(t)}`, `${tn(holder)} finds ${tn(t)}`) })] : [{ k: 'hold', d: .4 }];
       }
       // 2. BÖLGE — oyunun yönünü değiştirme, ver-kaç, ters top
       const crowd = live(def()).filter(d => dist(d, holder) < 9).length;
@@ -255,8 +274,8 @@ const Match2D = (() => {
       }
       if (!pressed && carryDist < 8 && Math.random() < .35) return [{ k: 'carry', to: holder, at: towards(holder, { x: a.x + 8, y: a.y }, 7), txt: T(`${tn(holder)} topu taşıyor`, `${tn(holder)} drives forward`) }];
       const fwd = mates.filter(p => p.pos !== 'KL' && AF(p).x > a.x - 2 && laneOpen(holder, p));
-      const t = wpick(fwd.length ? fwd : mates.filter(p => p.pos !== 'KL'), p => (AF(p).x - a.x + 12) * (p === plan.assister ? 1.6 : 1));
-      return [passTo(t, { x: clamp(AF(t).x + 4, 30, 82), y: AF(t).y }, { txt: T(`${tn(holder)} → ${tn(t)}`, `${tn(holder)} finds ${tn(t)}`) })];
+      const t = choosePass(holder, fwd.length ? fwd : mates.filter(p => p.pos !== 'KL'));
+      return t ? [passTo(t, AF(t), { txt: T(`${tn(holder)} → ${tn(t)}`, `${tn(holder)} finds ${tn(t)}`) })] : [{ k: 'hold', d: .4 }];
     }
 
     /* --------- 3. BÖLGE — hücum setleri (evaluateAttackOptions) --------- */
@@ -394,18 +413,25 @@ const Match2D = (() => {
       if (beat.k === 'hold' && holder) supportRuns();
       if (beat.k === 'pass') {
         const r = beat.to; if (!r || r.off) { beat.k = 'hold'; beat.d = .3; return; }
-        let S = beat.at ? AF(beat.at) : { x: r.x, y: r.y };
-        if (beat.follow) S = { x: r.run ? r.run.x : r.x, y: r.run ? r.run.y : r.y }; // koşu yapan oyuncunun varacağı nokta
-        if (beat.cross) S = { x: S.x, y: S.y };
+        let target = beat.at ? AF(beat.at) : { x: r.x, y: r.y };
+        if (beat.follow && r.run) target = { x: r.run.x, y: r.run.y };
         beat.rFrom = { x: r.x, y: r.y };
-        const v = beat.lob ? 17 : beat.through ? 18 : 16, sp = runSp(r);
-        let d, end;
-        if (beat.through || beat.follow) { d = Math.max(dist(r, S) / sp, dist(ball, S) / 24, .5); end = S; }
-        else { d = clamp(dist(ball, S) / v, .45, 1.6); for (let it = 0; it < 2; it++) { const L = dist(r, S) || 1, m = Math.min(L, sp * d); end = { x: r.x + (S.x - r.x) / L * m, y: r.y + (S.y - r.y) / L * m }; d = clamp(dist(ball, end) / v, .45, 1.7); } }
-        beat.d = Math.min(d, 3.2); beat.rTo = end; beat.from = { x: ball.x, y: ball.y }; beat.dest = { x: end.x + dir[att] * (beat.cross ? .2 : .9), y: end.y };
-        if (beat.curve) { const mx = (beat.from.x + beat.dest.x) / 2, my = (beat.from.y + beat.dest.y) / 2; beat.ctrl = { x: mx - dir[att] * 3, y: my + (beat.dest.y > beat.from.y ? -6 : 6) }; }
+        const sp = Math.min(9, runSp(r)), flight = beat.lob ? 20 : beat.through ? 22 : 25;
+        const lead = beat.through || beat.follow ? 18 : beat.cross ? 8 : 1.5;
+        const intended = dist(r, target) || 1;
+        const wanted = { x: r.x + (target.x - r.x) / intended * Math.min(lead, intended),
+          y: r.y + (target.y - r.y) / intended * Math.min(lead, intended) };
+        // A through ball is a genuine lead pass, never a teleport to an arbitrary point.
+        let duration = clamp(Math.max(dist(ball, wanted) / flight, dist(r, wanted) / sp, .48), .48, 3.4);
+        const reachable = Math.min(dist(r, wanted), sp * Math.max(0, duration - .1));
+        const end = { x: clamp(r.x + (wanted.x - r.x) / (dist(r, wanted) || 1) * reachable, 1, W - 1),
+          y: clamp(r.y + (wanted.y - r.y) / (dist(r, wanted) || 1) * reachable, 1, H - 1) };
+        duration = clamp(Math.max(dist(ball, end) / flight, dist(r, end) / sp, .48), .48, 3.4);
+        beat.d = duration; beat.rTo = end; beat.from = { x: ball.x, y: ball.y };
+        beat.dest = { x: end.x, y: end.y };
+        if (beat.curve) { const mx = (beat.from.x + beat.dest.x) / 2, my = (beat.from.y + beat.dest.y) / 2; beat.ctrl = { x: mx - dir[att] * 2, y: my + (beat.dest.y > beat.from.y ? -3 : 3) }; }
         r.run = null; r.tx = end.x; r.ty = end.y; holder = null; carryDist = 0;
-        if (diagnostics) diagnostics.passes.push({ duration: beat.d, distance: dist(beat.from, beat.dest), start: performance.now(), end: null, type: beat.through ? 'through' : beat.lob ? 'lob' : 'ground' });
+        if (diagnostics) diagnostics.passes.push({ receiver: r.name, duration: beat.d, distance: dist(beat.from, beat.dest), start: performance.now(), end: null, type: beat.through ? 'through' : beat.lob ? 'lob' : 'ground', receptionGap: null });
       }
       if (beat.k === 'carry') {
         const r = beat.to, f = AF(beat.at), L = dist(r, f), m = Math.min(L, 12); // kesintisiz top sürme en çok 12 m (solo koşu yok)
@@ -478,7 +504,15 @@ const Match2D = (() => {
     }
     function showFlash(big, small, col) { const f = q('.m2d-flash'); f.innerHTML = `<b style="--c:${col}">${esc(big)}</b><span>${esc(small)}</span>`; f.hidden = false; }
     function endBeat(b) {
-      if (b.k === 'pass' || b.k === 'carry') { holder = b.to; if (diagnostics && b.k === 'pass') { const last = diagnostics.passes[diagnostics.passes.length - 1]; if (last) last.end = performance.now(); } }
+      if (b.k === 'pass' || b.k === 'carry') {
+        holder = b.to;
+        if (b.k === 'pass') {
+          // Catch the ball at the receiver's feet, not behind them.
+          const gap = dist(holder, ball);
+          if (diagnostics) { const entry = diagnostics.passes[diagnostics.passes.length - 1]; if (entry) { entry.end = performance.now(); entry.receptionGap = gap; } }
+          ball.x = holder.x; ball.y = holder.y; ball.z = 0;
+        }
+      }
       if (b.k === 'foul') { const red = b.card === 'R'; if (b.card) beats.unshift({ k: 'card', p: b.fouler, red, dogso: b.dogso, d: 1.5 }); beats.splice(b.card ? 1 : 0, 0, { k: 'call', fn: () => { if (red && b.fouler) startLeaving(b.fouler); const v = AF(b.victim); setPiece(b.next, { x: clamp(v.x, 70, 92), y: clamp(v.y, 10, 58) }, plan.out); plan.stage = 'over'; return []; } }); }
       if (b.k === 'shot') { if (b.out === 'corner') { beats = [{ k: 'hold', d: .6, txt: T('Kornere çıktı.', 'Out for a corner.') }, { k: 'call', fn: () => { setPiece('CORNER', null, plan.out); plan.stage = 'over'; return []; } }]; } else beats = [{ k: 'result', d: b.out === 'goal' ? 2.4 : 1.6, out: b.out, header: b.header, curve: b.curve, fk: b.fk, pen: b.pen }]; plan.stage = 'over'; }
       if (b.k === 'card') setState(plan.set === 'pen' ? 'PENALTY' : state);
@@ -516,7 +550,10 @@ const Match2D = (() => {
       if (!beat) return;
       const k = clamp(bt / beat.d, 0, 1);
       if (beat.k === 'pass') {
-        const r = beat.to; r.x = r.tx = lerp(beat.rFrom.x, beat.rTo.x, k); r.y = r.ty = lerp(beat.rFrom.y, beat.rTo.y, k);
+        const r = beat.to; const dx = beat.rTo.x - r.x, dy = beat.rTo.y - r.y;
+        const rem = Math.hypot(dx, dy), step = Math.min(rem, Math.min(9, runSp(r)) * dt);
+        if (rem > .0001) { r.x += dx / rem * step; r.y += dy / rem * step; }
+        r.tx = beat.rTo.x; r.ty = beat.rTo.y;
         // çim sürtünmesi: yerden pas yavaşlayarak gider; havadan top parabol çizer
         const e = beat.lob ? k : 1 - Math.pow(1 - k, 1.7), p = beat.ctrl ? bez(beat.from, beat.ctrl, beat.dest, e) : { x: lerp(beat.from.x, beat.dest.x, e), y: lerp(beat.from.y, beat.dest.y, e) };
         ball.x = p.x; ball.y = p.y; ball.z = beat.lob ? Math.sin(k * Math.PI) * (beat.cross ? 4.5 : 5.5) : 0;
