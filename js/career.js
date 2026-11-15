@@ -542,7 +542,7 @@ const Career = (() => {
         <p class="cr-spotlight-kicker">BABA. / ${T('KULÜP MERKEZİ','CLUB CENTRE')} · ${S.year}/${String(S.year+1).slice(-2)}</p>
         <div class="cr-spotlight-identity">${logoOf(me(),76)}<div><small>${T('TAKIMININ HİKÂYESİNİ YAZ','WRITE YOUR CLUB STORY')}</small><h2>${esc(me().name)}</h2><p>${T('Her hafta yeni bir karar. Her maç yeni bir mücadele.','A new decision each week. A new challenge every match.')}</p></div></div>
         <div class="cr-spotlight-metrics"><div><span>${T('LİG SIRASI','LEAGUE RANK')}</span><strong>#${rank}</strong></div><div><span>${T('TAKIM GÜCÜ','TEAM RATING')}</span><strong>${rating()}</strong></div><div><span>${T('SEZON','SEASON')}</span><strong>${S.season}</strong></div></div>
-        <div class="cr-spotlight-actions"><button type="button" class="pill" data-tab="squad">${T('Kadroyu yönet','Manage squad')} →</button><button type="button" class="pill ghost" data-tab="league">${T('Puan durumu','Standings')}</button></div>
+        <div class="cr-spotlight-actions"><button type="button" class="pill" data-spotlight-tab="squad">${T('Kadroyu yönet','Manage squad')} →</button><button type="button" class="pill ghost" data-spotlight-tab="league">${T('Puan durumu','Standings')}</button></div>
       </div>
       <div class="cr-spotlight-side"><p class="cr-spotlight-kicker">${T('ÖNE ÇIKAN OYUNCULAR','KEY PLAYERS')}</p>
         <div class="cr-spotlight-players">${featured.map((p,i)=>`<div class="cr-featured-player"><div class="cr-featured-shirt" aria-hidden="true"><span>${i+7}</span></div><div class="cr-featured-info"><b>${esc(p.name)}</b><small>${PZ(p.pos)} · ${p.age} ${T('yaş','yrs')}</small></div><strong>${p.r}</strong></div>`).join('')}</div>
@@ -621,6 +621,7 @@ const Career = (() => {
   function bind() {
     const $ = s => host.querySelectorAll(s);
     $('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; selSlot = null; render(); });
+    $('[data-spotlight-tab]').forEach(b => b.onclick = () => { tab = b.dataset.spotlightTab; selSlot = null; render(); });
     $('[data-a]').forEach(b => b.onclick = () => {
       const a = b.dataset.a;
       if (a === 'live') { if (S.xi.filter(Boolean).length < 11) return toast(T('İlk 11 eksik', 'Your XI is incomplete')); liveMatch(); }
