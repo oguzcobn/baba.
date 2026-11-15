@@ -171,3 +171,70 @@ body.dark-mode .mode-switch{background:#0d111c;border-color:#1a2033}body.dark-mo
 .cr-pitch2d[hidden]{display:none}
 .cr-live .pill.ghost.on{background:rgba(255,255,255,.16)}
 @media (max-width:520px){.cr-pitch2d{height:clamp(260px,46vh,520px)}.cr-live .cr-feed{min-height:90px;max-height:24vh}.cr-live-bar .pill{padding:9px 12px;font-size:13px}}
+
+
+/* Full-viewport career match mode: pitch is the primary content, tactics remain accessible. */
+body.cr-live-open{overflow:hidden}
+.cr-live-ov{box-sizing:border-box;overflow:hidden;background:rgba(4,11,9,.97);padding:clamp(8px,1vw,16px) max(10px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))}
+.cr-live-ov .cr-live{box-sizing:border-box;width:100%;max-width:1920px;margin:0 auto;min-height:0;height:100%;gap:clamp(8px,1vw,14px)}
+.cr-live-ov .cr-score{background:#101c16;border-color:#375243;min-height:64px}
+.cr-live-ov .cr-score b{font-size:clamp(30px,3.5vw,54px)}
+.cr-live-ov .cr-pitch2d{background:#0c1611;border:1px solid #2c4936;min-width:0}
+.cr-live-ov .cr-feed{min-height:0;background:#f4f2ea;color:#1c2820}
+.cr-live-ov .cr-feed p{color:#1c2820}
+.cr-live-ov .cr-live-bar .pill{min-height:42px}
+.cr-live-ov .cr-ment button{min-height:39px}
+@media(min-width:960px) and (min-height:610px){
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-live{
+    display:grid;
+    grid-template-columns:minmax(0,1.92fr) minmax(310px,.82fr);
+    grid-template-rows:auto minmax(0,1fr);
+    gap:12px 16px;
+  }
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-top{grid-column:1/-1;grid-row:1;min-width:0}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-pitch2d{
+    display:flex;grid-column:1;grid-row:2;height:auto!important;
+    min-height:0;max-height:100%;align-items:center;justify-content:center;
+    overflow:hidden;border-radius:18px;
+  }
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-dyn{
+    grid-column:2;grid-row:2;display:flex;flex-direction:column;
+    min-width:0;min-height:0;gap:9px;overflow-y:auto;
+    overscroll-behavior:contain;scrollbar-width:thin;
+  }
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-feed{
+    min-height:100px;flex:1 1 180px;max-height:none;
+    padding:12px 15px;border-radius:14px;
+  }
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-live-bar{position:static;flex:0 0 auto;gap:7px}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-live-bar .pill{flex:1 1 120px;white-space:normal;padding:9px 10px;font-size:12.5px}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-ment{flex:0 0 auto;gap:6px}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-ment button{font-size:12px;padding:9px 7px}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-plan-lbl{margin:0;font-size:12px}
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-pitch2d .m2d-ov,
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-pitch2d .m2d,
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-pitch2d .m2d-pitch{
+    min-width:0;min-height:0;width:100%;height:100%;
+  }
+  .cr-live-ov:has(.cr-pitch2d:not([hidden])) .cr-pitch2d canvas{
+    width:auto;max-width:100%;height:auto;max-height:100%;
+    object-fit:contain;
+  }
+}
+@media(max-width:959px), (max-height:609px){
+  .cr-live-ov{overflow-y:auto;overscroll-behavior:contain}
+  .cr-live-ov .cr-live{height:auto;min-height:100%;width:100%}
+  .cr-live-ov .cr-pitch2d:not([hidden]){height:clamp(290px,57dvh,660px);flex:0 0 auto}
+  .cr-live-ov .cr-feed{flex:0 0 auto;height:clamp(95px,17dvh,185px);overflow-y:auto}
+  .cr-live-ov .cr-dyn{flex:0 0 auto;min-height:0;overflow:visible}
+  .cr-live-ov .cr-live-bar{position:static}
+}
+@media(max-width:520px){
+  .cr-live-ov{padding:8px 8px max(10px,env(safe-area-inset-bottom))}
+  .cr-live-ov .cr-score{gap:7px;padding:10px}
+  .cr-live-ov .cr-score b{font-size:clamp(25px,7vw,36px)}
+  .cr-live-ov .cr-pitch2d:not([hidden]){height:clamp(260px,45dvh,450px)}
+  .cr-live-ov .cr-feed{height:100px;max-height:none!important}
+  .cr-live-ov .cr-ment button{flex:1 1 30%;min-height:42px}
+  .cr-live-ov .cr-live-bar .pill{flex:1 1 43%;white-space:normal}
+}
