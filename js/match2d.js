@@ -482,6 +482,7 @@ const Match2D = (() => {
         // Freeze the actual contact point at the whistle — never infer it from the planned attack.
         beat.foulSpot = { x: clamp(AF(v).x, 0, W), y: clamp(AF(v).y, 0, H) };
         beat.next = foulRestart(beat.foulSpot);
+        if (plan && plan.c) plan.c.actualHow = beat.next === 'PENALTY' ? 'pen' : 'fk';
         if (diagnostics) diagnostics.fouls.push({ spot: { ...beat.foulSpot }, awarded: beat.next, requested: plan.set });
         holder = null;
         if (d) { d.run = null; d.tx = v.x - dir[att] * .2; d.ty = v.y + .9; }
