@@ -84,10 +84,10 @@ const Match2D = (() => {
     const cv = ov.querySelector('canvas'), ctx = cv.getContext('2d'), q = s => ov.querySelector(s);
     const vert = EMBED ? o.mount.clientWidth < 520 && o.mount.clientHeight > o.mount.clientWidth * .9 : innerWidth < 640 && innerHeight > innerWidth;
     if (vert) ov.querySelector('.m2d').classList.add('vert');
-    const SC = 10, proj = (x, y) => vert ? [(H - y + STAND) * SC, (x + STAND) * SC] : [(x + STAND) * SC, (y + STAND) * SC];
+    const SC = vert ? 9 : 10, proj = (x, y) => vert ? [(H - y + STAND) * SC, (x + STAND) * SC] : [(x + STAND) * SC, (y + STAND) * SC];
     cv.width = (vert ? H : W) * SC + STAND * 2 * SC;
     cv.height = (vert ? W : H) * SC + STAND * 2 * SC;
-    let speed = 1, score = [0, 0], ci = -1, raf = 0, closed = false;
+    let speed = vert && !LIVE ? 1.5 : 1, score = [0, 0], ci = -1, raf = 0, closed = false;
     const com = (min, txt, cls) => { q('.m2d-cm').textContent = min + "'"; const p = q('.m2d-com p'); p.textContent = txt; p.className = cls || ''; };
 
     /* --------- oyuncu nesneleri (Player) ---------
@@ -632,7 +632,7 @@ const Match2D = (() => {
       const awayEnd = Math.random() < .5 ? 'L' : 'R';
       const pal = (c1, c2) => [c1, c1, c1, c1, c2 || '#d9d9d9', '#262c33', '#343a42', '#2c3238'];
       const hp = pal(hc, o.home.c2 && cdist(o.home.c2, hc) > 60 ? o.home.c2 : '#ffffff'), ap = pal(ac, o.away.c2 && cdist(o.away.c2, ac) > 60 ? o.away.c2 : '#ffffff');
-      for (let x = -STAND + .5; x < W + STAND - .4; x += .95) for (let y = -STAND + .5; y < H + STAND - .4; y += .95) {
+      for (let x = -STAND + .5; x < W + STAND - .4; x += (vert ? 1.65 : .95)) for (let y = -STAND + .5; y < H + STAND - .4; y += (vert ? 1.65 : .95)) {
         if (x > -SEAT0 && x < W + SEAT0 && y > -SEAT0 && y < H + SEAT0) continue;
         if (Math.random() < .07) continue; // boş koltuk
         const away = awayEnd === 'R' ? (x > W + SEAT0 && y < H * .55) : (x < -SEAT0 && y > H * .45);
