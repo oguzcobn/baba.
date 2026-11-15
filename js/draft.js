@@ -441,7 +441,17 @@ const Draft = (() => {
   }
 
   /* ---------------- ANA ÇİZİM ---------------- */
-  function open(root) { injectStyles(); el = root; stop(); S = ls.get('draft_state', null); if (!S || S.v !== 3) S = fresh(); if (S.phase === 'season') S.phase = 'tactics'; if (S.phase === 'stats' && !S.last) S.phase = 'tactics'; render(); }
+  function open(root) {
+    injectStyles(); el = root; stop(); swapSel = null;
+    S = ls.get('draft_state', null);
+    if (!S || S.v !== 3 || !S.picks || typeof S.picks !== 'object' || !Array.isArray(S.bench) || !Array.isArray(S.bag) || !Array.isArray(S.drawn) || !S.tac) S = fresh();
+    S.bench = S.bench.slice(0, 2);
+    while (S.bench.length < 2) S.bench.push(null);
+    if (!['draft', 'tactics', 'stats'].includes(S.phase)) S.phase = count() === 13 ? 'tactics' : 'draft';
+    if (S.phase === 'stats' && !S.last) S.phase = count() === 13 ? 'tactics' : 'draft';
+    if (S.phase === 'tactics' && count() !== 13) S.phase = 'draft';
+    render();
+  }
   function save() { ls.set('draft_state', S); }
 
   function render() {
@@ -538,7 +548,7 @@ const Draft = (() => {
     const sp = q('[data-a=spin]'); if (sp) sp.onclick = () => spin();
     const jk = q('[data-a=joker]'); if (jk) jk.onclick = () => { S.jokers--; S.club = null; spin(); };
     if (q('[data-a=reset]')) q('[data-a=reset]').onclick = () => { S = fresh(S.mode); activeHeroIdx = 0; render(); };
-    if (q('[data-a=next]')) q('[data-a=next]').onclick = () => { S.phase = 'tactics'; render(); };
+    if (q('[data-a=next]')) q('[data-a=next]').onclick = () => { if (count() !== 13) { flash(T('Önce 13 kişilik kadroyu tamamla.', 'Complete the 13-player squad first.')); return; } S.phase = 'tactics'; render(); };
     el.querySelectorAll('.pos-filter button').forEach(b => b.onclick = () => { S.pf = b.dataset.pf || null; render(); });
     el.querySelectorAll('.pl:not(.no)').forEach(b => b.onclick = () => take(+b.dataset.i));
     const sw = (node, t, key) => { node.onclick = () => onSwap(t, key); node.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSwap(t, key); } }; };
@@ -550,18 +560,27 @@ const Draft = (() => {
   const rand01 = () => { try { return crypto.getRandomValues(new Uint32Array(1))[0] / 4294967296; } catch (e) { return Math.random(); } };
   function drawClub() {
     if (!Array.isArray(S.bag)) S.bag = [];
-    for (let tries = 0; tries < DRAFT_CLUBS.length * 2; tries++) {
-      if (!S.bag.length) { S.bag = shuffle(DRAFT_CLUBS.map((c, i) => i)); S.drawn = []; }
-      const w = S.bag.map(k => BIG4.has(DRAFT_CLUBS[k].id) ? W_BIG : 1), tot = w.reduce((a, b) => a + b, 0);
-      let r = rand01() * tot, j = 0; for (; j < w.length - 1; j++) { r -= w[j]; if (r <= 0) break; }
-      const k = S.bag.splice(j, 1)[0];
-      if (DRAFT_CLUBS[k].players.some(canTake)) return k;
+    // Do not consume clubs that cannot provide an eligible player.
+    let eligible = S.bag.filter(k => DRAFT_CLUBS[k] && DRAFT_CLUBS[k].players.some(canTake));
+    if (!eligible.length) {
+      S.bag = shuffle(DRAFT_CLUBS.map((c, i) => i));
+      S.drawn = [];
+      eligible = S.bag.filter(k => DRAFT_CLUBS[k].players.some(canTake));
     }
-    return -1;
+    if (!eligible.length) return -1;
+    const weights = eligible.map(k => BIG4.has(DRAFT_CLUBS[k].id) ? W_BIG : 1);
+    let r = rand01() * weights.reduce((a, b) => a + b, 0);
+    let chosen = eligible[eligible.length - 1];
+    for (let i = 0; i < eligible.length; i++) {
+      r -= weights[i];
+      if (r <= 0) { chosen = eligible[i]; break; }
+    }
+    S.bag.splice(S.bag.indexOf(chosen), 1);
+    return chosen;
   }
   function spin() {
     stop();
-    const k = drawClub(); if (k < 0) return;
+    const k = drawClub(); if (k < 0) { flash(T('Uygun oyuncu kalmadı. Kadronu veya seçimlerini kontrol et.', 'No eligible players remain. Check your squad and selections.')); return; }
     const target = DRAFT_CLUBS[k].id;
     el.querySelector('[data-a=spin]').disabled = true;
     const tiles = [...el.querySelectorAll('.ct')], N = 12;
@@ -580,8 +599,10 @@ const Draft = (() => {
     later(() => { S.club = target; S.pf = null; if (!S.drawn.includes(target)) S.drawn.push(target); render(); const pp = el.querySelector('.pick-panel'); if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, t + 280);
   }
   function take(i) {
+    if (S.phase !== 'draft' || !S.club) return;
+    const c = CLUB(S.club), p = c && c.players[i];
+    if (!p || !canTake(p)) { flash(T('Bu oyuncu artık seçilemiyor.', 'This player is no longer eligible.')); return; }
     swapSel = null;
-    const c = CLUB(S.club), p = c.players[i];
     const o = { name: p[0], pos: p[1], r: p[2], club: c.id, era: p[3] };
     const s = openSlotsFor(p[1])[0];
     if (s) S.picks[s.id] = o; else S.bench[benchOpen()] = o;
@@ -600,6 +621,7 @@ const Draft = (() => {
     yon: [T('Hücum yönü', 'Attacking focus'), [['kanat', T('Kanatlar', 'Wings')], ['dengeli', T('Dengeli', 'Balanced')], ['merkez', T('Merkez', 'Centre')]]]
   });
   function renderTactics() {
+    if (count() !== 13) { S.phase = 'draft'; return render(); }
     save();
     const st = strength();
     el.innerHTML = `<section class="dr-hero"><p class="eyebrow">${T('Adım 2 / 2', 'Step 2 of 2')}</p><h1 class="display">${T('Teknik<br>direktör &amp; <em>taktik.</em>', 'Manager<br>&amp; <em>tactics.</em>')}</h1>
@@ -655,6 +677,7 @@ const Draft = (() => {
   const SC_W = { FV: 2.6, KN: 2.2, OS: 1.5, ST: .55, BK: .55, KL: 0 }, AS_W = { FV: 2, KN: 4.5, OS: 3, ST: .4, BK: 1.8, KL: .05 };
 
   function season(weekly = false) {
+    if (count() !== 13 || S.coach === null || !DRAFT_COACHES[S.coach]) { flash(T('Sezona başlamak için kadronu ve teknik direktörünü tamamla.', 'Complete your squad and choose a manager first.')); return; }
     stop(); S.phase = 'season'; save();
     const st = strength(); let m = mods(st.xi);
     const taken = new Set(picked().map(p => p.name));
