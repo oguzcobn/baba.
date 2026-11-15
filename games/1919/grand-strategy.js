@@ -170,6 +170,14 @@ if(state.morale<=0||controlled===0){st.loss=true;st.alert={kind:"loss",title:"Se
 }
 const baseFresh=fresh;
 fresh=function(f){const s=baseFresh(f);ensure(s);s.day=f==="tr"?"19 Mayıs 1919":s.day;
+if(f!=="tr"){
+const initial={de:"Istanbul",gb:"Istanbul",fr:"Adana",gr:"Izmir",ru:"Kars"}[f]||"Ankara";
+if(f==="de")for(const p of s.regions.filter(p=>["Istanbul","Canakkale"].includes(p.id)))p.owner="de";
+s.selected=initial;const home=s.regions.find(p=>p.id===initial);
+if(home){home.owner=f;home.army=Math.max(home.army,52)}
+s.log.unshift("Alternatif tarih senaryosu: "+f.toUpperCase()+" için Anadolu cepheleri temsilî biçimde düzenlendi.");
+}
+
 if(f==="tr"){s.strategy.seenEvents.push(1);s.strategy.alert={kind:"history",title:"Samsun'a Çıkış",date:"19 Mayıs 1919",text:"Mustafa Kemal Paşa Samsun'a ulaştı. İlk görevin: ulusal odaklardan Amasya Hattı'nı seçip millî örgütlenmeyi başlatmak."};}
 return s};
 const originalAction=action;
