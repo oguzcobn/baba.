@@ -437,3 +437,32 @@ test.describe('Career live match full screen layout',()=>{
   await expect(page.locator('.cr-live [data-l=skip]')).toBeVisible();
  });
 });
+
+test.describe('Draft versus Career identity separation and position legibility',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test.beforeEach(async({page})=>{
+  await page.addInitScript(()=>{
+   sessionStorage.setItem('baba_ok','1');
+   localStorage.removeItem('draft_state');
+   localStorage.removeItem('baba_career_save');
+  });
+ });
+ test('Draft position badges have dark text on muted jade or amber background',async({page})=>{
+  await page.goto(BASE+'#draft');
+  await expect(page.locator('#draftRoot [data-a=spin]')).toBeEnabled({timeout:15000});
+  await page.locator('#draftRoot [data-a=spin]').click();
+  const position=page.locator('#draftRoot .pl:not(.no) .pos').first();
+  await expect(position).toBeVisible({timeout:15000});
+  const style=await position.evaluate(el=>({color:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}));
+  expect(style.color).toBe('rgb(75, 49, 12)');
+  expect(style.background).toBe('rgb(246, 218, 160)');
+  await expect(page.locator('#draftRoot .cid-wrap')).toHaveCount(0);
+ });
+ test('Club identity editor stays available when creating a Career club',async({page})=>{
+  await page.goto(BASE+'#career');
+  await expect(page.locator('#careerRoot .cr-start')).toBeVisible({timeout:15000});
+  await expect(page.locator('#careerRoot .cr-idwrap summary')).toBeVisible();
+  await page.locator('#careerRoot .cr-idwrap summary').click();
+  await expect(page.locator('#careerRoot .cr-idhost .cid-preview')).toBeVisible({timeout:10000});
+ });
+});
