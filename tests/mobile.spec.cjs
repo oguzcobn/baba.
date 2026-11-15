@@ -329,3 +329,32 @@ test.describe('HAYAT. name-aware avatars',()=>{
     await expect(page.locator('.life-av')).toContainText('👨');
   });
 });
+
+test.describe('Draft blank screen and saved-state recovery',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test.beforeEach(async({page})=>{ await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')); });
+ test('renders a playable draft with no empty content or sideways scrolling',async({page})=>{
+  const errors=[]; page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(BASE+'#draft',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('#draftRoot .dr-hero')).toBeVisible({timeout:15000});
+  await expect(page.locator('#draftRoot .club-grid .ct').first()).toBeVisible();
+  await expect(page.locator('#draftRoot [data-a=spin]')).toBeEnabled();
+  const dims=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
+  expect(dims.scroll).toBeLessThanOrEqual(dims.width+3);
+  expect(errors).toEqual([]);
+ });
+ test('restores malformed old save without leaving a blank page',async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem('draft_state',JSON.stringify({
+   v:3,picks:{bad:{name:'Ghost',pos:'FV',r:70,club:'not-a-club'}},
+   bench:[null],bag:[-1,999,0],drawn:['missing'],club:'invalid',
+   tac:{tempo:'dengeli'},phase:'tactics',jokers:2
+  })));
+  await page.goto(BASE+'#draft',{waitUntil:'domcontentloaded'});
+  await expect(page.locator('#draftRoot .dr-hero')).toBeVisible({timeout:15000});
+  await expect(page.locator('#draftRoot [data-a=spin]')).toBeEnabled();
+  const state=await page.evaluate(()=>JSON.parse(localStorage.getItem('draft_state')));
+  expect(state.phase).toBe('draft');
+  expect(state.bench).toHaveLength(2);
+  expect(Object.keys(state.picks)).toHaveLength(0);
+ });
+});
