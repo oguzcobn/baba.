@@ -16,6 +16,7 @@ const Match2D = (() => {
   const STAND = 11; // metres of stadium surrounding the pitch
   // IFAB Laws 12–14: a penalty requires contact inside the defending penalty area.
   // Coordinates are normalized to the attacking team's frame; boundary lines count.
+  const maxShotDistance = pos => pos === 'ST' || pos === 'BK' ? 18 : pos === 'OS' ? 28 : 29;
   const foulRestart = spot => spot && spot.x >= W - 16.5 && spot.x <= W &&
     spot.y >= (H - 40.32) / 2 && spot.y <= (H + 40.32) / 2 ? 'PENALTY' : 'FREEKICK';
   const rnd = n => Math.floor(Math.random() * n), pick = a => a[rnd(a.length)], lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -491,7 +492,7 @@ const Match2D = (() => {
         const shooter = beat.shooter || (plan && plan.shooter);
         if (shooter && state === 'PLAYING' && !beat.pen && !beat.fk) {
           const at = AF(shooter), ballAt = AF(ball);
-          const maxDistance = shooter.pos === 'ST' || shooter.pos === 'BK' ? 18 : shooter.pos === 'OS' ? 28 : 29;
+          const maxDistance = maxShotDistance(shooter.pos);
           const shootingZone = { x: 105 - maxDistance + 4, y: clamp(at.y, 18, 50) };
           if (holder !== shooter || dist(ballAt, at) > 3.5 || at.x < 105 - maxDistance) {
             // Never permit a scripted shot from midfield. Build the attack on the pitch.
@@ -852,5 +853,5 @@ const Match2D = (() => {
     if (reduce) speed = 2;
     nextClip(); raf = requestAnimationFrame(tick);
   }
-  return { show, STYLES, foulRestart };
+  return { show, STYLES, foulRestart, maxShotDistance };
 })();
