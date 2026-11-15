@@ -96,7 +96,7 @@ const App = (() => {
     { id: 'futbol', name: ['Futbol — Tarafını Seç', 'Football — Pick Your Side'], tags: [['Draft', 'Draft'], ['Kariyer', 'Career'], ['2D maç', '2D match']], best: () => T('2 mod', '2 modes') },
     { id: 'career', name: ['Menajerlik Kariyeri', 'Manager Career'], tags: [['Kariyer', 'Career'], ['Transfer', 'Transfers'], ['Canlı maç', 'Live match']], best: () => { try { const s = JSON.parse(localStorage.getItem('baba_career_save')); return s ? T(`Sezon ${s.season} · H${Math.min(s.week + 1, 34)}`, `Season ${s.season} · W${Math.min(s.week + 1, 34)}`) : T('Yeni', 'New'); } catch (e) { return ''; } } },
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
-    { id: 'istiklal1919', name: ['1919: İstiklal Harbi', '1919: War of Independence'], tags: [['Strateji', 'Strategy'], ['1914–1922', '1914–1922'], ['Tarihî muharebe', 'Historical battles']], best: () => T('6 tarihsel muharebe', '6 historical battles') },
+    { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1914–1922', '1914–1922'], ['Tarihî muharebe', 'Historical battles']], best: () => T('32 eyalet · Tur bazlı', '32 provinces · Turn-based') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
     { id: 'sudoku', name: 'Sudoku', tags: [['Mantık', 'Logic'], ['3 seviye', '3 levels']], best: () => { const b = ls.get('bb_best_sudoku', null); return b ? fmtT(b) : '—'; } },
@@ -182,7 +182,7 @@ const App = (() => {
 
   /* ==================== 1919 — İSTİKLAL HARBİ ==================== */
   function istiklal1919() {
-    const src = 'games/1919/index.html?v=89';
+    const src = 'games/1919/age.html?v=90';
     const b = shell('1919: İstiklal Harbi', `<div class="vd-bar"><p class="bb-tip">${T('I. Dünya Savaşı ve Millî Mücadele temalı strateji: sefer haritası, altı tarihsel muharebe ve gerçek zamanlı birlik emirleri.', 'A historical strategy game: campaign map, six battles and real-time unit orders.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${src}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div><div class="vd-frame"><iframe src="${src}" title="1919: İstiklal Harbi" allow="fullscreen" allowfullscreen loading="eager"></iframe></div><p class="bb-tip">${T('Seferde şehir seç; birlik üretip komşu bölgeye ilerle. Muharebede birlik seçip haritada hedefe dokun. Telefon ve bilgisayarda oynanabilir.', 'Select provinces and move armies. In battle, select a unit and tap a destination. Works on phones and desktops.')}</p>`, T('Tarihî strateji · 1914–1922','Historical strategy · 1914–1922'));
     b.closest('.game-page').classList.add('vadi-page');
     const frame = b.querySelector('.vd-frame');
