@@ -239,3 +239,81 @@
  #careerRoot .cr-spotlight-metrics strong{font-size:23px}
  #careerRoot .cr-spotlight-actions .pill{flex:1 1 auto}
 }
+
+/* Contrast hotfix: dark football routes must never inherit black labels from the light theme. */
+#draft-section .draw-box,
+#draft-section .draw-box .draw-head,
+#draft-section .club-grid,
+#draft-section .club-grid .ct,
+#draft-section .club-grid .ct small,
+#draft-section .club-grid .ct span,
+#draft-section .club-grid .ct b{color:#f1fbf3}
+#draft-section .club-grid .ct small{
+  color:#f1fbf3!important;opacity:1!important;visibility:visible;
+  font-weight:800;line-height:1.35;text-shadow:0 1px 3px #06110a;
+}
+#draft-section .club-grid .ct.used{opacity:.78}
+#draft-section .club-grid .ct.used small{color:#f3fff2!important}
+#draft-section .club-grid .ct.used::after{color:#c6ffc6}
+#draft-section .club-grid .ct:focus-visible{outline:3px solid #c4ff7b;outline-offset:2px}
+#draft-section .draw-box .draw-head .eyebrow{color:#d7f6d8}
+#draft-section .draw-box .draw-head .muted{color:#c3d9c7}
+#draft-section .pick-panel .pl,
+#draft-section .pick-panel .pl b,
+#draft-section .pick-panel .pl .rt,
+#draft-section .tac-block,
+#draft-section .tac-block label,
+#draft-section .tac-block .eyebrow,
+#draft-section .coaches .coach,
+#draft-section .coaches .coach b,
+#draft-section .coaches .coach span{color:#edf8ef}
+#draft-section .coaches .coach.on,
+#draft-section .coaches .coach.on b,
+#draft-section .coaches .coach.on span{color:#fff}
+#draft-section .pick-panel .pl.no{opacity:.55}
+#draft-section .pick-panel .pl.no b{color:#c5d8cb}
+#draft-section .pos-filter button,
+#draft-section .seg2 button,
+#draft-section .st-tabs button{color:#effaf0}
+#draft-section .pos-filter button.on,
+#draft-section .seg2 button.on,
+#draft-section .st-tabs button.on{color:#0a1b0e}
+#draft-section .bslot.full,
+#draft-section .bslot.full b{color:#ebfff0}
+#draft-section .dr-career .dr-career-row,
+#draft-section .dr-career .dr-achievement,
+#draft-section .dr-career .dr-achievement span{color:#f1faf2}
+#careerRoot .cr-tabs button,
+#careerRoot .cr-card,
+#careerRoot .cr-card p,
+#careerRoot .cr-card .cr-row,
+#careerRoot .cr-choice,
+#careerRoot .cr-choice p,
+#careerRoot .cr-team-spotlight,
+#careerRoot .cr-stats b,
+#careerRoot .cr-news li,
+#careerRoot .cr-pl,
+#careerRoot .cr-pl b,
+#careerRoot .cr-offers button,
+#careerRoot .cr-offers button b{color:#e9f6ea}
+#careerRoot .cr-tabs button.on,
+#careerRoot .cr-seg button.on{color:#0b1a0f}
+#careerRoot .cr-card .muted,
+#careerRoot .cr-choice .muted,
+#careerRoot .cr-card small{color:#bbd0c1}
+#careerRoot .cr-table th{color:#c9decf}
+#careerRoot .cr-table td{color:#ebf5ed}
+#careerRoot .cr-table tr.me td{color:#fff}
+#careerRoot .cr-spotlight-identity h2,
+#careerRoot .cr-featured-info b,
+#careerRoot .cr-spotlight-metrics strong{color:#fff}
+#careerRoot .cr-choice select,
+#careerRoot .cr-lbl select,
+#careerRoot .cr-filters input,
+#careerRoot .cr-filters select{color:#f3fbf4;background:#1d3124}
+#careerRoot .cr-choice select option,
+#careerRoot .cr-lbl select option,
+#careerRoot .cr-filters select option{background:#1d3124;color:#f3fbf4}
+@media(max-width:520px){
+ #draft-section .club-grid .ct small{font-size:clamp(10px,2.9vw,12px);font-weight:800}
+}
