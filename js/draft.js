@@ -441,16 +441,61 @@ const Draft = (() => {
   }
 
   /* ---------------- ANA ÇİZİM ---------------- */
+  function repairSavedState(saved) {
+    if (!saved || saved.v !== 3 || !saved.picks || typeof saved.picks !== 'object' ||
+        Array.isArray(saved.picks) || !Array.isArray(saved.bench) || !Array.isArray(saved.bag) ||
+        !Array.isArray(saved.drawn) || !saved.tac || typeof saved.tac !== 'object') return fresh();
+    const slots = new Set(DRAFT_SLOTS.map(p => p.id));
+    const safePlayer = p => p && typeof p.name === 'string' && p.name.trim() &&
+      typeof p.pos === 'string' && Number.isFinite(p.r) && p.r > 0 && typeof p.club === 'string' && CLUB(p.club);
+    saved.picks = Object.fromEntries(Object.entries(saved.picks).filter(([id, p]) => slots.has(id) && safePlayer(p)));
+    saved.bench = saved.bench.slice(0, 2).map(p => safePlayer(p) ? p : null);
+    while (saved.bench.length < 2) saved.bench.push(null);
+    const seen = new Set();
+    for (const id of Object.keys(saved.picks)) {
+      const p = saved.picks[id];
+      if (seen.has(p.name)) delete saved.picks[id]; else seen.add(p.name);
+    }
+    saved.bench = saved.bench.map(p => {
+      if (!p || seen.has(p.name)) return null;
+      seen.add(p.name); return p;
+    });
+    saved.bag = [...new Set(saved.bag)].filter(i => Number.isInteger(i) && i >= 0 && i < DRAFT_CLUBS.length);
+    saved.drawn = [...new Set(saved.drawn)].filter(id => !!CLUB(id));
+    saved.club = CLUB(saved.club) ? saved.club : null;
+    if (saved.club && !CLUB(saved.club).players.some(canTakeWithState(saved))) saved.club = null;
+    saved.jokers = Math.max(0, Math.min(2, Number(saved.jokers) || 0));
+    saved.tac = Object.assign(fresh(saved.mode).tac, saved.tac);
+    if (!['draft', 'tactics', 'stats'].includes(saved.phase)) saved.phase = 'draft';
+    if (saved.phase === 'stats' && !saved.last) saved.phase = 'draft';
+    if (saved.phase === 'tactics' && seen.size !== 13) saved.phase = 'draft';
+    return saved;
+  }
+  function canTakeWithState(state) {
+    return p => ![...Object.values(state.picks), ...state.bench].filter(Boolean).some(q => q.name === p[0]) &&
+      (DRAFT_SLOTS.some(slot => slot.pos === p[1] && !state.picks[slot.id]) || state.bench.some(b => !b));
+  }
+  function showLoadError(error) {
+    console.error('Draft startup failed:', error);
+    if (!el) return;
+    el.innerHTML = '<section class="dr-recovery" role="alert" style="padding:24px;max-width:680px;margin:24px auto;background:#10221b;color:white;border-radius:20px">' +
+      '<h2 style="color:white;margin:0 0 12px">⚽ ' + T('Draft yüklenemedi', 'Draft could not load') + '</h2>' +
+      '<p>' + T('Kayıtların silinmedi. Oyunu yeniden başlatmayı deneyebilirsin.', 'Your saved data has not been deleted. Try restarting the game.') + '</p>' +
+      '<button type="button" class="pill" id="draftRecover">' + T('Yeni Draft başlat', 'Start a fresh Draft') + '</button></section>';
+    el.querySelector('#draftRecover').onclick = () => { S = fresh(); swapSel = null; try { render(); } catch (e) { showLoadError(e); } };
+  }
   function open(root) {
-    injectStyles(); el = root; stop(); swapSel = null;
-    S = ls.get('draft_state', null);
-    if (!S || S.v !== 3 || !S.picks || typeof S.picks !== 'object' || !Array.isArray(S.bench) || !Array.isArray(S.bag) || !Array.isArray(S.drawn) || !S.tac) S = fresh();
-    S.bench = S.bench.slice(0, 2);
-    while (S.bench.length < 2) S.bench.push(null);
-    if (!['draft', 'tactics', 'stats'].includes(S.phase)) S.phase = count() === 13 ? 'tactics' : 'draft';
-    if (S.phase === 'stats' && !S.last) S.phase = count() === 13 ? 'tactics' : 'draft';
-    if (S.phase === 'tactics' && count() !== 13) S.phase = 'draft';
-    render();
+    el = root; stop(); swapSel = null;
+    if (!el) return;
+    try {
+      injectStyles();
+      if (typeof DRAFT_CLUBS === 'undefined' || !Array.isArray(DRAFT_CLUBS) || !DRAFT_CLUBS.length ||
+          typeof DRAFT_SLOTS === 'undefined' || !Array.isArray(DRAFT_SLOTS) || !DRAFT_SLOTS.length) {
+        throw new Error('Draft club or formation data missing');
+      }
+      S = repairSavedState(ls.get('draft_state', null));
+      render();
+    } catch (error) { showLoadError(error); }
   }
   function save() { ls.set('draft_state', S); }
 
