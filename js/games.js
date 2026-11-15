@@ -182,7 +182,7 @@ const App = (() => {
 
   /* ==================== 1919 — İSTİKLAL HARBİ ==================== */
   function istiklal1919() {
-    const src = 'games/1919/index.html?v=84';
+    const src = 'games/1919/index.html?v=85';
     const b = shell('1919: İstiklal Harbi', `<div class="vd-bar"><p class="bb-tip">${T('I. Dünya Savaşı ve Millî Mücadele temalı strateji: sefer haritası, altı tarihsel muharebe ve gerçek zamanlı birlik emirleri.', 'A historical strategy game: campaign map, six battles and real-time unit orders.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${src}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div><div class="vd-frame"><iframe src="${src}" title="1919: İstiklal Harbi" allow="fullscreen" allowfullscreen loading="eager"></iframe></div><p class="bb-tip">${T('Seferde şehir seç; birlik üretip komşu bölgeye ilerle. Muharebede birlik seçip haritada hedefe dokun. Telefon ve bilgisayarda oynanabilir.', 'Select provinces and move armies. In battle, select a unit and tap a destination. Works on phones and desktops.')}</p>`, T('Tarihî strateji · 1914–1922','Historical strategy · 1914–1922'));
     b.closest('.game-page').classList.add('vadi-page');
     const frame = b.querySelector('.vd-frame');
