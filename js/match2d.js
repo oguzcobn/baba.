@@ -351,7 +351,15 @@ const Match2D = (() => {
         const inBox = set === 'pen' || (set === 'red' && Math.random() < .35);
         const at = inBox ? { x: 91 + rnd(3), y: 28 + rnd(12) } : { x: 79 + rnd(4), y: 24 + rnd(20) };
         if (set === 'red') { const pm = live(att).find(p => p.pos === 'OS'); if (pm) L.push(...getTo(pm, { x: 62, y: 34 })); L.push(passTo(victim, towards(victim, at, 30), { through: true, txt: T(`${tn(victim)} savunma arkasına sarktı, kaleye gidiyor!`, `${tn(victim)} breaks clear and heads for goal!`) })); }
-        else { L.push(...getTo(victim, { x: at.x - 9, y: at.y }, T(`${tn(victim)} topla ceza sahasına yaklaşıyor`, `${tn(victim)} approaches the box`))); L.push({ k: 'carry', to: victim, at, txt: T(`${tn(victim)} çalıma gidiyor…`, `${tn(victim)} takes on his man…`) }); }
+        else {
+          L.push(...getTo(victim, { x: at.x - 9, y: at.y }, T(`${tn(victim)} topla ceza sahasına yaklaşıyor`, `${tn(victim)} approaches the box`)));
+          // A scripted box challenge must actually get into the box before the whistle.
+          // Dribble in 12m pieces; no instantaneous movement from midfield to the spot.
+          if (set === 'pen') {
+            for (let k = 0; k < 4; k++) L.push({ k: 'carry', to: victim, at,
+              txt: k === 0 ? T(`${tn(victim)} ceza sahasına yöneliyor`, `${tn(victim)} drives towards the box`) : '' });
+          } else L.push({ k: 'carry', to: victim, at, txt: T(`${tn(victim)} çalıma gidiyor…`, `${tn(victim)} takes on his man…`) });
+        }
         L.push({ k: 'foul', victim, fouler: plan.fouler || null, card: set === 'red' ? 'R' : (Math.random() < .55 ? 'Y' : null), dogso: set === 'red' && plan.c.dogso, next: inBox ? 'PENALTY' : 'FREEKICK' });
         return L;
       }
