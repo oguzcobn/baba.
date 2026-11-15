@@ -21,7 +21,7 @@ const Draft = (() => {
   const COACH_EN = { 'Pres ve tempo': 'Pressing and tempo', 'Sağlam savunma': 'Solid defence', 'Hücum ve moral': 'Attack and morale', 'Dengeli oyun': 'Balanced play', 'Bordo-mavi ruh': 'Claret-and-blue spirit', 'Yaratıcılık': 'Creativity' };
   const CHEM_MAX = 4;
   const TR_FIRST = /^(Kaan|Kerem|Arda|Emre|Okan|Ozan|Okay|Mert|Can|Berat|Yunus|Eren|Efe|Ege|Deniz|Umut|Onur|Volkan|Fatih|Taha|Taylan|Zafer|Mithat|Yusuf|Emin|Bertuğ|Berkay|Batuhan|Hamza|Celil|Samed|Enes|Bilal|Yalçın|Kamil|Ali|Ayberk|Atakan|Melih|Arif|Adil|Rayyan|Bahadır|Baran|Fatih|Tayfur|Bedirhan|Emir|Mustafa|Sefa|Mehmet|Furkan|Veysel|Kahraman|Gökhan|Serdar|Berat|Ahmed|Hasan|Erhan|Metehan|Abdurrahim|Ensar|Salih|Cenk|Sinan|Semih|Rıdvan|Ilhan|Kartal|Doğan|Burak|Hakan|Selçuk|Gökdeniz|Volkan|Serkan|Ömer|Ertuğrul|Yakup|Orhan|Murat|Umut)\b/;
-  const nation = p => (p && ((typeof DRAFT_NAT !== 'undefined' && DRAFT_NAT[p.name]) || (/[çğıışşİÇĞŞÖÜöü]/.test(p.name) || TR_FIRST.test(p.name) ? 'TR' : null))) || 'TR';
+  const nation = p => (p && ((typeof DRAFT_NAT !== 'undefined' && DRAFT_NAT[p.name]) || (/[çğıışşİÇĞŞÖÜöü]/.test(p.name) || TR_FIRST.test(p.name) ? 'TR' : null))) || null;
 
   function chemOf(xi) {
     const per = xi.map(p => { const n = nation(p); let links = 0; xi.forEach(q => { if (q === p) return; if (q.club === p.club) links++; if (n && nation(q) === n) links++; }); return links >= 4 ? 3 : links >= 2 ? 2 : links >= 1 ? 1 : 0; });
@@ -336,7 +336,7 @@ const Draft = (() => {
             <div class="db-left-col">
               <div>
                 <div class="db-num-label">
-                  <span>Number ${jerseyNum}</span><span>·</span><span>${PZ(hero.pos)}</span><span>·</span><span>${nation(hero)}</span>
+                  <span>Number ${jerseyNum}</span><span>·</span><span>${PZ(hero.pos)}</span><span>·</span><span>${nation(hero) || '—'}</span>
                 </div>
                 <h2 class="db-hero-name">
                   <span>${esc(firstName)}</span>
