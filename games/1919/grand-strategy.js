@@ -30,6 +30,19 @@ const FOCUSES=[
 {id:"taarruz",title:"Büyük Taarruz Planı",branch:"Kara Kuvvetleri",icon:"🐎",duration:4,requires:["sakarya","imalat"],desc:"Topçu hazırlığı ve süvari manevrasını birleştir.",effect:"Asker +40, ikmal +80"},
 {id:"diplomasi",title:"Uluslararası Tanınma",branch:"Diplomasi",icon:"⚖",duration:3,requires:["meclis"],desc:"Anlaşmalar için siyasi temsil ve diplomatik imkanları artır.",effect:"Siyasi güç +70, altın +60"}
 ];
+const ALT_FOCUS={
+amasya:["Seferberlik Ağı","Cephe haberleşmesini ve askerî koordinasyonu güçlendir."],
+kongre:["Kurmay Konferansı","Askerî yönetim birimleri arasında ortak plan oluştur."],
+meclis:["Merkezî Hükûmet","Siyasi idare ve bütçe denetimini güçlendir."],
+ordu:["Ordu Modernizasyonu","Düzenli birliklerin eğitimini ve ikmalini geliştir."],
+lojistik:["Demiryolu İkmal Planı","Cephe gerisine demiryolu, araç ve depo ağı kur."],
+imalat:["Savaş Sanayisi","Tüfek, topçu ve mühimmat imalatını artır."],
+sakarya:["Derin Savunma","Geri savunma hatları ve takviye planları kur."],
+taarruz:["Genel Taarruz Planı","Birlikleri topçu ve manevra planıyla koordine et."],
+diplomasi:["Dış Politika Heyeti","Ticaret, sınır ve ateşkes müzakerelerini güçlendir."]
+};
+const focusTitle=f=>state?.faction==="tr"?f.title:(ALT_FOCUS[f.id]?.[0]||f.title);
+const focusDesc=f=>state?.faction==="tr"?f.desc:(ALT_FOCUS[f.id]?.[1]||f.desc);
 const LINES=[
 {id:"rifle",name:"Mavzer Tüfekleri",icon:"🔧",cost:25,time:2,supply:0,men:18,description:"Düzenli piyade için silah ve eğitim. Tamamlanınca seçilen bölgeye 18 asker."},
 {id:"ammo",name:"Cephe Cephanesi",icon:"📦",cost:22,time:2,supply:60,men:0,description:"Makineli tüfek ve topçu bataryalarının cephanesini yenile."},
@@ -78,7 +91,7 @@ case "sakarya":state.regions.filter(p=>p.owner===state.faction).slice(0,5).forEa
 case "taarruz":{const r=region("Afyon");const p=r?.owner===state.faction?r:region("Ankara");if(p&&p.owner===state.faction)p.army+=40;state.supply+=80;break}
 case "diplomasi":st.political+=70;state.gold+=60;break;
 }
-log("★ Ulusal odak tamamlandı: "+f.title+". "+f.effect+".");
+log("★ Ulusal odak tamamlandı: "+focusTitle(f)+". "+f.effect+".");
 }
 function processFocus(){
 const st=state.strategy;
@@ -149,7 +162,12 @@ if(owns("Izmir")&&owns("Afyon")&&owns("Eskisehir")&&owns("Istanbul")&&st.complet
 st.win=true;st.alert={kind:"victory",title:"Bağımsızlık Zaferi",date:state.day,text:"Batı Cephesi hedefleri, İstanbul ve millî teşkilatlanma tamamlandı. Alternatif tarih seferini başarıyla bitirdin."};log("🏆 Sefer hedefleri başarıyla tamamlandı.");
 }
 if(!owns("Ankara")||state.morale<=0){st.loss=true;st.alert={kind:"loss",title:"Seferin Sonu",date:state.day,text:"Karargâhın düştü veya millî moral tükendi. Son kaydı yükleyebilir veya yeni sefer açabilirsin."};}
-}}
+} else {
+const controlled=state.regions.filter(p=>p.owner===state.faction).length;
+if(controlled>=12&&state.turn>=8&&st.completed.includes("ordu")){st.win=true;st.alert={kind:"victory",title:"Sefer Hedefi Tamamlandı",date:state.day,text:"Alternatif seferde 12 bölgeyi kontrol altına alıp düzenli ordu planını tamamladın."};}
+if(state.morale<=0||controlled===0){st.loss=true;st.alert={kind:"loss",title:"Sefer Kaybedildi",date:state.day,text:"Ordu moralleri dağıldı veya kontrol edilen bölge kalmadı."};}
+}
+}
 const baseFresh=fresh;
 fresh=function(f){const s=baseFresh(f);ensure(s);s.day=f==="tr"?"19 Mayıs 1919":s.day;
 if(f==="tr"){s.strategy.seenEvents.push(1);s.strategy.alert={kind:"history",title:"Samsun'a Çıkış",date:"19 Mayıs 1919",text:"Mustafa Kemal Paşa Samsun'a ulaştı. İlk görevin: ulusal odaklardan Amasya Hattı'nı seçip millî örgütlenmeyi başlatmak."};}
@@ -233,7 +251,7 @@ const f=findFocus(id),st=state?.strategy;if(!f||!st)return;
 if(st.completed.includes(id))return alert("Bu odak zaten tamamlandı.");
 if(st.focus)return alert("Önce mevcut odağın tamamlanmasını bekle.");
 if(!f.requires.every(x=>st.completed.includes(x)))return alert("Önce önkoşulları tamamlamalısın: "+f.requires.map(x=>findFocus(x)?.title||x).join(", "));
-st.focus={id,remaining:f.duration};log("★ Ulusal odak başlatıldı: "+f.title+". "+f.duration+" tur.");save();renderStrategy();
+st.focus={id,remaining:f.duration};log("★ Ulusal odak başlatıldı: "+focusTitle(f)+". "+f.duration+" tur.");save();renderStrategy();
 }
 function queueProduction(id){
 const st=state?.strategy,line=LINES.find(x=>x.id===id);if(!st||!line)return;
@@ -282,6 +300,7 @@ const st=state.strategy;const items=[
 return '<div class="strategy-info"><b>⚖ İdare ve Diplomasi</b><p>Siyasi güç her tur artar. Kararlar cephe ihtiyaçlarına göre uygulanır; stratejik tercihler savaşın gidişini etkiler.</p></div><div class="strategy-grid">'+items.map(([id,title,effect,cost])=>'<button class="strategy-focus" data-decree="'+id+'"><span><b>'+title+'</b><small>'+effect+'</small><em>'+cost+'</em></span></button>').join("")+'</div><p class="muted">Tarihsel antlaşmalar, seferde tamamlanan odaklara ve döneme göre olaylar bölümünde gösterilir.</p>';
 }
 function historyMarkup(){
+if(state.faction!=="tr")return '<div class="strategy-info"><b>📜 Alternatif Tarih Seferi</b><p>Türkiye dışındaki bu sefer, Anadolu strateji haritasında oluşturulmuş alternatif bir askerî senaryodur. Türk Kurtuluş Savaşı kronolojisi bu ülkenin otomatik tarihçesi olarak gösterilmez.</p></div><div class="strategy-history"><div><small>1914–1922</small><h3>Alternatif Sefer Hedefi</h3><p>En az 12 bölgeyi kontrol et ve Ordu Modernizasyonu odağını tamamla.</p></div></div>';
 const seen=state.strategy.seenEvents;
 return '<div class="strategy-info"><b>📜 Millî Mücadele Kronolojisi</b><p>Tarihsel olayların gerçekleşme zamanları kaynaklara dayanır. Savaş sonuçları oyuncunun tercihlerine göre farklılaşabilir.</p></div>'+HIST.map(x=>'<div class="strategy-history '+(seen.includes(x.turn)?"seen":"")+'"><div><small>'+x.date+'</small><h3>'+x.name+'</h3><p>'+x.text+'</p></div><span>'+(seen.includes(x.turn)?"✓ Yaşandı":"◌ Yaklaşan")+'</span></div>').join("");
 }
@@ -312,7 +331,7 @@ section.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{sel=b.datase
 section.querySelector("#strategyHelp").onclick=()=>{
 tab="focus";renderStrategy();alert("1. Önce Amasya Hattı odağını seç. 2. Birkaç tur ilerleyerek tamamla. 3. Üretim sekmesinden tüfek ve mühimmat üret. 4. İkmal yüzdesi yüksek bölgelerde asker biriktir. 5. Komşu düşman bölgeye girip taktik muharebe aç.");
 };
-if(st.alert&&Date.now()-noticeLast>900){
+if(st.alert&&!document.querySelector(".strategy-event")&&Date.now()-noticeLast>900){
 noticeLast=Date.now();const msg=st.alert;const box=document.createElement("div");box.className="strategy-event";
 box.innerHTML='<div class="strategy-event-card"><small>'+esc(msg.date||"KARARGÂH TELGRAFI")+'</small><h2>'+esc(msg.title)+'</h2><p>'+esc(msg.text)+'</p><div class="strategy-event-actions"><button class="primary" id="dismissEvent">Devam Et</button><button id="openTimeline">Tarih Şeridini Gör</button></div></div>';
 document.body.appendChild(box);
