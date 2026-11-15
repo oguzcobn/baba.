@@ -11,7 +11,8 @@ const Draft = (() => {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CLUB = id => (typeof DRAFT_CLUBS !== 'undefined' ? DRAFT_CLUBS.find(c => c.id === id) : null);
 
-  const CFG = { opp: 0, K: 12.5, base: 1.2, home: 1.12, away: .92, noise: 2.2, inj: .011, tac: .5, coach: .5 };
+  // Wider skill curve and match-to-match uncertainty prevent fixed 4th/5th finishing bands.
+  const CFG = { opp: 0, K: 18, base: 1.25, home: 1.12, away: .93, noise: 4.1, inj: .011, tac: .5, coach: .5, seasonForm: 2.3 };
   const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
   const ME = 'Senin Takımın';
   // Draft uses a fixed neutral identity. Club creation belongs exclusively to Career.
@@ -757,6 +758,9 @@ const Draft = (() => {
     const stats = {};
     const key = (t, p) => t.id + '|' + p.name;
     teams.forEach(t => t.xi.forEach(p => stats[key(t, p)] = { name: p.name, team: t.name, tid: t.id, c1: t.c1, pos: p.pos, r: p.r, g: 0, a: 0, cs: 0, apps: 0 }));
+    // Each team experiences a coherent good/poor season (fitness, adaptation, morale).
+    // This affects all teams symmetrically, not just the player or the four biggest clubs.
+    const seasonForm = Object.fromEntries(teams.map(t => [t.id, Math.max(-4.5, Math.min(4.5, gauss() * CFG.seasonForm))]));
     const N = teams.length, idx = teams.map((_, i) => i), rounds = [];
     for (let r = 0; r < N - 1; r++) { const pr = []; for (let i = 0; i < N / 2; i++) pr.push(r % 2 ? [idx[N - 1 - i], idx[i]] : [idx[i], idx[N - 1 - i]]); rounds.push(pr); idx.splice(1, 0, idx.pop()); }
     const all = [...rounds, ...rounds.map(r => r.map(([h, a]) => [a, h]))];
@@ -782,7 +786,7 @@ const Draft = (() => {
     function play(h, a) {
       const H = teams[h], A = teams[a];
       let lh, la;
-      const fh = gauss() * CFG.noise, fa = gauss() * CFG.noise, pen = (H.me || A.me) ? injPenalty() + (weekly ? avg(st.xi.map(p => form[p.name] || 0)) * .6 : 0) : 0;
+      const fh = gauss() * CFG.noise + seasonForm[H.id], fa = gauss() * CFG.noise + seasonForm[A.id], pen = (H.me || A.me) ? injPenalty() + (weekly ? avg(st.xi.map(p => form[p.name] || 0)) * .6 : 0) : 0;
       const ha = (H.me ? st.att + pen : H.att) + fh, hd = (H.me ? st.def + pen : H.def) + fh, aa = (A.me ? st.att + pen : A.att) + fa, ad2 = (A.me ? st.def + pen : A.def) + fa;
       lh = lam(ha, ad2) * CFG.home; la = lam(aa, hd) * CFG.away;
       if (H.me) { lh *= m.a; la /= m.d; } else if (A.me) { la *= m.a; lh /= m.d; }
