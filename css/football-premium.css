@@ -426,3 +426,52 @@
  #draft-section .dr-career-kpis>span b{font-size:clamp(20px,6vw,30px)}
  #draft-section .awards{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
 }
+
+
+/* Football position badge accessibility — muted jade, legible dark ink. */
+#draft-section .pick-panel .pl .pos,
+#careerRoot .cr-pl .pz,
+#careerRoot .dr-squad-row .pz{
+  display:inline-flex;align-items:center;justify-content:center;
+  background:#b8e8c6!important;color:#163621!important;
+  border:1px solid #83c99b!important;border-radius:8px;
+  min-width:38px;min-height:29px;padding:4px 7px;
+  font-size:12px;font-weight:850;line-height:1.1;
+  letter-spacing:.03em;text-shadow:none!important;
+  opacity:1!important;box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+#draft-section .pick-panel .pl .pos.need{
+  background:#f6daa0!important;color:#4b310c!important;
+  border-color:#e9bf63!important;
+}
+#draft-section .pick-panel .pl.no{opacity:.6}
+#draft-section .pick-panel .pl.no .pos{
+  background:#34483a!important;color:#d6e2da!important;
+  border-color:#4d6553!important;
+}
+#draft-section .pick-panel .pl:not(.no):hover .pos,
+#careerRoot .cr-pl:hover .pz{filter:brightness(1.04)}
+#draft-section .pos-filter button.need:not(.on){
+  border-color:#bdab79!important;color:#f1dca7!important;background:#2f3123!important;
+}
+#draft-section .pos-filter button.on{
+  background:#b8e8c6!important;color:#14331f!important;
+  border-color:#b8e8c6!important;
+}
+#draft-section .slot:not(.full) span{
+  color:#fff!important;text-shadow:0 1px 3px #092315;
+  font-weight:800;
+}
+#careerRoot .cr-slot .pz{color:#236636!important;font-weight:850}
+#careerRoot .cr-slot.empty .pz{color:#1e562c!important}
+#careerRoot .cr-pl b,
+#draft-section .pick-panel .pl:not(.no) b{color:#f4faf5!important}
+#draft-section .pick-panel .pl .era,
+#careerRoot .cr-pl small{color:#b5cbb9!important}
+@media(max-width:520px){
+  #draft-section .pick-panel .pl .pos,
+  #careerRoot .cr-pl .pz,
+  #careerRoot .dr-squad-row .pz{
+    font-size:11px;min-width:36px;min-height:30px;padding:4px 6px;
+  }
+}
