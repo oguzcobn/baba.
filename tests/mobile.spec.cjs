@@ -402,8 +402,8 @@ test.describe('Football visual accessibility regression',()=>{
   }
   await expect(page.locator('#careerRoot .cr-team-spotlight')).toBeVisible({timeout:15000});
   await expect(page.locator('#careerRoot .cr-featured-player')).toHaveCount(3);
-  await expect(page.locator('#careerRoot .cr-spotlight-actions [data-tab=squad]')).toBeVisible();
-  await page.locator('#careerRoot .cr-spotlight-actions [data-tab=squad]').click();
+  await expect(page.locator('#careerRoot .cr-spotlight-actions [data-spotlight-tab=squad]')).toBeVisible();
+  await page.locator('#careerRoot .cr-spotlight-actions [data-spotlight-tab=squad]').click();
   await expect(page.locator('#careerRoot .cr-squad')).toBeVisible({timeout:15000});
  });
 });
