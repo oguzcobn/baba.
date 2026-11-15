@@ -317,3 +317,112 @@
 @media(max-width:520px){
  #draft-section .club-grid .ct small{font-size:clamp(10px,2.9vw,12px);font-weight:800}
 }
+
+
+/* v4 — contrast remediation: match foreground to each card's actual background. */
+#draft-section .dr-career-kpis>span{
+  background:#eff4f1!important;border:1px solid #d5e2d9;color:#15271d!important;
+}
+#draft-section .dr-career-kpis>span b,
+#draft-section .dr-career-kpis>span strong{color:#11271a!important}
+#draft-section .dr-career-kpis>span small{color:#4d6757!important;opacity:1}
+#draft-section .dr-career-kpis{min-width:0}
+#draft-section .dr-career-row,
+#draft-section .dr-career-row span,
+#draft-section .dr-career-row strong,
+#draft-section .dr-career-row small{color:#eaf8eb!important}
+#draft-section .dr-career-row{border-bottom-color:#486453}
+#draft-section .dr-achievement.earned{
+ background:#e6f5ea;color:#173922!important;border:1px solid #9cceb0
+}
+#draft-section .dr-achievement.earned *{color:#173922!important}
+#draft-section .dr-achievement.locked{
+ background:#17251d;color:#aabdb0!important;border:1px solid #415547
+}
+#draft-section .dr-achievement.locked *{color:#aabdb0!important}
+#draft-section .award:not(:nth-child(3)){
+ background:#f7faf6!important;color:#183020!important;border-color:#d8e6db!important
+}
+#draft-section .award:not(:nth-child(3)) b,
+#draft-section .award:not(:nth-child(3)) .eyebrow{color:#183020!important}
+#draft-section .award:not(:nth-child(3)) small{color:#526a59!important}
+#draft-section .award:not(:nth-child(3)) em{color:#16883b!important}
+#draft-section .award:nth-child(3){
+ background:linear-gradient(135deg,#171b17,#342818)!important;color:#fff!important;border-color:#65522d!important
+}
+#draft-section .award:nth-child(3) b,
+#draft-section .award:nth-child(3) .eyebrow{color:#fff!important}
+#draft-section .award:nth-child(3) small{color:#d8e4da!important}
+#draft-section .award:nth-child(3) em{color:#91f17b!important}
+#draft-section .live-card{
+ background:#eaf6ee!important;color:#153623!important;
+ border:1px solid #b9d9c3!important
+}
+#draft-section .live-card[data-r=G]{background:#e7f7ec!important}
+#draft-section .live-card[data-r=M]{background:#fff0eb!important}
+#draft-section .live-card .eyebrow,
+#draft-section .live-card .tn,
+#draft-section .live-card .sc,
+#draft-section .live-card .goals-ev,
+#draft-section .live-card .goals-ev span,
+#draft-section .live-card .goals-ev small,
+#draft-section .live-card .feed,
+#draft-section .live-card .feed p{color:#173c27!important}
+#draft-section .live-card .eyebrow{color:#567d65!important}
+#draft-section .live-card .feed .inj,
+#draft-section .live-card .feed .red{color:#b12635!important}
+#draft-section .live-card .feed .goal{color:#17713a!important}
+#draft-section .live-card .score .sc{font-variant-numeric:tabular-nums}
+#draft-section .mini-kings .mk{background:#16281d;border-color:#3a5944;color:#f0faf1}
+#draft-section .mini-kings .mk b,
+#draft-section .mini-kings .mk em{color:#f0faf1}
+#draft-section .mini-kings .mk span{color:#b0d1b8}
+#draft-section .mini-kings .mk.me{background:#255237}
+#draft-section .poy-list .mk{background:#18291f;border-color:#37513f;color:#eff9f0}
+#draft-section .poy-list .mk b,
+#draft-section .poy-list .mk em{color:#f1f9f2}
+#draft-section .poy-list .mk small,
+#draft-section .poy-list .mk span{color:#bdd7c4}
+#draft-section .result{background:#12251b;color:#f4fbf5;border-color:#42614a}
+#draft-section .result p{color:#d1e8d6}
+#draft-section .dr-career-link{
+  background:#eff5f1!important;color:#153021!important;border:1px solid #d2e4d8!important;
+}
+#draft-section .dr-career-link *{color:#153021!important}
+#careerRoot .cr-idhost .cid-grid label,
+#careerRoot .cr-idhost .cid-colors label,
+#careerRoot .cr-idhost .cid-check,
+#careerRoot .cr-idhost .cid-head,
+#careerRoot .cr-idhost .cid-head b{color:#f2faf4!important}
+#careerRoot .cr-idhost .cid-grid input:not([type=color]),
+#careerRoot .cr-idhost .cid-grid select,
+#careerRoot .cr-idhost input:not([type=color]),
+#careerRoot .cr-idhost textarea,
+#careerRoot .cr-idhost select{
+  background:#f7faf7!important;color:#142a1d!important;
+  border:1px solid #b3cbbb!important;
+}
+#careerRoot .cr-idhost input::placeholder,
+#careerRoot .cr-idhost textarea::placeholder{color:#566e5e!important;opacity:1}
+#careerRoot .cr-idhost .cid-opts button{
+  background:#f7faf7!important;color:#183121!important;border:1px solid #d5e2d8!important;
+}
+#careerRoot .cr-idhost .cid-opts button small,
+#careerRoot .cr-idhost .cid-opts button span{color:#26452e!important;opacity:1}
+#careerRoot .cr-idhost .cid-opts button.on{
+  border-color:#4ecb40!important;box-shadow:0 0 0 2px #59e13b85!important
+}
+#careerRoot .cr-idhost .cid-presets button.on{outline-color:#59e13b}
+#careerRoot .cr-idhost .cid-preview,
+#careerRoot .cr-idhost .cid-preview *{color:#fff!important}
+#careerRoot .cr-choice input:not([type=color]),
+#careerRoot .cr-choice select,
+#careerRoot .cr-card input:not([type=color]),
+#careerRoot .cr-card select,
+#careerRoot .cr-card textarea{color:#f0faf1;background:#23382a;border:1px solid #597661}
+#careerRoot .cr-choice option,#careerRoot .cr-card option{color:#142a1d;background:#f7faf7}
+@media(max-width:550px){
+ #draft-section .dr-career-kpis>span{padding:12px 9px}
+ #draft-section .dr-career-kpis>span b{font-size:clamp(20px,6vw,30px)}
+ #draft-section .awards{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}
+}
