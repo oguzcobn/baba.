@@ -103,7 +103,7 @@ const Match2D = (() => {
     let dir = { h: 1, a: -1 }, att = 'h', holder = null, beats = [], beat = null, bt = 0, flash = '', plan = null, seg = 0, state = 'PLAYING', carryDist = 0;
     const fx = { bubbles: [], cards: [], shakeUntil: 0, aim: null };
     // Playwright testleri için isteğe bağlı tanılama (normal oyuncularda kapalı)
-    const diagnostics = window.__BABA_MATCH_TEST__ === true ? { frames: [], goals: [], passes: [], runs: [], states: [], fouls: [], stadium: { margin: STAND, width: cv.width, height: cv.height }, done: false } : null;
+    const diagnostics = window.__BABA_MATCH_TEST__ === true ? { frames: [], goals: [], passes: [], shots: [], runs: [], states: [], fouls: [], stadium: { margin: STAND, width: cv.width, height: cv.height }, done: false } : null;
     if (diagnostics) window.__BABA_MATCH_DIAGNOSTICS__ = diagnostics;
     let lastSample = 0;
 
@@ -284,13 +284,25 @@ const Match2D = (() => {
 
     /* --------- 3. BÖLGE — hücum setleri (evaluateAttackOptions) --------- */
     function wideMan() { const pref = plan.assister && (plan.assister.pos === 'KN' || plan.assister.pos === 'BK') ? plan.assister : null; return pref || wpick(live(att).filter(p => p.pos === 'KN' && p !== plan.shooter), p => has(p, 'SPEED_DRIBBLER') ? 2 : 1) || live(att).find(p => p.pos === 'BK'); }
+    function moveIntoPosition(p, target, text) {
+      // Every scripted advance must be visible in successive <=11m movements.
+      // The player may run into space, but never appear inside the box instantaneously.
+      const origin = AF(p), dx = target.x - origin.x, dy = target.y - origin.y;
+      const length = Math.hypot(dx, dy);
+      if (length < 2.5) return [];
+      const n = Math.ceil(length / 10.5), steps = [];
+      for (let i = 1; i <= n; i++) {
+        steps.push({ k: 'carry', to: p, at: {
+          x: clamp(origin.x + dx * i / n, 3, 102),
+          y: clamp(origin.y + dy * i / n, 3, 65)
+        }, txt: i === 1 ? text : '' });
+      }
+      return steps;
+    }
     function getTo(p, at, txt) {
-      if (p !== holder) return [passTo(p, at, { txt })];
-      if (dist(AF(holder), at) <= 14) return [];
-      // top zaten bu oyuncudaysa ve hedef uzaksa: solo koşu yerine ver-kaç ile ilerle
-      const mate = live(att).filter(m => m !== holder && m.pos !== 'KL' && laneOpen(holder, m)).sort((a, b) => dist(a, holder) - dist(b, holder))[0];
-      if (!mate) return [];
-      return [passTo(mate, AF(mate), { txt: T(`${tn(holder)} verdi ve koştu`, `${tn(holder)} gives and goes`), runs: [{ p: holder, at, sp: runSp(holder) }] }), { k: 'call', fn: () => [passTo(p, at, { follow: true, txt })] }];
+      if (!p || p.off || p.leaving) return [];
+      const first = p !== holder ? [passTo(p, AF(p), { txt })] : [];
+      return first.concat(moveIntoPosition(p, at, p === holder ? txt : ''));
     }
     function finalPhase() {
       const S = plan.shooter, set = plan.set, out = plan.out; plan.stage = 'done';
@@ -475,7 +487,32 @@ const Match2D = (() => {
       }
       if (beat.k === 'aim') { fx.aim = { from: { x: ball.x, y: ball.y }, to: AF(beat.at) }; }
       if (beat.k === 'lose') { const d = beat.by; if (d) { d.run = null; d.tx = ball.x; d.ty = ball.y; d.sp = 8; } }
-      if (beat.k === 'shot') startShot(beat);
+      if (beat.k === 'shot') {
+        const shooter = plan && plan.shooter;
+        if (shooter && state === 'PLAYING' && !beat.pen && !beat.fk) {
+          const at = AF(shooter), ballAt = AF(ball);
+          const maxDistance = shooter.pos === 'ST' || shooter.pos === 'BK' ? 18 : shooter.pos === 'OS' ? 28 : 29;
+          const shootingZone = { x: 105 - maxDistance + 4, y: clamp(at.y, 18, 50) };
+          if (holder !== shooter || dist(ballAt, at) > 3.5 || at.x < 105 - maxDistance) {
+            // Never permit a scripted shot from midfield. Build the attack on the pitch.
+            const build = [];
+            if (holder && holder !== shooter) build.push(passTo(shooter, AF(shooter), {
+              txt: T(`${tn(holder)} topu ${tn(shooter)}'e gönderiyor`, `${tn(holder)} finds ${tn(shooter)}`) }));
+            build.push(...moveIntoPosition(shooter, shootingZone,
+              T(`${tn(shooter)} ceza sahasına ilerliyor`, `${tn(shooter)} advances into the final third`)));
+            if (build.length) {
+              beats = build.concat([beat], beats);
+              return startBeat();
+            }
+          }
+        }
+        if (diagnostics) diagnostics.shots.push({
+          shooter: shooter && shooter.name, pos: shooter && shooter.pos,
+          x: AF(ball).x, y: AF(ball).y, distance: W - AF(ball).x,
+          set: plan && plan.set, out: beat.out
+        });
+        startShot(beat);
+      }
       if (beat.k === 'foul') {
         const v = beat.victim, d = beat.fouler && !beat.fouler.off ? beat.fouler : wpick(nearest(def(), v).slice(0, 2), p => has(p, 'AGGRESSIVE_TACKLER') ? 3 : 1);
         beat.fouler = d; beat.d = 1.1;
