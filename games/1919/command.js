@@ -2,7 +2,7 @@
 "use strict";
 /* Command Edition v4 — tactical clarity and territorial strategy UI. */
 (()=>{
-const prev={home,scenarios,factions,campaign,mapSvg,beginBattle,drawBattle,prebattle,fresh,finishBattle};
+const prev={home,scenarios,factions,campaign,mapSvg,beginBattle,drawBattle,prebattle,fresh,finishBattle,updateBattle};
 const safe=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const val=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
@@ -92,6 +92,35 @@ home=function(){prev.home();homeEnhance()};
 factions=function(){prev.factions();const banner=app.querySelector(".hero");banner?.insertAdjacentHTML("beforeend",'<div class="notice">🇹🇷 <b>Önerilen:</b> Türkiye 19 Mayıs 1919. Başlangıçta daha fazla asker ve anlaşılır görevler sunulur. Diğer ülkeler alternatif senaryolardır; 1919 sefer haritasında aynı coğrafyayı kullanır.</div>')};
 scenarios=function(){prev.scenarios();app.querySelector(".hero")?.insertAdjacentHTML("beforeend",'<div class="notice"><b>Yeni başlayanlar için:</b> II. İnönü veya Sakarya’yı seç. Muharebe içinde birlik kartları ve komutların açıklaması gösterilir.</div>')};
 prebattle=function(opts){prev.prebattle(opts);const modal=document.querySelector("#modal .modal");if(!modal)return;const origin=opts.origin?region(opts.origin):null,target=opts.target?region(opts.target):null;if(origin&&target){const odds=powerRatio(origin,target);modal.insertAdjacentHTML("beforeend",'<div class="war-intel"><div><strong>⚖ Tahmini kuvvet dengesi: %'+odds+'</strong><p>Güçlü topçu ve doğru hareket emirleri sonucu değiştirebilir. Bu değer zafer garantisi değildir.</p></div></div>')}else modal.insertAdjacentHTML("beforeend",'<div class="notice">Birlikleri önce siperlere yerleştir. Topçuyu geride, süvariyi yan kanatta tut. Savaş başlamadan birim kartlarını incele.</div>')};
+const workedShots=new WeakSet();
+updateBattle=function(dt){
+if(!battle)return;
+const b=battle;
+prev.updateBattle(dt);
+if(!battle||b!==battle||b.done)return;
+for(const unit of b.units){
+if(unit.hp<=0)continue;
+if(unit.fatigue==null)unit.fatigue=0;
+const distance=Math.hypot(unit.tx-unit.x,unit.ty-unit.y);
+if(distance>16&&!unit.guard)unit.fatigue=Math.min(100,unit.fatigue+dt*(unit.type==="Süvari"?4.1:2.8));
+else unit.fatigue=Math.max(0,unit.fatigue-dt*3.6);
+if(unit.fatigue>83)unit.morale=Math.max(0,unit.morale-dt*.16);
+if(b.s?.id==="sarikamis"&&!unit.guard&&unit.team===1)unit.morale=Math.max(0,unit.morale-dt*.13);
+}
+for(const shot of b.shots){
+if(workedShots.has(shot))continue;
+workedShots.add(shot);
+const shooter=b.units.filter(u=>u.team===shot.team&&u.hp>0).sort((a,c)=>Math.hypot(a.x-shot.x,a.y-shot.y)-Math.hypot(c.x-shot.x,c.y-shot.y))[0];
+const target=b.units.filter(u=>u.team!==shot.team&&u.hp>0).sort((a,c)=>Math.hypot(a.x-shot.tx,a.y-shot.ty)-Math.hypot(c.x-shot.tx,c.y-shot.ty))[0];
+if(!shooter||!target)continue;
+const distance=Math.hypot(shooter.x-target.x,shooter.y-target.y);
+if(shooter.type==="Süvari"&&distance<70){
+const flanking=Math.abs(shooter.y-target.y)>30||Math.abs(shooter.x-target.x)<55;
+if(flanking){target.hp=Math.max(0,target.hp-(2.8*(1-shooter.fatigue/180)));target.morale=Math.max(0,target.morale-7.5);shooter.morale=Math.min(100,shooter.morale+1)}
+}
+if(shooter.type==="Topçu"){target.morale=Math.max(0,target.morale-2);if(target.guard)target.hp=Math.max(0,target.hp-1.5)}
+}
+};
 function configureStrength(){
 if(!battle)return;const factor=difficult==="easy"?.75:difficult==="hard"?1.32:1;
 for(const u of battle.units.filter(x=>x.team===1)){u.hp=Math.max(8,Math.round(u.hp*factor));u.max=u.hp;u.morale=difficult==="hard"?95:70}
@@ -109,7 +138,7 @@ const friends=battle.units.filter(u=>u.team===0),foes=battle.units.filter(u=>u.t
 const fp=friends.reduce((a,u)=>a+u.hp,0),ep=foes.reduce((a,u)=>a+u.hp,0);
 document.getElementById("battlePower")?.style.setProperty("width",(fp+ep>0?100*fp/(fp+ep):50)+"%");
 for(let i=0;i<friends.length;i++){
-const b=document.querySelector('[data-cmdunit="'+i+'"]'),u=friends[i];if(!b)continue;b.setAttribute("aria-pressed",String(battle.selected===i));b.querySelector("small").textContent=Math.ceil(u.hp)+" / "+u.max+" asker · "+Math.round(u.morale)+" moral";
+const b=document.querySelector('[data-cmdunit="'+i+'"]'),u=friends[i];if(!b)continue;b.setAttribute("aria-pressed",String(battle.selected===i));b.querySelector("small").textContent=Math.ceil(u.hp)+" / "+u.max+" asker · "+Math.round(u.morale)+" moral · "+Math.round(u.fatigue||0)+" yorg.";
 const health=b.querySelector(".health");health.classList.toggle("warning",u.hp/u.max<.4);health.querySelector("em").style.width=Math.max(0,100*u.hp/u.max)+"%";
 }
 const mm=document.getElementById("tacMini");if(mm){const g=mm.getContext("2d");g.clearRect(0,0,150,95);g.fillStyle="#314d3d";g.fillRect(0,0,150,95);g.strokeStyle="#9e8d68";for(const x of [35,113]){g.beginPath();g.moveTo(x,0);g.lineTo(x,95);g.stroke()}for(const u of battle.units){if(u.hp<=0)continue;g.fillStyle=u.team===0?"#a5e4af":"#f2a091";g.beginPath();g.arc(u.x*150/800,u.y*95/500,u.team===0?3.8:3,0,7);g.fill()}}
