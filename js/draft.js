@@ -14,8 +14,8 @@ const Draft = (() => {
   const CFG = { opp: 0, K: 12.5, base: 1.2, home: 1.12, away: .92, noise: 2.2, inj: .011, tac: .5, coach: .5 };
   const gauss = () => { let u = 0, v = 0; while (!u) u = Math.random(); while (!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
   const ME = 'Senin Takımın';
-  const CID = () => (typeof ClubID !== 'undefined' && ClubID.get()) || null;
-  const TN = n => n === ME ? ((CID() && CID().name) || T(ME, 'Your Team')) : n;
+  // Draft uses a fixed neutral identity. Club creation belongs exclusively to Career.
+  const TN = n => n === ME ? T(ME, 'Your Team') : n;
   const PZ = k => (typeof I18N !== 'undefined' && I18N.lang === 'en') ? ({ KL: 'GK', ST: 'CB', BK: 'FB', OS: 'MF', KN: 'W', FV: 'FW' }[k] || k) : k;
   const FL = c => (typeof I18N !== 'undefined' && I18N.lang === 'en') ? ({ G: 'W', B: 'D', M: 'L' }[c] || c) : c;
   const COACH_EN = { 'Pres ve tempo': 'Pressing and tempo', 'Sağlam savunma': 'Solid defence', 'Hücum ve moral': 'Attack and morale', 'Dengeli oyun': 'Balanced play', 'Bordo-mavi ruh': 'Claret-and-blue spirit', 'Yaratıcılık': 'Creativity' };
@@ -672,13 +672,10 @@ const Draft = (() => {
     el.innerHTML = `<section class="dr-hero"><p class="eyebrow">${T('Adım 2 / 2', 'Step 2 of 2')}</p><h1 class="display">${T('Teknik<br>direktör &amp; <em>taktik.</em>', 'Manager<br>&amp; <em>tactics.</em>')}</h1>
       <div class="dr-meta"><span class="chip">${T('Hücum', 'Attack')} <b>${hide() ? '??' : st.att.toFixed(1)}</b></span><span class="chip">${T('Savunma', 'Defence')} <b>${hide() ? '??' : st.def.toFixed(1)}</b></span><span class="chip chem-chip">🧪 ${T('Kimya', 'Chemistry')} <b>${st.cp}</b>/100 <small>(+${st.chem.toFixed(1)})</small></span><span class="chip">${T('Ort. reyting', 'Avg. rating')} <b>${hide() ? '??' : avg(st.xi.map(p => p.r)).toFixed(1)}</b></span>${S.last ? `<button class="chip" data-a="laststats">📊 ${T('Son sezon istatistikleri', 'Last season’s stats')}</button>` : ''}</div></section>
       <section class="tac">
-        <details class="tac-block cid-wrap" ${CID() && CID().name ? '' : 'open'}><summary><span class="cid-sum">${typeof ClubID !== 'undefined' ? ClubID.logo(CID() || {}, 34) : ''}<span><span class="eyebrow">${T('Kulüp kimliği', 'Club identity')}</span><b>${esc((CID() && CID().name) || T('İsim, renk, forma, şehir ve logo seç', 'Pick a name, colours, kit, city and crest'))}</b></span></span><em>${T('Düzenle', 'Edit')}</em></summary><div class="cid-host"></div></details>
         <div class="tac-block"><span class="eyebrow">${T('Teknik direktör', 'Manager')}</span><div class="coaches">${DRAFT_COACHES.map((c, i) => `<button class="coach ${S.coach === i ? 'on' : ''}" data-c="${i}"><b>${c.name}</b><small>${typeof I18N !== 'undefined' && I18N.lang === 'en' ? (COACH_EN[c.note] || c.note) : c.note}</small><span>${T('H', 'A')} ${c.att >= 0 ? '+' : ''}${c.att} · ${T('S', 'D')} ${c.def >= 0 ? '+' : ''}${c.def}</span></button>`).join('')}</div></div>
         ${Object.entries(TACF()).map(([k, [lbl, opts]]) => `<div class="tac-block"><span class="eyebrow">${lbl}</span><div class="seg2">${opts.map(([v, t]) => `<button data-k="${k}" data-v="${v}" class="${S.tac[k] === v ? 'on' : ''}">${t}</button>`).join('')}</div></div>`).join('')}
         <div class="dr-actions"><button class="pill ghost" data-a="back">← ${T('Kadroya dön', 'Back to squad')}</button><button class="pill big" data-a="play" ${S.coach === null ? 'disabled' : ''}>${T('SEZONU BAŞLAT', 'START SEASON')}</button></div><div class="dr-mode-switch"><a class="dr-career-link" href="#career">🎮 ${T('Haftalık maçlar, transfer, kondisyon ve canlı maç için ayrı <b>Menajerlik Kariyeri</b> modunu aç →', 'For weekly matches, transfers, fitness and live matches, open the separate <b>Manager Career</b> mode →')}</a></div>
       </section>`;
-    const cidHost = el.querySelector('.cid-host');
-    if (cidHost && typeof ClubID !== 'undefined') ClubID.editor(cidHost, o => { const sm = el.querySelector('.cid-sum'); if (sm) sm.innerHTML = ClubID.logo(o, 34) + `<span><span class="eyebrow">${T('Kulüp kimliği', 'Club identity')}</span><b>${esc(o.name || T('İsim, renk, forma, şehir ve logo seç', 'Pick a name, colours, kit, city and crest'))}</b></span>`; });
     el.querySelectorAll('.coach').forEach(b => b.onclick = () => { S.coach = +b.dataset.c; renderTactics(); });
     el.querySelectorAll('.seg2 button').forEach(b => b.onclick = () => { S.tac[b.dataset.k] = b.dataset.v; renderTactics(); });
     el.querySelector('[data-a=back]').onclick = () => { S.phase = 'draft'; render(); };
@@ -727,7 +724,7 @@ const Draft = (() => {
     const st = strength(); let m = mods(st.xi);
     const taken = new Set(picked().map(p => p.name));
     const out = DRAFT_CLUBS[rnd(DRAFT_CLUBS.length)];
-    const cid = CID(), teams = [{ name: ME, short: cid ? (cid.short || ClubID.autoShort(cid.name)) : 'SEN', id: 'me', me: true, xi: st.xi, c1: cid ? cid.c1 : '#ff4d00', c2: cid ? cid.c2 : null, kit: cid ? cid.kit : 'duz' }];
+    const teams = [{ name: ME, short: 'SEN', id: 'me', me: true, xi: st.xi, c1: '#235c45', c2: '#b6dbbf', kit: 'duz' }];
     DRAFT_CLUBS.filter(c => c !== out).forEach(c => { const xi = clubXI(c, taken), ad = baseAD(xi), oc = chemOf(xi).pct / 100 * CHEM_MAX * .5; ad.att += oc; ad.def += oc; teams.push({ name: c.name, short: c.short, id: c.id, xi, att: ad.att + CFG.opp, def: ad.def + CFG.opp, c1: c.c1 }); });
     teams.forEach(t => Object.assign(t, { p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, form: [] }));
     const stats = {};
@@ -782,7 +779,7 @@ const Draft = (() => {
       if (gh > ga) { H.w++; H.p += 3; A.l++; H.form.push('G'); A.form.push('M'); } else if (gh < ga) { A.w++; A.p += 3; H.l++; H.form.push('M'); A.form.push('G'); } else { H.d++; A.d++; H.p++; A.p++; H.form.push('B'); A.form.push('B'); }
       return { h, a, gh, ga, ev, lh, la, physics: physical && physical.stats };
     }
-    el.innerHTML = `<section class="dr-hero">${cid && cid.name ? `<div class="cid-head">${ClubID.logo(cid, 54)}<div><b>${esc(cid.name)}</b><small>${esc(cid.city || '')}${cid.city ? ' · ' : ''}${T('Kuruluş', 'Founded')} ${esc(cid.year)}</small></div></div>` : ''}<p class="eyebrow">${T('Sezon simülasyonu', 'Season simulation')} · ${T(`${esc(out.name)}'in yerini sen aldın`, `you have taken ${esc(out.name)}’s place`)}</p><h1 class="display">${T('Hafta', 'Week')} <em class="wk">0</em><span class="slash">/34</span></h1>
+    el.innerHTML = `<section class="dr-hero"><p class="eyebrow">${T('Sezon simülasyonu', 'Season simulation')} · ${T(`${esc(out.name)}'in yerini sen aldın`, `you have taken ${esc(out.name)}’s place`)}</p><h1 class="display">${T('Hafta', 'Week')} <em class="wk">0</em><span class="slash">/34</span></h1>
       <div class="dr-meta"><span class="chip">${T('Puan', 'Points')} <b class="pts">0</b></span><span class="chip">${T('G-B-M', 'W-D-L')} <b class="wdl">0-0-0</b></span><span class="chip">${T('Gol', 'Goals')} <b class="gl">0:0</b></span><button class="chip toggle" data-a="fast">⏩ ${T('Hızlandır', 'Speed up')}</button></div></section>
       <section class="season"><div class="live"><div class="live-card"><span class="eyebrow lc-t">${T('Maç günü', 'Matchday')}</span><div class="score"><span class="tn h">—</span><b class="sc">0 – 0</b><span class="tn a">—</span></div><div class="minute"><i></i></div><div class="goals-ev"></div><div class="feed"></div></div>
         <div class="bar"><i></i></div><div class="mini-kings"></div></div>
