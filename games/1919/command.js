@@ -100,7 +100,7 @@ if(difficult==="easy")for(const u of battle.units.filter(x=>x.team===0)){u.hp=Ma
 const ico=["♟️","🪖","🐎","💣"];
 const names=["1. Piyade","2. Piyade","3. Süvari","4. Topçu"];
 function hudHTML(){
-return '<section class="battle-cmd-hud" id="battleCmdHUD"><div class="battle-cmd-head"><div><strong>⚔ Harp Komuta Merkezi</strong><small style="display:block">Birim seç → arazide hedefe tıkla · 1–4 kısayol</small></div><canvas id="tacMini" width="150" height="95" class="battle-minimap" aria-label="Taktik mini harita"></canvas></div><div class="battle-meter"><div id="battlePower" style="width:50%"></div></div><div class="battle-cards" id="battleCards">'+names.map((x,i)=>'<button class="battle-card" data-cmdunit="'+i+'" aria-pressed="'+(i===0)+'"><i>'+ico[i]+'</i><b>'+x+'</b><small id="cmdHp'+i+'">Hazır</small><div class="health"><em style="width:100%"></em></div></button>').join("")+'</div><div class="battle-command-row"><button data-cmd="guard">🛡<br>Mevzi</button><button data-cmd="charge" class="primary">⚔<br>Hücum</button><button data-cmd="retreat">↶<br>Çekil</button><button data-cmd="rally">★<br>Moral</button><button data-cmd="pause">⏸<br>Duraklat</button></div><div class="battle-mini-status"><span id="tacStatus"><strong>1. Piyade</strong> seçildi. Savaş alanında gitmesini istediğin yere dokun.</span><button id="tacHelp">? Nasıl oynanır</button><span id="tacClock">00:00</span></div></section>';
+return '<section class="battle-cmd-hud" id="battleCmdHUD"><div class="battle-cmd-head"><div><strong>⚔ Harp Komuta Merkezi</strong><small style="display:block">Birim seç → arazide hedefe tıkla · 1–4 kısayol</small></div><canvas id="tacMini" width="150" height="95" class="battle-minimap" aria-label="Taktik mini harita"></canvas></div><div class="battle-meter"><div id="battlePower" style="width:50%"></div></div><div class="battle-cards" id="battleCards">'+names.map((x,i)=>'<button class="battle-card" data-cmdunit="'+i+'" aria-pressed="'+(i===0)+'"><i>'+ico[i]+'</i><b>'+x+'</b><small id="cmdHp'+i+'">Hazır</small><div class="health"><em style="width:100%"></em></div></button>').join("")+'</div><div class="battle-command-row"><button data-cmd="guard">🛡<br>Mevzi</button><button data-cmd="charge" class="primary">⚔<br>Hücum</button><button data-cmd="retreat">↶<br>Çekil</button><button data-cmd="rally">★<br>Moral</button><button data-cmd="pause">⏸<br>Duraklat</button></div><div class="tactbar" style="margin:6px 0 0"><button id="cmdDeploy">▤ Hat Düzeni</button><button id="cmdFlank">🐎 Süvari Kanat Taarruzu</button><button id="cmdArtillery">💣 Topçu Hazırlığı</button></div><div class="battle-mini-status"><span id="tacStatus"><strong>1. Piyade</strong> seçildi. Savaş alanında gitmesini istediğin yere dokun.</span><button id="tacHelp">? Nasıl oynanır</button><span id="tacClock">00:00</span></div></section>';
 }
 function hudUpdate(){
 if(!battle||mode!=="battle")return;
@@ -123,6 +123,23 @@ host.insertAdjacentHTML("beforeend",hudHTML());
 for(const [k,act] of [["guard","guard"],["charge","charge"],["retreat","retreat"],["rally","rally"],["pause","pause"]])host.querySelector('[data-cmd="'+k+'"]').onclick=()=>{battleAction(act);document.getElementById("tacStatus").textContent=({"guard":"Mevzi savunması verildi.","charge":"Hücum emri verildi.","retreat":"Geri çekilme emri verildi.","rally":"Moral emri verildi.","pause":"Muharebe duraklatıldı / devam ediyor."})[k]};
 host.querySelectorAll("[data-cmdunit]").forEach(b=>b.onclick=()=>{battle.selected=+b.dataset.cmdunit;paintUnitList();hudUpdate();const s=document.getElementById("tacStatus");if(s)s.textContent=names[battle.selected]+" seçildi. Haritada hedefe dokun."});
 host.querySelector("#tacHelp").onclick=()=>typeof showHelp==="function"?showHelp():alert("Birim kartına dokun, savaş alanına hareket emri ver.");
+host.querySelector("#cmdDeploy").onclick=()=>{
+if(!battle)return;
+const positions=[[265,145],[265,300],[235,440],[115,260]];
+battle.units.filter(u=>u.team===0).forEach((u,i)=>{u.tx=positions[i][0];u.ty=positions[i][1];u.guard=false;});
+document.getElementById("tacStatus").textContent="Hat düzeni: piyade öne, süvari kanada, topçu geriye yerleşiyor.";
+};
+host.querySelector("#cmdFlank").onclick=()=>{
+if(!battle)return;const cavalry=battle.units.find(u=>u.team===0&&u.type==="Süvari"&&u.hp>0);if(!cavalry)return;
+battle.selected=cavalry.id;cavalry.guard=false;cavalry.tx=610;cavalry.ty=cavalry.y<250?35:465;cavalry.morale=Math.min(100,cavalry.morale+12);
+paintUnitList();document.getElementById("tacStatus").textContent="Süvari kanattan dolaşıyor. Düşmanın yanına yaklaştığında yakın menzilden saldıracak.";
+};
+host.querySelector("#cmdArtillery").onclick=()=>{
+if(!battle)return;const arty=battle.units.find(u=>u.team===0&&u.type==="Topçu"&&u.hp>0);if(!arty)return;
+battle.selected=arty.id;arty.guard=false;arty.tx=330;arty.ty=340;arty.morale=Math.min(100,arty.morale+6);
+paintUnitList();document.getElementById("tacStatus").textContent="Topçu uygun menzile ilerliyor. Düşman menzile girdiğinde otomatik ateş edecek.";
+};
+
 const oldButtons=host.querySelector(".actions");if(oldButtons)oldButtons.style.display="none";
 const info=host.querySelector(".notice");if(info)info.style.display="none";
 const bar=app.querySelector(".statbar");if(bar){bar.style.position="relative";bar.style.top="auto"}
