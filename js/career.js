@@ -217,6 +217,16 @@ const Career = (() => {
     const F = FORMATIONS[S.formation];
     const st = { min: 0, gm: 0, go: 0, dGm: 0, dGo: 0, ment: S.ment, style: S.style || 'dengeli', reds: [], xi: S.xi.slice(), played: new Set(S.xi.filter(Boolean)), subs: 0, red: 0, oppRed: 0, ev: [], lines: [], paused: false, speed: 1, done: false, cards: {}, injured: [], ga: {} };
     const opp = fx.opp, oAD = oppAD(opp), oXI = clubXI(CLUB(opp.id) || { players: [] });
+    // Big home fixtures trigger crowd flares and supporters' chants.
+    const tableOrder = sorted(), myRank = tableOrder.findIndex(t => t.id === me().id) + 1,
+      opRank = tableOrder.findIndex(t => t.id === opp.id) + 1;
+    const homeName = String(fx.home ? me().name : opp.name).toLocaleLowerCase('tr');
+    const awayName = String(fx.home ? opp.name : me().name).toLocaleLowerCase('tr');
+    const isDerby = (homeName.includes('trabzon') && /rize|fenerbahçe|galatasaray|beşiktaş|samsun/.test(awayName))
+      || (homeName.includes('fenerbahçe') && /galatasaray|beşiktaş|trabzon/.test(awayName))
+      || (homeName.includes('galatasaray') && /fenerbahçe|beşiktaş|trabzon/.test(awayName))
+      || (homeName.includes('beşiktaş') && /galatasaray|fenerbahçe|trabzon/.test(awayName));
+    const importantHome = isDerby || (myRank > 0 && opRank > 0 && myRank <= 6 && opRank <= 6);
     let m2 = null;
     const meH = fx.home ? 'h' : 'a', opH = fx.home ? 'a' : 'h';
     const tv = c => { if (m2 && !quick) m2.push(c); };
@@ -342,7 +352,7 @@ const Career = (() => {
     // canlı 2D: metin saati olay anlarında 2D pozisyon bitene kadar bekler
     function startTV() {
       if (typeof Match2D === 'undefined' || m2 || st.done) return; const box = ov.querySelector('.cr-pitch2d'); box.hidden = false; box.innerHTML = '';
-      const sd = sides(); m2 = Match2D.show(Object.assign({ live: true, mount: box, gh: 0, ga: 0, lh: 1, la: 1, ev: [] }, sd));
+      const sd = sides(); m2 = Match2D.show(Object.assign({ live: true, mount: box, gh: 0, ga: 0, lh: 1, la: 1, ev: [], important: importantHome }, sd));
       if (m2) { m2.setMin(Math.max(1, st.min)); m2.setSpeed(st.speed); m2.setScore(fx.home ? st.gm : st.go, fx.home ? st.go : st.gm); }
     }
     function stopTV() { if (m2) { m2.close(); m2 = null; } const box = ov && ov.querySelector('.cr-pitch2d'); if (box) { box.hidden = true; box.innerHTML = ''; } }
@@ -355,7 +365,7 @@ const Career = (() => {
       const cards = st.reds.map(c => ({ t: (c.t === 'me') === fx.home ? 'h' : 'a', name: c.name, min: c.min, red: true, dogso: c.dogso }));
       const r = S.matchLog.res;
       ov.style.display = 'none';
-      Match2D.show({ home: fx.home ? meSide : opSide, away: fx.home ? opSide : meSide, gh: r.gh, ga: r.ga, lh: r.lh, la: r.la, ev, cards }, () => { ov.style.display = ''; });
+      Match2D.show({ home: fx.home ? meSide : opSide, away: fx.home ? opSide : meSide, gh: r.gh, ga: r.ga, lh: r.lh, la: r.la, ev, cards, important: importantHome }, () => { ov.style.display = ''; });
     }
     function close() { stopTV(); clearInterval(timer); ov.remove(); document.body.classList.remove('cr-live-open'); render(); }
     const restart = () => { clearInterval(timer); if (m2) m2.setSpeed(st.speed); timer = setInterval(() => { if (!st.paused && !(m2 && m2.busy())) { minuteTick(); if (m2) m2.setMin(st.min); } }, 160 / st.speed); };
