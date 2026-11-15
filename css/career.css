@@ -238,3 +238,41 @@ body.cr-live-open{overflow:hidden}
   .cr-live-ov .cr-ment button{flex:1 1 30%;min-height:42px}
   .cr-live-ov .cr-live-bar .pill{flex:1 1 43%;white-space:normal}
 }
+
+
+/* BABA MATCH CENTRE — original manager-game presentation, inspired by the
+   readability and match-day hierarchy of modern football management apps. */
+.cr-live-ov{--mc-bg:#091622;--mc-card:#10283b;--mc-line:#29485c;--mc-green:#78dd91;--mc-text:#ecf6fb;background:radial-gradient(ellipse at top,#112e40 0%,#07121c 80%)!important}
+.cr-live-ov .cr-live{color:var(--mc-text)}
+.cr-live-ov .cr-top{background:#0e2131;border:1px solid #294357;border-radius:20px;padding:clamp(10px,1.5vw,18px);box-shadow:0 15px 30px #0003;min-width:0}
+.cr-live-ov .cr-match-kicker{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#a9d7e7;font-size:11px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;margin-bottom:9px}
+.cr-live-ov .cr-match-kicker .cr-live-status{background:#173e39;border:1px solid #36705c;color:#c6ffda;border-radius:99px;padding:5px 11px;letter-spacing:.08em}
+.cr-live-ov .cr-score{background:#061621!important;border-color:#37576a!important;border-radius:14px;padding:clamp(10px,1.5vw,17px)}
+.cr-live-ov .cr-score span{font-size:clamp(13px,1.7vw,20px);font-weight:850;color:#effaff}
+.cr-live-ov .cr-score b{font-size:clamp(30px,4vw,54px);letter-spacing:-.05em;color:#fff}
+.cr-live-ov .cr-score em{background:#86e5a0;color:#09221a;font-weight:900;border-radius:10px}
+.cr-live-ov .cr-prog{height:5px;background:#244256;margin:10px 0;border-radius:99px}
+.cr-live-ov .cr-prog i{background:#78dd91}
+.cr-live-ov .cr-mom{opacity:1;color:#bfdbe6;font-weight:750;font-size:12px}
+.cr-live-ov .cr-mom div{background:#d9596f}
+.cr-live-ov .cr-mom i{background:#78dd91}
+.cr-live-ov .cr-pitch2d{background:#071723;border:1px solid #315063;border-radius:18px;box-shadow:inset 0 0 28px #0006}
+.cr-live-ov .cr-feed{background:#102738!important;color:#eff9fb!important;border:1px solid #2d5366;border-radius:16px;padding:12px 16px}
+.cr-live-ov .cr-feed p{color:#e9f3f6!important;border-bottom:1px solid #ffffff16;line-height:1.48;font-size:13px}
+.cr-live-ov .cr-feed p.goal{color:#97f2ac!important}
+.cr-live-ov .cr-feed p.conc{color:#ff9ca5!important}
+.cr-live-ov .cr-feed p.red,.cr-live-ov .cr-feed p.inj{color:#ffc48e!important}
+.cr-live-ov .cr-feed p.ch{color:#b9cbd5!important}
+.cr-live-ov .cr-live-bar{border:1px solid #365569;padding:9px;background:#112a3c;border-radius:15px}
+.cr-live-ov .cr-live-bar .pill{background:#9ce9ae!important;color:#0b271b!important;border:1px solid #b1f3c0!important;border-radius:11px;font-weight:900}
+.cr-live-ov .cr-live-bar .pill.ghost{background:#1d3a4b!important;color:#f1faff!important;border:1px solid #3d6576!important}
+.cr-live-ov .cr-live-bar .pill:hover{filter:brightness(1.1)}
+.cr-live-ov .cr-ment button{background:#152f40;border:1px solid #3b6172;color:#d6ebef;font-weight:800}
+.cr-live-ov .cr-ment button.on{background:#a0ebad;color:#0a2619;border-color:#a0ebad}
+.cr-live-ov .cr-plan-lbl{color:#a7cbdd;letter-spacing:.14em}
+.cr-live-ov button:focus-visible{outline:3px solid #b5f4bc;outline-offset:2px}
+.cr-live-ov .cr-sub{background:#102839;color:#f2faff}
+.cr-live-ov .cr-subcols button{background:#193d50;border:1px solid #426d80;color:#f1faff}
+.cr-live-ov .cr-subcols button span{color:#a1f5b3}
+.cr-live-ov .cr-subcols button.on{border-color:#91e6a6}
+@media(max-width:959px){.cr-live-ov .cr-top{padding:10px}.cr-live-ov .cr-match-kicker{font-size:10px}.cr-live-ov .cr-feed{padding:9px 11px}}
