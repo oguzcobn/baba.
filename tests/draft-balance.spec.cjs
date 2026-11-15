@@ -11,6 +11,12 @@ test('20 full Draft seasons: standings, goals, spread and rating sensitivity',as
   for(let i=0;i<20;i++){
     const rating=i<10?84:76;
     await page.evaluate(({rating,i})=>{
+      // Reproducible simulations: 20 different seeds make regressions measurable.
+      let seed=(0x9e3779b9 ^ Math.imul(i+1,0x85ebca6b))>>>0;
+      Math.random=()=>{
+        seed ^= seed<<13; seed ^= seed>>>17; seed ^= seed<<5;
+        return (seed>>>0)/4294967296;
+      };
       const picks={};
       for(const [j,s] of DRAFT_SLOTS.entries()){
         picks[s.id]={name:'DRAFTTEST_'+i+'_'+j,pos:s.pos,r:rating,club:DRAFT_CLUBS[(j*3+i)%DRAFT_CLUBS.length].id,era:'FC27'};
@@ -46,6 +52,10 @@ test('20 full Draft seasons: standings, goals, spread and rating sensitivity',as
   };
   console.log('DRAFT_20_SUMMARY '+JSON.stringify(summary));
   expect(results).toHaveLength(20);
+  // A competitive squad should be favoured, not guaranteed the title.
+  expect(summary.strongAverage).toBeLessThan(summary.mediumAverage);
+  // Guard against the regression reported by players: near-automatic 4th/5th.
+  expect(results.filter(x=>x.rating===76 && [4,5].includes(x.rank)).length).toBeLessThan(8);
   for(const row of results){
     expect(row.validLeague).toBe(18);
     expect(row.rank).toBeGreaterThanOrEqual(1);
