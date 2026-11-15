@@ -379,3 +379,31 @@ test.describe('Premium football UI integration',()=>{
   expect(theme).toContain('gradient');
  });
 });
+
+test.describe('Football visual accessibility regression',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test.beforeEach(async({page})=>page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+ test('Draft clubs show readable, wrapping labels on dark cards',async({page})=>{
+  await page.goto(BASE+'#draft');
+  const label=page.locator('#draft-section .club-grid .ct small').first();
+  await expect(label).toBeVisible({timeout:15000});
+  const colors=await label.evaluate(el=>({color:getComputedStyle(el).color,whiteSpace:getComputedStyle(el).whiteSpace,opacity:getComputedStyle(el).opacity}));
+  expect(colors.color).toBe('rgb(241, 251, 243)');
+  expect(colors.whiteSpace).toBe('normal');
+  expect(colors.opacity).toBe('1');
+  const geom=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
+  expect(geom.scroll).toBeLessThanOrEqual(geom.width+3);
+ });
+ test('Career club centre renders the new team spotlight when a save exists',async({page})=>{
+  await page.goto(BASE+'#career');
+  if(await page.locator('#careerRoot .cr-start').count()){
+    await page.locator('#careerRoot .cr-clubsel').selectOption({index:0});
+    await page.locator('#careerRoot [data-s=club]').click();
+  }
+  await expect(page.locator('#careerRoot .cr-team-spotlight')).toBeVisible({timeout:15000});
+  await expect(page.locator('#careerRoot .cr-featured-player')).toHaveCount(3);
+  await expect(page.locator('#careerRoot .cr-spotlight-actions [data-tab=squad]')).toBeVisible();
+  await page.locator('#careerRoot .cr-spotlight-actions [data-tab=squad]').click();
+  await expect(page.locator('#careerRoot .cr-squad')).toBeVisible({timeout:15000});
+ });
+});
