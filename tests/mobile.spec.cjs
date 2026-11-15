@@ -428,11 +428,14 @@ test.describe('Career live match full screen layout',()=>{
     const overlay=document.querySelector('.cr-live-ov').getBoundingClientRect();
     const pitch=document.querySelector('.cr-pitch2d').getBoundingClientRect();
     const controls=document.querySelector('.cr-dyn').getBoundingClientRect();
-    return {viewport:innerWidth,overlay:overlay.width,pitch:pitch.width,controls:controls.width,pitchHeight:pitch.height};
+    const top=document.querySelector('.cr-top').getBoundingClientRect();
+    return {viewport:innerWidth,viewportHeight:innerHeight,overlay:overlay.width,pitch:pitch.width,controls:controls.width,pitchHeight:pitch.height,scoreHeight:top.height};
   });
   expect(geometry.overlay).toBeGreaterThan(geometry.viewport*.9);
   expect(geometry.pitch).toBeGreaterThan(geometry.viewport*.55);
   expect(geometry.pitchHeight).toBeGreaterThan(350);
+  expect(geometry.scoreHeight,'score header should stay compact').toBeLessThan(125);
+  expect(geometry.pitchHeight,'pitch should occupy the majority of the screen').toBeGreaterThan(geometry.viewportHeight*.72);
   expect(geometry.controls).toBeGreaterThan(230);
   await expect(page.locator('.cr-live [data-l=skip]')).toBeVisible();
  });
