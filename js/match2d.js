@@ -62,8 +62,8 @@ const Match2D = (() => {
   const zoneOf = x => x < 35 ? 1 : x < 70 ? 2 : 3; // getZone(): 1 savunma, 2 orta saha, 3 hücum (hücum yönü sağa)
   const RUN = 8.2, JOG = 6.4, DRIB = .78; // m/s; top sürerken hız %22 düşer (DRIB)
   const has = (p, t) => p && p.traits && p.traits.includes(t);
-  const runSp = p => RUN * (has(p, 'SPEED_DRIBBLER') ? 1.18 : 1);
-  const dribSp = p => RUN * DRIB * (has(p, 'SPEED_DRIBBLER') ? 1.3 : 1);
+  const runSp = p => RUN * clamp(.95 + ((p && p.r || 70) - 70) * .004, .82, 1.17) * (has(p, 'SPEED_DRIBBLER') ? 1.1 : 1);
+  const dribSp = p => runSp(p) * DRIB * (has(p, 'SPEED_DRIBBLER') ? 1.08 : 1);
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
   function show(o, onDone) {
@@ -449,6 +449,11 @@ const Match2D = (() => {
 
     /* --------- beat başlatma --------- */
     function applyRuns(runs) { (runs || []).forEach(r => { if (!r.p || r.p.off) return; const f = AF(r.at); r.p.run = { x: f.x, y: f.y, sp: Math.min(r.sp || RUN, 10) }; if (diagnostics) diagnostics.runs.push({ name: r.p.name, sp: r.sp }); }); }
+    function startBeatInterception(b) {
+      const p = b.by;
+      if (p) { p.run = null; p.tx = ball.x; p.ty = ball.y; p.sp = runSp(p); }
+      if (b.txt) com(clips[ci].min, b.txt);
+    }
     function startBeat() {
       beat = beats.shift(); bt = 0;
       if (!beat) { if (plan && plan.stage !== 'over') { beats = decidePlayerAction() || []; if (!beats.length) return nextClip(); return startBeat(); } return nextClip(); }
@@ -458,6 +463,15 @@ const Match2D = (() => {
       if (beat.k === 'hold' && holder) supportRuns();
       if (beat.k === 'pass') {
         const r = beat.to; if (!r || r.off) { beat.k = 'hold'; beat.d = .3; return; }
+        if (plan && plan.set === 'idle' && holder && !beat.lob && !beat.cross &&
+            !laneOpen(holder, r) && Math.random() < .55) {
+          const interceptor = nearest(def(), ball)[0];
+          if (interceptor) {
+            beat = { k: 'lose', d: .65, by: interceptor,
+              txt: T(`${tn(interceptor)} pas arasını kapatıp topu kesiyor!`, `${tn(interceptor)} reads the pass and intercepts!`) };
+            return startBeatInterception(beat);
+          }
+        }
         let target = beat.at ? AF(beat.at) : { x: r.x, y: r.y };
         if (beat.follow && r.run) target = { x: r.run.x, y: r.run.y };
         beat.rFrom = { x: r.x, y: r.y };
