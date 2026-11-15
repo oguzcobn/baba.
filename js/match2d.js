@@ -14,6 +14,10 @@ const Match2D = (() => {
   const T = (tr, en) => (typeof I18N !== 'undefined' && I18N.lang === 'en') ? en : tr;
   const W = 105, H = 68, GY0 = 30.34, GY1 = 37.66;
   const STAND = 11; // metres of stadium surrounding the pitch
+  // IFAB Laws 12–14: a penalty requires contact inside the defending penalty area.
+  // Coordinates are normalized to the attacking team's frame; boundary lines count.
+  const foulRestart = spot => spot && spot.x >= W - 16.5 && spot.x <= W &&
+    spot.y >= (H - 40.32) / 2 && spot.y <= (H + 40.32) / 2 ? 'PENALTY' : 'FREEKICK';
   const rnd = n => Math.floor(Math.random() * n), pick = a => a[rnd(a.length)], lerp = (a, b, t) => a + (b - a) * t, clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const esc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const poisson = l => { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; };
@@ -99,7 +103,7 @@ const Match2D = (() => {
     let dir = { h: 1, a: -1 }, att = 'h', holder = null, beats = [], beat = null, bt = 0, flash = '', plan = null, seg = 0, state = 'PLAYING', carryDist = 0;
     const fx = { bubbles: [], cards: [], shakeUntil: 0, aim: null };
     // Playwright testleri için isteğe bağlı tanılama (normal oyuncularda kapalı)
-    const diagnostics = window.__BABA_MATCH_TEST__ === true ? { frames: [], goals: [], passes: [], runs: [], states: [], stadium: { margin: STAND, width: cv.width, height: cv.height }, done: false } : null;
+    const diagnostics = window.__BABA_MATCH_TEST__ === true ? { frames: [], goals: [], passes: [], runs: [], states: [], fouls: [], stadium: { margin: STAND, width: cv.width, height: cv.height }, done: false } : null;
     if (diagnostics) window.__BABA_MATCH_DIAGNOSTICS__ = diagnostics;
     let lastSample = 0;
 
@@ -361,9 +365,10 @@ const Match2D = (() => {
     function place(p, at) { if (!p || p.off) return; const f = toField(p.side, p.side === att ? at : at); Object.assign(p, { x: f.x, y: f.y, tx: f.x, ty: f.y, run: null }); }
     const placeAF = (p, at) => { const f = AF(at); Object.assign(p, { x: f.x, y: f.y, tx: f.x, ty: f.y, run: null }); }; // hücum çerçevesinde konumla (her iki takım için)
     function setPiece(kind, spotAF, nextOut) {
+      if (kind === 'PENALTY' && foulRestart(spotAF) !== 'PENALTY') kind = 'FREEKICK';
       seg++; setState(kind); holder = null; ball.trail = [];
       const A = live(att), D = live(def()), kp = D.find(p => p.pos === 'KL'), S = plan.shooter;
-      const taker = kind === 'PENALTY' ? (A.find(p => has(p, 'FREEKICK_MASTER') && plan.c.out === 'goal' && !plan.c.sc) || S) : (A.filter(p => has(p, 'FREEKICK_MASTER'))[0] || (kind === 'CORNER' ? A.find(p => p.pos === 'KN') : null) || A.filter(p => p.pos === 'OS').sort((a, b) => b.r - a.r)[0] || S);
+      let taker = kind === 'PENALTY' ? (A.find(p => has(p, 'FREEKICK_MASTER') && plan.c.out === 'goal' && !plan.c.sc) || S) : (A.filter(p => has(p, 'FREEKICK_MASTER'))[0] || (kind === 'CORNER' ? A.find(p => p.pos === 'KN') : null) || A.filter(p => p.pos === 'OS').sort((a, b) => b.r - a.r)[0] || S);
       if (kind === 'FREEKICK' && plan.c.out === 'goal' && plan.c.sc) plan.shooter = taker === S ? S : (has(taker, 'FREEKICK_MASTER') ? S : S);
       if (kp) placeAF(kp, { x: 104.3, y: 34 });
       if (kind === 'CORNER') {
@@ -388,7 +393,26 @@ const Match2D = (() => {
         beats = [{ k: 'hold', d: 1.5, txt: T(`PENALTI! ${tn(taker)} topu noktaya koydu`, `PENALTY! ${tn(taker)} places the ball on the spot`) }, { k: 'aim', d: .8, at: { x: 105, y: gy } }, { k: 'shot', out: nextOut, gy, pen: true, txt: T(`${tn(taker)} vurdu…`, `${tn(taker)} strikes…`) }];
         return;
       }
-      // FREEKICK: baraj 9,15 m, frikik ustası kavisli şut
+      // FREEKICK: from the actual point of contact, not a fixed spot in the final third.
+      // At midfield play a short restart and construct the attack; don't shoot 50 metres.
+      if (sp.x < 74) {
+        if (taker === S) taker = A.find(p => p !== S && (p.pos === 'OS' || p.pos === 'ST')) || A.find(p => p !== S) || S;
+        const support = A.find(p => p !== taker && p !== S && p.pos === 'OS') ||
+          A.find(p => p !== taker && p !== S && p.pos !== 'KL') || S;
+        const sx = clamp(sp.x + 15, 18, 83), tx = clamp(sp.x + 34, 30, 91);
+        placeAF(taker, { x: clamp(sp.x - 1.5, 2, W - 3), y: sp.y });
+        if (support !== taker) placeAF(support, { x: sx, y: clamp(sp.y + (sp.y < 34 ? 5 : -5), 8, 60) });
+        if (S !== taker && S !== support) placeAF(S, { x: tx, y: clamp(sp.y + (sp.y < 34 ? -5 : 5), 10, 58) });
+        const f = AF(sp); ball.x = f.x; ball.y = f.y; ball.z = 0;
+        plan.wall = null;
+        const gy = nextOut === 'miss' ? GY1 + 1.8 : nextOut === 'post' ? GY0 : GY0 + 2.3;
+        beats = [{ k: 'hold', d: 1.1, txt: T(`Orta sahada serbest vuruş — ${tn(taker)} kısa kullanıyor`, `Free kick in midfield — ${tn(taker)} plays it short`) },
+          passTo(support, AF(support), { txt: T(`${tn(taker)} oyunu kuruyor`, `${tn(taker)} restarts play`) })];
+        if (support !== S) beats.push(passTo(S, AF(S), { txt: T(`${tn(support)} ileri oynadı`, `${tn(support)} plays it forward`) }));
+        beats.push({ k: 'shot', out: nextOut, gy, power: true, txt: T(`${tn(S)} şutunu deniyor!`, `${tn(S)} takes the shot!`) });
+        plan.shooter = S; return;
+      }
+      // Direct free kick in attacking territory: wall 9.15m from the ball.
       placeAF(taker, { x: sp.x - 2, y: sp.y + (sp.y < 34 ? -1 : 1) }); plan.shooter = (plan.c.out === 'goal' && plan.c.sc) ? S : taker; if (plan.shooter !== taker) placeAF(plan.shooter, { x: sp.x - 1.5, y: sp.y + (sp.y < 34 ? 1.5 : -1.5) });
       const f = AF(sp); ball.x = f.x; ball.y = f.y; ball.z = 0;
       const gx = 105, gyC = 34, vx = gx - sp.x, vy = gyC - sp.y, L = Math.hypot(vx, vy) || 1, wx = sp.x + vx / L * 9.15, wy = sp.y + vy / L * 9.15;
@@ -446,7 +470,12 @@ const Match2D = (() => {
       if (beat.k === 'shot') startShot(beat);
       if (beat.k === 'foul') {
         const v = beat.victim, d = beat.fouler && !beat.fouler.off ? beat.fouler : wpick(nearest(def(), v).slice(0, 2), p => has(p, 'AGGRESSIVE_TACKLER') ? 3 : 1);
-        beat.fouler = d; beat.d = 1.1; holder = null;
+        beat.fouler = d; beat.d = 1.1;
+        // Freeze the actual contact point at the whistle — never infer it from the planned attack.
+        beat.foulSpot = { x: clamp(AF(v).x, 0, W), y: clamp(AF(v).y, 0, H) };
+        beat.next = foulRestart(beat.foulSpot);
+        if (diagnostics) diagnostics.fouls.push({ spot: { ...beat.foulSpot }, awarded: beat.next, requested: plan.set });
+        holder = null;
         if (d) { d.run = null; d.tx = v.x - dir[att] * .2; d.ty = v.y + .9; }
         com(clips[ci].min, beat.card === 'R' ? T(`${tn(d)} arkadan sert kaydı — düdük!`, `${tn(d)} slides in from behind — whistle!`) : T(`${tn(d)} müdahale etti, ${tn(v)} yerde — faul!`, `${tn(d)} goes in, ${tn(v)} is down — foul!`), 'miss');
         bubble(T('FAUL!', 'FOUL!'), v, '#111');
@@ -513,9 +542,9 @@ const Match2D = (() => {
           ball.x = holder.x; ball.y = holder.y; ball.z = 0;
         }
       }
-      if (b.k === 'foul') { const red = b.card === 'R'; if (b.card) beats.unshift({ k: 'card', p: b.fouler, red, dogso: b.dogso, d: 1.5 }); beats.splice(b.card ? 1 : 0, 0, { k: 'call', fn: () => { if (red && b.fouler) startLeaving(b.fouler); const v = AF(b.victim); setPiece(b.next, { x: clamp(v.x, 70, 92), y: clamp(v.y, 10, 58) }, plan.out); plan.stage = 'over'; return []; } }); }
+      if (b.k === 'foul') { const red = b.card === 'R'; if (b.card) beats.unshift({ k: 'card', p: b.fouler, red, dogso: b.dogso, d: 1.5 }); beats.splice(b.card ? 1 : 0, 0, { k: 'call', fn: () => { if (red && b.fouler) startLeaving(b.fouler); const spot = b.foulSpot || AF(b.victim); setPiece(foulRestart(spot), spot, plan.out); plan.stage = 'over'; return []; } }); }
       if (b.k === 'shot') { if (b.out === 'corner') { beats = [{ k: 'hold', d: .6, txt: T('Kornere çıktı.', 'Out for a corner.') }, { k: 'call', fn: () => { setPiece('CORNER', null, plan.out); plan.stage = 'over'; return []; } }]; } else beats = [{ k: 'result', d: b.out === 'goal' ? 2.4 : 1.6, out: b.out, header: b.header, curve: b.curve, fk: b.fk, pen: b.pen }]; plan.stage = 'over'; }
-      if (b.k === 'card') setState(plan.set === 'pen' ? 'PENALTY' : state);
+      if (b.k === 'card') setState('CARD_SHOWN');
       if (b.k === 'aim') fx.aim = null;
       if (b.k === 'lose') { holder = null; plan.stage = 'over'; beats = []; if (b.by) { b.by.tx = b.by.x; b.by.ty = b.by.y; } lastLoser = att; }
       if (b.k === 'result') { plan.stage = 'over'; beats = []; }
@@ -777,5 +806,5 @@ const Match2D = (() => {
     if (reduce) speed = 2;
     nextClip(); raf = requestAnimationFrame(tick);
   }
-  return { show, STYLES };
+  return { show, STYLES, foulRestart };
 })();
