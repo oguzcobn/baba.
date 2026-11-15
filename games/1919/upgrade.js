@@ -5,6 +5,26 @@
 const baseHome=home,baseCampaign=campaign,baseFactions=factions,baseScenarios=scenarios,baseBegin=beginBattle,baseDraw=drawBattle,baseUpdate=updateBattle,baseMap=mapSvg,baseNext=next;
 const escapeText=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let terrain=null,terrainType="",battleSpeed=1,showHealth=true;
+let battle3d=null,battle3dLoading=false,battle3dWanted=true;
+function dispose3d(){if(battle3d){battle3d.dispose();battle3d=null;}}
+async function load3d(){
+if(battle3d||battle3dLoading||!battle||!battle3dWanted)return;
+battle3dLoading=true;
+const status=document.getElementById("battleViewStatus");
+if(status)status.textContent="3B savaş alanı hazırlanıyor…";
+try{
+const module=await import("./three-battle.js?v=3");
+if(!battle||!battle3dWanted)return;
+battle3d=await module.mount3DBattle({
+getBattle:()=>battle,
+onSelect:id=>{if(!battle)return;battle.selected=id;paintUnitList();},
+onOrder:(x,y)=>{if(!battle)return;const u=battle.units[battle.selected];if(!u)return;u.tx=Math.max(20,Math.min(780,x));u.ty=Math.max(30,Math.min(470,y));u.guard=false;}
+});
+if(status)status.textContent="3B TAKTİK KAMERA · Sağ tık sürükle: döndür · Tekerlek: yakınlaştır";
+}catch(err){console.warn("3D unavailable, using 2D battlefield",err);battle3dWanted=false;if(status)status.textContent="2B görünüm aktif · 3B bu cihazda açılamadı";const t=document.getElementById("toggleBattle3D");if(t)t.textContent="3B tekrar dene"}
+finally{battle3dLoading=false}
+}
+const originalStop=stop;stop=function(){dispose3d();originalStop()};
 const tutorialSteps=[
 ["1","Karargâhını güçlendir","Ankara’yı seç. 40 altın harcayarak asker yetiştir, ikmal ve moralini kontrol et."],
 ["2","Cepheye ilerle","Haritadaki bir şehre dokun. Komşu bir cephe seçip Kolorduyu Sevk Et komutunu ver."],
@@ -107,15 +127,27 @@ if(u.morale<26){g.fillStyle="#f5b861";g.fillText("⚠",u.x+30,u.y-40)}
 for(const sh of b.shots){
 g.save();g.globalAlpha=Math.min(1,sh.life*5);g.strokeStyle=sh.team===0?"#ffeca1":"#ffd2b0";g.lineWidth=sh.boom?4:1.5;g.beginPath();g.moveTo(sh.x,sh.y);g.lineTo(sh.tx,sh.ty);g.stroke();if(sh.boom){const glow=g.createRadialGradient(sh.tx,sh.ty,1,sh.tx,sh.ty,21);glow.addColorStop(0,"#fff0a3");glow.addColorStop(.3,"#ffb45d8a");glow.addColorStop(1,"#f9991100");g.fillStyle=glow;g.beginPath();g.arc(sh.tx,sh.ty,22,0,7);g.fill()}g.restore()}
 if(paused){g.fillStyle="#0b1a14c9";g.fillRect(0,0,800,500);g.font="bold 32px Georgia";g.fillStyle="#f3d99f";g.fillText("MUHAREBE DURAKLATILDI",174,245)}
+if(battle3d)battle3d.update();
 };
 function applyBattleUI(){
 const cv=document.getElementById("field");if(!cv)return;
+dispose3d();battle3dWanted=true;
 terrain=null;terrainType="";battleSpeed=1;
 const layout=app.querySelector(".battle-layout");
 if(layout){layout.insertAdjacentHTML("beforebegin",'<div class="battle-guide"><div><b>🎖 CEPHE EMRİ: Birliklerini yönet</b><p>1. Soldaki dost birliklerini seç. 2. Savaş alanında hedef konuma tıkla. 3. Mevzi tut veya hücum emrini kullan. Düşmana yeterince yaklaşınca ateş başlar.</p></div><button id="battleHelp">? Yardım</button></div>');
 document.getElementById("battleHelp")?.addEventListener("click",showHelp);
 }
 const actions=app.querySelector(".battle-layout .actions");if(actions){actions.insertAdjacentHTML("afterend",'<div class="tactbar"><button data-speed="1" class="primary">▶ 1× Normal</button><button data-speed="2">▶▶ 2× Hızlı</button><button data-speed="3">▶▶▶ 3× Çok Hızlı</button></div><p class="info-hotkey">Dokunarak oynama desteklenir · <b>1–4</b> birlik seçer · <b>Boşluk</b> duraklatır · Sağ tıkla emir ver</p>');app.querySelectorAll("[data-speed]").forEach(btn=>btn.onclick=()=>{battleSpeed=+btn.dataset.speed;app.querySelectorAll("[data-speed]").forEach(x=>x.classList.toggle("primary",x===btn))})}
+const controls=document.createElement("div");
+controls.className="battle-guide";
+controls.innerHTML='<div><b>GÖRÜNÜM</b><p id="battleViewStatus">3B savaş alanı hazırlanıyor…</p></div><button id="toggleBattle3D" class="primary">◈ 2B / 3B Değiştir</button>';
+cv.closest(".battlefield").insertAdjacentElement("afterend",controls);
+controls.querySelector("#toggleBattle3D").onclick=()=>{
+battle3dWanted=!battle3dWanted;
+if(!battle3dWanted){dispose3d();document.getElementById("battleViewStatus").textContent="2B görünüm aktif"}
+else load3d();
+};
+load3d();
 cv.oncontextmenu=ev=>ev.preventDefault();
 cv.onpointerdown=ev=>{
 if(!battle||battle.done)return;
@@ -127,7 +159,7 @@ const u=battle.units[battle.selected];if(u){u.tx=Math.max(20,Math.min(780,x));u.
 }
 beginBattle=function(opts){baseBegin(opts);applyBattleUI()};
 const baseFinish=finishBattle;
-finishBattle=function(b){baseFinish(b);if(mode==="result"){const h=app.querySelector(".hero");if(h)h.insertAdjacentHTML("afterend",'<section class="mission"><h3>Karargâh Raporu</h3><p><b>Bir sonraki adım:</b> Sefer haritasına dön, yaralı birliklerin yerine takviye yetiştir, ikmal puanını yükselt ve yeni cepheye ilerle. Muharebeyi yeniden denemek için Tarihsel Muharebeler menüsünü kullan.</p></section>')}};
+finishBattle=function(b){dispose3d();baseFinish(b);if(mode==="result"){const h=app.querySelector(".hero");if(h)h.insertAdjacentHTML("afterend",'<section class="mission"><h3>Karargâh Raporu</h3><p><b>Bir sonraki adım:</b> Sefer haritasına dön, yaralı birliklerin yerine takviye yetiştir, ikmal puanını yükselt ve yeni cepheye ilerle. Muharebeyi yeniden denemek için Tarihsel Muharebeler menüsünü kullan.</p></section>')}};
 window.addEventListener("keydown",ev=>{if(mode!=="campaign"||ev.key!=="?")return;showHelp()});
 if(mode==="home")home();
 })();
