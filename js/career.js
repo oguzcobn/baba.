@@ -298,7 +298,7 @@ const Career = (() => {
     function renderLive() {
       if (!ov) return;
       const L = lams(), share = clamp(Math.round(L.me / (L.me + L.op) * 100), 25, 75);
-      ov.querySelector('.cr-top').innerHTML = `<header class="cr-score"><span>${esc(fx.home ? meName : opp.name)}</span><b>${fx.home ? st.dGm : st.dGo} – ${fx.home ? st.dGo : st.dGm}</b><span>${esc(fx.home ? opp.name : meName)}</span><em>${st.done ? T('MS', 'FT') : st.min + "'"}</em></header>
+      ov.querySelector('.cr-top').innerHTML = `<div class="cr-match-kicker"><span>⚽ BABA. / ${T('MAÇ MERKEZİ', 'MATCH CENTRE')}</span><span class="cr-live-status">${st.done ? T('MAÇ BİTTİ', 'FULL TIME') : '● ' + T('CANLI MAÇ', 'LIVE MATCH')}</span></div><header class="cr-score"><span>${esc(fx.home ? meName : opp.name)}</span><b>${fx.home ? st.dGm : st.dGo} – ${fx.home ? st.dGo : st.dGm}</b><span>${esc(fx.home ? opp.name : meName)}</span><em>${st.done ? T('MS', 'FT') : st.min + "'"}</em></header>
         <div class="cr-prog"><i style="width:${st.min / 90 * 100}%"></i></div>
         <div class="cr-mom"><span>${T('Baskı', 'Momentum')}</span><div><i style="width:${share}%"></i></div><small>${share}% – ${100 - share}%</small></div>`;
       if (m2) m2.setMomentum(fx.home ? share : 100 - share);
