@@ -335,7 +335,9 @@ test.describe('Manager Career professional operations room',()=>{
   test.beforeEach(async({page})=>await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
   test('opens manager career and keeps all five menu sections accessible',async({page})=>{
     await page.goto(BASE+'#career');
-    await expect(page.locator('#career-section')).toBeVisible({timeout:15000});
+    await expect(page.locator('#career-section.cr-start')).toBeVisible({timeout:15000});
+    await page.locator('#career-section [data-s="new"]').click();
+    await expect(page.locator('#career-section.cr-head')).toBeVisible({timeout:15000});
     const tiles=page.locator('.cr-tabs .cr-nav-tile');
     await expect(tiles).toHaveCount(5);
     await expect(page.locator('.cr-command')).toBeVisible();
