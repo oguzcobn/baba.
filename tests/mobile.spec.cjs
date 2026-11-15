@@ -469,3 +469,36 @@ test.describe('Draft versus Career identity separation and position legibility',
   await expect(page.locator('#careerRoot .cr-idhost .cid-preview')).toBeVisible({timeout:10000});
  });
 });
+
+
+test.describe('Draft finished-season data showcase',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test('shows real scorer, assist and squad stats without invented fixture scores',async({page})=>{
+  await page.addInitScript(()=>{
+   sessionStorage.setItem('baba_ok','1');
+   const own={name:'BENIM OYUNCUM',team:'Senin Takımın',tid:'me',c1:'#4a923d',pos:'OS',r:83,g:9,a:14,cs:0,apps:34,score:26};
+   const scorer={name:'SEZON GOL KRALI',team:'Trabzonspor',tid:'ts',c1:'#902547',pos:'FV',r:88,g:29,a:5,cs:0,apps:34,score:37};
+   const goalie={name:'SEZON KALECISI',team:'Trabzonspor',tid:'ts',c1:'#902547',pos:'KL',r:80,g:0,a:0,cs:17,apps:34,score:16};
+   const last={out:'Rakip',rank:2,pts:78,w:25,d:3,l:6,gf:79,ga:36,best:false,prevBest:81,
+    table:[{name:'Senin Takımın',me:true,p:78,w:25,d:3,l:6,gf:79,ga:36,form:'GGBGM'}],
+    scorers:[scorer,own],assists:[own,scorer],gk:[goalie],poy:[scorer,own],mine:[own]};
+   localStorage.setItem('draft_state',JSON.stringify({v:3,bag:[],drawn:[],picks:{},bench:[null,null],
+     tac:{tempo:'dengeli',pres:'orta',hat:'dengeli',yon:'dengeli'},phase:'stats',tab:'awards',mode:'normal',jokers:2,club:null,coach:null,last}));
+  });
+  await page.goto(BASE+'#draft');
+  await expect(page.locator('#draftRoot .ss-showcase')).toBeVisible({timeout:15000});
+  await expect(page.locator('#draftRoot .ss-player h3')).toContainText('SEZON GOL KRALI');
+  await expect(page.locator('#draftRoot .ss-big')).toContainText('29');
+  await expect(page.locator('#draftRoot .db-match-card')).toHaveCount(0);
+  await page.locator('#draftRoot [data-season-view=assists]').click();
+  await expect(page.locator('#draftRoot .ss-player h3')).toContainText('BENIM OYUNCUM');
+  await expect(page.locator('#draftRoot .ss-big')).toContainText('14');
+  await page.locator('#draftRoot [data-season-view=mine]').first().click();
+  await expect(page.locator('#draftRoot .ss-player h3')).toContainText('BENIM OYUNCUM');
+  await expect(page.locator('#draftRoot .ss-team')).toContainText('78');
+  await page.locator('#draftRoot [data-season-view=table]').click();
+  await expect(page.locator('#draftRoot .ss-standing')).toContainText('78');
+  const w=await page.evaluate(()=>({client:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
+  expect(w.scroll).toBeLessThanOrEqual(w.client+4);
+ });
+});
