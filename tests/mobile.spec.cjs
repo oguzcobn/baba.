@@ -451,7 +451,7 @@ test.describe('Draft versus Career identity separation and position legibility',
   await page.goto(BASE+'#draft');
   await expect(page.locator('#draftRoot [data-a=spin]')).toBeEnabled({timeout:15000});
   await page.locator('#draftRoot [data-a=spin]').click();
-  const position=page.locator('#draftRoot .pl:not(.no) .pos').first();
+  const position=page.locator('#draftRoot .pl:not(.no) .pos.need').first();
   await expect(position).toBeVisible({timeout:15000});
   const style=await position.evaluate(el=>({color:getComputedStyle(el).color,background:getComputedStyle(el).backgroundColor}));
   expect(style.color).toBe('rgb(75, 49, 12)');
