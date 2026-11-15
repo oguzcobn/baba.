@@ -1,0 +1,63 @@
+
+/* 1919 — cinematic command visual system, original assets inspired by strategy conventions */
+:root{--ph-gold:#e0b977;--ph-edge:#9b7645;--ph-deep:#091b1c;--ph-ink:#122525;--ph-light:#f5e8c8}
+body{background:radial-gradient(ellipse at 50% -90px,#3e5344,#0a1516 65%) fixed}
+#app .top{background:linear-gradient(135deg,#142827f7,#0c1b1bfa);border:1px solid #977b4b;border-top:2px solid #c9a264;box-shadow:0 8px 40px #0009}
+#app .brand{font-family:Georgia,serif;letter-spacing:.1em;color:#fff0cd}
+#app .brand .gold{color:#f1bf6a}
+#app .hero{position:relative;isolation:isolate;background:radial-gradient(circle at 81% 22%,#c9954a7a,transparent 39%),linear-gradient(95deg,#0b1c1de8 10%,#22352be6 55%,#12241b9a),repeating-linear-gradient(26deg,#344a36 0 3px,#1c2d24 3px 9px)}
+#app .hero:after{content:"";pointer-events:none;position:absolute;right:2%;top:4%;width:min(35vw,410px);aspect-ratio:1;background:radial-gradient(ellipse,#d4b67b66 0,#d4b67b11 45%,transparent 68%);z-index:-1}
+#app .hero h1{font-weight:700;text-shadow:0 4px 24px #000b}
+#app .hero p{max-width:650px}
+#app .tile{background:linear-gradient(145deg,#293d35,#102124);border:1px solid #786d52}
+#app .tile:hover{border-color:#d7b67d}
+#app .mapwrap{border:2px solid #b29259;background:#29483f;box-shadow:0 22px 70px #0009}
+#app .mapwrap svg{filter:contrast(1.07) saturate(.91)}
+#app .war-map-pin{cursor:pointer}
+#app .war-map-pin:hover circle:first-of-type{stroke:#ffe5ab;stroke-width:5}
+#app .war-region-box{background:linear-gradient(150deg,#39483d,#182a28);border-color:#977a53}
+#app .war-region-box .big-action,#app .war-turn-button{background:linear-gradient(#ffdfa4,#c49a5d);color:#14251f;border:1px solid #e8bd77;box-shadow:inset 0 1px #fff8,0 3px 15px #0007}
+#app .statbar{background:linear-gradient(135deg,#0e2629,#213c36);border:1px solid #826e51}
+#app .stat b{color:#f6d899}
+#app #warGuide{background:linear-gradient(100deg,#33453d,#1a2e2b);border-color:#af915b;border-left:5px solid #dfb470}
+#app .battlefield{position:relative;border:2px solid #ac8a53;box-shadow:0 15px 70px #000b;background:#233730}
+#app .battlefield:before{content:"";pointer-events:none;position:absolute;inset:0;border:4px solid #d5b37528;z-index:3}
+#app .battle-cmd-hud{background:linear-gradient(#14272aeF,#101e20f7);border:2px solid #ac8b56;box-shadow:0 10px 38px #0009}
+#app .battle-cmd-head strong{font-family:Georgia,serif;font-size:20px}
+#app .battle-card{position:relative;min-height:138px;background:linear-gradient(160deg,#233c3b 0,#122426 60%,#0c1c20);border:1px solid #806b4d;overflow:hidden}
+#app .battle-card:before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,#e0b66a,#baa07855)}
+#app .battle-card[aria-pressed=true]{background:linear-gradient(#56614d,#233c39 65%,#132628);border:2px solid #f5d391;box-shadow:0 0 17px #e4be7240,inset 0 0 18px #d8bc5916}
+#app .battle-card:disabled{filter:grayscale(1);opacity:.45}
+#app .battle-card .health{height:5px;margin-top:auto}
+#app .battle-card small{line-height:1.3;color:#d4d5c0}
+#app .battle-command-row button{background:#293e3b;border:1px solid #8a7954;color:#f4e6c8}
+#app .battle-command-row button.primary{background:linear-gradient(#c8a36b,#926e45);color:#102320}
+#app .battle-command-row button:hover{border-color:#ffe2a4}
+#app .battle-guide{background:linear-gradient(95deg,#233b37,#162c2b);border:1px solid #9b8053}
+#app .tactbar button{border:1px solid #8a7650}
+.ph-card-image{width:100%;height:58px;display:block;object-fit:cover;filter:sepia(.25)}
+.ph-card-id{display:flex;align-items:center;justify-content:space-between;width:100%;gap:5px}
+.ph-card-id span{font-size:9px;font-weight:800;color:#e3ba73}
+.ph-card-id .ph-stat{font-size:9px;color:#b6c7b8;white-space:nowrap}
+.ph-unit-role{font-size:10px;color:#d8be91!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ph-battle-banner{position:relative;background:linear-gradient(95deg,#142a29,#2e4035);border:1px solid #9a7b4e;border-radius:8px;margin:9px 0;padding:12px 16px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.ph-battle-banner h2{font:700 20px Georgia;color:#f4dfa7;margin:0}
+.ph-battle-banner p{font-size:11px;margin:2px 0 0;color:#c2d3c9}
+.ph-battle-banner .ph-weather{border:1px solid #ae8a59;background:#1e3431;padding:7px 10px;border-radius:6px;font-size:12px;white-space:nowrap}
+.ph-overlay-controls{position:absolute;right:12px;top:12px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;z-index:4}
+.ph-overlay-controls button{backdrop-filter:blur(9px);background:#112729d9;border:1px solid #d2b479;color:#f5e1b7;font-size:11px;padding:7px 10px}
+.ph-overlay-controls button:hover,.ph-overlay-controls button.active{background:#d0b076;color:#112624}
+.ph-command-tips{background:#172e2b;border:1px solid #957c4c;padding:10px 14px;margin:8px 0;border-radius:7px;color:#d8e0cf;font-size:12px}
+.ph-command-tips b{color:#f8d898}
+.ph-selected-unit{padding:10px;border:1px solid #806e51;border-radius:8px;background:linear-gradient(95deg,#263b34,#162b2b);display:flex;align-items:center;gap:11px;margin:7px 0}
+.ph-selected-unit img{width:78px;height:62px;object-fit:cover;border:1px solid #947951;border-radius:4px}
+.ph-selected-unit strong{color:#f1d59f;font-size:15px}
+.ph-selected-unit small{display:block;color:#cdd3c3;font-size:11px}
+.ph-flag{width:20px;height:20px;display:inline-grid;place-items:center;border:1px solid #d6b778;background:#962e2e;border-radius:50%;font-size:10px;color:#fff}
+.ph-prompt{border-top:1px solid #6a755c;margin-top:8px;padding-top:9px;font-size:12px;color:#d6d2b9}
+.ph-prompt strong{color:#e9c987}
+.ph-compact #warGuide p{font-size:12px}
+.ph-compact .war-rail{display:none}
+.ph-compact .battle-guide{display:none}
+@media(min-width:980px){#app .battlefield{aspect-ratio:16/8.8;max-height:74vh}.battle-cards{grid-template-columns:repeat(4,minmax(0,1fr))}.ph-card-image{height:70px}}
+@media(max-width:600px){.ph-battle-banner{padding:9px;align-items:flex-start}.ph-battle-banner h2{font-size:16px}.ph-battle-banner .ph-weather{font-size:10px}.ph-overlay-controls{right:5px;top:5px}.ph-overlay-controls button{padding:5px 7px;font-size:10px}.ph-card-image{height:42px}.ph-unit-role{display:none!important}#app .battle-card{min-height:112px}.ph-selected-unit{padding:6px}.ph-selected-unit img{width:54px;height:44px}.ph-selected-unit strong{font-size:12px}}
