@@ -1,0 +1,29 @@
+name: Draft 20-season balance audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'js/draft.js'
+      - 'js/draft-data.js'
+      - 'tests/draft-balance.spec.cjs'
+      - '.github/workflows/draft-balance.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-http.log 2>&1 &
+      - run: npx playwright test tests/draft-balance.spec.cjs --reporter=line --workers=1
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: draft-balance-report
+          path: test-results/
