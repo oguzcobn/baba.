@@ -358,3 +358,24 @@ test.describe('Draft blank screen and saved-state recovery',()=>{
   expect(Object.keys(state.picks)).toHaveLength(0);
  });
 });
+
+test.describe('Premium football UI integration',()=>{
+ test.use({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+ test.beforeEach(async({page})=>await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+ test('Draft retains playable controls and uses a dark field-inspired theme',async({page})=>{
+  await page.goto(BASE+'#draft');
+  await expect(page.locator('#draftRoot .dr-hero')).toBeVisible({timeout:15000});
+  await expect(page.locator('#draftRoot [data-a=spin]')).toBeEnabled();
+  const theme=await page.locator('#draft-section').evaluate(el=>getComputedStyle(el).backgroundColor);
+  expect(theme).not.toBe('rgb(255, 255, 255)');
+  const link=page.locator('link[href^="css/football-premium.css"]');
+  await expect(link).toHaveCount(1);
+ });
+ test('Career start or saved dashboard remains visible with themed cards',async({page})=>{
+  await page.goto(BASE+'#career');
+  await expect(page.locator('#careerRoot .cr')).toBeVisible({timeout:15000});
+  await expect(page.locator('#careerRoot .cr .display, #careerRoot .cr-head').first()).toBeVisible();
+  const theme=await page.locator('#careerRoot').evaluate(el=>getComputedStyle(el).backgroundImage);
+  expect(theme).toContain('gradient');
+ });
+});
