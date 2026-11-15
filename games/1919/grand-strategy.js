@@ -141,7 +141,30 @@ st.win=true;st.alert={kind:"victory",title:"Bağımsızlık Zaferi",date:state.d
 if(!owns("Ankara")||state.morale<=0){st.loss=true;st.alert={kind:"loss",title:"Seferin Sonu",date:state.day,text:"Karargâhın düştü veya millî moral tükendi. Son kaydı yükleyebilir veya yeni sefer açabilirsin."};}
 }}
 const baseFresh=fresh;
-fresh=function(f){const s=baseFresh(f);ensure(s);s.day=f==="tr"?"19 Mayıs 1919":s.day;return s};
+fresh=function(f){const s=baseFresh(f);ensure(s);s.day=f==="tr"?"19 Mayıs 1919":s.day;
+if(f==="tr"){s.strategy.seenEvents.push(1);s.strategy.alert={kind:"history",title:"Samsun'a Çıkış",date:"19 Mayıs 1919",text:"Mustafa Kemal Paşa Samsun'a ulaştı. İlk görevin: ulusal odaklardan Amasya Hattı'nı seçip millî örgütlenmeyi başlatmak."};}
+return s};
+const originalAction=action;
+action=function(a){
+if(!state)return originalAction(a);
+ensure(state);const st=state.strategy;
+if(a==="recruit"){
+const r=region(sel);
+if(r?.owner===state.faction&&state.gold>=40){
+if(st.manpower<10)return alert("İnsan gücü yetersiz. Siyasi kararlar veya ulusal odaklarla insan gücü kazan.");
+st.manpower-=10;
+}
+}
+if(a==="march"){
+const r=region(sel),dest=document.getElementById("march")?.value,d=dest?region(dest):null;
+if(r&&d&&r.owner===state.faction&&r.army>=12&&edges.some(([x,y])=>x===r.id&&y===d.id||y===r.id&&x===d.id)){
+const cost=d.owner===state.faction?4:16;
+if(state.supply<cost)return alert("Cephe emri için yeterli ikmal bulunmuyor ("+cost+" gerekli). İkmal üret veya sevk kararı al.");
+state.supply-=cost;
+}
+}
+originalAction(a);
+};
 const oldNext=next;
 next=function(){
 if(!state)return;ensure(state);if(state.strategy.win||state.strategy.loss)return;
