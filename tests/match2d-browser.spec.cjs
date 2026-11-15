@@ -101,3 +101,32 @@ test.describe('Realistic scoring positions and pass reception',()=>{
   expect(result.goals).toHaveLength(1);
  });
 });
+
+
+test('60Hz target, cached crowd and home derby supporter atmosphere',async({page})=>{
+ test.setTimeout(18000);
+ await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');window.__BABA_MATCH_TEST__=true;});
+ await page.goto(BASE+'#career');
+ await page.evaluate(({xi,slots})=>{
+   Match2D.show({
+     home:{name:'Trabzonspor',short:'TS',c1:'#821b39',c2:'#8dd3f2',xi,slots},
+     away:{name:'Çaykur Rizespor',short:'RIZ',c1:'#00693e',xi,slots},
+     gh:0,ga:0,lh:1,la:1,live:true,important:true,ev:[]
+   });
+ },{xi,slots});
+ await expect(page.locator('.m2d-ov canvas')).toBeVisible({timeout:10000});
+ await page.waitForTimeout(1100);
+ const diag=await page.evaluate(()=>({
+   fps:window.__BABA_MATCH_DIAGNOSTICS__?.targetFPS,
+   frames:window.__BABA_MATCH_DIAGNOSTICS__?.renderFrames,
+   crowdFrames:window.__BABA_MATCH_DIAGNOSTICS__?.stadiumDraws,
+   important:window.__BABA_MATCH_DIAGNOSTICS__?.importantHome,
+   chants:window.__BABA_MATCH_DIAGNOSTICS__?.chants
+ }));
+ expect(diag.fps).toBe(60);
+ expect(diag.important).toBe(true);
+ expect(diag.chants).toHaveLength(4);
+ expect(diag.chants[0]).toContain('Bu dünyada');
+ expect(diag.frames).toBeGreaterThan(diag.crowdFrames);
+ expect(diag.crowdFrames).toBeGreaterThan(1);
+});
