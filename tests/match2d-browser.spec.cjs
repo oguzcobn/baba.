@@ -71,3 +71,33 @@ test('IFAB foul location determines penalty or free kick on both sides',async({p
   centralBox:'PENALTY',wide:'FREEKICK',sideline:'PENALTY',outsideField:'FREEKICK'
  });
 });
+
+
+test.describe('Realistic scoring positions and pass reception',()=>{
+ test.use({viewport:{width:1280,height:800},reducedMotion:'reduce'});
+ test('centre-back only scores after reaching the attacking penalty area',async({page})=>{
+  test.setTimeout(120000);
+  await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');window.__BABA_MATCH_TEST__=true;});
+  await page.goto(BASE+'#career');
+  await page.evaluate(({xi,slots})=>{
+   Match2D.show({
+    home:{name:'Home',short:'HOM',c1:'#bd4458',xi,slots},
+    away:{name:'Away',short:'AWY',c1:'#22648c',xi,slots},
+    gh:1,ga:0,lh:1.2,la:.8,
+    ev:[{t:'h',sc:'ST Player 1',as:'OS Player 5',min:28,how:'cross'}]
+   });
+  },{xi,slots});
+  await expect.poll(()=>page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__?.done),{timeout:105000,intervals:[1000]}).toBe(true);
+  const result=await page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__);
+  const cbShots=result.shots.filter(s=>s.pos==='ST'&&s.out==='goal');
+  expect(cbShots.length).toBeGreaterThan(0);
+  for(const shot of cbShots){
+   expect(shot.distance,'centre-back must reach the box before shooting').toBeLessThanOrEqual(19);
+  }
+  for(const pass of result.passes){
+   expect(pass.end).not.toBeNull();
+   expect(pass.receptionGap,'no receiver should collect the ball from a long distance').toBeLessThanOrEqual(2.5);
+  }
+  expect(result.goals).toHaveLength(1);
+ });
+});
