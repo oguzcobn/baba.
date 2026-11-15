@@ -108,6 +108,16 @@ if(st.unrest>65){state.gold=Math.max(0,state.gold-12);state.morale=Math.max(0,st
 if(state.turn%4===0){const towns=state.regions.filter(p=>p.owner===state.faction&&p.army>18);
 for(const town of towns.slice(0,3)){const s=troopSupply(town);if(s<35){town.army=Math.max(5,town.army-2);log("⚠ "+town.name+" ikmal yetersizliği nedeniyle 2 asker kaybetti.")}}}
 }
+function processUpkeep(){
+const own=state.regions.filter(p=>p.owner===state.faction);
+const armyTotal=own.reduce((n,p)=>n+p.army,0);
+const budget=Math.max(5,Math.ceil(armyTotal/11));
+const provisions=Math.max(5,Math.ceil(armyTotal/15));
+state.gold=Math.max(0,state.gold-budget);
+state.supply=Math.max(0,state.supply-provisions);
+if(state.gold===0&&state.turn%3===0){state.morale=clamp(state.morale-3,0,100);log("⚠ Hazine boşaldı. Birliklerin moralinde düşüş yaşandı.")}
+if(state.supply===0&&state.turn%3===0){state.morale=clamp(state.morale-3,0,100);log("⚠ İkmal stokları tükendi. Yeni üretim ve sevkiyat emirleri ver.")}
+}
 function processEnemy(){
 const st=state.strategy;
 const foes=state.regions.filter(p=>p.owner!==state.faction);
@@ -172,11 +182,41 @@ oldNext();
 if(!state)return;
 ensure(state);
 state.day=state.faction==="tr"?fromTurn(state.turn):state.day;
-processFocus();processQueue();processPolitics();processEnemy();historical();victory();
+processFocus();processQueue();processPolitics();processUpkeep();processEnemy();historical();victory();
 campaign();
 };
 const oldCampaign=campaign;
 campaign=function(){if(!state)return oldCampaign();ensure(state);oldCampaign();renderStrategy()};
+const oldPrebattle=prebattle;
+prebattle=function(opts){
+oldPrebattle(opts);
+const modal=document.querySelector("#modal .modal");
+if(!modal)return;
+const container=modal.querySelector(".actions");
+if(!container)return;
+const btn=document.createElement("button");btn.type="button";btn.textContent="⚖ Muharebeyi Otomatik Çöz";btn.title="Birlik gücü, ikmal, tahkimat ve moral etkisiyle otomatik sonuç hesaplar.";
+container.appendChild(btn);btn.onclick=()=>{
+if(!state)return;
+ensure(state);
+const orig=opts.origin?region(opts.origin):null,to=opts.target?region(opts.target):null;
+const s=opts.scenario?SCENARIOS.find(x=>x.id===opts.scenario):null;
+const left=orig?.army||100,right=to?.army||100;
+const supply=orig?troopSupply(orig):100;
+const atk=left*(.65+.35*supply/100)*(state.morale/85)*(1+(state.tech||0)*.07);
+const def=right*(1+(to?.fort||1)*.12);
+const scenarioFactor=s?.id==="sarikamis"?.83:1;
+const ratio=(atk*scenarioFactor)/(atk*scenarioFactor+def);
+const seed=Math.abs(Math.sin((state.turn*31+left*17+right*13+(to?.id?.length||6)*23)*.71));
+const threshold=(state.difficulty==="hard"?.56:state.difficulty==="easy"?.43:.50)+(seed-.5)*.18;
+const win=ratio>=threshold;
+const survivors=Math.max(3,Math.round(left*(win?.58+ratio*.19:.22+ratio*.2)));
+const enemyRemain=Math.max(1,Math.round(right*(win?.24+(1-ratio)*.2:.60+(1-ratio)*.25)));
+const fake={opts,s,origin:opts.origin,target:opts.target,t:0,done:true,end:win?"win":"lose",units:[]};
+for(let i=0;i<4;i++)fake.units.push({team:0,hp:survivors/4,max:left/4});
+for(let i=0;i<4;i++)fake.units.push({team:1,hp:enemyRemain/4,max:right/4});
+battle=fake;document.getElementById("modal")?.remove();finishBattle(fake);
+};
+};
 const oldBegin=beginBattle;
 beginBattle=function(opts){
 if(state){ensure(state);const poor=opts.origin?troopSupply(region(opts.origin)):100;if(poor<30){log("⚠ Düşük ikmal koşullarında muharebeye girildi.");}}
@@ -246,6 +286,14 @@ const seen=state.strategy.seenEvents;
 return '<div class="strategy-info"><b>📜 Millî Mücadele Kronolojisi</b><p>Tarihsel olayların gerçekleşme zamanları kaynaklara dayanır. Savaş sonuçları oyuncunun tercihlerine göre farklılaşabilir.</p></div>'+HIST.map(x=>'<div class="strategy-history '+(seen.includes(x.turn)?"seen":"")+'"><div><small>'+x.date+'</small><h3>'+x.name+'</h3><p>'+x.text+'</p></div><span>'+(seen.includes(x.turn)?"✓ Yaşandı":"◌ Yaklaşan")+'</span></div>').join("");
 }
 let tab="focus",noticeLast=0;
+function addStrategyShortcut(){
+if(!state||mode!=="campaign")return;
+const top=app.querySelector(".statbar");
+if(!top||document.getElementById("strategyQuick"))return;
+const quick=document.createElement("button");quick.id="strategyQuick";quick.className="primary";quick.textContent="★ Ulusal Yönetim ve Üretim";quick.style.cssText="margin:8px 0;min-height:42px;width:100%";
+top.insertAdjacentElement("afterend",quick);
+quick.onclick=()=>{document.getElementById("grandStrategy")?.scrollIntoView({behavior:"smooth",block:"start"})};
+}
 function renderStrategy(){
 if(!state||mode!=="campaign")return;
 ensure(state);
@@ -255,6 +303,7 @@ const st=state.strategy,focus=st.focus&&findFocus(st.focus.id);
 const section=document.createElement("section");section.id="grandStrategy";section.className="strategy-shell";
 section.innerHTML='<div class="strategy-dashboard"><div><small>ULUSAL KOMUTA KONSEYİ</small><h2>Devlet Yönetimi</h2></div><div class="strategy-kpis"><span>⚖ Siyasi güç <b>'+st.political+'</b></span><span>♟ İnsan gücü <b>'+st.manpower+'</b></span><span>⚙ Sanayi <b>'+st.industry+'</b></span><span>⚠ Huzursuzluk <b>'+st.unrest+'</b></span></div></div><div class="strategy-progress">'+(focus?'<span>★ Aktif odak: <b>'+focus.title+'</b> · '+st.focus.remaining+' tur kaldı</span>':'<span>★ Ulusal odak seçilmedi. Odaklar kalıcı stratejik avantaj sağlar.</span>')+'<button id="strategyHelp">? Nasıl oynanır</button></div><div class="strategy-tabs" role="tablist">'+[["focus","★ Ulusal Odaklar"],["production","⚙ Üretim"],["logistics","📦 İkmal"],["decisions","⚖ Kararlar"],["history","📜 Tarih"]].map(([id,n])=>'<button role="tab" aria-selected="'+(tab===id)+'" data-tab="'+id+'">'+n+'</button>').join("")+'</div><div class="strategy-panel">'+({focus:focusMarkup,production:productionMarkup,logistics:logisticsMarkup,decisions:decisionsMarkup,history:historyMarkup}[tab]||focusMarkup)()+'</div>';
 root.insertAdjacentElement("afterend",section);
+addStrategyShortcut();
 section.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;renderStrategy()});
 section.querySelectorAll("[data-focus]").forEach(b=>b.onclick=()=>runFocus(b.dataset.focus));
 section.querySelectorAll("[data-produce]").forEach(b=>b.onclick=()=>queueProduction(b.dataset.produce));
