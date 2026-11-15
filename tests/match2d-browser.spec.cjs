@@ -6,7 +6,7 @@ const team=(name,short,c1)=>({name,short,c1,xi,slots});
 for(const [name,device] of [['Desktop', {viewport:{width:1440,height:900}}],['iPhone 13',devices['iPhone 13']]]){
  test.describe('Real browser 2D match replay: '+name,()=>{
   const {defaultBrowserType,browserName,...emulation}=device;
-  test.use(emulation);
+  test.use({...emulation,reducedMotion:'reduce'});
   test('goal crosses line before score; passes and players move without jumps; stadium extends beyond goals',async({page})=>{
    test.setTimeout(110000);
    await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');window.__BABA_MATCH_TEST__=true;});
