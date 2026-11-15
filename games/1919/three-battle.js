@@ -22,6 +22,9 @@ const sun=new THREE.DirectionalLight(0xffd4a1,2.8);sun.position.set(-60,100,-40)
 const b=getBattle(),snow=b?.s?.id==="sarikamis",desert=b?.s?.id==="kut";
 if(snow){scene.background=new THREE.Color(0xc6d4d8);scene.fog.color.set(0xb6c9ce)}
 if(desert){scene.background=new THREE.Color(0xc3af86);scene.fog.color.set(0xc3af86)}
+if(b?.s?.id==="sakarya"){scene.background=new THREE.Color(0x495c68);scene.fog.color.set(0x566472);scene.fog.density=.018;sun.color.set(0x9db1d3);sun.intensity=1.15;ambient.intensity=1.4}
+if(b?.s?.id==="taarruz"||b?.s?.id==="canakkale"){scene.background=new THREE.Color(0xbba280);scene.fog.color.set(0xbaa591);scene.fog.density=.012;sun.color.set(0xffba7c);sun.intensity=2.1;sun.position.set(-95,35,10)}
+if(b?.s?.id==="sarikamis"){scene.fog.density=.02;sun.intensity=1.5}
 const geometry=new THREE.PlaneGeometry(160,105,72,50);geometry.rotateX(-Math.PI/2);const positions=geometry.attributes.position,colors=[];
 const cLow=new THREE.Color(snow?0xb3c0b4:desert?0x8c7955:0x415d43),cHigh=new THREE.Color(snow?0xe3e4d5:desert?0xbfa47a:0x818c62);
 for(let i=0;i<positions.count;i++){const x=positions.getX(i),z=positions.getZ(i),h=groundHeight(x,z);positions.setY(i,h);const t=Math.min(1,Math.max(0,(h+3.5)/11));const col=cLow.clone().lerp(cHigh,t);const n=Math.sin(i*1.621)*.065;col.offsetHSL(0,0,n);colors.push(col.r,col.g,col.b)}
