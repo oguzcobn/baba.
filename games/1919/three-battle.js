@@ -33,15 +33,17 @@ const trenchMat=new THREE.MeshStandardMaterial({color:snow?0x8c968a:0x4b3f2e,rou
 const sandbagMat=new THREE.MeshStandardMaterial({color:snow?0xc4beac:0x9c8a69,roughness:1});
 for(const x of [-37,38]){for(let i=0;i<33;i++){const z=-50+i*3.15,xx=x+Math.sin(i*.6)*1.4,y=groundHeight(xx,z);const bar=new THREE.Mesh(new THREE.BoxGeometry(2.2,.6,3.1),trenchMat);bar.position.set(xx,y+.18,z);scene.add(bar);for(let k=0;k<2;k++){const bag=new THREE.Mesh(new THREE.BoxGeometry(.65,.35,2.65),sandbagMat);bag.position.set(xx+(k?1.2:-1.2),y+.3,z);scene.add(bag)}}}
 const wireMat=new THREE.LineBasicMaterial({color:0x909690,transparent:true,opacity:.6});for(const wx of [-26,27]){let points=[];for(let i=0;i<=110;i++){const z=-49+i*.9;points.push(new THREE.Vector3(wx+Math.sin(i*2)*.4,groundHeight(wx,z)+1.15,z))}const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),wireMat);scene.add(line)}
-const bodyShape=new THREE.CylinderGeometry(.32,.38,1.65,5),headShape=new THREE.SphereGeometry(.36,6,5),helmetShape=new THREE.ConeGeometry(.46,.55,6),horseShape=new THREE.BoxGeometry(1.5,.75,.58),wheelShape=new THREE.CylinderGeometry(.7,.7,.22,9),barrelShape=new THREE.CylinderGeometry(.14,.19,3.5,8);
+const bodyShape=new THREE.CylinderGeometry(.35,.42,1.65,7),headShape=new THREE.SphereGeometry(.34,8,6),helmetShape=new THREE.CylinderGeometry(.47,.40,.34,9),horseShape=new THREE.BoxGeometry(1.5,.75,.58),wheelShape=new THREE.CylinderGeometry(.7,.7,.22,9),barrelShape=new THREE.CylinderGeometry(.14,.19,3.5,8),rifleShape=new THREE.BoxGeometry(.10,.13,2.1),packShape=new THREE.BoxGeometry(.66,.87,.26),legsShape=new THREE.BoxGeometry(.48,.85,.3),bayonetShape=new THREE.CylinderGeometry(.015,.025,.72,5);
 const factionPalette=[{coat:0xc0a883,helmet:0x565c4a,horse:0x755342},{coat:0x817a71,helmet:0x575e59,horse:0x5e5546}];
 const uniforms=[];const dummy=new THREE.Object3D();
 for(let team=0;team<2;team++){
 const p=factionPalette[team];
 const mk=(geo,color,max=300)=>{const mesh=new THREE.InstancedMesh(geo,new THREE.MeshStandardMaterial({color,roughness:.92}),max);mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);mesh.frustumCulled=false;scene.add(mesh);return mesh};
-uniforms.push({body:mk(bodyShape,p.coat),head:mk(headShape,0xd2b895),helmet:mk(helmetShape,p.helmet),horses:mk(horseShape,p.horse,120),cannons:mk(barrelShape,0x343c3a,40),counts:{}});
+uniforms.push({body:mk(bodyShape,p.coat),head:mk(headShape,0xd2b895),helmet:mk(helmetShape,p.helmet),horses:mk(horseShape,p.horse,120),cannons:mk(barrelShape,0x343c3a,40),rifles:mk(rifleShape,0x3c352b),packs:mk(packShape,team===0?0x726344:0x565b4d),legs:mk(legsShape,team===0?0x8d8469:0x6c736b),bayonets:mk(bayonetShape,0xb4bdb4),counts:{}});
 }
 let labels=[];for(const u of b.units){const name=u.type==="Piyade"?"PİYADE":u.type==="Topçu"?"TOPÇU":"SÜVARİ";const lbl=makeLabel(name,u.team===0?"#e8d6a9":"#df9a87");scene.add(lbl);labels.push(lbl)}
+const pennantMaterial=[new THREE.MeshStandardMaterial({color:0xa53731,side:THREE.DoubleSide,roughness:.86}),new THREE.MeshStandardMaterial({color:0x9d8766,side:THREE.DoubleSide,roughness:.86})];
+const banners=b.units.map(u=>{const group=new THREE.Group();const pole=new THREE.Mesh(new THREE.CylinderGeometry(.065,.08,5.6,7),new THREE.MeshStandardMaterial({color:0x705f3b}));pole.position.y=2.5;group.add(pole);const cloth=new THREE.Mesh(new THREE.PlaneGeometry(2.6,1.45),pennantMaterial[u.team]);cloth.position.set(1.2,4.3,0);cloth.rotation.y=Math.PI/6;group.add(cloth);const insignia=new THREE.Mesh(new THREE.SphereGeometry(.23,8,6),new THREE.MeshStandardMaterial({color:0xf5e8ca,emissive:0x58462a}));insignia.position.set(1.2,4.3,.07);group.add(insignia);scene.add(group);return group;});
 const marker=new THREE.Mesh(new THREE.RingGeometry(2.7,3.15,36),new THREE.MeshBasicMaterial({color:0xf3dc94,side:THREE.DoubleSide,transparent:true,opacity:.88}));marker.rotation.x=-Math.PI/2;scene.add(marker);
 const smoke=[];const smokeGeom=new THREE.SphereGeometry(.6,6,5);
 for(let i=0;i<18;i++){const puff=new THREE.Mesh(smokeGeom,new THREE.MeshBasicMaterial({color:0xd1c9b3,transparent:true,opacity:0,depthWrite:false}));scene.add(puff);smoke.push({mesh:puff,t:0})}
@@ -60,15 +62,15 @@ function place(mesh,i,x,y,z,scale=1,rotation=0){dummy.position.set(x,y,z);dummy.
 let lastShotCount=0,frame=0;
 function update(){
 const b=getBattle();if(!b)return;
-frame++;const count=[{body:0,head:0,helmet:0,horses:0,cannons:0},{body:0,head:0,helmet:0,horses:0,cannons:0}];
-for(let j=0;j<b.units.length;j++){const u=b.units[j],label=labels[j],pos=battlePosition(u.x,u.y);label.visible=u.hp>0;label.position.set(pos.x,pos.y+7,pos.z);
+frame++;const count=[{body:0,head:0,helmet:0,horses:0,cannons:0,rifles:0,packs:0,legs:0,bayonets:0},{body:0,head:0,helmet:0,horses:0,cannons:0,rifles:0,packs:0,legs:0,bayonets:0}];
+for(let j=0;j<b.units.length;j++){const u=b.units[j],label=labels[j],pos=battlePosition(u.x,u.y);label.visible=u.hp>0;label.position.set(pos.x,pos.y+9,pos.z);if(banners[j]){banners[j].visible=u.hp>0;banners[j].position.set(pos.x-3,pos.y+.2,pos.z)}
 if(u.hp<=0)continue;
 const total=Math.max(1,Math.min(42,Math.ceil(u.hp/2.3))),cols=u.type==="Topçu"?3:u.type==="Süvari"?5:7,un=uniforms[u.team],counts=count[u.team];
 for(let i=0;i<total;i++){
 const wx=pos.x+(i%cols-(cols-1)/2)*(u.type==="Süvari"?2.15:1.12),wz=pos.z+(Math.floor(i/cols)-1)*1.85,wy=groundHeight(wx,wz);
 if(u.type==="Topçu"&&i<3){place(un.cannons,counts.cannons++,wx,wy+1.15,wz,.85,Math.PI/2);continue}
-if(u.type==="Süvari"){place(un.horses,counts.horses++,wx,wy+.75,wz,1);place(un.body,counts.body++,wx,wy+2.0,wz,.63);place(un.head,counts.head++,wx,wy+2.8,wz,.65);place(un.helmet,counts.helmet++,wx,wy+3.1,wz,.7)}
-else{const swing=Math.sin((b.t+i)*5)*.13;place(un.body,counts.body++,wx,wy+1.2+swing,wz,.9);place(un.head,counts.head++,wx,wy+2.25+swing,wz,.9);place(un.helmet,counts.helmet++,wx,wy+2.62+swing,wz,.9)}
+if(u.type==="Süvari"){place(un.horses,counts.horses++,wx,wy+.75,wz,1);place(un.body,counts.body++,wx,wy+2.0,wz,.63);place(un.head,counts.head++,wx,wy+2.8,wz,.65);place(un.helmet,counts.helmet++,wx,wy+3.1,wz,.7);place(un.legs,counts.legs++,wx,wy+1.3,wz,.6);place(un.rifles,counts.rifles++,wx+.25,wy+2.5,wz+.2,.55,Math.PI*.4);place(un.bayonets,counts.bayonets++,wx+.6,wy+2.5,wz-.55,.55,Math.PI*.4)}
+else{const swing=Math.sin((b.t+i)*5)*.13;place(un.body,counts.body++,wx,wy+1.2+swing,wz,.9);place(un.head,counts.head++,wx,wy+2.25+swing,wz,.9);place(un.helmet,counts.helmet++,wx,wy+2.62+swing,wz,.9);place(un.legs,counts.legs++,wx,wy+.33+Math.abs(swing)*.2,wz,1);place(un.packs,counts.packs++,wx,wy+1.35+swing,wz+.35,.8);place(un.rifles,counts.rifles++,wx+.48,wy+1.56+swing,wz-.35,.65);place(un.bayonets,counts.bayonets++,wx+.48,wy+1.52+swing,wz-1.2,.52)}
 }
 }
 for(let team=0;team<2;team++)for(const key of Object.keys(count[team])){const mesh=uniforms[team][key];mesh.count=count[team][key];mesh.instanceMatrix.needsUpdate=true}
