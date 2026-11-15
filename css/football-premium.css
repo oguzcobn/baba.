@@ -475,3 +475,88 @@
     font-size:11px;min-width:36px;min-height:30px;padding:4px 6px;
   }
 }
+
+
+/* Draft season report v1. Real results only; no fictional fixture cards. */
+#draft-section .ss-showcase {
+ --ss-ink:#f0f8f3;--ss-muted:#b4cdbf;
+ background:radial-gradient(ellipse at 44% 2%,#184b38 0%,#0c1d15 65%,#09150f 100%);
+ border:1px solid #436451;border-radius:25px;color:var(--ss-ink);
+ padding:clamp(14px,2.2vw,26px);margin:0 0 20px;
+ box-shadow:0 16px 52px #0004;min-width:0;
+}
+#draft-section .ss-showcase *{box-sizing:border-box}
+#draft-section .ss-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:19px;padding-bottom:15px;border-bottom:1px solid #ffffff24}
+#draft-section .ss-head h2{font-size:clamp(25px,3vw,38px);line-height:1.1;letter-spacing:-.04em;color:#fff;margin:5px 0 0}
+#draft-section .ss-head>b{background:#193c2b;color:#dfffe4;border:1px solid #507d59;border-radius:999px;padding:9px 15px;font-size:13px}
+#draft-section .ss-layout{display:grid;grid-template-columns:minmax(145px,.65fr) minmax(0,2.25fr) minmax(225px,1.05fr);gap:clamp(10px,1.5vw,22px);align-items:stretch;min-width:0}
+#draft-section .ss-menu{display:flex;flex-direction:column;gap:7px;min-width:0}
+#draft-section .ss-menu button{display:flex;align-items:center;text-align:left;gap:9px;width:100%;padding:12px 11px;border:1px solid #385743;border-radius:13px;background:#142c1e;color:#cfe1d5;font:inherit;font-size:12px;min-height:45px;cursor:pointer}
+#draft-section .ss-menu button span{font-size:17px;flex:none}
+#draft-section .ss-menu button b{font-size:12px;font-weight:760}
+#draft-section .ss-menu button.on{background:#b5e8be;color:#173423;border-color:#b5e8be;box-shadow:0 5px 16px #0002}
+#draft-section .ss-menu button:hover:not(.on){background:#284b35;color:#fff}
+#draft-section .ss-showcase button:focus-visible{outline:3px solid #a4efad;outline-offset:2px}
+#draft-section .ss-feature{background:linear-gradient(128deg,#173927,#112b20);border:1px solid #477259;border-radius:22px;padding:clamp(15px,2vw,26px);min-height:355px;min-width:0;overflow:hidden}
+#draft-section .ss-feature-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+#draft-section .ss-feature-head .eyebrow{color:#d2fad8;font-weight:850;letter-spacing:.12em}
+#draft-section .ss-feature-head small{font-size:11px;color:#c0dec8}
+#draft-section .ss-player{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(125px,.72fr);gap:5px;align-items:center;min-height:280px}
+#draft-section .ss-player-info{min-width:0}
+#draft-section .ss-club{display:flex;align-items:center;gap:9px;color:#d1e6d6;font-size:12px;margin:14px 0 10px}
+#draft-section .ss-club .crest,#draft-section .ss-club .badge{max-width:42px;flex:none}
+#draft-section .ss-player h3{font-size:clamp(29px,3.5vw,52px);line-height:1;letter-spacing:-.05em;margin:8px 0;color:#fff;overflow-wrap:anywhere}
+#draft-section .ss-player-info>p{font-size:13px;color:#c5dec9}
+#draft-section .ss-big{font-size:clamp(40px,6vw,74px);font-weight:950;letter-spacing:-.06em;color:#c6f8b8;line-height:1.05;margin:18px 0}
+#draft-section .ss-big small{display:block;font-size:13px;font-weight:750;letter-spacing:0;color:#e0f5dc;margin-top:3px}
+#draft-section .ss-kit{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0}
+#draft-section .ss-kit svg{width:100%;max-width:220px;filter:drop-shadow(0 20px 20px #0005)}
+#draft-section .ss-metrics{display:flex;flex-wrap:wrap;gap:7px}
+#draft-section .ss-metrics span{padding:8px 10px;font-size:12px;font-weight:760;color:#e9f8e9;background:#28523a;border:1px solid #447353;border-radius:11px}
+#draft-section .ss-standing{padding:25px 0}
+#draft-section .ss-standing h3{font-size:clamp(23px,3vw,37px);color:#fff;margin:6px 0}
+#draft-section .ss-standing p{color:#d6e9d9}
+#draft-section .ss-leaders{display:flex;flex-direction:column;gap:12px;min-width:0}
+#draft-section .ss-leaders-head{display:flex;align-items:center;justify-content:space-between;gap:6px;color:#e3f5e9;font-size:12px;letter-spacing:.05em}
+#draft-section .ss-leaders-head span{color:#b7d4bc;font-size:10px}
+#draft-section .ss-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+#draft-section .ss-row{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:6px;width:100%;min-height:44px;padding:7px 9px;text-align:left;background:#162b20;border:1px solid #365443;border-radius:10px;color:#e8f6e9;font:inherit;font-size:12px}
+#draft-section button.ss-row{cursor:pointer}
+#draft-section .ss-row span{color:#abc3af;font-weight:750}
+#draft-section .ss-row b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:#fff}
+#draft-section .ss-row small{display:none}
+#draft-section .ss-row strong{font-size:12px;color:#c1f1bd}
+#draft-section .ss-row.on,#draft-section .ss-row.mine{border-color:#8edb99;background:#28523b}
+#draft-section button.ss-row:hover{border-color:#c6e7c9;background:#244734}
+#draft-section .ss-team{margin-top:auto;border:1px solid #4c7b60;border-radius:14px;background:#183c2a;padding:12px}
+#draft-section .ss-team h3{font-size:17px;margin:6px 0;color:#fff}
+#draft-section .ss-team p{font-size:12px;color:#d1e8d4;margin:4px 0 12px}
+#draft-section .ss-team button{display:block;width:100%;border:1px solid #9be5aa;border-radius:10px;background:#b6edbe;color:#12321c;font:inherit;font-size:12px;font-weight:850;min-height:39px;padding:9px}
+#draft-section .ss-feature .eyebrow,#draft-section .ss-team .eyebrow{color:#c6e4cb}
+@media(max-width:1080px){
+ #draft-section .ss-layout{grid-template-columns:130px minmax(0,1fr)}
+ #draft-section .ss-leaders{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(205px,.45fr);align-items:start}
+ #draft-section .ss-leaders-head{grid-column:1/-1}
+ #draft-section .ss-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:620px){
+ #draft-section .ss-showcase{padding:13px;border-radius:17px}
+ #draft-section .ss-head h2{font-size:25px}
+ #draft-section .ss-head>b{font-size:11px}
+ #draft-section .ss-layout{display:block}
+ #draft-section .ss-menu{flex-direction:row;overflow-x:auto;gap:6px;padding:0 0 12px;scrollbar-width:thin}
+ #draft-section .ss-menu button{min-width:88px;max-width:115px;min-height:49px;flex:0 0 auto;flex-direction:column;justify-content:center;text-align:center;padding:8px 6px;gap:2px}
+ #draft-section .ss-menu button span{font-size:16px}
+ #draft-section .ss-menu button b{font-size:10.5px}
+ #draft-section .ss-feature{min-height:0;padding:13px;border-radius:15px}
+ #draft-section .ss-player{grid-template-columns:minmax(0,1fr) 106px;min-height:220px}
+ #draft-section .ss-player h3{font-size:clamp(23px,7vw,35px)}
+ #draft-section .ss-big{font-size:45px;margin:10px 0}
+ #draft-section .ss-kit svg{max-width:115px}
+ #draft-section .ss-metrics span{font-size:10px;padding:6px}
+ #draft-section .ss-leaders{display:flex;margin-top:14px}
+ #draft-section .ss-list{display:flex}
+ #draft-section .ss-row small{display:block;grid-column:2;grid-row:2;color:#b7cebb}
+ #draft-section .ss-row{grid-template-columns:20px minmax(0,1fr) auto}
+ #draft-section .ss-team{margin-top:0}
+}
