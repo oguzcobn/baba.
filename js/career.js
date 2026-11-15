@@ -237,13 +237,24 @@ const Career = (() => {
       if (Math.random() < L.me / 90) { st.gm++; let [s, a] = scorerMe(); const how = howFor(s.p, st.style); if (how === 'pen' || how === 'fk') a = null;
         s.p.g++; s.p.sg++; if (a) { a.p.a++; a.p.sa++; } st.ev.push({ t: 'me', sc: s.p.name, as: a && a.p.name, min: m, how, style: st.style });
         const fouler = pick(oXI).name, gm = st.gm, go = st.go;
-        const show = () => { if (how === 'pen') line(`🟨 ${m}' ${T(`Penaltı! ${s.p.name} ceza sahasında düşürüldü, ${fouler} sarı kart gördü.`, `Penalty! ${s.p.name} is brought down in the box; ${fouler} is booked.`)}`);
-          if (how === 'fk') line(`${m}' ${T('Ceza sahası önünde faul, baraj kuruluyor.', 'Foul on the edge of the box; the wall is set.')}`);
-          st.dGm++; line(`⚽ ${m}' ${T('GOL!', 'GOAL!')} ${s.p.name} ${GOALS()[how]}${a ? ' — ' + T('asist', 'assist') + ': ' + a.p.name : ''}. ${meName} ${gm}–${go}`, 'goal'); };
-        if (m2 && !quick) tv({ side: meH, min: m, sc: s.p.name, as: a && a.p.name, out: 'goal', how, style: st.style, onShow: show }); else show(); }
+        let shownClip = null;
+        const show = () => {
+          const actualHow = (shownClip && shownClip.actualHow) || how;
+          if (actualHow === 'pen') line(`🟨 ${m}' ${T(`Penaltı! ${s.p.name} ceza sahasında düşürüldü, ${fouler} sarı kart gördü.`, `Penalty! ${s.p.name} is brought down in the box; ${fouler} is booked.`)}`);
+          if (actualHow === 'fk') line(`${m}' ${T('Faul sonrası serbest vuruş kullanılıyor.', 'A free kick follows the foul.')}`);
+          st.dGm++; line(`⚽ ${m}' ${T('GOL!', 'GOAL!')} ${s.p.name} ${GOALS()[actualHow]}${a ? ' — ' + T('asist', 'assist') + ': ' + a.p.name : ''}. ${meName} ${gm}–${go}`, 'goal');
+        };
+        if (m2 && !quick) { shownClip = { side: meH, min: m, sc: s.p.name, as: a && a.p.name, out: 'goal', how, style: st.style, onShow: show }; tv(shownClip); } else show(); }
       if (Math.random() < L.op / 90) { st.go++; let [s, a] = scorerOp(); const how = howFor(s, 'dengeli'); if (how === 'pen' || how === 'fk') a = null; st.ev.push({ t: 'op', sc: s.name, as: a && a.name, min: m, how });
-        const gm = st.gm, go = st.go, show = () => { if (how === 'pen') line(`${m}' ${T(`${opp.name} lehine penaltı!`, `Penalty to ${opp.name}!`)}`); st.dGo++; line(`⚽ ${m}' ${opp.name}: ${s.name} ${GOALS()[how]}. ${gm}–${go}`, 'conc'); };
-        if (m2 && !quick) tv({ side: opH, min: m, sc: s.name, as: a && a.name, out: 'goal', how, onShow: show }); else show(); }
+        const gm = st.gm, go = st.go;
+        let shownClip = null;
+        const show = () => {
+          const actualHow = (shownClip && shownClip.actualHow) || how;
+          if (actualHow === 'pen') line(`${m}' ${T(`${opp.name} lehine penaltı!`, `Penalty to ${opp.name}!`)}`);
+          else if (actualHow === 'fk') line(`${m}' ${T(`${opp.name} lehine serbest vuruş.`, `Free kick to ${opp.name}.`)}`);
+          st.dGo++; line(`⚽ ${m}' ${opp.name}: ${s.name} ${GOALS()[actualHow]}. ${gm}–${go}`, 'conc');
+        };
+        if (m2 && !quick) { shownClip = { side: opH, min: m, sc: s.name, as: a && a.name, out: 'goal', how, onShow: show }; tv(shownClip); } else show(); }
       // büyük fırsatlar ve olaylar (renk katar)
       if (Math.random() < .035) { const mine = Math.random() < L.me / (L.me + L.op); const nm = mine ? (scorerMe()[0].p.name) : scorerOp()[0].name; if (Math.random() < .75) tv({ side: mine ? meH : opH, min: m, sc: nm, out: pick(['save', 'save', 'miss', 'post', 'block']) }); line(`${m}' ${pick([T(`${nm} direğe nişanladı, top auta çıktı.`, `${nm} aims for the far post — just wide.`), T(`${nm}'nin şutunu kaleci son anda çeldi!`, `Great save to deny ${nm}!`), T(`${nm} ofsayta takıldı.`, `${nm} is caught offside.`), T(`${nm} vuruşunda top üst direği yalayarak dışarı çıktı!`, `${nm} clips the bar!`)])}`, 'ch'); }
       // kartlar
