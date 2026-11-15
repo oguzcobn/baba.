@@ -685,6 +685,9 @@ const Match2D = (() => {
       P.h.concat(P.a).forEach(p => { p.x = clamp(p.x, -2, W + 2); p.y = clamp(p.y, -1.5, H + 1.5); });
     }
     function tick(ts) {
+      // Cap full-pitch canvas redraws at roughly 30 fps; simulation still advances
+      // using elapsed time and remains responsive on lower-power mobile devices.
+      if (last && ts - last < 29 && !closed) { raf = requestAnimationFrame(tick); return; }
       const dt = Math.min(.05, (ts - (last || ts)) / 1000) * speed; last = ts;
       updateMatch(ts, dt);
       if (diagnostics && ts - lastSample >= 120) { lastSample = ts; diagnostics.frames.push({ time: ts, clip: seg, beat: beat && beat.k, state, ball: { x: ball.x, y: ball.y }, players: P.h.concat(P.a).map(p => ({ x: p.x, y: p.y, name: p.name, off: p.off })) }); if (diagnostics.frames.length > 1500) diagnostics.frames.shift(); }
@@ -759,7 +762,7 @@ const Match2D = (() => {
       const awayEnd = Math.random() < .5 ? 'L' : 'R';
       const pal = (c1, c2) => [c1, c1, c1, c1, c2 || '#d9d9d9', '#262c33', '#343a42', '#2c3238'];
       const hp = pal(hc, o.home.c2 && cdist(o.home.c2, hc) > 60 ? o.home.c2 : '#ffffff'), ap = pal(ac, o.away.c2 && cdist(o.away.c2, ac) > 60 ? o.away.c2 : '#ffffff');
-      for (let x = -STAND + .5; x < W + STAND - .4; x += (vert ? 1.65 : .95)) for (let y = -STAND + .5; y < H + STAND - .4; y += (vert ? 1.65 : .95)) {
+      for (let x = -STAND + .5; x < W + STAND - .4; x += (vert ? 1.65 : 1.3)) for (let y = -STAND + .5; y < H + STAND - .4; y += (vert ? 1.65 : 1.3)) {
         if (x > -SEAT0 && x < W + SEAT0 && y > -SEAT0 && y < H + SEAT0) continue;
         if (Math.random() < .07) continue; // boş koltuk
         const away = awayEnd === 'R' ? (x > W + SEAT0 && y < H * .55) : (x < -SEAT0 && y > H * .45);
