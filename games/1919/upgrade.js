@@ -13,7 +13,7 @@ battle3dLoading=true;
 const status=document.getElementById("battleViewStatus");
 if(status)status.textContent="3B savaş alanı hazırlanıyor…";
 try{
-const module=await import("./three-battle.js?v=4");
+const module=await import("./three-battle.js?v=5");
 if(!battle||!battle3dWanted)return;
 battle3d=await module.mount3DBattle({
 getBattle:()=>battle,
