@@ -1,0 +1,65 @@
+
+/* GRAND STRATEGY SYSTEMS — UI inspired by clear, layered management dashboards */
+.strategy-shell{margin:14px 0 22px;border:1px solid #aa8958;border-radius:12px;background:linear-gradient(140deg,#1d3230,#142321);box-shadow:0 14px 40px #0006;overflow:hidden}
+.strategy-dashboard{padding:18px;display:flex;gap:15px;align-items:center;justify-content:space-between;background:linear-gradient(100deg,#294137,#192e2d);border-bottom:1px solid #826e4a}
+.strategy-dashboard small{font-size:10px;letter-spacing:.2em;color:#d9bc83;font-weight:800}
+.strategy-dashboard h2{font:700 27px Georgia,serif;color:#f2dcad;margin:3px 0 0}
+.strategy-kpis{display:flex;gap:8px;flex-wrap:wrap}
+.strategy-kpis>span{font-size:12px;border:1px solid #5c6f5c;padding:8px 11px;border-radius:7px;background:#172b28;color:#c5d0c4}
+.strategy-kpis b{color:#f1d38b;font-size:16px;margin-left:4px}
+.strategy-progress{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:11px 18px;color:#d7d9bf;background:#1c2e29;font-size:13px}
+.strategy-progress b{color:#f1d495}
+.strategy-progress button{font-size:12px;padding:6px 10px}
+.strategy-tabs{display:flex;gap:4px;padding:6px;background:#101f20;border-block:1px solid #50644e;overflow-x:auto;scrollbar-width:thin}
+.strategy-tabs button{flex:1;white-space:nowrap;min-width:100px;text-align:center;border:0;background:transparent;padding:10px;font-size:13px;color:#c8d1c3}
+.strategy-tabs button[aria-selected=true]{background:linear-gradient(#d9b879,#ae8954);border-radius:6px;color:#17231e;font-weight:900}
+.strategy-panel{padding:16px;min-height:150px}
+.strategy-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(235px,1fr));gap:12px}
+.strategy-sub{background:#172824;border:1px solid #4a5e50;border-radius:8px;padding:11px;min-width:0}
+.strategy-sub h3{font:700 18px Georgia,serif;color:#e2c58a;margin:0 0 9px;border-bottom:1px solid #536553;padding-bottom:8px}
+.strategy-focus{background:linear-gradient(130deg,#2c4035,#1b2d2a);border:1px solid #66725d;border-radius:8px;display:flex;align-items:flex-start;gap:9px;text-align:left;width:100%;padding:11px;min-height:84px;margin:6px 0;color:#efe5cf}
+.strategy-focus:hover:enabled{background:#425440;border-color:#e2c68c}
+.strategy-focus:disabled{opacity:.55}
+.strategy-focus.done{opacity:.9;border-color:#5f9b75;background:#244438}
+.strategy-focus.active{border-color:#e2bb7c;box-shadow:inset 4px 0 #d8b36e;background:#4e4f3a}
+.strategy-focus-icon{font-size:24px;line-height:1.1;width:34px;flex-shrink:0}
+.strategy-focus b{display:block;font:700 14px Georgia,serif;color:#f6dfb1}
+.strategy-focus small{display:block;font-size:11px;color:#d3d7c4;margin:3px 0 6px}
+.strategy-focus em{display:block;font-style:normal;color:#e3bb7b;font-size:11px}
+.strategy-product{background:#21362f;border:1px solid #60705b;border-radius:8px;padding:15px}
+.strategy-product>b{display:block;color:#f4d79a;font:700 17px Georgia,serif}
+.strategy-product p{color:#cbd1c3;font-size:12px;min-height:48px;margin:7px 0}
+.strategy-product span{font-size:12px;color:#e8c989}
+.strategy-product button{display:block;width:100%;margin-top:11px;background:#3b5545;border:1px solid #9c906c}
+.strategy-product button:hover{background:#53694c}
+.strategy-info{padding:13px 15px;background:#304438;border-left:4px solid #d7b478;border-radius:7px;margin:0 0 14px}
+.strategy-info b{font:700 17px Georgia,serif;color:#f4deac}
+.strategy-info p{font-size:12px;color:#d4dcca;margin:5px 0 0}
+.strategy-big{font:700 36px Georgia;color:#efd194;padding:12px 0 0}
+.strategy-row{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px;border-bottom:1px solid #53634d}
+.supply-list{max-height:470px;overflow:auto;margin:12px 0}
+.supply-row{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;background:#20342c;margin-bottom:4px;padding:10px;border:1px solid #536b59;border-radius:5px}
+.supply-row:hover{background:#304c3c}
+.supply-row>span:first-child{width:32%;font-weight:800}
+.supply-row small{display:block;font-size:10px}
+.supply-graphic{height:9px;border-radius:20px;background:#102019;flex:1;overflow:hidden}
+.supply-graphic i{height:100%;display:block;border-radius:20px}
+.supply-row>b{min-width:47px;text-align:right;color:#efd495}
+.strategy-history{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:15px;border-left:3px solid #6a7358;border-bottom:1px solid #52634f;margin-bottom:7px;background:#1b2f2b}
+.strategy-history.seen{border-left-color:#c6ac6e;background:#253d33}
+.strategy-history small{color:#d8b77c;letter-spacing:.05em}
+.strategy-history h3{font:700 17px Georgia;color:#ebd5a4;margin:4px 0}
+.strategy-history p{font-size:12px;color:#ccd4c5;margin:0}
+.strategy-history>span{color:#e8c589;white-space:nowrap;font-size:11px}
+.strategy-event{position:fixed;inset:0;background:#04110fdc;z-index:100;display:grid;place-items:center;padding:16px}
+.strategy-event-card{max-width:550px;width:100%;max-height:90vh;overflow:auto;background:linear-gradient(135deg,#36463a,#142728);border:2px solid #d3ad6c;border-radius:12px;padding:26px 28px;box-shadow:0 20px 90px #000a;position:relative}
+.strategy-event-card:before{content:"⚑";position:absolute;right:24px;top:17px;color:#f1dfb366;font-size:60px}
+.strategy-event-card small{font-size:11px;letter-spacing:.16em;color:#edcc8f;font-weight:800}
+.strategy-event-card h2{font:700 33px Georgia,serif;color:#f2ddad;margin:15px 0 12px}
+.strategy-event-card p{font-size:16px;color:#e5e7d6;line-height:1.6}
+.strategy-event-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:24px}
+.strategy-event-actions button{flex:1;min-height:44px}
+.strategy-start{padding:15px;background:#23372de8;border:1px solid #9e895c;border-radius:8px;max-width:720px;margin-top:15px}
+.strategy-start b{color:#f0d697}
+.strategy-start p{font-size:12px;color:#d7dacd;margin:5px 0 0}
+@media(max-width:750px){.strategy-dashboard{display:block;padding:12px}.strategy-kpis{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.strategy-kpis>span{padding:7px}.strategy-tabs button{flex:none;min-width:104px;font-size:12px}.strategy-panel{padding:10px}.strategy-grid{grid-template-columns:1fr}.strategy-progress{display:block;padding:10px}.strategy-progress button{margin-top:8px}.strategy-event-card{padding:18px}.strategy-event-card h2{font-size:26px}}
