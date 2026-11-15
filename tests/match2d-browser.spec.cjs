@@ -30,6 +30,7 @@ for(const [name,device] of [['Desktop', {viewport:{width:1440,height:900}}],['iP
    expect(result.diag.goals[0].valid,'goal should only be awarded after the ball crosses the line').toBe(true);
    expect(result.diag.passes.length).toBeGreaterThan(0);
    expect(result.diag.passes.every(p=>p.end!==null)).toBe(true);
+   expect(result.diag.passes.every(p=>Number.isFinite(p.receptionGap)&&p.receptionGap<=2.5),'no pass should be collected by a teammate far from its landing spot').toBe(true);
    expect(result.diag.frames.length).toBeGreaterThan(15);
    expect(result.diag.frames.every(f=>f.players.length===22)).toBe(true);
    for(const frame of result.diag.frames){
@@ -52,3 +53,21 @@ for(const [name,device] of [['Desktop', {viewport:{width:1440,height:900}}],['iP
   });
  });
 }
+
+test('IFAB foul location determines penalty or free kick on both sides',async({page})=>{
+ await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));
+ await page.goto(BASE+'#draft');
+ const result=await page.evaluate(()=>({
+  midfield:Match2D.foulRestart({x:52,y:34}),
+  nearBox:Match2D.foulRestart({x:88.49,y:34}),
+  onBoxLine:Match2D.foulRestart({x:88.5,y:34}),
+  centralBox:Match2D.foulRestart({x:93,y:34}),
+  wide:Match2D.foulRestart({x:92,y:56}),
+  sideline:Match2D.foulRestart({x:103,y:13.84}),
+  outsideField:Match2D.foulRestart({x:110,y:34})
+ }));
+ expect(result).toEqual({
+  midfield:'FREEKICK',nearBox:'FREEKICK',onBoxLine:'PENALTY',
+  centralBox:'PENALTY',wide:'FREEKICK',sideline:'PENALTY',outsideField:'FREEKICK'
+ });
+});
