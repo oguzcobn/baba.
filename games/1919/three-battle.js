@@ -29,6 +29,33 @@ positions.needsUpdate=true;geometry.setAttribute("color",new THREE.Float32Buffer
 const terrain=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide}));scene.add(terrain);
 const seed=(i,j=1)=>{const x=Math.sin(i*78.233+j*47.1)*43758.23;return x-Math.floor(x)};
 for(let i=0;i<110;i++){let x=-78+seed(i,1)*156,z=-51+seed(i,2)*102;if(Math.abs(x)>62||Math.abs(z)>38||seed(i,4)<.14)createTree(scene,x,z,.45+seed(i,3)*.7,snow)}
+
+/* Landscapes: shaded rock outcrops and grass clumps, instanced for mobile performance. */
+const rockGeom=new THREE.DodecahedronGeometry(1,0);
+const rockMat=new THREE.MeshStandardMaterial({color:snow?0x909c9b:desert?0x8b7862:0x5b6555,roughness:1,flatShading:true});
+const rocks=new THREE.InstancedMesh(rockGeom,rockMat,145);rocks.frustumCulled=false;rocks.instanceMatrix.setUsage(THREE.StaticDrawUsage);
+const inst=new THREE.Object3D();
+for(let i=0;i<145;i++){
+const x=-76+seed(i+202,1)*152,z=-49+seed(i+202,2)*98,scale=.4+seed(i+202,3)*2.6;
+inst.position.set(x,groundHeight(x,z)+scale*.3,z);
+inst.rotation.set(seed(i,4)*.4,seed(i,5)*6.28,seed(i,6)*.2);inst.scale.set(scale,scale*.45,scale*1.5);inst.updateMatrix();rocks.setMatrixAt(i,inst.matrix);
+}scene.add(rocks);
+if(!snow&&!desert){
+const grassGeom=new THREE.ConeGeometry(.3,1.4,3);
+const grassMat=new THREE.MeshStandardMaterial({color:0x526e44,roughness:1,side:THREE.DoubleSide});
+const grass=new THREE.InstancedMesh(grassGeom,grassMat,850);grass.frustumCulled=false;
+for(let i=0;i<850;i++){
+const x=-78+seed(i+410,1)*156,z=-52+seed(i+410,2)*104,t=.35+seed(i+410,3)*.9;
+inst.position.set(x,groundHeight(x,z)+t*.45,z);inst.rotation.set(0,seed(i,5)*6.28,0);inst.scale.set(t,t,t);inst.updateMatrix();grass.setMatrixAt(i,inst.matrix);
+}scene.add(grass);
+}
+const ridgeGeo=new THREE.ConeGeometry(18,22,6,1);
+const ridgeMat=new THREE.MeshStandardMaterial({color:snow?0xc2cfca:desert?0x8c795d:0x4c5d4c,flatShading:true,roughness:1});
+for(let i=0;i<9;i++){
+const ridge=new THREE.Mesh(ridgeGeo,ridgeMat);
+ridge.scale.set(.7+seed(i+90,4),.55+seed(i+90,5),.6+seed(i+90,6));
+ridge.position.set(-90+i*23,-8,(-75+(i%2)*146));ridge.rotation.y=seed(i+90,7)*Math.PI;scene.add(ridge);
+}
 const trenchMat=new THREE.MeshStandardMaterial({color:snow?0x8c968a:0x4b3f2e,roughness:1});
 const sandbagMat=new THREE.MeshStandardMaterial({color:snow?0xc4beac:0x9c8a69,roughness:1});
 for(const x of [-37,38]){for(let i=0;i<33;i++){const z=-50+i*3.15,xx=x+Math.sin(i*.6)*1.4,y=groundHeight(xx,z);const bar=new THREE.Mesh(new THREE.BoxGeometry(2.2,.6,3.1),trenchMat);bar.position.set(xx,y+.18,z);scene.add(bar);for(let k=0;k<2;k++){const bag=new THREE.Mesh(new THREE.BoxGeometry(.65,.35,2.65),sandbagMat);bag.position.set(xx+(k?1.2:-1.2),y+.3,z);scene.add(bag)}}}
@@ -48,6 +75,9 @@ const marker=new THREE.Mesh(new THREE.RingGeometry(2.7,3.15,36),new THREE.MeshBa
 const smoke=[];const smokeGeom=new THREE.SphereGeometry(.6,6,5);
 for(let i=0;i<18;i++){const puff=new THREE.Mesh(smokeGeom,new THREE.MeshBasicMaterial({color:0xd1c9b3,transparent:true,opacity:0,depthWrite:false}));scene.add(puff);smoke.push({mesh:puff,t:0})}
 let orbit={angle:0,dist:128,height:75};function setCamera(){camera.position.set(Math.sin(orbit.angle)*orbit.dist,orbit.height,Math.cos(orbit.angle)*orbit.dist);camera.lookAt(0,0,0)}
+function cameraPreset(n){if(n===1){orbit.angle=-.42;orbit.dist=82;orbit.height=32}else if(n===2){orbit.angle=.04;orbit.dist=145;orbit.height=135}else{orbit.angle=0;orbit.dist=128;orbit.height=75}setCamera()}
+const onPreset=event=>cameraPreset(Number(event.detail)||0);
+window.addEventListener("war-camera",onPreset);
 setCamera();
 function resize(){const w=host.clientWidth||800,h=host.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}resize();
 const ro=typeof ResizeObserver!=="undefined"?new ResizeObserver(resize):null;if(ro)ro.observe(host);else window.addEventListener("resize",resize);
@@ -79,6 +109,6 @@ for(const p of smoke){if(p.t>0){p.t-=.035;p.mesh.material.opacity=Math.max(0,p.t
 if(frame%4===0&&b.shots.length){const shot=b.shots[b.shots.length-1],p=smoke.find(x=>x.t<=0);if(p&&shot){p.t=1;p.mesh.position.copy(battlePosition(shot.tx,shot.ty));p.mesh.scale.setScalar(1)}}
 renderer.render(scene,camera);
 }
-function dispose(){ro?.disconnect();if(!ro)window.removeEventListener("resize",resize);scene.traverse(obj=>{if(obj.geometry)obj.geometry.dispose();if(obj.material){for(const m of (Array.isArray(obj.material)?obj.material:[obj.material])){if(m.map)m.map.dispose();m.dispose()}}});renderer.dispose();canvas.remove()}
-return {update,dispose};
+function dispose(){window.removeEventListener("war-camera",onPreset);ro?.disconnect();if(!ro)window.removeEventListener("resize",resize);scene.traverse(obj=>{if(obj.geometry)obj.geometry.dispose();if(obj.material){for(const m of (Array.isArray(obj.material)?obj.material:[obj.material])){if(m.map)m.map.dispose();m.dispose()}}});renderer.dispose();canvas.remove()}
+return {update,dispose,cameraPreset};
 }
