@@ -58,10 +58,37 @@ const Career = (() => {
   const CLUB = id => clubs().find(c => c.id === id);
   const NAT = n => (typeof DRAFT_NAT !== 'undefined' && DRAFT_NAT[n]) || 'TR';
 
+  /* ---------------- gerçek doğum tarihleri ---------------- */
+  const birthDate = name => (typeof CAREER_PLAYER_BIRTHDATES !== 'undefined' && CAREER_PLAYER_BIRTHDATES[name]) || null;
+  // Each career season is anchored to 16 November; do not use the real-world clock
+  // or replaying a saved season would silently change players' ages.
+  function realAge(dob, seasonYear) {
+    const [y, m, d] = dob.split('-').map(Number);
+    const year = Number.isFinite(seasonYear) ? seasonYear : 2026;
+    return year - y - ((m > 11 || (m === 11 && d > 16)) ? 1 : 0);
+  }
+  const currentAge = name => {
+    const dob = birthDate(name);
+    return dob ? realAge(dob, S && S.year ? S.year : 2026) : null;
+  };
+  const syncAge = p => {
+    if (!p || p.youth) return false;
+    const dob = birthDate(p.name);
+    if (!dob) return false;
+    const age = realAge(dob, S && S.year ? S.year : 2026);
+    if (p.age === age && p.dob === dob) return false;
+    p.age = age;
+    p.dob = dob;
+    return true;
+  };
   /* ---------------- oyuncu modeli ---------------- */
   function mkPlayer(name, pos, r, extra) {
-    const h = hash(name), age = (extra && extra.age) || 19 + h % 16, pot = (extra && extra.pot) || clamp(Math.round(r + (age < 24 ? (24 - age) * 1.6 + h % 5 : age < 28 ? h % 3 : 0)), r, 93);
-    return Object.assign({ id: uid(), name, pos, r, pot, age, nat: NAT(name), cond: 100, inj: 0, sus: 0, yc: 0, morale: 70, g: 0, a: 0, apps: 0, sg: 0, sa: 0, prog: 0 }, extra || {});
+    const h = hash(name), exact = (extra && extra.youth) ? null : currentAge(name);
+    const age = exact === null ? ((extra && extra.age) ?? (19 + h % 16)) : exact;
+    const pot = (extra && extra.pot) || clamp(Math.round(r + (age < 24 ? (24 - age) * 1.6 + h % 5 : age < 28 ? h % 3 : 0)), r, 93);
+    const p = Object.assign({ id: uid(), name, pos, r, pot, age, nat: NAT(name), cond: 100, inj: 0, sus: 0, yc: 0, morale: 70, g: 0, a: 0, apps: 0, sg: 0, sa: 0, prog: 0 }, extra || {});
+    syncAge(p);
+    return p;
   }
   const value = p => { const ag = p.age <= 21 ? 1.5 : p.age <= 24 ? 1.25 : p.age >= 34 ? .45 : p.age >= 31 ? .7 : 1; return Math.max(.1, Math.round(.08 * Math.pow(1.25, p.r - 60) * ag * (p.pot - p.r > 6 ? 1.2 : 1) * 10) / 10); };
   const wage = p => .002 + value(p) * .0065; // M€/hafta
@@ -86,6 +113,16 @@ const Career = (() => {
   let S = null, host = null, tab = 'center', fxWeek = null, selSlot = null, mFilter = { pos: '', max: 0, q: '' };
   const load = () => { try { const s = JSON.parse(localStorage.getItem(KEY)); return s && s.v === VER ? s : null; } catch (e) { return null; } };
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  function syncSavedAges() {
+    if (!S) return;
+    let changed = false;
+    (S.squad || []).forEach(p => { if (syncAge(p)) changed = true; });
+    (S.scouted || []).forEach(p => { if (syncAge(p)) changed = true; });
+    for (const players of Object.values(S.added || {})) {
+      if (Array.isArray(players)) players.forEach(p => { if (syncAge(p)) changed = true; });
+    }
+    if (changed) save();
+  }
   const me = () => S.teams.find(t => t.me);
   const P = id => S.squad.find(p => p.id === id);
   const news = (txt, kind) => { S.news.unshift({ t: txt, k: kind || '', w: S.week, s: S.season }); S.news = S.news.slice(0, 40); };
@@ -439,7 +476,7 @@ const Career = (() => {
       if (p.age >= 37 || (p.age >= 35 && chance(.4))) gone.push(p);
     });
     gone.forEach(p => { S.squad = S.squad.filter(x => x !== p); news(T(`👋 ${p.name} futbolu bıraktı.`, `👋 ${p.name} has retired.`)); });
-    S.season++; S.year++; S.week = 0; S.results = []; S.table = freshTable(); S.fix = fixtures(S.teams.map(t => t.id).sort(() => Math.random() - .5));
+    S.season++; S.year++; syncSavedAges(); S.week = 0; S.results = []; S.table = freshTable(); S.fix = fixtures(S.teams.map(t => t.id).sort(() => Math.random() - .5));
     S.sponsor = null; S.offers = sponsorOffers(); S.pending = null;
     // her sezon 2 altyapı oyuncusu
     for (let i = 0; i < 2; i++) { const y = regen('tr', { age: 17, r: 56 + rnd(8) }); y.youth = true; S.squad.push(y); news(T(`🌱 Altyapıdan A takıma: ${y.name} (${PZ(y.pos)}, potansiyel ${y.pot}).`, `🌱 Academy graduate: ${y.name} (${PZ(y.pos)}, potential ${y.pot}).`), 'good'); }
@@ -487,12 +524,13 @@ const Career = (() => {
     const mine = new Set(S.squad.map(p => p.name)), taken = new Set(S.removed);
     const list = [];
     S.teams.filter(t => !t.me).forEach(t => { const c = CLUB(t.id); if (!c) return; c.players.filter(p => p[3] === 'FC27' && !taken.has(p[0]) && !mine.has(p[0])).forEach(p => list.push({ name: p[0], pos: p[1], r: p[2], club: c.id, cname: c.short || c.name })); (S.added[c.id] || []).forEach(p => { if (!mine.has(p.name)) list.push({ name: p.name, pos: p.pos, r: p.r, club: c.id, cname: c.short || c.name, obj: p }); }); });
-    return list.map(x => { const p = x.obj || mkPlayer(x.name, x.pos, x.r); return Object.assign(x, { age: p.age, pot: p.pot, price: Math.round(value(p) * 1.15 * 10) / 10 }); });
+    return list.map(x => { const p = x.obj || mkPlayer(x.name, x.pos, x.r); if (x.obj) syncAge(p); return Object.assign(x, { age: p.age, pot: p.pot, price: Math.round(value(p) * 1.15 * 10) / 10 }); });
   }
   function buy(x) {
     if (S.squad.length >= MAXSQ) return toast(T(`Kadro dolu (en çok ${MAXSQ})`, `Squad full (max ${MAXSQ})`));
     if (S.budget < x.price) return toast(T('Bütçe yetersiz', 'Not enough budget'));
     S.budget -= x.price; const p = x.obj ? Object.assign({}, x.obj, { id: uid(), cond: 100, morale: 75 }) : mkPlayer(x.name, x.pos, x.r, { morale: 75 });
+    syncAge(p);
     if (x.obj) S.added[x.club] = (S.added[x.club] || []).filter(q => q.name !== x.name); else S.removed.push(x.name);
     S.squad.push(p); news(T(`✍️ ${p.name} ${M(x.price)} bedelle kadroya katıldı.`, `✍️ ${p.name} joins for ${M(x.price)}.`), 'good'); save(); render();
   }
@@ -670,7 +708,7 @@ const Career = (() => {
     const idh = host.querySelector('.cr-idhost'); if (idh && typeof ClubID !== 'undefined') ClubID.editor(idh, () => { const h = host.querySelector('.cr-head'); if (h) { const m = me(), c = ClubID.get(); Object.assign(m, { name: c.name || m.name, c1: c.c1, c2: c.c2, kit: c.kit, short: c.short || ClubID.autoShort(c.name) }); h.querySelector('h1').textContent = m.name; save(); } });
   }
 
-  function open(el) { host = el; S = load(); tab = 'center'; fxWeek = null; selSlot = null; render(); }
+  function open(el) { host = el; S = load(); syncSavedAges(); tab = 'center'; fxWeek = null; selSlot = null; render(); }
   // test ve diğer modüller için küçük bir API
   return { open, state: () => S, _sim: (n) => { for (let i = 0; i < (n || 1) && S && S.week < WEEKS; i++) { if (!S.sponsor && S.offers) { S.sponsor = S.offers[0]; S.budget += S.sponsor.up; S.offers = null; } if (S.pending && S.pending.kind === 'event') resolve(S.pending.ch[0][1]); rotate(); liveMatch(null, true); } } };
 })();
