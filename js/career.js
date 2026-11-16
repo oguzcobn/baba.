@@ -303,7 +303,7 @@ const Career = (() => {
     // ---------- arayüz ----------
     ov = document.createElement('div'); ov.className = 'cr-live-ov';
     ov.innerHTML = `<div class="cr-live" role="dialog" aria-modal="true" aria-label="${T('Canlı maç', 'Live match')}"><div class="cr-top"></div><div class="cr-pitch2d" hidden></div><div class="cr-dyn"></div><div class="cr-sub" hidden></div></div>`;
-    document.body.appendChild(ov); document.body.classList.add('cr-live-open');
+    (document.fullscreenElement || document.webkitFullscreenElement || document.querySelector('#draft-section.football-fullscreen-fallback, #career-section.football-fullscreen-fallback') || document.body).appendChild(ov); document.body.classList.add('cr-live-open');
     function drawLines() { const box = ov && ov.querySelector('.cr-feed'); if (box) box.innerHTML = st.lines.slice(0, 30).map(l => `<p class="${l.cls || ''}">${esc(l.txt)}</p>`).join(''); }
     function renderLive() {
       if (!ov) return;
@@ -503,7 +503,7 @@ const Career = (() => {
     (S.added[club] = S.added[club] || []).push({ name: p.name, pos: p.pos, r: p.r, age: p.age, pot: p.pot });
     news(T(`💸 ${p.name} ${teamName(club)} kulübüne ${M(price)} bedelle satıldı.`, `💸 ${p.name} sold to ${teamName(club)} for ${M(price)}.`)); autoFixXI(); save();
   }
-  const toast = m => { const d = document.createElement('div'); d.className = 'cr-toast'; d.textContent = m; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); };
+  const toast = m => { const d = document.createElement('div'); d.className = 'cr-toast'; d.textContent = m; (document.fullscreenElement || document.webkitFullscreenElement || document.querySelector('#draft-section.football-fullscreen-fallback, #career-section.football-fullscreen-fallback') || document.body).appendChild(d); setTimeout(() => d.remove(), 2600); };
 
   /* ---------------- ekranlar ---------------- */
   const logoOf = (t, px) => t.identity && typeof ClubID !== 'undefined' && ClubID.get() ? ClubID.logo(ClubID.get(), px) : `<span class="cr-crest" style="--a:${t.c1};--b:${t.c2 || '#fff'};width:${px}px;height:${px}px">${esc((t.short || t.name).slice(0, 3))}</span>`;

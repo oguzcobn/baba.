@@ -604,7 +604,7 @@ const Draft = (() => {
     }
     swapSel = t === 'b' ? { t, i: key } : { t, id: key }; render();
   }
-  function flash(msg) { const d = document.createElement('div'); d.className = 'dr-flash'; d.textContent = msg; document.body.appendChild(d); setTimeout(() => d.remove(), 2600); }
+  function flash(msg) { const d = document.createElement('div'); d.className = 'dr-flash'; d.textContent = msg; (document.fullscreenElement || document.webkitFullscreenElement || document.querySelector('#draft-section.football-fullscreen-fallback, #career-section.football-fullscreen-fallback') || document.body).appendChild(d); setTimeout(() => d.remove(), 2600); }
 
   function pickPanel() {
     if (!S.club) return `<p class="muted">${T('“Takım çek”e bas: 18 kulüp bir torbada, her biri bir kez çıkar; 4 büyüklerin çıkma şansı daha yüksek. Gelen kulübün güncel FC 27 kadrosundan ya da son 10 yılın yıldızlarından bir oyuncu seç. Mevkisi boşsa sahaya, değilse yedeğe geçer. Yedekle ilk 11’i istediğin zaman dokunarak değiştirebilirsin.', 'Press “Draw a club”: the 18 clubs are in a bag and each comes out once; the Big Four come up more often. Pick a player from that club’s current FC 27 squad or from the stars of the last 10 years. If their position is free they go on the pitch, otherwise onto the bench. You can swap a sub with a starter at any time by tapping them.')}</p>`;

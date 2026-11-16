@@ -502,3 +502,33 @@ test.describe('Draft finished-season data showcase',()=>{
   expect(w.scroll).toBeLessThanOrEqual(w.client+4);
  });
 });
+
+
+test.describe('Football game-only fullscreen',()=>{
+  test.use({viewport:{width:390,height:844}});
+  test.beforeEach(async({page})=>page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+  for(const [route,id] of [['draft','draft-section'],['career','career-section']]){
+    test(route+' can enter and exit fullscreen without a global app control',async({page})=>{
+      const errors=[];page.on('pageerror',e=>errors.push(e.message));
+      await page.goto(BASE+'#'+route);
+      await expect(page.locator('#fsBtn')).toHaveCount(0);
+      const section=page.locator('#'+id),toggle=section.locator('[data-football-fullscreen]');
+      await expect(toggle).toBeVisible();
+      await expect(toggle).toHaveAttribute('aria-pressed','false');
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed','true');
+      const state=await page.evaluate(id=>{
+        const element=document.getElementById(id);
+        return {native:document.fullscreenElement===element||document.webkitFullscreenElement===element,
+          fallback:element.classList.contains('football-fullscreen-fallback'),
+          width:element.getBoundingClientRect().width,screen:document.documentElement.clientWidth};
+      },id);
+      expect(state.native||state.fallback).toBeTruthy();
+      expect(state.width).toBeGreaterThanOrEqual(state.screen-2);
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-pressed','false');
+      await expect(page.locator('body')).not.toHaveClass(/football-fullscreen-open/);
+      expect(errors).toEqual([]);
+    });
+  }
+});
