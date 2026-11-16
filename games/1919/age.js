@@ -13,6 +13,8 @@ function saveSlots(){const slots=[1,2,3].map(n=>{let item=null;try{item=JSON.par
 function loadStored(raw){try{const st=JSON.parse(raw);if(!st?.p||st.p.length!==RAW.length||!N[st.me])throw Error("Bu kayıt farklı harita sürümünden.");archiveBeforeNew();localStorage.setItem(SAVEKEY,raw);if(!load())throw Error("Kayıt açılamadı.");sel=N[S.me][3];tab="province";dialog=null;moving=null;marching=null;++marchSeq;render();return}catch(e){toast("Kayıt yüklenemedi: "+e.message)}}
 
 function load(){try{const s=JSON.parse(localStorage.getItem(SAVEKEY));if(s&&s.p?.length===RAW.length&&N[s.me]){S=s;return true}}catch{}return false}
+function migrateHistoricalSave(){if(SAVEKEY===SAVE||localStorage.getItem(SAVEKEY))return;for(const key of [SAVE+"_anadolu_backup",SAVE]){const raw=localStorage.getItem(key);if(!raw)continue;try{const candidate=JSON.parse(raw);if(candidate?.p?.length===RAW.length&&N[candidate.me]){localStorage.setItem(SAVEKEY,raw);return}}catch{}}}
+migrateHistoricalSave();
 function log(msg){S.log.unshift({t:S.turn,msg});S.log=S.log.slice(0,80)}
 function war(a,b){return b==="ne"||a==="ne"||S.wars.some(x=>x.includes(a)&&x.includes(b))}
 function relation(a,b){return S.relations[[a,b].sort().join("-")]??0}
