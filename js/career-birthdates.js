@@ -1,7 +1,5 @@
 "use strict";
-/* Birth dates for all named footballers in the 2026/27 Career & Draft pool.
-   Real age is calculated by js/career.js as of 16 November in each career season.
-   Source registry: data/career-birthdates.json. Fictional youth keep generated ages. */
+/* Footballer birth dates as of 2026/27. Generated youth players use their own ages. */
 const CAREER_PLAYER_BIRTHDATES = Object.freeze({
   "Victor Osimhen": "1998-12-29",
   "Barış Alper Yılmaz": "2000-05-23",
