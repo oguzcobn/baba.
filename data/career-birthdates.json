@@ -525,12 +525,32 @@
     "Mateusz Lis": "1997-02-27",
     "Krzysztof Piątek": "1995-07-01",
     "Karol Linetty": "1995-02-02",
-    "Gary Medel": "1987-08-03"
+    "Gary Medel": "1987-08-03",
+    "Patrick Twumasi": "1994-05-09",
+    "Caleb Ekuban": "1994-03-23",
+    "Vincent Aboubakar": "1992-01-22",
+    "Rachid Ghezzal": "1992-05-09",
+    "Sofiane Feghouli": "1989-12-26",
+    "Nicolas Pépé": "1995-05-29",
+    "Giovanni Sio": "1989-03-31",
+    "Christian Luyindama": "1994-01-08",
+    "Fabrice N'Sakala": "1990-07-21",
+    "Hakim Ziyech": "1993-03-19",
+    "Younès Belhanda": "1990-02-25",
+    "Emmanuel Adebayor": "1984-02-26",
+    "Carlo Holse": "1999-06-02",
+    "Andreas Cornelius": "1993-03-16",
+    "Simon Kjær": "1989-03-26",
+    "Zymer Bytyqi": "1996-09-14",
+    "Alexander Sørloth": "1995-12-05",
+    "Fredrik Gulbrandsen": "1992-09-10",
+    "Joshua King": "1992-01-15",
+    "Manolis Siopis": "1994-05-14"
   },
   "coverage": {
     "currentRoster": 419,
     "currentWithDob": 419,
     "uniqueHistoricalDraft": 164,
-    "historicalWithoutDob": 62
+    "historicalWithoutDob": 42
   }
 }
