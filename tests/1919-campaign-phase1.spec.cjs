@@ -23,6 +23,8 @@ test('national decisions have per-turn limits and cannot mint unlimited currency
  await page.locator('.sidebody [data-a="stabilize"]').click();
  expect((await saved(page)).gold).toBe(reform.gold);
  await page.locator('.bottom [data-a="end"]').click();
+ const historicEvent=page.locator('.modalbg [data-modal="close"]');
+ if(await historicEvent.count())await historicEvent.click();
  await page.locator('.sidebody [data-a="tax"]').click();
  expect((await saved(page)).decisions.tax).toBe(2);
 });
@@ -100,9 +102,14 @@ test('20 strategic simulations support 50 turns without unbounded AI generation'
        const regions=own(),army=regions.reduce((n,p)=>n+p.army,0);
        const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+p.market*8+p.farm*4),0);
        const upkeep=Math.ceil(army*.23);
+       if(run%5===1&&t%7===0&&S.gold>=95&&regions[0]){S.gold-=95;regions[0].market++}
+       if(run%5===2&&t%4===0&&S.gold>=60&&S.men>=20&&regions[0]){S.gold-=60;S.men-=20;regions[0].army+=20}
+       if(run%5===3&&t%5===0&&S.gold>=85&&regions[0]){S.gold-=85;regions[0].farm++;regions[0].pop+=4}
+       if(run%5===4&&t%8===0&&S.gold>=100){S.gold-=100;S.tech++}
+       const unpaid=Math.max(0,upkeep-(S.gold+income));
        S.gold=Math.max(0,S.gold+income-upkeep);
        S.men+=Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75);
-       S.stability=clamp(S.stability+(income>=upkeep?1:-3),0,100);
+       S.stability=clamp(S.stability+(unpaid>0?-2:income>=upkeep?1:0),0,100);
        for(const p of S.p){p.moved=false;p.pop=Math.min(230,p.pop+(p.farm?2:1))}
        S.turn=t;ai();
        reached=t;
@@ -115,5 +122,6 @@ test('20 strategic simulations support 50 turns without unbounded AI generation'
  expect(summary).toHaveLength(20);
  expect(summary.every(s=>s.aiResources)).toBe(true);
  expect(summary.every(s=>s.maxAIArmy<10000)).toBe(true);
+ expect(summary.filter(s=>s.reached===50).length).toBeGreaterThanOrEqual(5);
  console.log('1919 CAMPAIGN SIMULATIONS',JSON.stringify(summary));
 });
