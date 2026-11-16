@@ -29,11 +29,22 @@ const arcIds=g=>g.arcs.flat(Infinity).map(a=>a<0?~a:a);
 for(const g of geometries)for(const a of new Set(arcIds(g)))arcUse.set(a,(arcUse.get(a)||0)+1);
 const coastal=new Set(geometries.filter(g=>arcIds(g).some(a=>arcUse.get(a)===1)).map(g=>"c"+g.id));
 const routeKey=(a,b)=>[a,b].sort().join("|");
-for(const p of RAW.filter(p=>coastal.has(p[0]))){
- const near=RAW.filter(q=>q!==p&&coastal.has(q[0])&&!landRoutes.has(routeKey(p[0],q[0]))).sort((a,b)=>distanceTo(p,a)-distanceTo(p,b)).slice(0,2);
- for(const q of near){const k=routeKey(p[0],q[0]);if(!seaRoutes.has(k)){seaRoutes.add(k);LINKS.push([p[0],q[0]])}}
+// Explicit maritime corridors: never connect countries merely because their centroids are close.
+const maritimeCorridors=[
+ ["826","250"],["504","724"],["380","300"],["818","682"],
+ ["392","410"],["392","156"],["360","036"],["036","554"],
+ ["840","192"],["192","332"],["826","840"],["620","076"],
+ ["076","024"],["710","036"],["364","682"],["156","158"],
+ ["304","352"],["352","826"],["124","304"],["608","704"],
+ ["608","360"],["250","012"],["724","012"],["208","578"],
+ ["356","144"],["458","360"]
+];
+const availableCountries=new Set(RAW.map(p=>p[0]));
+for(const [a,b] of maritimeCorridors){
+ const from="c"+a,to="c"+b,key=routeKey(from,to);
+ if(!availableCountries.has(from)||!availableCountries.has(to)||!coastal.has(from)||!coastal.has(to)||landRoutes.has(key)||seaRoutes.has(key))continue;
+ seaRoutes.add(key);LINKS.push([from,to]);
 }
-function distanceTo(a,b){const dx=Math.abs(a[2]-b[2]);return Math.hypot(Math.min(dx,1080/10.5-dx),a[3]-b[3])}
 const equipment=p=>p.equipment||(p.equipment={tank:0,plane:0,ship:0});
 const oldSave=localStorage.getItem(SAVE);if(oldSave&&!localStorage.getItem(SAVE+"_anadolu_backup"))localStorage.setItem(SAVE+"_anadolu_backup",oldSave);
 const troopArt='<ellipse cy="19" rx="10" ry="3" fill="#0007"/><path d="M-5 5-6 16-2 18 0 8 3 17 7 16 5 4" fill="#4c5140" stroke="#20291e"/><path d="M-6-6Q0-10 6-6L8 5 3 9-5 7Z" fill="#7b8057" stroke="#282f25"/><path d="M-6-4-10 5-6 7-2-2M5-4 11 3 8 6 3 0" fill="#899166" stroke="#323a2c"/><circle cy="-12" r="4" fill="#d5ad81"/><path d="M-5-12Q-5-20 2-18L6-13Z" fill="#4c5840" stroke="#1c281e"/><path d="M-8 10 9-13" stroke="#302a20" stroke-width="3"/><path d="M8-12 12-18" stroke="#c6c9b6" stroke-width="1.5"/><path d="M-5-1 5 2" stroke="#c4b28b" stroke-width="2"/>';
@@ -58,9 +69,9 @@ mapSVG=function(){
  const markers=S.p.filter(p=>p.id===sel||p.owner===S.me).map(p=>{const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="world-troop" transform="scale(.55)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect x="10" y="-7" width="28" height="13" rx="2" fill="#172322" stroke="#bea876"/><text x="24" y="3" text-anchor="middle" fill="#f3e1b8" font-size="8">'+p.army+'</text><text y="-16" text-anchor="middle" class="label" style="font-size:9px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-17 19v-8h4v-3h5v3h4v-3h5v11Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g>'}).join("");
  return '<svg id="world" viewBox="0 0 1080 650" aria-label="Oynanabilir dünya haritası"><defs><radialGradient id="world-sea"><stop stop-color="#385667"/><stop offset="1" stop-color="#152b3b"/></radialGradient></defs><rect width="1080" height="650" fill="url(#world-sea)"/>'+countries+routes+S.p.filter(p=>p.owner===S.me||p.id===sel).map(modelSvg).join("")+markers+marchingSvg()+'</svg>';
 };
-outcome=function(){const territories=own();if(!territories.length){S.loss=true;event("Sefer sona erdi","Tüm bölgelerinin kontrolünü kaybettin.")}else if(territories.length>=Math.ceil(RAW.length*.6)){S.win=true;event("Dünya gücü","Dünya bölgelerinin yüzde 60’ını kontrol ediyorsun.")}};
-start=function(me){S=initial(me);sel=N[me][3];tab="province";layer="political";dialog=null;moving=null;marching=null;++marchSeq;previousOwners.clear();save();render()};
-home=function(){S=null;dialog=null;moving=null;marching=null;++marchSeq;document.querySelectorAll(".modalbg").forEach(x=>x.remove());app.innerHTML=gameHeader()+'<main class="home"><section class="hero"><div class="eyebrow">DÜNYA SEFERİ</div><h1>Dünyanın kaderini belirle.</h1><p>'+RAW.length+' ülke bölgesi. Her ülkeyle başla, diplomasi yap, ordunu büyüt ve sınırlarını genişlet.</p><div class="actions"><button class="gold" data-a="nations">Ülke Seç</button><button data-a="continue">Kayıtlı Sefere Dön</button></div></section><p class="muted">Alternatif tarih senaryosu. Coğrafya modern Natural Earth ülke sınırlarını kullanır; 1919’un tarihsel sınırları değildir. Kıyı bölgeleri yakın kıyılara deniz rotalarıyla bağlanır; deniz sevkiyatı gemi gerektirir.</p><div class="cards"><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+troopArt+'</svg><b>Kara Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+tankArt+'</svg><b>Zırhlı Birlik</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+planeArt+'</svg><b>Hava Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+shipArt+'</svg><b>Donanma</b></div></div></main>';wire()};
+outcome=function(){if(S.win||S.loss)return;const territories=own();if(!territories.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer sona erdi: devletin kontrolü çöktü.")}else if(territories.length>=Math.ceil(RAW.length*.6)){S.win=true;dialog=null;log("Zafer: dünya bölgelerinin yüzde 60’ı kontrol ediliyor.")}};
+start=function(me,difficulty="normal"){archiveBeforeNew();S=initial(me);S.difficulty=difficulty;sel=N[me][3];tab="province";layer="political";dialog=null;moving=null;marching=null;++marchSeq;previousOwners.clear();save();render()};
+home=function(){S=null;dialog=null;moving=null;marching=null;++marchSeq;document.querySelectorAll(".modalbg").forEach(x=>x.remove());app.innerHTML=gameHeader()+'<main class="home"><section class="hero"><div class="eyebrow">DÜNYA SEFERİ</div><h1>Dünyanın kaderini belirle.</h1><p>'+RAW.length+' ülke bölgesi. Her ülkeyle başla, diplomasi yap, ordunu büyüt ve sınırlarını genişlet.</p><div class="actions"><button class="gold" data-a="nations">Ülke Seç</button><button data-a="continue">Kayıtlı Sefere Dön</button><button data-a="saves">▤ Kayıtlar ve Yedekler</button></div></section><p class="muted">Alternatif tarih senaryosu. Coğrafya modern Natural Earth ülke sınırlarını kullanır; 1919’un tarihsel sınırları değildir. Deniz rotaları tanımlanmış deniz koridorlarına dayanır; deniz sevkiyatı gemi gerektirir.</p><div class="cards"><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+troopArt+'</svg><b>Kara Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+tankArt+'</svg><b>Zırhlı Birlik</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+planeArt+'</svg><b>Hava Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+shipArt+'</svg><b>Donanma</b></div></div></main>';wire()};
 
 const commanderPortrait='<svg viewBox="0 0 80 90" width="70"><rect width="80" height="90" rx="4" fill="#17232b" stroke="#b69d69"/><path d="M9 88 15 60 33 53H47L65 60 72 88" fill="#6e7958"/><path d="M31 52 40 69 49 52" fill="#d7c6a4"/><path d="M37 66h6l4 22H34Z" fill="#263326"/><ellipse cx="40" cy="34" rx="15" ry="20" fill="#bfa07d"/><path d="M24 28 25 15Q40 5 56 15L57 29Z" fill="#4c5b47"/><path d="M20 26h40l-8 6H27Z" fill="#243325"/><path d="M35 41q5 5 10 0M30 34h5m10 0h5" fill="none" stroke="#625743"/><path d="m40 13 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1Z" fill="#d8bf78"/><path d="M15 65h12m26 0h12" stroke="#e1c47b" stroke-width="4"/></svg>';
 const oldNationPanel=nationPanel;nationPanel=function(){return '<div class="panel"><h3>Başkomutanlık</h3>'+commanderPortrait+'<p>'+(S.commander?'Kurmay heyeti göreve atandı.':'Kurmay heyeti ata: 120 altın, +1 teknoloji.')+'</p><button data-a="commander" '+(S.commander?'disabled':'')+'>Kurmay Heyetini Ata</button></div>'+oldNationPanel().replace("İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.","Dünya bölgelerinin yüzde 60’ını kontrol et.").replace("18 eyalete ulaş.","Dünya bölgelerinin yüzde 60’ını kontrol et.")};
@@ -125,24 +136,62 @@ resolveMarch=function(d,n){
 };
 
 ai=function(){
+ const economy=S.aiEconomy ||= {};
+ const allied=(a,b)=>S.alliances?.some(x=>x.includes(a)&&x.includes(b))||false;
+ const truceActive=(a,b)=>(S.truce?.[[a,b].sort().join("-")]||0)>S.turn;
  for(const id of Object.keys(N).filter(k=>k!==S.me&&k!=="ne")){
   const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
-  const border=regions.filter(p=>adj(p.id).some(n=>prov(n)?.owner!==id));
-  if(!border.length)continue;const base=border[S.turn%border.length];base.army+=6;
-  if(S.turn%4===0&&coastal.has(base.id))equipment(base).ship=Math.max(1,equipment(base).ship);
-  if(S.turn%5===0)equipment(base).tank++;
-  if(S.turn>=7&&S.turn%9===7&&border.some(p=>adj(p.id).some(n=>prov(n)?.owner===S.me))&&!war(id,S.me)){S.wars.push([id,S.me]);log(name(id)+" savaş ilan etti.")}
+  const state=economy[id] ||= {gold:80+regions.length*30,men:60+regions.length*30};
+  const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0);
+  const army=regions.reduce((n,p)=>n+p.army,0),upkeep=Math.ceil(army*.23);
+  state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
+  state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
+  if(state.gold===0&&income<upkeep)for(const p of regions)p.army=Math.max(1,Math.floor(p.army*.97));
+  const border=regions.filter(p=>adj(p.id).some(n=>prov(n)&&prov(n).owner!==id));
+  if(!border.length)continue;
+  const base=border[(S.turn+toHash(id))%border.length];
+  if(state.gold>=60&&state.men>=20&&(S.turn+toHash(id))%3===0&&base.army<200+regions.length*40){
+    state.gold-=60;state.men-=20;base.army+=20;
+  }
+  // War declarations respect truce and alliances, with one active front per country.
+  const alreadyFighting=S.wars.some(pair=>pair.includes(id));
+  if(!alreadyFighting&&S.turn>=10&&(S.turn+toHash(id))%17===0){
+    const opponents=[...new Set(border.flatMap(p=>adj(p.id).map(n=>prov(n)?.owner).filter(Boolean)))].filter(other=>other!==id&&other!=="ne"&&!allied(id,other)&&!truceActive(id,other));
+    const candidate=opponents.find(other=>{
+      const enemy=S.p.filter(p=>p.owner===other).reduce((n,p)=>n+p.army,0);
+      const power=regions.reduce((n,p)=>n+p.army,0);
+      const threshold=other===S.me?({easy:2.2,normal:1.55,hard:1.2}[S.difficulty]||1.55):1.35;
+      if(other===S.me&&S.turn-(S.aiLastWarAgainstPlayer||0)<9)return false;
+      return power>enemy*threshold&&relation(id,other)<30;
+    });
+    if(candidate){S.wars.push([id,candidate]);if(candidate===S.me)S.aiLastWarAgainstPlayer=S.turn;log(name(id)+" "+name(candidate)+" devletine savaş ilan etti.")}
+  }
+  // Each country moves at most one army per turn, at an actual resource cost.
   for(const f of border){
-   const p=adj(f.id).map(prov).find(p=>p&&war(id,p.owner)&&f.army>p.army*1.6+16&&(!seaRoutes.has(routeKey(f.id,p.id))||equipment(f).ship));
-   if(!p)continue;
-   const n=Math.floor(f.army*.67);f.army-=n;f.moved=true;
-   if(n*(1+Math.min(equipment(f).tank,3)*.15)>p.army*(1+p.fort*.12)){
-    p.owner=id;p.army=Math.max(1,Math.round(n*.48));p.equipment={tank:0,plane:0,ship:0};p.unitType="infantry";log(name(id)+" "+p.label+" bölgesini ele geçirdi.");
-   }else p.army=Math.max(1,Math.round(p.army*.79));break;
+    if(f.moved)continue;
+    const threshold={easy:2.05,normal:1.65,hard:1.4}[S.difficulty]||1.65;
+    const target=adj(f.id).map(prov).find(p=>p&&p.owner!==id&&war(id,p.owner)&&!allied(id,p.owner)&&!truceActive(id,p.owner)&&f.army>p.army*threshold+15&&(!seaRoutes.has(routeKey(f.id,p.id))||equipment(f).ship));
+    if(!target)continue;
+    const n=Math.floor(f.army*.6);if(n<2)continue;
+    f.army-=n;f.moved=true;
+    const attack=n*(1+Math.min(equipment(f).tank,3)*.15);
+    const defense=target.army*(1.1+target.fort*.18);
+    const chance=attack/(attack+defense);
+    if(chance>.55){target.owner=id;target.army=Math.max(1,Math.round(n*.5));target.equipment={tank:0,plane:0,ship:0};target.unitType="infantry";log(name(id)+" "+target.label+" bölgesini ele geçirdi.")}
+    else target.army=Math.max(1,Math.round(target.army*.82));
+    break;
   }
  }
 };
-const oldRender=render;render=function(){document.querySelectorAll(".modalbg").forEach(x=>x.remove());oldRender()};
+
+const oldRender=render;render=function(){
+ document.querySelectorAll(".modalbg").forEach(x=>x.remove());
+ if(S&&(S.win||S.loss)){
+  const territory=own().length,army=own().reduce((sum,p)=>sum+p.army,0);
+  app.innerHTML=gameHeader()+'<main class="home endgame-summary"><div class="hero"><div class="eyebrow">SEFER RAPORU · TUR '+S.turn+'</div><h1>'+(S.win?"🏆 Zafer":"⚑ Sefer Kaybedildi")+'</h1><p>'+(S.win?"Dünya bölgelerinin yüzde 60’ını ele geçirdin.":"Devletin tüm bölgelerini veya istikrarını kaybetti.")+'</p><div class="stats"><div class="stat">Bölgeler <b>'+territory+'</b></div><div class="stat">Kalan Ordu <b>'+army+'</b></div><div class="stat">Hazine <b>'+S.gold+'</b></div><div class="stat">Tur <b>'+S.turn+'</b></div></div><div class="actions"><button class="gold" data-a="menu">Yeni Sefer</button><button data-a="saves">Kayıtlar</button></div></div></main>';wire();return;
+ }
+ oldRender();
+};
 home();
 }catch(error){root.innerHTML='<main class="home"><h1>Harita açılamadı</h1><p>'+safe(error.message)+'</p><button onclick="location.reload()">Tekrar dene</button></main>'}
 })();
