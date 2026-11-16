@@ -532,3 +532,32 @@ test.describe('Football game-only fullscreen',()=>{
     });
   }
 });
+
+
+test.describe('Footballer birthdate accuracy',()=>{
+  test.use({viewport:{width:390,height:844}});
+  test.beforeEach(async({page})=>page.addInitScript(()=>sessionStorage.setItem('baba_ok','1')));
+  test('club career uses real player ages and migrates saved seasons without reset',async({page})=>{
+    await page.goto(BASE+'#career');
+    await expect(page.locator('[data-s=club]')).toBeVisible();
+    await page.locator('.cr-clubsel').selectOption({label:'Galatasaray'});
+    await page.locator('[data-s=club]').click();
+    const initial=await page.evaluate(()=>{
+      const s=Career.state(),p=s.squad.find(x=>x.name==='Victor Osimhen');
+      return {age:p.age,dob:p.dob,season:s.year,saved:!!localStorage.getItem('baba_career_save')};
+    });
+    expect(initial).toEqual({age:27,dob:'1998-12-29',season:2026,saved:true});
+    await page.evaluate(()=>{
+      const s=JSON.parse(localStorage.getItem('baba_career_save'));
+      s.squad.find(x=>x.name==='Victor Osimhen').age=19;
+      s.year=2028;
+      localStorage.setItem('baba_career_save',JSON.stringify(s));
+    });
+    await page.reload();
+    const migrated=await page.evaluate(()=>{
+      const s=Career.state(),p=s.squad.find(x=>x.name==='Victor Osimhen');
+      return {age:p.age,dob:p.dob,season:s.year,stored:JSON.parse(localStorage.getItem('baba_career_save')).squad.find(x=>x.name==='Victor Osimhen').age};
+    });
+    expect(migrated).toEqual({age:29,dob:'1998-12-29',season:2028,stored:29});
+  });
+});
