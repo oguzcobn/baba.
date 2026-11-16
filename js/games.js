@@ -182,7 +182,7 @@ const App = (() => {
 
   /* ==================== 1919 — İSTİKLAL HARBİ ==================== */
   function istiklal1919() {
-    const src = 'games/1919/age.html?v=93';
+    const src = 'games/1919/age.html?v=94';
     const b = shell('1919: Medeniyetlerin Çağı', `<div class="vd-bar"><p class="bb-tip">${T('Age of Civilizations tarzı tur bazlı strateji: 32 eyalet, ekonomi, ordu hareketi, diplomasi ve tarihsel olaylar.', 'Turn-based historical strategy with 32 provinces, economics, army movements, diplomacy and historical events.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${src}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div><div class="vd-frame"><iframe src="${src}" title="1919: Medeniyetlerin Çağı" allow="fullscreen" allowfullscreen loading="eager"></iframe></div><p class="bb-tip">${T('Haritadan eyalet seç, asker yetiştir, diplomasiyle savaş ilan et ve komşuya ilerle. Her tur ekonomi ve rakipler gelişir.', 'Select provinces, recruit armies, declare war through diplomacy and move to adjacent regions. Each turn advances the economy and rivals.')}</p>`, T('Tur bazlı strateji · 1919–1923','Turn-based strategy · 1919–1923'));
     b.closest('.game-page').classList.add('vadi-page');
     const frame = b.querySelector('.vd-frame');
