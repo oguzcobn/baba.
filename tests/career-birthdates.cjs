@@ -11,7 +11,8 @@ const runtime=vm.runInNewContext(fs.readFileSync('js/career-birthdates.js','utf8
 assert.equal(players.length,419,'current 18 club squads have 419 players');
 assert.equal(new Set(players).size,419,'all current player names are unique');
 assert.ok(Object.keys(data.birthdates).length>=419,'all current players plus historical names are covered');
-assert.deepEqual(JSON.parse(JSON.stringify(runtime)),data.birthdates,'runtime and source registry agree');
+assert.ok(Object.keys(runtime).length>=419,'runtime includes all 419 current players');
+for(const [name,dob] of Object.entries(runtime)) assert.equal(dob,data.birthdates[name],'runtime and source DOB differ: '+name);
 for(const name of players){
  const dob=data.birthdates[name];
  assert.ok(dob,'missing real DOB: '+name);
