@@ -9,7 +9,10 @@
     "https://www.trabzonspor.org.tr/",
     "https://www.atv.com.tr/turkiye-kupasi",
     "https://www.uefa.com/",
-    "https://www.transfermarkt.com/"
+    "https://www.transfermarkt.com/",
+    "https://www.genclerbirligi.org.tr/",
+    "https://www.gaziantepfk.org/",
+    "https://kocaelispor.com.tr/"
   ],
   "birthdates": {
     "Victor Osimhen": "1998-12-29",
@@ -411,6 +414,31 @@
     "Mustafa Fettahoğlu": "2001-01-02",
     "Veysel Sapan": "1996-01-11",
     "Andrei Borza": "2005-11-12",
-    "Marcos Felipe": "1996-04-13"
+    "Marcos Felipe": "1996-04-13",
+    "René Mitongo": "2008-01-18",
+    "Adem Arous": "2004-07-17",
+    "Arouna Soro": "2007-07-12",
+    "Zakaria Ariss": "2004-06-17",
+    "Trivante Stewart": "2000-03-22",
+    "Ulrich Meleke": "1999-05-24",
+    "Florin Ștefan": "1996-05-09",
+    "Zak Jules": "1997-02-07",
+    "Charles-André Raux-Yao": "2001-11-15",
+    "Gonçalo Sousa": "2006-06-30",
+    "Rigoberto Rivas": "1998-07-31",
+    "Ousmane Diabaté": "2007-09-24",
+    "Rayan Raveloson": "1997-01-16",
+    "Lumbardh Dellova": "1999-01-01",
+    "Ermal Krasniqi": "1998-09-07",
+    "Rayan Lutin": "2003-01-16",
+    "David Bates": "1996-10-05",
+    "Amadou Cissé": "2006-02-27",
+    "Hasan Abdulkareem": "1999-01-01"
+  },
+  "coverage": {
+    "currentRoster": 419,
+    "currentWithDob": 419,
+    "uniqueHistoricalDraft": 164,
+    "historicalWithoutDob": 151
   }
 }
