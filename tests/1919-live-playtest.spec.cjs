@@ -87,7 +87,7 @@ test('player income and stability are initially playable and manpower label is a
 test('sidebar scroll position survives a state-changing research action',async({page})=>{
  await start(page);
  await page.locator('.tabs [data-tab="nation"]').click();
- await page.locator('.sidebody').evaluate(el=>{el.scrollTop=170});
+ await page.locator('.sidebody [data-a="research"]').scrollIntoViewIfNeeded();
  const before=await page.locator('.sidebody').evaluate(el=>el.scrollTop);
  expect(before).toBeGreaterThan(60);
  await page.locator('.sidebody [data-a="research"]').click();
