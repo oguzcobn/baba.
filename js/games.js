@@ -50,6 +50,60 @@ const App = (() => {
   const click = () => Snd.click();
   const blip = (f, d, v) => Snd.note(f, d || .08, 'triangle', v || .05);
 
+  /* Full screen belongs to each football game, not the global app header.
+     iOS browsers without an element Fullscreen API use an in-page fallback. */
+  function footballFullscreen(page) {
+    if (!page) return;
+    const button = page.querySelector('[data-football-fullscreen]');
+    if (!button) return;
+    const nativeActive = () => document.fullscreenElement === page || document.webkitFullscreenElement === page;
+    const fallbackActive = () => page.classList.contains('football-fullscreen-fallback');
+    const active = () => nativeActive() || fallbackActive();
+    const sync = () => {
+      const on = active();
+      button.textContent = on ? '✕ ' + T('Tam ekrandan çık', 'Exit full screen') : '⛶ ' + T('Tam ekran', 'Full screen');
+      button.setAttribute('aria-pressed', String(on));
+      button.setAttribute('aria-label', on ? T('Tam ekrandan çık', 'Exit full screen') : T('Tam ekran', 'Full screen'));
+      button.title = button.getAttribute('aria-label');
+    };
+    const fallback = on => {
+      page.classList.toggle('football-fullscreen-fallback', on);
+      document.body.classList.toggle('football-fullscreen-open', on);
+      sync();
+    };
+    const exit = () => {
+      if (fallbackActive()) fallback(false);
+      if (nativeActive()) {
+        const quit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (quit) Promise.resolve(quit.call(document)).catch(() => {});
+      }
+    };
+    button.addEventListener('click', async () => {
+      click();
+      if (active()) { exit(); sync(); return; }
+      const request = page.requestFullscreen || page.webkitRequestFullscreen;
+      if (request) {
+        try {
+          await Promise.resolve(request.call(page));
+          if (nativeActive()) { sync(); return; }
+        } catch (_) { /* Fall back on iOS / unsupported embedded browsers. */ }
+      }
+      fallback(true);
+    });
+    const onKeydown = e => { if (e.key === 'Escape' && fallbackActive()) exit(); };
+    document.addEventListener('keydown', onKeydown);
+    document.addEventListener('fullscreenchange', sync);
+    document.addEventListener('webkitfullscreenchange', sync);
+    onLeave(() => {
+      document.removeEventListener('keydown', onKeydown);
+      document.removeEventListener('fullscreenchange', sync);
+      document.removeEventListener('webkitfullscreenchange', sync);
+      exit();
+      document.body.classList.remove('football-fullscreen-open');
+    });
+    sync();
+  }
+
   /* ---------------- PIN kilidi ---------------- */
   function pinPad(title, onOk, opts = {}) {
     const ov = document.createElement('div'); ov.className = 'bb-pin-ov';
@@ -528,9 +582,9 @@ const App = (() => {
     else if (r === 'play' && typeof Play !== 'undefined') { root().innerHTML = '<div id="playRoot"></div>'; window.scrollTo(0,0); Play.open(root().querySelector('#playRoot')); }
     else if (r === 'akis' && typeof Akis !== 'undefined') { root().innerHTML = '<div id="akisRoot"></div>'; window.scrollTo(0,0); Akis.open(root().querySelector('#akisRoot')); }
     else if (r === 'hayat-oyunu' && typeof LifeGame !== 'undefined') { root().innerHTML='<section class="game-page"><div class="gp-head"><a class="back" href="#oyunlar">← '+T('Oyunlar','Games')+'</a></div><div id="lifeGameRoot"></div></section>';window.scrollTo(0,0);LifeGame.open(root().querySelector('#lifeGameRoot')); }
-    else if (r === 'draft') { root().innerHTML = '<section class="game-page" id="draft-section"><div class="gp-head"><a class="back" href="#futbol">← ' + T('Futbol', 'Football') + '</a><nav class="mode-switch" aria-label="' + T('Futbol modları', 'Football modes') + '"><a class="on" href="#draft" aria-current="page">⚽ ' + T('Draft Modu', 'Draft Mode') + '</a><a href="#career">🎮 ' + T('Menajerlik Kariyeri', 'Manager Career') + '</a></nav></div><div id="draftRoot"></div></section>'; window.scrollTo(0, 0); Draft.open(root().querySelector('#draftRoot')); }
+    else if (r === 'draft') { root().innerHTML = '<section class="game-page" id="draft-section"><div class="gp-head"><a class="back" href="#futbol">← ' + T('Futbol', 'Football') + '</a><nav class="mode-switch" aria-label="' + T('Futbol modları', 'Football modes') + '"><a class="on" href="#draft" aria-current="page">⚽ ' + T('Draft Modu', 'Draft Mode') + '</a><a href="#career">🎮 ' + T('Menajerlik Kariyeri', 'Manager Career') + '</a></nav><button type="button" class="football-fs-btn" data-football-fullscreen aria-pressed="false">⛶ ' + T('Tam ekran', 'Full screen') + '</button></div><div id="draftRoot"></div></section>'; window.scrollTo(0, 0); Draft.open(root().querySelector('#draftRoot')); footballFullscreen(root().querySelector('#draft-section')); }
     else if (r === 'futbol' && typeof FootballHub !== 'undefined') { root().innerHTML = '<div id="footballRoot"></div>'; window.scrollTo(0, 0); FootballHub.open(root().querySelector('#footballRoot')); }
-    else if (r === 'career' && typeof Career !== 'undefined') { root().innerHTML = '<section class="game-page"><div class="gp-head"><a class="back" href="#futbol">← ' + T('Futbol', 'Football') + '</a><nav class="mode-switch" aria-label="' + T('Futbol modları', 'Football modes') + '"><a href="#draft">⚽ ' + T('Draft Modu', 'Draft Mode') + '</a><a class="on" href="#career" aria-current="page">🎮 ' + T('Menajerlik Kariyeri', 'Manager Career') + '</a></nav></div><div id="careerRoot"></div></section>'; window.scrollTo(0, 0); Career.open(root().querySelector('#careerRoot')); }
+    else if (r === 'career' && typeof Career !== 'undefined') { root().innerHTML = '<section class="game-page" id="career-section"><div class="gp-head"><a class="back" href="#futbol">← ' + T('Futbol', 'Football') + '</a><nav class="mode-switch" aria-label="' + T('Futbol modları', 'Football modes') + '"><a href="#draft">⚽ ' + T('Draft Modu', 'Draft Mode') + '</a><a class="on" href="#career" aria-current="page">🎮 ' + T('Menajerlik Kariyeri', 'Manager Career') + '</a></nav><button type="button" class="football-fs-btn" data-football-fullscreen aria-pressed="false">⛶ ' + T('Tam ekran', 'Full screen') + '</button></div><div id="careerRoot"></div></section>'; window.scrollTo(0, 0); Career.open(root().querySelector('#careerRoot')); footballFullscreen(root().querySelector('#career-section')); }
     else if (r === 'is' && typeof Is !== 'undefined') { root().innerHTML = '<div id="isRoot"></div>'; window.scrollTo(0, 0); Is.open(root().querySelector('#isRoot')); }
     else if ((r === 'dost' || r.startsWith('dost/')) && typeof Dost !== 'undefined') { root().innerHTML = '<div id="dostRoot"></div>'; window.scrollTo(0, 0); Dost.open(root().querySelector('#dostRoot'), r); }
     else if (r === 'msn' && typeof Msn !== 'undefined') { root().innerHTML = '<div id="msnRoot"></div>'; window.scrollTo(0, 0); Msn.mount(root().querySelector('#msnRoot')); }
