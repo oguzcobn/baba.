@@ -8,6 +8,11 @@ on:
       - 'sw.js'
       - 'games/1919/age.html'
       - 'games/1919/world.js'
+      - 'games/1919/geo-utils.js'
+      - 'games/1919/country-meta.js'
+      - 'games/1919/game-layout.css'
+      - 'css/1919-embed.css'
+      - 'tests/1919-live-playtest.spec.cjs'
       - 'tests/1919-diplomacy.spec.cjs'
       - 'tests/1919-campaign-phase1.spec.cjs'
       - 'tests/1919-treaties-and-search.spec.cjs'
@@ -20,6 +25,11 @@ on:
       - 'games/1919/age.js'
       - 'games/1919/age.html'
       - 'games/1919/world.js'
+      - 'games/1919/geo-utils.js'
+      - 'games/1919/country-meta.js'
+      - 'games/1919/game-layout.css'
+      - 'css/1919-embed.css'
+      - 'tests/1919-live-playtest.spec.cjs'
       - 'tests/1919-diplomacy.spec.cjs'
       - 'tests/1919-campaign-phase1.spec.cjs'
       - 'tests/1919-treaties-and-search.spec.cjs'
@@ -37,10 +47,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check games/1919/age.js && node --check games/1919/world.js
+      - run: node --check games/1919/age.js && node --check games/1919/world.js && node --check games/1919/geo-utils.js && node --check games/1919/country-meta.js
       - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-1919-http.log 2>&1 &
-      - run: npx playwright test tests/1919-diplomacy.spec.cjs tests/1919-campaign-phase1.spec.cjs tests/1919-treaties-and-search.spec.cjs tests/1919-historical-scenario.spec.cjs tests/1919-long-mobile-playthrough.spec.cjs --reporter=line --workers=1
+      - run: npx playwright test tests/1919-diplomacy.spec.cjs tests/1919-campaign-phase1.spec.cjs tests/1919-treaties-and-search.spec.cjs tests/1919-historical-scenario.spec.cjs tests/1919-long-mobile-playthrough.spec.cjs tests/1919-live-playtest.spec.cjs --reporter=line --workers=1
       - if: always()
         uses: actions/upload-artifact@v4
         with:
