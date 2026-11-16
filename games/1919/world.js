@@ -142,7 +142,7 @@ ai=function(){
  for(const id of Object.keys(N).filter(k=>k!==S.me&&k!=="ne")){
   const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
   const state=economy[id] ||= {gold:80+regions.length*30,men:60+regions.length*30};
-  const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0);
+  const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0)+tradeBonus(id);
   const army=regions.reduce((n,p)=>n+p.army,0),upkeep=Math.ceil(army*.23);
   state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
   state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
@@ -154,6 +154,14 @@ ai=function(){
     state.gold-=60;state.men-=20;base.army+=20;
   }
   // War declarations respect truce and alliances, with one active front per country.
+  // A defensive alliance joins a war declared against its partner.
+  for(const alliance of (S.alliances||[]).filter(pair=>pair.includes(id))){
+    const partner=alliance.find(k=>k!==id),attack=S.wars.find(pair=>pair[1]===partner&&!pair.includes(id));
+    if(!attack||S.wars.some(pair=>pair.includes(id)))continue;
+    const aggressor=attack[0];
+    if(!aggressor||aggressor===id||allied(id,aggressor)||truceActive(id,aggressor))continue;
+    S.wars.push([id,aggressor]);log("🛡 "+name(id)+" müttefiki "+name(partner)+" savunmak için savaşa katıldı.");
+  }
   const alreadyFighting=S.wars.some(pair=>pair.includes(id));
   if(!alreadyFighting&&S.turn>=10&&(S.turn+toHash(id))%17===0){
     const opponents=[...new Set(border.flatMap(p=>adj(p.id).map(n=>prov(n)?.owner).filter(Boolean)))].filter(other=>other!==id&&other!=="ne"&&!allied(id,other)&&!truceActive(id,other));
