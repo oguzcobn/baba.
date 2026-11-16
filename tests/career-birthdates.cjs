@@ -16,7 +16,7 @@ assert.equal(new Set(historical).size,164,'historical stars in Draft');
 assert.equal(allUnique.length,570,'unique real footballers across Career and Draft');
 assert.equal(data.coverage.historicalWithoutDob,0,'all historical star dates are covered');
 assert.ok(Object.keys(data.birthdates).length>=419,'all current players plus historical names are covered');
-assert.ok(Object.keys(runtime).length>=419,'runtime includes all 419 current players');
+assert.deepEqual(JSON.parse(JSON.stringify(runtime)), data.birthdates, 'browser age map must match all audited footballers');
 for(const [name,dob] of Object.entries(runtime)) assert.equal(dob,data.birthdates[name],'runtime and source DOB differ: '+name);
 for(const name of allUnique){
  const dob=data.birthdates[name];
