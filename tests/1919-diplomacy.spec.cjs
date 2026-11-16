@@ -18,11 +18,11 @@ test.describe('1919 world map diplomacy and army actions', () => {
     await select(page,'c300'); // Greece
     await page.locator('.sidebody [data-tab="diplomacy"]').click();
     await expect(page.locator('.dip-target[data-country="gr"]')).toBeVisible();
-    await expect(page.locator('.sidebody [data-d]')).toHaveCount(4);
+    await expect(page.locator('.sidebody [data-d]')).toHaveCount(6);
     await expect(page.locator('.sidebody [data-d="war:fr"]')).toHaveCount(0);
     await select(page,'c250'); // France
     await expect(page.locator('.dip-target[data-country="fr"]')).toBeVisible();
-    await expect(page.locator('.sidebody [data-d]')).toHaveCount(4);
+    await expect(page.locator('.sidebody [data-d]')).toHaveCount(6);
     await expect(page.locator('.sidebody [data-d="war:gr"]')).toHaveCount(0);
     expect(errors).toEqual([]);
   });
