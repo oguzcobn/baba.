@@ -40,6 +40,16 @@ const troopArt='<ellipse cy="19" rx="10" ry="3" fill="#0007"/><path d="M-5 5-6 1
 const tankArt='<ellipse cy="10" rx="19" ry="6" fill="#202827"/><rect x="-18" y="3" width="36" height="10" rx="5" fill="#555d50" stroke="#1c2420"/><path d="M-14 2-9-6 11-6 17 3Z" fill="#899379" stroke="#323a30"/><rect x="-5" y="-10" width="13" height="7" rx="3" fill="#6d795d"/><path d="M4-7 25-10" stroke="#bbc3a4" stroke-width="3"/><path d="M-12 8h25" stroke="#1d2822" stroke-dasharray="3 2" stroke-width="4"/>';
 const planeArt='<path d="M0-18 3-3 22 3 22 7 3 4 3 16 10 19 10 22 0 19-10 22-10 19-3 16-3 4-22 7-22 3-3-3Z" fill="#b8bd9d" stroke="#303d36" stroke-width="1.4"/><path d="M-8-16h16" stroke="#d6d4b2" stroke-width="2"/><ellipse cy="-5" rx="2" ry="4" fill="#33484c"/>';
 const shipArt='<path d="M-23 6 23 6 14 16-16 16Z" fill="#646e6b" stroke="#253b42"/><path d="M-15 6-11-3 12-3 17 6Z" fill="#a0a79a"/><path d="M-5-3V-12h6v9M7-3v-7h5v7" fill="#55605c"/><path d="M0-16v-10M-8-20h15" stroke="#bac2ae"/><path d="M-27 19Q-15 15 0 19T28 19" fill="none" stroke="#b7d9d4"/>';
+
+marchingSvg=function(){
+ if(!marching)return "";
+ const from=shapeData.get(marching.from),to=shapeData.get(marching.to),origin=prov(marching.from);
+ if(!from||!to||!origin)return "";
+ const sea=seaRoutes.has(routeKey(marching.from,marching.to));
+ const art=sea?shipArt:equipment(origin).tank?tankArt:troopArt;
+ const path="M"+from.x+" "+from.y+" Q"+((from.x+to.x)/2)+" "+((from.y+to.y)/2-25)+" "+to.x+" "+to.y;
+ return '<g pointer-events="none"><path d="'+path+'" fill="none" stroke="#f0d08a" stroke-width="2" stroke-dasharray="5 4"/><g><animateMotion dur="1.15s" path="'+path+'" fill="freeze"/><g transform="scale(.7)">'+art+'</g><text y="-24" text-anchor="middle" class="label" style="font-size:10px">'+marching.count+'</text></g></g>';
+};
 mapSVG=function(){
  const routes=LINKS.filter(l=>l.includes(sel)&&seaRoutes.has(routeKey(...l))).map(([a,b])=>{const x=shapeData.get(a),y=shapeData.get(b);return '<path d="M'+x.x+' '+x.y+' L'+y.x+' '+y.y+'" fill="none" stroke="#b7d5e2" stroke-dasharray="5 4" stroke-width="1.3" pointer-events="none"/>'}).join("");
  const countries=S.p.map(p=>{const a=shapeData.get(p.id),old=previousOwners.get(p.id),fill=color(p);previousOwners.set(p.id,fill);
