@@ -11,6 +11,7 @@ on:
       - 'tests/career-birthdates.cjs'
       - 'css/football-premium.css'
       - 'tests/mobile.spec.cjs'
+      - 'tests/game-cover-editor.spec.cjs'
       - 'sw.js'
   push:
     branches: [test/mobile-playwright-smoke-20261112, main]
@@ -39,7 +40,7 @@ jobs:
       - run: node tests/match-rules.cjs && node tests/career-birthdates.cjs && node --check js/career.js && node --check js/career-birthdates.js && node --check js/draft.js
       - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-http.log 2>&1 &
-      - run: npx playwright test tests/mobile.spec.cjs tests/match2d-browser.spec.cjs --reporter=line --workers=2
+      - run: npx playwright test tests/mobile.spec.cjs tests/game-cover-editor.spec.cjs tests/match2d-browser.spec.cjs --reporter=line --workers=2
       - if: always()
         uses: actions/upload-artifact@v4
         with:

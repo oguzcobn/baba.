@@ -436,3 +436,38 @@ body.dark-mode .lang-sw button.on{background:#fff;color:#111}
 .card-art.card-art-cover{position:relative;isolation:isolate;background:#081320;}
 .card-art.card-art-cover::before{content:"";position:absolute;inset:-16px;background-image:var(--cover-image);background-position:center;background-size:cover;filter:blur(14px) brightness(.68);transform:scale(1.04);z-index:-1;}
 .card-art.card-art-cover img{position:relative;display:block;width:100%;height:100%;object-fit:contain;z-index:1;}
+
+/* Device-local editor for game artwork; controls are shown only in owner mode. */
+.bb-cover-toolbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:10px;min-width:0}
+.bb-cover-edit-toggle{border:1px solid #15191f;background:#101820;color:#fff;border-radius:999px;padding:10px 15px;min-height:44px;font:700 13px/1.2 Arial,sans-serif;cursor:pointer;white-space:normal;text-align:center}
+.bb-cover-edit-toggle:disabled{opacity:.5;cursor:wait}
+.bb-cover-editor[hidden]{display:none!important}
+.bb-cover-editor{margin:0 0 28px;padding:clamp(16px,3vw,25px);background:#0d1727;color:#f7f9ff;border-radius:22px;border:1px solid #263449;box-shadow:0 12px 32px #11182713}
+.bb-cover-editor-intro h3{font-size:clamp(19px,3vw,25px);margin:0 0 6px}
+.bb-cover-editor-intro p{color:#b9c7d8;margin:0 0 20px;font-size:14px;line-height:1.55;max-width:65ch}
+.bb-cover-editor-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px}
+.bb-cover-editor-item{display:flex;gap:13px;padding:12px;border:1px solid #38465b;border-radius:16px;background:#172338;min-width:0;align-items:flex-start}
+.bb-cover-editor-thumb{height:102px;aspect-ratio:4/3;border-radius:10px;background:#071321;overflow:hidden;display:grid;place-items:center;flex:none}
+.bb-cover-editor-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+.bb-cover-editor-thumb img[hidden],.bb-cover-editor-thumb span[hidden]{display:none}
+.bb-cover-editor-blank{font-size:30px}
+.bb-cover-editor-info{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1}
+.bb-cover-editor-info>b{font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.bb-cover-editor-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.bb-cover-editor-controls button,.bb-cover-pick{font:600 12px/1.2 Arial,sans-serif;background:#26364f;border:1px solid #52627a;border-radius:10px;min-height:38px;padding:9px 10px;color:white;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.bb-cover-editor-controls button[aria-pressed="true"]{background:#f7f9ff;color:#102135;border-color:#fff}
+.bb-cover-editor-controls button:disabled{opacity:.36;cursor:default}
+.bb-cover-pick{position:relative;overflow:hidden;background:#f6fcff;color:#11273e;border-color:#f6fcff}
+.bb-cover-pick input{position:absolute;inset:0;width:100%;height:100%;font-size:100px;opacity:0;cursor:pointer}
+.bb-cover-pick:focus-within,.bb-cover-editor-controls button:focus-visible,.bb-cover-edit-toggle:focus-visible{outline:3px solid #f9ba62;outline-offset:2px}
+.bb-cover-editor-status{min-height:1.2em;color:#a3ecc4;font-size:12px;line-height:1.35}
+.bb-cover-editor-status.is-error,.bb-cover-storage-error{color:#ffb6a3}
+.card-art.bb-cover-custom{background:#0d1727}
+.card-art.bb-cover-custom::before{display:none}
+@media(max-width:520px){
+  .list-head{align-items:flex-start;gap:9px}
+  .bb-cover-toolbar{flex-direction:column;align-items:flex-end;gap:5px}
+  .bb-cover-editor-item{gap:9px;padding:10px}
+  .bb-cover-editor-thumb{height:82px}
+  .bb-cover-editor-controls button,.bb-cover-pick{font-size:11px;padding:8px}
+}
