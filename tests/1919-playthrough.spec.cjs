@@ -68,6 +68,7 @@ async function playScenario(page,device){
  });
  await step('progress 15 more turns',async()=>{
    const times=[];
+   if(await page.locator('.modalbg').count())await page.locator('.modalbg [data-modal="close"]').first().click({timeout:2500});
    for(let i=0;i<15;i++){
      const before=performance.now();
      await page.locator('.bottom [data-a="end"]').click({timeout:8000});
