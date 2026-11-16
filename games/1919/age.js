@@ -37,7 +37,7 @@ const ACTION_LABELS={recruit:"20 asker yetiştirildi",invest:"altyapı yatırım
 
 function initial(me){const p=RAW.map(([id,label,x,y,owner],i)=>({id,label,x,y,owner,army:30+(i*7)%30,pop:20+(i*11)%60,dev:1+i%3,fort:0,market:0,farm:0,barracks:0,investment:0,festivals:0,happy:68+i%24,moved:false}));const capital=p.find(x=>x.id===N[me][3]);capital.owner=me;capital.army=100;return{me,p,turn:1,gold:430,men:380,tech:1,stability:85,relations:{},wars:[],truce:{},alliances:[],log:[{t:1,msg:"Sefer başladı. Bir eyalet seç, asker yetiştir ve turu bitir."}],seen:[],decisions:{},aiEconomy:{},treaties:{trade:[]},difficulty:"normal",win:false,loss:false}}
 function save(){if(S)localStorage.setItem(SAVEKEY,JSON.stringify(S))}
-function archiveBeforeNew(){const old=localStorage.getItem(SAVEKEY);if(!old)return;try{const state=JSON.parse(old);if(!state?.p?.length)return;const key=SAVE+"_archives",archives=JSON.parse(localStorage.getItem(key)||"[]");if(!archives.some(a=>a.game===old)){archives.unshift({savedAt:Date.now(),game:old});localStorage.setItem(key,JSON.stringify(archives.slice(0,3)))}}catch(e){console.warn("Sefer yedeklenemedi",e)}}
+function archiveBeforeNew(){const old=localStorage.getItem(SAVEKEY);if(!old)return;try{const state=JSON.parse(old);if(!state?.p?.length)return;const key=SAVEKEY+"_archives",archives=JSON.parse(localStorage.getItem(key)||"[]");if(!archives.some(a=>a.game===old)){archives.unshift({savedAt:Date.now(),game:old});localStorage.setItem(key,JSON.stringify(archives.slice(0,3)))}}catch(e){console.warn("Sefer yedeklenemedi",e)}}
 function saveSlots(){const slots=[1,2,3].map(n=>{let item=null;try{item=JSON.parse(localStorage.getItem(SAVEKEY+"_slot_"+n))}catch{}return '<div class="panel"><h3>Kayıt '+n+'</h3><p class="muted">'+(item?.me&&N[item.me]?safe(name(item.me))+" · Tur "+item.turn:"Boş kayıt yuvası")+'</p><div class="actions"><button data-a="slot-save-'+n+'" '+(!S?'disabled':'')+'>💾 Kaydet</button><button data-a="slot-load-'+n+'" '+(!item?'disabled':'')+'>↪ Yükle</button></div></div>'}).join("");let archive=[];try{archive=JSON.parse(localStorage.getItem(SAVEKEY+"_archives")||"[]")}catch{}const backups=archive.map((a,i)=>{try{const st=JSON.parse(a.game);return '<button data-a="archive-load-'+i+'">'+safe(name(st.me))+' · Tur '+st.turn+' · Önceki sefer '+(i+1)+'</button>'}catch{return ""}}).join("");app.innerHTML=gameHeader()+'<main class="home"><h1>Sefer Kayıtları</h1><p class="muted">Üç manuel kayıt, otomatik kayıt ve yeni sefere başlamadan önce saklanan son üç sefer.</p><div class="actions"><button data-a="continue">↪ Otomatik kayda dön</button><button data-a="menu">⌂ Menü</button></div><div class="cards">'+slots+'</div>'+(backups?'<div class="panel"><h3>Önceki sefer yedekleri</h3><div class="actions">'+backups+'</div></div>':"")+'</main>';wire()}
 function loadStored(raw){try{const st=JSON.parse(raw);if(!st?.p||st.p.length!==RAW.length||!N[st.me])throw Error("Bu kayıt farklı harita sürümünden.");archiveBeforeNew();localStorage.setItem(SAVEKEY,raw);if(!load())throw Error("Kayıt açılamadı.");sel=N[S.me][3];tab="province";dialog=null;moving=null;marching=null;++marchSeq;render();return}catch(e){toast("Kayıt yüklenemedi: "+e.message)}}
 
@@ -117,7 +117,12 @@ if(a==="help")return help();
 if(a==="historical"){location.href="age.html?scenario=1919";return}
 if(a==="world"){location.href="age.html";return}
 if(a==="saves")return saveSlots();
-if(a.startsWith("slot-save-")){const n=+a.slice(-1),key=SAVE+"_slot_"+n;if(!S)return toast("Önce bir sefer başlat.");if(localStorage.getItem(key)&&!confirm("Kayıt "+n+" üzerine yazılsın mı?"))return;localStorage.setItem(key,JSON.stringify(S));saveSlots();return}
+if(a.startsWith("slot-save-")){const n=+a.slice(-1),key=SAVEKEY+"_slot_"+n;
+if(!S)return toast("Önce bir sefer başlat.");
+if(localStorage.getItem(key))return gameConfirm("Kayıt üzerine yazılsın mı?","Kayıt "+n+" içindeki eski seferin yerine mevcut sefer kaydedilecek.",()=>{
+ if(!S)return;localStorage.setItem(key,JSON.stringify(S));saveSlots();
+});
+localStorage.setItem(key,JSON.stringify(S));saveSlots();return}
 if(a.startsWith("slot-load-")){const n=+a.slice(-1),raw=localStorage.getItem(SAVEKEY+"_slot_"+n);if(raw)loadStored(raw);return}
 if(a.startsWith("archive-load-")){const index=+a.split("-").pop();try{const list=JSON.parse(localStorage.getItem(SAVEKEY+"_archives")||"[]");if(list[index]?.game)loadStored(list[index].game)}catch{}return}
 if(a==="save"){save();toast("Kaydedildi.");return}
@@ -169,8 +174,10 @@ function dip(a,id){
  if(a==="war"&&!fighting){
   if((S.truce[key]||0)>S.turn)return toast("Ateşkes veya saldırmazlık paktı yürürlükte.");
   if(S.alliances.some(x=>x.includes(S.me)&&x.includes(id)))return toast("Önce ittifakı sona erdirmen gerekiyor.");
-  if(!confirm(name(id)+" ile savaş başlatılsın mı?"))return;
-  S.wars.push([S.me,id]);log("⚔ "+name(id)+" ile savaş başladı.");
+  return gameConfirm("Savaş ilanı",name(id)+" devletine savaş ilan edilsin mi? Diplomatik ilişkiler değişecek ve askerî saldırı emirleri açılacak.",()=>{
+   if(!S||prov(sel)?.owner!==id||war(S.me,id)||(S.truce?.[key]||0)>S.turn)return toast("Savaş hedefi veya anlaşma değişti. Yeniden seçin.");
+   S.wars.push([S.me,id]);log(name(id)+" ile savaş başladı.");save();render();
+  });
  }
  if(a==="peace"&&fighting){
   const ours=own().reduce((x,p)=>x+p.army,0),theirs=S.p.filter(p=>p.owner===id).reduce((x,p)=>x+p.army,0);
@@ -257,10 +264,13 @@ function next(){if(S.win||S.loss)return toast("Sefer sona erdi.");const ps=own()
 function outcome(){if(S.win||S.loss)return;const a=own();if(S.me==="tr"?["Izmir","Afyon","Eskisehir","Istanbul"].every(id=>prov(id).owner==="tr"):a.length>=18){S.win=true;dialog=null;log("🏆 Sefer zaferle tamamlandı.")}else if(!a.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer kaybedildi: devletin kontrolü çöktü.")}}
 function event(title,text){dialog={kind:"event",title,text};modal()}
 function help(){dialog={kind:"help"};modal()}
-function modal(){document.querySelector(".modalbg")?.remove();if(!dialog)return;let h="";if(dialog.kind==="help")h='<h2>5 Adımda Oyna</h2><p>1. Haritada kendi eyaletini seç.</p><p>2. Sağ panelden asker yetiştir veya ekonomi geliştir.</p><p>3. Ordu Gönder düğmesine bas ve komşu eyalete dokun.</p><p>4. Düşman bölgeye saldırmak için önce Diplomasi menüsünden savaş ilan et.</p><p>5. Turu Bitir ile gelir topla, rakiplerin hamlesini gör ve zafer hedeflerine ilerle.</p><p class="muted">Haritayı sürükle, ＋/− düğmeleriyle yakınlaştır. Her turda otomatik kayıt yapılır.</p><button class="gold" data-modal="close">Anladım, Oyna</button>';
+function gameConfirm(title,text,onConfirm){dialog={kind:"confirm",title,text,onConfirm};modal()}
+function modal(){document.querySelector(".modalbg")?.remove();if(!dialog)return;let h="";
+if(dialog.kind==="confirm")h='<div class="eyebrow">ONAY GEREKİYOR</div><h2>'+ico("shield")+' '+safe(dialog.title)+'</h2><p>'+safe(dialog.text)+'</p><div class="actions"><button class="gold" data-modal="confirm">'+ico("swords")+' Onayla</button><button data-modal="cancel">Vazgeç</button></div>';if(dialog.kind==="help")h='<h2>5 Adımda Oyna</h2><p>1. Haritada kendi eyaletini seç.</p><p>2. Sağ panelden asker yetiştir veya ekonomi geliştir.</p><p>3. Ordu Gönder düğmesine bas ve komşu eyalete dokun.</p><p>4. Düşman bölgeye saldırmak için önce Diplomasi menüsünden savaş ilan et.</p><p>5. Turu Bitir ile gelir topla, rakiplerin hamlesini gör ve zafer hedeflerine ilerle.</p><p class="muted">Haritayı sürükle, ＋/− düğmeleriyle yakınlaştır. Her turda otomatik kayıt yapılır.</p><button class="gold" data-modal="close">Anladım, Oyna</button>';
 if(dialog.kind==="event")h='<div class="eyebrow">TELGRAF VE HİKÂYE</div><h2>'+safe(dialog.title)+'</h2><p>'+safe(dialog.text)+'</p><button class="gold" data-modal="close">Devam Et</button>';
 if(dialog.kind==="move"){const a=prov(dialog.from),b=prov(dialog.to),needsWar=a.owner!==b.owner&&!war(a.owner,b.owner);h='<h2>'+a.label+' → '+b.label+'</h2><p>Asker sevki ve saldırı emri</p><div class="stats"><div class="stat">Asker <b>'+a.army+'</b></div><div class="stat">Savunma <b>'+b.army+'</b></div></div>'+(needsWar?'<div class="warn">Bu ülkeyle savaşta değilsin. Önce savaş ilan et.</div>':'<p>Gönderilecek asker: <b id="count">'+dialog.amount+'</b></p><input type="range" id="amount" min="1" max="'+(a.army-1)+'" value="'+dialog.amount+'">')+'<div class="actions">'+(needsWar?'<button data-modal="dip" class="gold">Diplomasiye Git</button>':'<button data-modal="go" class="gold">Emri Uygula</button>')+'<button data-modal="cancel">Vazgeç</button></div>'}
-const ov=document.createElement("div");ov.className="modalbg";ov.innerHTML='<div class="modal" role="dialog" aria-modal="true">'+h+'</div>';document.body.appendChild(ov);ov.querySelectorAll("[data-modal]").forEach(b=>b.onclick=()=>{if(b.dataset.modal==="go")return march();if(b.dataset.modal==="dip"){sel=dialog.to;tab="diplomacy";moving=null;dialog=null;render();return}dialog=null;moving=null;ov.remove();if(S)render()});const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
+const ov=document.createElement("div");ov.className="modalbg";ov.innerHTML='<div class="modal" role="dialog" aria-modal="true">'+h+'</div>';document.body.appendChild(ov);ov.querySelectorAll("[data-modal]").forEach(b=>b.onclick=()=>{if(b.dataset.modal==="confirm"){const action=dialog?.kind==="confirm"?dialog.onConfirm:null;dialog=null;moving=null;ov.remove();if(action)action();return}
+if(b.dataset.modal==="go")return march();if(b.dataset.modal==="dip"){sel=dialog.to;tab="diplomacy";moving=null;dialog=null;render();return}dialog=null;moving=null;ov.remove();if(S)render()});ov.addEventListener("click",e=>{if(e.target!==ov||dialog?.kind==="event")return;dialog=null;moving=null;ov.remove();if(S)render()});ov.querySelector("[data-modal=confirm]")?.focus();const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
 function jump(id){if(!prov(id))return;sel=id;moving=null;tab=tab==="diplomacy"?"diplomacy":"province";render()}
 function transform(){const el=document.getElementById("world");if(el){el.style.transform="translate("+px+"px,"+py+"px) scale("+zoom+")";el.style.transformOrigin="50% 50%"}}
 function wire(){
