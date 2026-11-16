@@ -21,7 +21,7 @@ const css = `
 `;
 const style = document.createElement("style"); style.textContent = css; document.head.append(style);
 
-let active = false, layer = "political", mountedHost = null, renderer = null, scene = null, camera = null;
+let active = true, layer = "political", mountedHost = null, renderer = null, scene = null, camera = null;
 let canvas = null, raf = 0, observer = null, resizeObserver = null, provinceMeshes = [], seaMaterial = null;
 let cameraTarget = new THREE.Vector3(0, 0, 0), yaw = 0, distance = 128, pitch = .66, drag = null, skipClick = false, forwardingClick = false;
 const clock = new THREE.Clock();
@@ -75,15 +75,19 @@ function createSea() {
   });
   const mesh = new THREE.Mesh(geometry, seaMaterial); mesh.position.y = -1.05; scene.add(mesh);
 }
+const maskCanvas=document.createElement("canvas");maskCanvas.width=1080;maskCanvas.height=650;
+const maskContext=maskCanvas.getContext("2d");maskContext.fillStyle="#000";maskContext.fillRect(0,0,1080,650);maskContext.fillStyle="#fff";const landPath=new Path2D(LAND_PATH);maskContext.fill(landPath);
+const landMask=new THREE.CanvasTexture(maskCanvas);
 function addProvince(svgPoly) {
   const id = svgPoly.dataset.p, points = (svgPoly.getAttribute("points")||"").trim().split(/[ ,]+/).map(Number);
   if (points.length < 6) return;
   const poly=[]; for(let i=0;i+1<points.length;i+=2) poly.push([points[i],points[i+1]]);
   const geometry=subdividedProvince(poly), fill=svgPoly.getAttribute("fill")||"#65806a";
-  const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:fill,roughness:.94,metalness:.02,side:THREE.DoubleSide,transparent:true,opacity:.94}));
+  const pos=geometry.attributes.position,uv=[];for(let i=0;i<pos.count;i++)uv.push((pos.getX(i)/SCALE+540)/1080,1-(pos.getZ(i)/SCALE+325)/650);geometry.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));
+  const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({alphaMap:landMask,alphaTest:.5,color:fill,roughness:.94,metalness:.02,side:THREE.DoubleSide,transparent:true,opacity:.94}));
   mesh.userData={id,fill,poly}; mesh.position.y=.035; scene.add(mesh); provinceMeshes.push(mesh);
-  const borderPts=poly.map(([x,y])=>{const [wx,wz]=toWorld(x,y);return new THREE.Vector3(wx,heightAt(wx,wz)+.12,wz)});
-  borderPts.push(borderPts[0]);
+  const borderPts=poly.filter(([x,y])=>maskContext.isPointInPath(landPath,x,y)).map(([x,y])=>{const [wx,wz]=toWorld(x,y);return new THREE.Vector3(wx,heightAt(wx,wz)+.12,wz)});
+  if(borderPts.length<2)return;borderPts.push(borderPts[0]);
   const border=new THREE.Line(new THREE.BufferGeometry().setFromPoints(borderPts),new THREE.LineBasicMaterial({color:0xe7d9b9,transparent:true,opacity:.72}));scene.add(border);
 }
 function makeLabel(name, x, y, capital=false) {
@@ -112,13 +116,13 @@ function buildScene() {
   const marker=new THREE.Mesh(new THREE.SphereGeometry(.65,12,8),new THREE.MeshBasicMaterial({color:0xffd27b}));
   marker.position.set(WORLD_X(55*10.5),heightAt(WORLD_X(55*10.5),WORLD_Z(48*5.7+25))+1,WORLD_Z(48*5.7+25));scene.add(marker);
   mountedHost.append(canvas);mountedHost.classList.add("map3d-on");
-  addControls();resizeObserver=new ResizeObserver(resize);resizeObserver.observe(mountedHost);resize();setCamera();
+  applyLayer();addControls();resizeObserver=new ResizeObserver(resize);resizeObserver.observe(mountedHost);resize();setCamera();
   canvas.addEventListener("pointerdown",onPointerDown);canvas.addEventListener("pointermove",onPointerMove);canvas.addEventListener("pointerup",onPointerUp);canvas.addEventListener("pointercancel",onPointerUp);canvas.addEventListener("contextmenu",e=>e.preventDefault());canvas.addEventListener("wheel",onWheel,{passive:false});
   tick();
 }
 function addControls(){
   const tools=document.createElement("div");tools.className="map3d-tools";tools.setAttribute("aria-label","3D harita katmanları");
-  const modes=[["political","Siyasi"],["terrain","Arazi"],["supply","İkmal"],["army","Ordu"],["diplomacy","Diplomasi"]];
+  const modes=[["political","Siyasi"],["terrain","Arazi"],["army","Ordu"]];
   for(const [id,label] of modes){const b=document.createElement("button");b.textContent=label;b.dataset.mode=id;b.classList.toggle("is-on",id===layer);b.onclick=()=>{layer=id;tools.querySelectorAll("button").forEach(x=>x.classList.toggle("is-on",x.dataset.mode===id));applyLayer()};tools.append(b)}
   mountedHost.append(tools);
   const caption=document.createElement("div");caption.className="map3d-label";caption.textContent="Sağ tuşla sürükle · tekerlekle yakınlaştır · WASD ile kaydır";mountedHost.append(caption);
@@ -127,7 +131,7 @@ function applyLayer(){
   for(const mesh of provinceMeshes){const d=mesh.userData;let color=d.fill;
     if(layer==="terrain"){const avg=d.poly.reduce((a,p)=>a+heightAt(...toWorld(p[0],p[1])),0)/d.poly.length;color=avg>8?"#777b71":avg>5?"#8e906f":avg>2?"#aaa078":"#728365"}
     else if(layer==="supply"){const p=d.poly.reduce((a,v)=>[a[0]+v[0]/d.poly.length,a[1]+v[1]/d.poly.length],[0,0]);const score=Math.abs(p[0]-500)/500+Math.abs(p[1]-340)/340;color=score<.65?"#4eaa70":score<1.15?"#d2b649":"#a34d43"}
-    else if(layer==="army")color="#7e8a67";
+    else if(layer==="army"){const el=mountedHost.querySelector(`[data-p="${d.id}"] title`);const n=Number((el?.textContent||"").match(/(\d+) asker/)?.[1]||0);color=new THREE.Color().setHSL(.33-Math.min(n/150,1)*.3,.5,.4);}
     else if(layer==="diplomacy")color="#6d8290";
     mesh.material.color.set(color);
   }
@@ -143,8 +147,8 @@ function onClick(e){if(forwardingClick||skipClick||drag||!canvas||!camera||e.tar
 function tick(){if(!active||!renderer)return;raf=requestAnimationFrame(tick);if(seaMaterial)seaMaterial.uniforms.uTime.value=clock.getElapsedTime();renderer.render(scene,camera)}
 function disposeScene(){cancelAnimationFrame(raf);resizeObserver?.disconnect();resizeObserver=null;if(canvas){canvas.removeEventListener("pointerdown",onPointerDown);canvas.removeEventListener("pointermove",onPointerMove);canvas.removeEventListener("pointerup",onPointerUp);canvas.removeEventListener("pointercancel",onPointerUp);canvas.removeEventListener("wheel",onWheel);canvas.remove()};mountedHost?.querySelectorAll(".map3d-tools,.map3d-label").forEach(x=>x.remove());mountedHost?.classList.remove("map3d-on");scene?.traverse(o=>{o.geometry?.dispose();const m=o.material;if(m)for(const mat of(Array.isArray(m)?m:[m])){mat.map?.dispose();mat.dispose()}});renderer?.dispose();scene=null;camera=null;renderer=null;canvas=null;seaMaterial=null;provinceMeshes=[]}
 function mount(){if(!active)return;const host=document.querySelector("#app .viewport");if(!host)return;if(host===mountedHost&&canvas)return;if(mountedHost)disposeScene();mountedHost=host;try{buildScene()}catch(err){console.error("3D map could not start",err);active=false;buttonState();disposeScene()}}
-function buttonState(){document.querySelectorAll(".map3d-toggle").forEach(b=>{b.classList.toggle("is-on",active);b.setAttribute("aria-pressed",String(active));b.textContent=active?"2D Harita":"3D Harita"})}
+function buttonState(){document.querySelectorAll(".map3d-toggle").forEach(b=>{b.classList.toggle("is-on",active);b.setAttribute("aria-pressed",String(active));const label=active?"2D Harita":"3D Harita";if(b.textContent!==label)b.textContent=label})}
 function inject(){const toolbar=document.querySelector("#app .toolbar");if(!toolbar)return;if(!toolbar.querySelector(".map3d-toggle")){const b=document.createElement("button");b.className="map3d-toggle";b.type="button";b.textContent="3D Harita";b.setAttribute("aria-pressed","false");b.onclick=()=>{active=!active;if(active){mount();if(!canvas)active=false}else disposeScene();buttonState()};toolbar.append(b)}buttonState()}
-observer=new MutationObserver(()=>{inject();if(active)mount()});observer.observe(document.body,{childList:true,subtree:true});
+observer=new MutationObserver(()=>{if(mountedHost&&!mountedHost.isConnected){disposeScene();mountedHost=null}inject();if(active)mount()});observer.observe(document.body,{childList:true,subtree:true});
 document.addEventListener("keydown",onKeys);document.addEventListener("click",onClick,true);
 inject();
