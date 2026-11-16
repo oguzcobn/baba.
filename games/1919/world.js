@@ -163,7 +163,7 @@ ai=function(){
  for(const id of Object.keys(N).filter(k=>k!==S.me&&k!=="ne")){
   const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
   const state=economy[id] ||= {gold:80+regions.length*30,men:60+regions.length*30};
-  const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0)+tradeBonus(id);
+  const income=incomeOf(id);
   const army=regions.reduce((n,p)=>n+p.army,0),upkeep=Math.ceil(army*.23);
   state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
   state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
