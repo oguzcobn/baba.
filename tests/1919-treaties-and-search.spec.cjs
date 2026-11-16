@@ -26,7 +26,7 @@ test('trade treaty pays economic income and cannot be purchased twice',async({pa
   const gr=S.p.filter(p=>p.owner==='gr');
   const base=gr.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0);
   const upkeep=Math.ceil(gr.reduce((n,p)=>n+p.army,0)*.23);
-  ai();return {actual:S.aiEconomy.gr.gold,expected:Math.max(0,base+12-upkeep)};
+  ai();return {actual:S.aiEconomy.gr.gold,expected:Math.max(0,base+12+20-upkeep)};
  });
  expect(economy.actual).toBe(economy.expected);
 });
@@ -52,11 +52,11 @@ test('allied AI responds when partner suffers an invasion',async({page})=>{
 });
 test('mobile map search selects a country and focuses on its position',async({page})=>{
  await begin(page);
- await page.locator('#map-search').fill('Greece');
+ await page.locator('#map-search').fill('Yunanistan');
  await page.locator('#map-search').press('Enter');
  await expect(page.locator('#world [data-p="c300"].active')).toBeAttached();
  const state=await page.evaluate(()=>({zoom,px,py,selected:sel,transform:document.querySelector('#world').style.transform}));
  expect(state.selected).toBe('c300');
  expect(state.zoom).toBeGreaterThan(2);
- expect(state.transform).toContain('scale(2.2)');
+ expect(state.transform).toContain('scale(6)');
 });

@@ -88,7 +88,7 @@ test('world map avoids the false Türkiye–Somaliland sea connection',async({pa
  expect(neighbors.map(x=>x.name?.toLowerCase())).not.toContain('somaliland');
  await page.locator('.top [data-a="menu"]').click();
  await page.locator('[data-a="nations"]').click();
- await page.locator('#nation-filter').fill('Turkey');
+ await page.locator('#nation-filter').fill('Türkiye');
  expect(await page.locator('[data-n]:visible').count()).toBe(1);
 });
 test('20 strategic simulations support 50 turns without unbounded AI generation',async({page})=>{

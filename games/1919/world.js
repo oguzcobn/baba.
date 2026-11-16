@@ -5,37 +5,52 @@ const root=document.getElementById("app");root.innerHTML='<main class="home"><h1
 try{
 const response=await fetch("../../data/countries-50m.json");if(!response.ok)throw Error("Harita indirilemedi");
 const topology=await response.json(),geometries=topology.objects.countries.geometries;
-const features=topojson.feature(topology,topology.objects.countries).features.filter(f=>f.id!=="010");
-const project=([lon,lat])=>[(lon+180)*3,(90-lat)*3.6];
 const ids={"792":"tr","826":"gb","250":"fr","300":"gr","643":"ru"};
 const shapeData=new Map(),previousOwners=new Map();
+const trNames=new Intl.DisplayNames(["tr-TR"],{type:"region"});
+const specialNames={"792":"Türkiye","826":"Birleşik Krallık","643":"Rusya"};
+const geomValid=g=>Geo1919.validCountryId(g.id);
+const validIds=new Set();
+const features=topojson.feature(topology,topology.objects.countries).features.filter(f=>{
+ if(!geomValid(f)||validIds.has(f.id))return false;
+ validIds.add(f.id);return true;
+});
 for(const k of Object.keys(N))delete N[k];
 RAW.length=0;LINKS.length=0;
 for(const [i,f] of features.entries()){
  const id="c"+f.id,owner=ids[f.id]||id;
- const polygons=f.geometry.type==="Polygon"?[f.geometry.coordinates]:f.geometry.coordinates;
- const largest=polygons.slice().sort((a,b)=>b[0].length-a[0].length)[0][0];
- const points=largest.map(project);const x=points.reduce((a,p)=>a+p[0],0)/points.length,y=points.reduce((a,p)=>a+p[1],0)/points.length;
- const paths=polygons.map(poly=>poly.map(ring=>ring.map((c,j)=>(j?"L":"M")+project(c).map(v=>v.toFixed(1)).join(" ")).join("")+"Z").join("")).join("");
- const label=f.properties.name,paint="hsl("+((i*137.508)%360)+",26%,43%)";
- N[owner]=[label,"",paint,id];RAW.push([id,label,x/10.5,(y-25)/5.7,owner]);shapeData.set(id,{paths,x,y});
+ const info=COUNTRY_META_1919[f.id]||["",""];
+ const code=info[0],label=specialNames[f.id]||(code?trNames.of(code):null)||f.properties.name;
+ const capital=info[1]||label;
+ const paths=Geo1919.featurePath(f.geometry);
+ const [x,y]=Geo1919.labelPoint(f.geometry);
+ const paint="hsl("+((i*137.508)%360)+",26%,43%)";
+ N[owner]=[label,"",paint,id,capital,code];RAW.push([id,label,x/10.5,(y-25)/5.7,owner]);shapeData.set(id,{paths,x,y});
 }
-N.ne=["Tarafsız","","#737b70",""];
-const neighbours=topojson.neighbors(geometries);
-geometries.forEach((g,i)=>{neighbours[i].forEach(j=>{if(j>i&&g.id!=="010"&&geometries[j].id!=="010")LINKS.push(["c"+g.id,"c"+geometries[j].id])})});
+N.ne=["Tarafsız","","#737b70","","",""];
+const neighbours=topojson.neighbors(geometries),routesSeen=new Set();
+geometries.forEach((g,i)=>{
+ if(!geomValid(g))return;
+ neighbours[i].forEach(j=>{
+  const other=geometries[j];
+  if(!geomValid(other)||other.id===g.id||!validIds.has(other.id))return;
+  const a="c"+g.id,b="c"+other.id,key=Geo1919.routeKey(a,b);
+  if(!routesSeen.has(key)){routesSeen.add(key);LINKS.push([a,b])}
+ });
+});
 const landRoutes=new Set(LINKS.map(l=>l.slice().sort().join("|")));
 const seaRoutes=new Set();
 const arcUse=new Map();
 const arcIds=g=>g.arcs.flat(Infinity).map(a=>a<0?~a:a);
 for(const g of geometries)for(const a of new Set(arcIds(g)))arcUse.set(a,(arcUse.get(a)||0)+1);
-const coastal=new Set(geometries.filter(g=>arcIds(g).some(a=>arcUse.get(a)===1)).map(g=>"c"+g.id));
+const coastal=new Set(geometries.filter(g=>geomValid(g)&&arcIds(g).some(a=>arcUse.get(a)===1)).map(g=>"c"+g.id));
 const routeKey=(a,b)=>[a,b].sort().join("|");
 // Explicit maritime corridors: never connect countries merely because their centroids are close.
 const maritimeCorridors=[
  ["826","250"],["504","724"],["380","300"],["818","682"],
  ["392","410"],["392","156"],["360","036"],["036","554"],
- ["840","192"],["192","332"],["826","840"],["620","076"],
- ["076","024"],["710","036"],["364","682"],["156","158"],
+ ["840","192"],["192","332"],["792","196"],["620","076"],
+ ["076","024"],["792","422"],["364","682"],["156","158"],
  ["304","352"],["352","826"],["124","304"],["608","704"],
  ["608","360"],["250","012"],["724","012"],["208","578"],
  ["356","144"],["458","360"]
@@ -47,7 +62,7 @@ for(const [a,b] of maritimeCorridors){
  seaRoutes.add(key);LINKS.push([from,to]);
 }
 const equipment=p=>p.equipment||(p.equipment={tank:0,plane:0,ship:0});
-const oldSave=localStorage.getItem(SAVE);if(oldSave&&!localStorage.getItem(SAVE+"_anadolu_backup"))localStorage.setItem(SAVE+"_anadolu_backup",oldSave);
+// Save migration belongs to age.js; world saves are never copied over historical backups.
 const troopArt='<ellipse cy="19" rx="10" ry="3" fill="#0007"/><path d="M-5 5-6 16-2 18 0 8 3 17 7 16 5 4" fill="#4c5140" stroke="#20291e"/><path d="M-6-6Q0-10 6-6L8 5 3 9-5 7Z" fill="#7b8057" stroke="#282f25"/><path d="M-6-4-10 5-6 7-2-2M5-4 11 3 8 6 3 0" fill="#899166" stroke="#323a2c"/><circle cy="-12" r="4" fill="#d5ad81"/><path d="M-5-12Q-5-20 2-18L6-13Z" fill="#4c5840" stroke="#1c281e"/><path d="M-8 10 9-13" stroke="#302a20" stroke-width="3"/><path d="M8-12 12-18" stroke="#c6c9b6" stroke-width="1.5"/><path d="M-5-1 5 2" stroke="#c4b28b" stroke-width="2"/>';
 const tankArt='<ellipse cy="10" rx="19" ry="6" fill="#202827"/><rect x="-18" y="3" width="36" height="10" rx="5" fill="#555d50" stroke="#1c2420"/><path d="M-14 2-9-6 11-6 17 3Z" fill="#899379" stroke="#323a30"/><rect x="-5" y="-10" width="13" height="7" rx="3" fill="#6d795d"/><path d="M4-7 25-10" stroke="#bbc3a4" stroke-width="3"/><path d="M-12 8h25" stroke="#1d2822" stroke-dasharray="3 2" stroke-width="4"/>';
 const planeArt='<path d="M0-18 3-3 22 3 22 7 3 4 3 16 10 19 10 22 0 19-10 22-10 19-3 16-3 4-22 7-22 3-3-3Z" fill="#b8bd9d" stroke="#303d36" stroke-width="1.4"/><path d="M-8-16h16" stroke="#d6d4b2" stroke-width="2"/><ellipse cy="-5" rx="2" ry="4" fill="#33484c"/>';
@@ -63,7 +78,12 @@ marchingSvg=function(){
  return '<g pointer-events="none"><path d="'+path+'" fill="none" stroke="#f0d08a" stroke-width="2" stroke-dasharray="5 4"/><g><animateMotion dur="1.15s" path="'+path+'" fill="freeze"/><g transform="scale(.7)">'+art+'</g><text y="-24" text-anchor="middle" class="label" style="font-size:10px">'+marching.count+'</text></g></g>';
 };
 mapSVG=function(){
- const routes=LINKS.filter(l=>l.includes(sel)&&seaRoutes.has(routeKey(...l))).map(([a,b])=>{const x=shapeData.get(a),y=shapeData.get(b);return '<path d="M'+x.x+' '+x.y+' L'+y.x+' '+y.y+'" fill="none" stroke="#b7d5e2" stroke-dasharray="5 4" stroke-width="1.3" pointer-events="none"/>'}).join("");
+ const routes=LINKS.filter(l=>l.includes(sel)&&seaRoutes.has(routeKey(...l))).map(([a,b])=>{
+ const x=shapeData.get(a),y=shapeData.get(b);
+ // Never paint misleading cross-continental lines for long sea passages.
+ if(!x||!y||Math.abs(x.x-y.x)>230||!Geo1919.nearForVisual(x,y,230))return "";
+ return '<path class="sea-lane" d="M'+x.x+' '+x.y+' L'+y.x+' '+y.y+'" fill="none" stroke="#b7d5e2" stroke-dasharray="5 4" stroke-width="1.1" pointer-events="none"/>';
+ }).join("");
  const countries=S.p.map(p=>{const a=shapeData.get(p.id),old=previousOwners.get(p.id),fill=color(p);previousOwners.set(p.id,fill);
  return '<path data-p="'+p.id+'" class="province '+(p.id===sel?'active':'')+'" fill="'+fill+'" d="'+a.paths+'" fill-rule="evenodd"><title>'+safe(p.label)+' · '+p.army+' asker</title>'+(old&&old!==fill?'<animate attributeName="fill" from="'+old+'" to="'+fill+'" dur="2s" fill="freeze"/>':'')+'</path>';
  }).join("");
@@ -72,7 +92,7 @@ mapSVG=function(){
 };
 outcome=function(){if(S.win||S.loss)return;const territories=own();if(!territories.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer sona erdi: devletin kontrolü çöktü.")}else if(territories.length>=Math.ceil(RAW.length*.6)){S.win=true;dialog=null;log("Zafer: dünya bölgelerinin yüzde 60’ı kontrol ediliyor.")}};
 start=function(me,difficulty="normal"){archiveBeforeNew();S=initial(me);S.difficulty=difficulty;sel=N[me][3];tab="province";layer="political";dialog=null;moving=null;marching=null;++marchSeq;previousOwners.clear();save();render()};
-home=function(){S=null;dialog=null;moving=null;marching=null;++marchSeq;document.querySelectorAll(".modalbg").forEach(x=>x.remove());app.innerHTML=gameHeader()+'<main class="home"><section class="hero"><div class="eyebrow">DÜNYA SEFERİ</div><h1>Dünyanın kaderini belirle.</h1><p>'+RAW.length+' ülke bölgesi. Her ülkeyle başla, diplomasi yap, ordunu büyüt ve sınırlarını genişlet.</p><div class="actions"><button class="gold" data-a="nations">Ülke Seç</button><button data-a="continue">Kayıtlı Sefere Dön</button><button data-a="saves">▤ Kayıtlar ve Yedekler</button><button data-a="historical">📜 1919 Anadolu Senaryosu</button></div></section><p class="muted">Alternatif tarih senaryosu. Coğrafya modern Natural Earth ülke sınırlarını kullanır; 1919’un tarihsel sınırları değildir. Deniz rotaları tanımlanmış deniz koridorlarına dayanır; deniz sevkiyatı gemi gerektirir.</p><div class="cards"><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+troopArt+'</svg><b>Kara Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+tankArt+'</svg><b>Zırhlı Birlik</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+planeArt+'</svg><b>Hava Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+shipArt+'</svg><b>Donanma</b></div></div></main>';wire()};
+home=function(){S=null;dialog=null;moving=null;marching=null;++marchSeq;document.querySelectorAll(".modalbg").forEach(x=>x.remove());app.innerHTML=gameHeader()+'<main class="home"><section class="hero"><div class="eyebrow">DÜNYA MODU · MODERN COĞRAFYA</div><h1>Dünyanın kaderini belirle.</h1><p>'+RAW.length+' ülke bölgesi. Her ülkeyle başla, diplomasi yap, ordunu büyüt ve sınırlarını genişlet.</p><div class="actions"><button class="gold" data-a="nations">Ülke Seç</button><button data-a="continue">Kayıtlı Sefere Dön</button><button data-a="saves">▤ Kayıtlar ve Yedekler</button><button data-a="historical">📜 1919 Anadolu Senaryosu</button></div></section><p class="muted">Alternatif tarih senaryosu. Coğrafya modern Natural Earth ülke sınırlarını kullanır; 1919’un tarihsel sınırları değildir. Deniz rotaları tanımlanmış deniz koridorlarına dayanır; deniz sevkiyatı gemi gerektirir.</p><div class="cards"><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+troopArt+'</svg><b>Kara Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+tankArt+'</svg><b>Zırhlı Birlik</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+planeArt+'</svg><b>Hava Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+shipArt+'</svg><b>Donanma</b></div></div></main>';wire()};
 
 const commanderPortrait='<svg viewBox="0 0 80 90" width="70"><rect width="80" height="90" rx="4" fill="#17232b" stroke="#b69d69"/><path d="M9 88 15 60 33 53H47L65 60 72 88" fill="#6e7958"/><path d="M31 52 40 69 49 52" fill="#d7c6a4"/><path d="M37 66h6l4 22H34Z" fill="#263326"/><ellipse cx="40" cy="34" rx="15" ry="20" fill="#bfa07d"/><path d="M24 28 25 15Q40 5 56 15L57 29Z" fill="#4c5b47"/><path d="M20 26h40l-8 6H27Z" fill="#243325"/><path d="M35 41q5 5 10 0M30 34h5m10 0h5" fill="none" stroke="#625743"/><path d="m40 13 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1Z" fill="#d8bf78"/><path d="M15 65h12m26 0h12" stroke="#e1c47b" stroke-width="4"/></svg>';
 const oldNationPanel=nationPanel;nationPanel=function(){return '<div class="panel"><h3>Başkomutanlık</h3>'+commanderPortrait+'<p>'+(S.commander?'Kurmay heyeti göreve atandı.':'Kurmay heyeti ata: 120 altın, +1 teknoloji.')+'</p><button data-a="commander" '+(S.commander?'disabled':'')+'>Kurmay Heyetini Ata</button></div>'+oldNationPanel().replace("İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.","Dünya bölgelerinin yüzde 60’ını kontrol et.").replace("18 eyalete ulaş.","Dünya bölgelerinin yüzde 60’ını kontrol et.")};
@@ -143,7 +163,7 @@ ai=function(){
  for(const id of Object.keys(N).filter(k=>k!==S.me&&k!=="ne")){
   const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
   const state=economy[id] ||= {gold:80+regions.length*30,men:60+regions.length*30};
-  const income=regions.reduce((n,p)=>n+Math.round(p.pop*.12+p.dev*4+(p.market||0)*8+(p.farm||0)*4),0)+tradeBonus(id);
+  const income=incomeOf(id);
   const army=regions.reduce((n,p)=>n+p.army,0),upkeep=Math.ceil(army*.23);
   state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
   state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
