@@ -83,7 +83,7 @@ const Career = (() => {
   };
   /* ---------------- oyuncu modeli ---------------- */
   function mkPlayer(name, pos, r, extra) {
-    const h = hash(name), exact = !(extra && extra.youth) && currentAge(name);
+    const h = hash(name), exact = (extra && extra.youth) ? null : currentAge(name);
     const age = exact === null ? ((extra && extra.age) ?? (19 + h % 16)) : exact;
     const pot = (extra && extra.pot) || clamp(Math.round(r + (age < 24 ? (24 - age) * 1.6 + h % 5 : age < 28 ? h % 3 : 0)), r, 93);
     const p = Object.assign({ id: uid(), name, pos, r, pot, age, nat: NAT(name), cond: 100, inj: 0, sus: 0, yc: 0, morale: 70, g: 0, a: 0, apps: 0, sg: 0, sa: 0, prog: 0 }, extra || {});
