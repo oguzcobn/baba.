@@ -560,3 +560,52 @@
  #draft-section .ss-row{grid-template-columns:20px minmax(0,1fr) auto}
  #draft-section .ss-team{margin-top:0}
 }
+
+
+/* Draft & Menajerlik: fullscreen controls live within the game toolbars. */
+#draft-section .gp-head .football-fs-btn,
+#career-section .gp-head .football-fs-btn{
+  appearance:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  flex:0 0 auto;gap:6px;margin-left:auto;min-height:44px;padding:10px 15px;
+  border:1px solid #74dc6e;border-radius:12px;background:#204e31;color:#f4fff3;
+  font:inherit;font-size:13px;font-weight:800;line-height:1.2;
+}
+#draft-section .gp-head .football-fs-btn:hover,
+#career-section .gp-head .football-fs-btn:hover{background:#347646}
+#draft-section .gp-head .football-fs-btn:focus-visible,
+#career-section .gp-head .football-fs-btn:focus-visible{outline:3px solid #a4f58f;outline-offset:3px}
+#draft-section:fullscreen,#career-section:fullscreen,
+#draft-section:-webkit-full-screen,#career-section:-webkit-full-screen,
+#draft-section.football-fullscreen-fallback,#career-section.football-fullscreen-fallback{
+  box-sizing:border-box;width:100vw;max-width:none;height:100vh;height:100dvh;min-height:0;
+  margin:0;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right))
+    max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));
+  border:0;border-radius:0;background:#0b100e;color:#f4f8f2;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+}
+#draft-section.football-fullscreen-fallback,#career-section.football-fullscreen-fallback{
+  position:fixed;inset:0;z-index:2147483000;
+}
+body.football-fullscreen-open{overflow:hidden}
+#draft-section:fullscreen .gp-head,#career-section:fullscreen .gp-head,
+#draft-section:-webkit-full-screen .gp-head,#career-section:-webkit-full-screen .gp-head,
+#draft-section.football-fullscreen-fallback .gp-head,
+#career-section.football-fullscreen-fallback .gp-head{
+  position:sticky;top:0;z-index:12;background:#0b100ef2;
+  border-bottom:1px solid #385340;padding:10px 0;margin-bottom:14px;
+}
+#draft-section:is(:fullscreen,.football-fullscreen-fallback) .gp-head .back,
+#career-section:is(:fullscreen,.football-fullscreen-fallback) .gp-head .back,
+#draft-section:-webkit-full-screen .gp-head .back,
+#career-section:-webkit-full-screen .gp-head .back{color:#e2f6e8}
+#career-section:is(:fullscreen,.football-fullscreen-fallback) .mode-switch,
+#career-section:-webkit-full-screen .mode-switch{background:#17231d;border-color:#34483a}
+#career-section:is(:fullscreen,.football-fullscreen-fallback) .mode-switch a,
+#career-section:-webkit-full-screen .mode-switch a{color:#d2e6d7}
+#career-section:is(:fullscreen,.football-fullscreen-fallback) .mode-switch a.on,
+#career-section:-webkit-full-screen .mode-switch a.on{background:#59e13b;color:#08130b}
+@media(max-width:620px){
+  #draft-section .gp-head .football-fs-btn,
+  #career-section .gp-head .football-fs-btn{margin-left:auto;min-height:44px;padding:10px 13px}
+  #career-section .gp-head .mode-switch{max-width:100%;min-width:0}
+}
