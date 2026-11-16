@@ -512,12 +512,25 @@
     "Emmanuel Emenike": "1987-05-10",
     "Mame Baba Thiam": "1992-10-09",
     "Papy Djilobodji": "1988-12-01",
-    "Demba Ba": "1985-05-25"
+    "Demba Ba": "1985-05-25",
+    "Domagoj Vida": "1989-04-29",
+    "Lazar Marković": "1994-03-02",
+    "Dušan Tadić": "1988-11-20",
+    "Deni Milošević": "1995-03-09",
+    "Michy Batshuayi": "1993-10-02",
+    "Kevin Mirallas": "1987-10-05",
+    "Dries Mertens": "1987-05-06",
+    "Gökhan İnler": "1984-06-27",
+    "Sebastian Szymański": "1999-05-10",
+    "Mateusz Lis": "1997-02-27",
+    "Krzysztof Piątek": "1995-07-01",
+    "Karol Linetty": "1995-02-02",
+    "Gary Medel": "1987-08-03"
   },
   "coverage": {
     "currentRoster": 419,
     "currentWithDob": 419,
     "uniqueHistoricalDraft": 164,
-    "historicalWithoutDob": 75
+    "historicalWithoutDob": 62
   }
 }
