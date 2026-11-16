@@ -125,7 +125,7 @@ function addControls(){
   const modes=[["political","Siyasi"],["terrain","Arazi"],["army","Ordu"]];
   for(const [id,label] of modes){const b=document.createElement("button");b.textContent=label;b.dataset.mode=id;b.classList.toggle("is-on",id===layer);b.onclick=()=>{layer=id;tools.querySelectorAll("button").forEach(x=>x.classList.toggle("is-on",x.dataset.mode===id));applyLayer()};tools.append(b)}
   mountedHost.append(tools);
-  const caption=document.createElement("div");caption.className="map3d-label";caption.textContent="Sağ tuşla sürükle · tekerlekle yakınlaştır · WASD ile kaydır";mountedHost.append(caption);
+  const caption=document.createElement("div");caption.className="map3d-label";caption.textContent="Sürükle: kaydır · sağ tuşla sürükle: döndür · tekerlek: yakınlaştır";mountedHost.append(caption);
 }
 function applyLayer(){
   for(const mesh of provinceMeshes){const d=mesh.userData;let color=d.fill;
@@ -139,7 +139,7 @@ function applyLayer(){
 function setCamera(){const horizontal=Math.cos(pitch)*distance;camera.position.set(cameraTarget.x+Math.sin(yaw)*horizontal,cameraTarget.y+Math.sin(pitch)*distance,cameraTarget.z+Math.cos(yaw)*horizontal);camera.lookAt(cameraTarget);}
 function resize(){if(!renderer||!mountedHost)return;const w=mountedHost.clientWidth||800,h=mountedHost.clientHeight||500;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
 function onPointerDown(e){drag={x:e.clientX,y:e.clientY,button:e.button,moved:false};canvas.setPointerCapture(e.pointerId);canvas.style.cursor="grabbing"}
-function onPointerMove(e){if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;drag.x=e.clientX;drag.y=e.clientY;if(drag.button===2||drag.button===1){yaw-=dx*.004;pitch=clamp(pitch+dy*.003,.42,1.12)}else{const step=distance*.003;cameraTarget.x-=dx*step;cameraTarget.z+=dy*step}setCamera()}
+function onPointerMove(e){if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;drag.x=e.clientX;drag.y=e.clientY;if(drag.button===2||drag.button===1){yaw-=dx*.004;pitch=clamp(pitch+dy*.003,.42,1.12)}else{const step=distance*.008,sx=Math.cos(yaw),sz=-Math.sin(yaw);cameraTarget.x-=sx*dx*step;cameraTarget.z-=sz*dx*step;cameraTarget.x+=Math.sin(yaw)*dy*step;cameraTarget.z+=Math.cos(yaw)*dy*step}setCamera()}
 function onPointerUp(){skipClick=!!drag?.moved;drag=null;if(canvas)canvas.style.cursor="grab";if(skipClick)setTimeout(()=>skipClick=false,0)}
 function onWheel(e){e.preventDefault();distance=clamp(distance+e.deltaY*.065,64,230);pitch=clamp(.42+(distance-64)/166*.46,.42,.9);setCamera()}
 function onKeys(e){if(!active||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||""))return;const step=distance*.035;const fwd=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));if(e.key.toLowerCase()==="w")cameraTarget.addScaledVector(fwd,-step);else if(e.key.toLowerCase()==="s")cameraTarget.addScaledVector(fwd,step);else if(e.key.toLowerCase()==="a")cameraTarget.addScaledVector(right,-step);else if(e.key.toLowerCase()==="d")cameraTarget.addScaledVector(right,step);else return;e.preventDefault();setCamera()}
