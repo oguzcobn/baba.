@@ -10,7 +10,7 @@ const data=JSON.parse(fs.readFileSync('data/career-birthdates.json','utf8'));
 const runtime=vm.runInNewContext(fs.readFileSync('js/career-birthdates.js','utf8')+'\nCAREER_PLAYER_BIRTHDATES');
 assert.equal(players.length,419,'current 18 club squads have 419 players');
 assert.equal(new Set(players).size,419,'all current player names are unique');
-assert.equal(Object.keys(data.birthdates).length,419,'exact registry coverage');
+assert.ok(Object.keys(data.birthdates).length>=419,'all current players plus historical names are covered');
 assert.deepEqual(JSON.parse(JSON.stringify(runtime)),data.birthdates,'runtime and source registry agree');
 for(const name of players){
  const dob=data.birthdates[name];
@@ -25,4 +25,4 @@ for(const [name,ageNow] of [['Victor Osimhen',27],['Leroy Sané',30],['Juan',24]
  assert.equal(age(data.birthdates[name],2026),ageNow,'2026 real age: '+name);
  assert.equal(age(data.birthdates[name],2028),ageNow+2,'2028 career age: '+name);
 }
-console.log('PASS: all 419 FC27 players have verified DOB entries and correct career-season ages');
+console.log('PASS: all 419 FC27 players + '+Object.keys(data.birthdates).length+' registry DOBs, with correct career-season ages');
