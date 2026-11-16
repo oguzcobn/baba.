@@ -111,7 +111,7 @@ function march(){
 const d=dialog;if(!d)return;
 const f=prov(d.from),p=prov(d.to);if(!f||!p)return;
 const input=document.getElementById("amount"),n=clamp(+(input?.value||d.amount),1,f.army-1);
-if(f.owner!==p.owner&&!war(f.owner,p.owner)){moving=null;dialog=null;tab="diplomacy";render();toast("Önce diplomasi ekranından savaş ilan et.");return}
+if(f.owner!==p.owner&&!war(f.owner,p.owner)){moving=null;dialog=null;sel=p.id;tab="diplomacy";render();toast("Önce hedef ülkeye savaş ilan et.");return}
 moving=null;dialog=null;document.querySelector(".modalbg")?.remove();
 const id=++marchSeq; marching={from:d.from,to:d.to,count:n,id};render();
 setTimeout(()=>{if(!marching||marching.id!==id)return;marching=null;resolveMarch(d,n)},1180);
@@ -139,13 +139,13 @@ function help(){dialog={kind:"help"};modal()}
 function modal(){document.querySelector(".modalbg")?.remove();if(!dialog)return;let h="";if(dialog.kind==="help")h='<h2>5 Adımda Oyna</h2><p>1. Haritada kendi eyaletini seç.</p><p>2. Sağ panelden asker yetiştir veya ekonomi geliştir.</p><p>3. Ordu Gönder düğmesine bas ve komşu eyalete dokun.</p><p>4. Düşman bölgeye saldırmak için önce Diplomasi menüsünden savaş ilan et.</p><p>5. Turu Bitir ile gelir topla, rakiplerin hamlesini gör ve zafer hedeflerine ilerle.</p><p class="muted">Haritayı sürükle, ＋/− düğmeleriyle yakınlaştır. Her turda otomatik kayıt yapılır.</p><button class="gold" data-modal="close">Anladım, Oyna</button>';
 if(dialog.kind==="event")h='<div class="eyebrow">TELGRAF VE HİKÂYE</div><h2>'+safe(dialog.title)+'</h2><p>'+safe(dialog.text)+'</p><button class="gold" data-modal="close">Devam Et</button>';
 if(dialog.kind==="move"){const a=prov(dialog.from),b=prov(dialog.to),needsWar=a.owner!==b.owner&&!war(a.owner,b.owner);h='<h2>'+a.label+' → '+b.label+'</h2><p>Asker sevki ve saldırı emri</p><div class="stats"><div class="stat">Asker <b>'+a.army+'</b></div><div class="stat">Savunma <b>'+b.army+'</b></div></div>'+(needsWar?'<div class="warn">Bu ülkeyle savaşta değilsin. Önce savaş ilan et.</div>':'<p>Gönderilecek asker: <b id="count">'+dialog.amount+'</b></p><input type="range" id="amount" min="1" max="'+(a.army-1)+'" value="'+dialog.amount+'">')+'<div class="actions">'+(needsWar?'<button data-modal="dip" class="gold">Diplomasiye Git</button>':'<button data-modal="go" class="gold">Emri Uygula</button>')+'<button data-modal="cancel">Vazgeç</button></div>'}
-const ov=document.createElement("div");ov.className="modalbg";ov.innerHTML='<div class="modal" role="dialog" aria-modal="true">'+h+'</div>';document.body.appendChild(ov);ov.querySelectorAll("[data-modal]").forEach(b=>b.onclick=()=>{if(b.dataset.modal==="go")return march();if(b.dataset.modal==="dip"){tab="diplomacy";moving=null;dialog=null;render();return}dialog=null;moving=null;ov.remove();if(S)render()});const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
-function jump(id){sel=id;moving=null;tab="province";render()}
+const ov=document.createElement("div");ov.className="modalbg";ov.innerHTML='<div class="modal" role="dialog" aria-modal="true">'+h+'</div>';document.body.appendChild(ov);ov.querySelectorAll("[data-modal]").forEach(b=>b.onclick=()=>{if(b.dataset.modal==="go")return march();if(b.dataset.modal==="dip"){sel=dialog.to;tab="diplomacy";moving=null;dialog=null;render();return}dialog=null;moving=null;ov.remove();if(S)render()});const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
+function jump(id){if(!prov(id))return;sel=id;moving=null;tab=tab==="diplomacy"?"diplomacy":"province";render()}
 function transform(){const el=document.getElementById("world");if(el){el.style.transform="translate("+px+"px,"+py+"px) scale("+zoom+")";el.style.transformOrigin="50% 50%"}}
 function wire(){
 app.querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>act(b.dataset.a));
 app.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>start(b.dataset.n));
-app.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});
+app.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{moving=null;tab=b.dataset.tab;render()});
 app.querySelectorAll("[data-layer]").forEach(b=>b.onclick=()=>{layer=b.dataset.layer;render()});
 app.querySelectorAll("[data-j]").forEach(b=>b.onclick=()=>jump(b.dataset.j));
 app.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{const [a,id]=b.dataset.d.split(":");dip(a,id)});
