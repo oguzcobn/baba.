@@ -1,6 +1,13 @@
 name: Mobile browser smoke tests
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'js/games.js'
+      - 'css/football-premium.css'
+      - 'tests/mobile.spec.cjs'
+      - 'sw.js'
   push:
     branches: [test/mobile-playwright-smoke-20261112, main]
     paths:
