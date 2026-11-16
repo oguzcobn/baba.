@@ -37,13 +37,14 @@
 <link rel="stylesheet" href="css/football-premium.css?v=6">
 <style>/* Keep native scrolling and pinch zoom, but prevent double-tap zoom on controls. */
 a,button,[role="button"],[data-action],[data-game],input,select,textarea{touch-action:manipulation}
+#view:fullscreen,#view:-webkit-full-screen{background:var(--bg,#ffffff);overflow-y:auto;width:100vw;height:100vh}
 </style>
 </head>
 <body>
 <header class="nav">
   <a class="logo" href="#">BABA<span>.</span></a>
   <nav class="nav-links"><a href="#today" data-r="today" data-en="Today">Bugün</a><a href="#cbn" data-r="cbn">CBN</a><a href="#kesfet" data-r="kesfet" data-en="Discover">Keşfet</a><a href="#hayat" data-r="hayat" data-en="Life">Hayat</a><a href="#sosyal" data-r="sosyal" data-en="Social">Sosyal</a><a href="#ismerkez" data-r="ismerkez" class="nav-is owner-only" data-en="Work">İş</a><a href="#oyunlar" data-r="oyunlar" data-en="Games">Oyunlar</a><a href="#ts" data-r="ts" class="owner-only">Trabzonspor</a></nav>
-  <div class="nav-r"><button type="button" class="icon" id="quickNavBtn" aria-label="Hızlı gezinme" title="Ctrl+K" onclick="BABAQuick.open()">⌕</button><div class="lang-sw" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" lang="tr" aria-label="Türkçe">TR</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div><button class="icon" id="snd" aria-label="Ses" data-en-aria="Sound">🔊</button><button class="pill sm" id="lockBtn" data-en="Lock">Kilitle</button></div>
+  <div class="nav-r"><button type="button" class="icon" id="quickNavBtn" aria-label="Hızlı gezinme" title="Ctrl+K" onclick="BABAQuick.open()">⌕</button><div class="lang-sw" role="group" aria-label="Dil / Language"><button type="button" data-lang="tr" lang="tr" aria-label="Türkçe">TR</button><button type="button" data-lang="en" lang="en" aria-label="English">EN</button></div><button type="button" class="icon" id="fsBtn" aria-label="Tam ekran" data-en-aria="Fullscreen" title="Tam Ekran">⛶</button><button class="icon" id="snd" aria-label="Ses" data-en-aria="Sound">🔊</button><button class="pill sm" id="lockBtn" data-en="Lock">Kilitle</button></div>
 </header>
 <main id="view"></main>
 <script src="js/core.js?v=47"></script>
@@ -90,6 +91,10 @@ a,button,[role="button"],[data-action],[data-game],input,select,textarea{touch-a
 <script>
   const sb=document.getElementById('snd');sb.textContent=Snd.on?'🔊':'🔇';
   sb.onclick=()=>{sb.textContent=Snd.toggle()?'🔊':'🔇'};
+  const fsBtn=document.getElementById('fsBtn'),viewEl=document.getElementById('view');
+  const syncFs=()=>{const on=!!(document.fullscreenElement||document.webkitFullscreenElement);fsBtn.textContent=on?'✕':'⛶'};
+  fsBtn.onclick=async()=>{try{if(!document.fullscreenElement&&!document.webkitFullscreenElement){if(viewEl.requestFullscreen)await viewEl.requestFullscreen();else if(viewEl.webkitRequestFullscreen)await viewEl.webkitRequestFullscreen()}else{if(document.exitFullscreen)await document.exitFullscreen();else if(document.webkitExitFullscreen)await document.webkitExitFullscreen()}}catch(e){}};
+  document.addEventListener('fullscreenchange',syncFs);document.addEventListener('webkitfullscreenchange',syncFs);
   document.getElementById('lockBtn').onclick=()=>App.lock();
   const navLang=()=>{document.querySelectorAll('[data-en]').forEach(e=>{if(!e.dataset.tr)e.dataset.tr=e.textContent;e.textContent=I18N.lang==='en'?e.dataset.en:e.dataset.tr});document.querySelectorAll('[data-en-aria]').forEach(e=>{if(!e.dataset.trAria)e.dataset.trAria=e.getAttribute('aria-label');e.setAttribute('aria-label',I18N.lang==='en'?e.dataset.enAria:e.dataset.trAria)});document.querySelectorAll('.lang-sw button').forEach(b=>{const on=b.dataset.lang===I18N.lang;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)})};
   document.querySelectorAll('.lang-sw button').forEach(b=>b.onclick=()=>I18N.set(b.dataset.lang));
