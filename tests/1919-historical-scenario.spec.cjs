@@ -65,3 +65,23 @@ test('historic victory has a dedicated result screen',async({page})=>{
  await expect(page.locator('.endgame-summary h1')).toContainText('Zaferi');
  await expect(page.locator('.bottom [data-a="end"]')).toHaveCount(0);
 });
+
+test('legacy 32-region campaign is imported without overwriting the world save',async({page})=>{
+ await historic(page);
+ await page.evaluate(()=>{
+  const key='baba_1919_age_v1_historical',snapshot=localStorage.getItem(key);
+  localStorage.setItem('baba_1919_age_v1_anadolu_backup',snapshot);
+  localStorage.setItem('baba_1919_age_v1','{"marker":"keep-modern-save"}');
+  localStorage.removeItem(key);
+ });
+ await page.reload({waitUntil:'domcontentloaded'});
+ await expect(page.locator('.home [data-a="continue"]')).toBeVisible();
+ const keys=await page.evaluate(()=>({
+  historical:JSON.parse(localStorage.getItem('baba_1919_age_v1_historical')),
+  untouched:localStorage.getItem('baba_1919_age_v1')
+ }));
+ expect(keys.historical.p).toHaveLength(32);
+ expect(keys.untouched).toBe('{"marker":"keep-modern-save"}');
+ await page.locator('.home [data-a="continue"]').click();
+ await expect(page.locator('#world')).toBeVisible();
+});
