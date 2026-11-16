@@ -205,10 +205,25 @@ const App = (() => {
     root().querySelectorAll('[data-del]').forEach(b => b.onclick = () => { ls.set('baba_invites', ls.get('baba_invites', []).filter(x => x.code !== b.dataset.del)); access(); });
     window.scrollTo(0, 0);
   }
+  // Cover artwork for the six featured games. Others retain their original SVG artwork.
+  const GAME_COVERS = Object.freeze({
+    'hayat-oyunu': 'img/covers/hayat.jpg',
+    'futbol': 'img/covers/futbol.jpg',
+    'career': 'img/covers/menajerlik.jpg',
+    'draft': 'img/covers/draft.jpg',
+    'istiklal1919': 'img/covers/1919.jpg',
+    'vadi': 'img/covers/vadi.jpg'
+  });
   function menu() {
-    const card = (g, i) => `<a class="card ${g.id}" href="#${g.id}"><div class="card-art art-${g.id}">${ART[g.id]}</div>
-      <div class="card-meta"><span class="num">0${i + 1}</span><h3>${P(g.name)}</h3><span class="arrow">↗</span></div>
-      <div class="card-tags">${g.tags.map(t => `<span class="chip">${P(t)}</span>`).join('')}<span class="chip dark">🏆 ${g.best()}</span></div></a>`;
+    const card = (g, i) => {
+      const cover = GAME_COVERS[g.id];
+      const art = cover
+        ? `<div class="card-art card-art-cover" style="--cover-image:url('${cover}')"><img src="${cover}" alt="${esc(P(g.name))}" loading="lazy" decoding="async"></div>`
+        : `<div class="card-art art-${g.id}">${ART[g.id]}</div>`;
+      return `<a class="card ${g.id}" href="#${g.id}">${art}
+        <div class="card-meta"><span class="num">0${i + 1}</span><h3>${P(g.name)}</h3><span class="arrow">↗</span></div>
+        <div class="card-tags">${g.tags.map(t => `<span class="chip">${P(t)}</span>`).join('')}<span class="chip dark">🏆 ${g.best()}</span></div></a>`;
+    };
     root().innerHTML = `
       <section class="hero"><a class="back" href="#">← ${T('Ana sayfa', 'Home')}</a><p class="eyebrow">${T('Oyunlar', 'Games')} · ${new Date().toLocaleDateString(I18N.locale, { day: 'numeric', month: 'long' })}</p>
         <h1 class="display xl">${T('Kafa<br>dinle.<br><em>Kadro kur.</em>', 'Unwind.<br>Switch off.<br><em>Pick a squad.</em>')}</h1>

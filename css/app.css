@@ -431,3 +431,8 @@ body.dark-mode .lang-sw button.on{background:#fff;color:#111}
   .db-showcase .db-stage{min-width:0;grid-template-columns:minmax(0,1fr)}
   .db-showcase .db-player-pills{flex-wrap:wrap;justify-content:center}
 }
+
+/* Cover images preserve complete poster artwork and titles across 4:3 game cards. */
+.card-art.card-art-cover{position:relative;isolation:isolate;background:#081320;}
+.card-art.card-art-cover::before{content:"";position:absolute;inset:-16px;background-image:var(--cover-image);background-position:center;background-size:cover;filter:blur(14px) brightness(.68);transform:scale(1.04);z-index:-1;}
+.card-art.card-art-cover img{position:relative;display:block;width:100%;height:100%;object-fit:contain;z-index:1;}
