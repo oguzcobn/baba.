@@ -23,7 +23,7 @@ const style = document.createElement("style"); style.textContent = css; document
 
 let active = false, layer = "political", mountedHost = null, renderer = null, scene = null, camera = null;
 let canvas = null, raf = 0, observer = null, resizeObserver = null, provinceMeshes = [], seaMaterial = null;
-let cameraTarget = new THREE.Vector3(0, 0, 0), yaw = 0, distance = 128, pitch = .66, drag = null, skipClick = false;
+let cameraTarget = new THREE.Vector3(0, 0, 0), yaw = 0, distance = 128, pitch = .66, drag = null, skipClick = false, forwardingClick = false;
 const clock = new THREE.Clock();
 
 function heightAt(x, z) {
@@ -44,7 +44,7 @@ function sampledLandShape() {
 }
 function addHeight(geometry) {
   const p = geometry.attributes.position;
-  for (let i = 0; i < p.count; i++) p.setZ(i, heightAt(p.getX(i), p.getY(i)));
+  for (let i = 0; i < p.count; i++) { const x=p.getX(i),z=p.getY(i); p.setXYZ(i,x,heightAt(x,z),z); }
   p.needsUpdate = true; geometry.computeVertexNormals(); return geometry;
 }
 function subdividedProvince(poly, level = 5) {
@@ -139,7 +139,7 @@ function onPointerMove(e){if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY
 function onPointerUp(){skipClick=!!drag?.moved;drag=null;if(canvas)canvas.style.cursor="grab";if(skipClick)setTimeout(()=>skipClick=false,0)}
 function onWheel(e){e.preventDefault();distance=clamp(distance+e.deltaY*.065,64,230);pitch=clamp(.42+(distance-64)/166*.46,.42,.9);setCamera()}
 function onKeys(e){if(!active||/INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||""))return;const step=distance*.035;const fwd=new THREE.Vector3(Math.sin(yaw),0,Math.cos(yaw)),right=new THREE.Vector3(Math.cos(yaw),0,-Math.sin(yaw));if(e.key.toLowerCase()==="w")cameraTarget.addScaledVector(fwd,-step);else if(e.key.toLowerCase()==="s")cameraTarget.addScaledVector(fwd,step);else if(e.key.toLowerCase()==="a")cameraTarget.addScaledVector(right,-step);else if(e.key.toLowerCase()==="d")cameraTarget.addScaledVector(right,step);else return;e.preventDefault();setCamera()}
-function onClick(e){if(skipClick||drag||!canvas||!camera)return;const rect=canvas.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(provinceMeshes)[0];if(hit){const target=mountedHost.querySelector(`svg#world polygon[data-p="${CSS.escape(hit.object.userData.id)}"]`);target?.dispatchEvent(new MouseEvent("click",{bubbles:true}));}}
+function onClick(e){if(forwardingClick||skipClick||drag||!canvas||!camera)return;const rect=canvas.getBoundingClientRect(),mouse=new THREE.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),ray=new THREE.Raycaster();ray.setFromCamera(mouse,camera);const hit=ray.intersectObjects(provinceMeshes)[0];if(hit){const target=mountedHost.querySelector(`svg#world polygon[data-p="${CSS.escape(hit.object.userData.id)}"]`);if(target){forwardingClick=true;try{target.dispatchEvent(new MouseEvent("click",{bubbles:true,clientX:e.clientX,clientY:e.clientY}))}finally{forwardingClick=false}}}}
 function tick(){if(!active||!renderer)return;raf=requestAnimationFrame(tick);if(seaMaterial)seaMaterial.uniforms.uTime.value=clock.getElapsedTime();renderer.render(scene,camera)}
 function disposeScene(){cancelAnimationFrame(raf);resizeObserver?.disconnect();resizeObserver=null;if(canvas){canvas.removeEventListener("pointerdown",onPointerDown);canvas.removeEventListener("pointermove",onPointerMove);canvas.removeEventListener("pointerup",onPointerUp);canvas.removeEventListener("pointercancel",onPointerUp);canvas.removeEventListener("wheel",onWheel);canvas.remove()};mountedHost?.querySelectorAll(".map3d-tools,.map3d-label").forEach(x=>x.remove());mountedHost?.classList.remove("map3d-on");scene?.traverse(o=>{o.geometry?.dispose();const m=o.material;if(m)for(const mat of(Array.isArray(m)?m:[m])){mat.map?.dispose();mat.dispose()}});renderer?.dispose();scene=null;camera=null;renderer=null;canvas=null;seaMaterial=null;provinceMeshes=[]}
 function mount(){if(!active)return;const host=document.querySelector("#app .viewport");if(!host)return;if(host===mountedHost&&canvas)return;if(mountedHost)disposeScene();mountedHost=host;try{buildScene()}catch(err){console.error("3D map could not start",err);active=false;buttonState();disposeScene()}}
