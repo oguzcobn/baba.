@@ -52,7 +52,7 @@ test('allied AI responds when partner suffers an invasion',async({page})=>{
 });
 test('mobile map search selects a country and focuses on its position',async({page})=>{
  await begin(page);
- await page.locator('#map-search').fill('Greece');
+ await page.locator('#map-search').fill('Yunanistan');
  await page.locator('#map-search').press('Enter');
  await expect(page.locator('#world [data-p="c300"].active')).toBeAttached();
  const state=await page.evaluate(()=>({zoom,px,py,selected:sel,transform:document.querySelector('#world').style.transform}));
