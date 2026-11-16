@@ -13,8 +13,8 @@
 
   const blank = p => Object.assign({ id: uid(), title: '', date: today(), start: '', end: '', location: '', desc: '', cat: 'personal', remindMin: '', remFired: null, noteIds: [], project: '', createdAt: Date.now(), updatedAt: Date.now() }, p || {});
   const monday = s => { const d = pd(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); };
-  const dayItems = d => ({
-    ev: S.events.filter(e => e.date === d && !hide.has(cat(e))).sort((a, b) => (a.start || '').localeCompare(b.start || '') || a.title.localeCompare(b.title)),
+  const dayItems = (d, workByDay) => ({
+    ev: S.events.filter(e => e.date === d && !hide.has(cat(e))).concat(workByDay.get(d) || []).sort((a, b) => (a.start || '').localeCompare(b.start || '') || a.title.localeCompare(b.title)),
     tk: hide.has('tasks') ? [] : S.tasks.filter(t => t.due === d && t.status !== 'cancelled').sort(CBN.tasks.byDue)
   });
   function ics(e) {
@@ -66,27 +66,47 @@
       } });
   }
 
-  const evBtn = e => `<button type="button" class="cal-it c-${cat(e)}" data-ev="${esc(e.id)}" title="${esc(e.title)}">${e.start ? `<time>${esc(e.start)}</time>` : ''}<span>${esc(e.title)}</span></button>`;
+  const eventTarget = e => e.workReminder ? `data-work-reminder="${esc(e.id)}"` : `data-ev="${esc(e.id)}"`;
+  function workReminderDetails(reminder) {
+    modal({
+      title: L('İş hatırlatması', 'Work reminder'),
+      html: `<div class="cbn-form"><h3>${esc(reminder.title)}</h3>
+        <p>${esc(fmtDate(reminder.date))} · ${esc(reminder.start)} · ${esc(L(...reminder.repeat))}</p>
+        ${reminder.done ? `<p>${L('Tamamlandı', 'Completed')}</p>` : ''}
+        ${reminder.desc ? `<p class="cal-work-note">${esc(reminder.desc)}</p>` : ''}
+        <div class="cbn-actions"><a class="cbn-btn" href="#is">${L('İş sayfasını aç', 'Open Work Desk')}</a></div></div>`,
+      onOpen(box, close) { box.querySelector('a').addEventListener('click', close); }
+    });
+  }
+  const evBtn = e => `<button type="button" class="cal-it c-${cat(e)}${e.done ? ' done' : ''}" ${eventTarget(e)} title="${esc(e.title)}">${e.start ? `<time>${esc(e.start)}</time>` : ''}<span>${esc(e.title)}</span></button>`;
   const tkBtn = t => `<button type="button" class="cal-it c-task${t.status === 'completed' ? ' done' : ''}${CBN.tasks.overdue(t) ? ' late' : ''}" data-tk="${esc(t.id)}" title="${esc(t.title)}">${t.status === 'completed' ? '☑' : '☐'} <span>${esc(t.title)}</span></button>`;
   function render(main, sub) {
     if (sub[0] && /^\d{4}-\d{2}-\d{2}$/.test(sub[0]) && !isNaN(pd(sub[0]))) cursor = sub[0];
     if (!cursor) cursor = today();
     const view = ['month', 'week', 'day'].includes(S.settings.calView) ? S.settings.calView : 'month', td = today(), c = pd(cursor);
+    const firstVisible = view === 'month' ? monday(ymd(new Date(c.getFullYear(), c.getMonth(), 1))) : view === 'week' ? monday(cursor) : cursor;
+    const lastVisible = addDays(firstVisible, view === 'month' ? 41 : view === 'week' ? 6 : 0);
+    const work = hide.has('work') || typeof Is === 'undefined' ? [] : Is.calendarItems(firstVisible, lastVisible);
+    const workByDay = new Map();
+    for (const reminder of work) {
+      if (!workByDay.has(reminder.date)) workByDay.set(reminder.date, []);
+      workByDay.get(reminder.date).push(reminder);
+    }
     const wd = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(loc(), { weekday: 'short' }));
     let title, body;
     if (view === 'month') {
       title = c.toLocaleDateString(loc(), { month: 'long', year: 'numeric' });
-      const first = ymd(new Date(c.getFullYear(), c.getMonth(), 1)), start = monday(first), m = c.getMonth();
+      const start = firstVisible, m = c.getMonth();
       body = `<div class="cal-month" role="grid" aria-label="${esc(title)}"><div class="cal-wd" role="row">${wd.map(w => `<span role="columnheader">${esc(w)}</span>`).join('')}</div><div class="cal-cells">${Array.from({ length: 42 }, (_, i) => {
-        const d = addDays(start, i), it = dayItems(d), all = it.ev.map(evBtn).concat(it.tk.map(tkBtn)), n = it.ev.length + it.tk.length;
+        const d = addDays(start, i), it = dayItems(d, workByDay), all = it.ev.map(evBtn).concat(it.tk.map(tkBtn)), n = it.ev.length + it.tk.length;
         return `<div class="cal-cell${pd(d).getMonth() !== m ? ' out' : ''}${d === td ? ' today' : ''}" data-d="${d}" role="gridcell"><button type="button" class="cal-dn" data-day="${d}" aria-label="${esc(pd(d).toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' }))}${n ? ', ' + n + ' ' + L('kayıt', 'items') : ''}">${pd(d).getDate()}</button><div class="cal-its">${all.slice(0, 3).join('')}${n > 3 ? `<button type="button" class="cal-more" data-day="${d}">+${n - 3}</button>` : ''}</div><div class="cal-dots" aria-hidden="true">${it.ev.slice(0, 4).map(e => `<i class="c-${cat(e)}"></i>`).join('')}${it.tk.length ? '<i class="c-task"></i>' : ''}</div></div>`;
       }).join('')}</div></div>`;
     } else {
-      const days = view === 'week' ? Array.from({ length: 7 }, (_, i) => addDays(monday(cursor), i)) : [cursor];
+      const days = view === 'week' ? Array.from({ length: 7 }, (_, i) => addDays(firstVisible, i)) : [cursor];
       title = view === 'week' ? `${fmtDate(days[0])} – ${fmtDate(days[6])}` : c.toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      body = `<div class="cal-${view}">${days.map(d => { const it = dayItems(d);
+      body = `<div class="cal-${view}">${days.map(d => { const it = dayItems(d, workByDay);
         return `<section class="cal-col${d === td ? ' today' : ''}" data-d="${d}"><header><button type="button" class="cal-dh" data-day="${d}"><b>${pd(d).getDate()}</b> ${esc(pd(d).toLocaleDateString(loc(), { weekday: view === 'week' ? 'short' : 'long' }))}</button><span><button type="button" class="cbn-ib" data-add="${d}" aria-label="${L('Etkinlik ekle', 'Add event')}: ${esc(fmtDate(d))}" title="${L('Etkinlik ekle', 'Add event')}">＋</button></span></header>
-          <div class="cal-list">${it.ev.map(e => view === 'day' ? `<button type="button" class="cal-row c-${cat(e)}" data-ev="${esc(e.id)}"><time>${e.start ? esc(e.start) + (e.end ? '–' + esc(e.end) : '') : L('Tüm gün', 'All day')}</time><span><b>${esc(e.title)}</b>${e.location ? `<small>📍 ${esc(e.location)}</small>` : ''}${e.desc ? `<small>${esc(e.desc.slice(0, 140))}</small>` : ''}</span><em>${esc(catName(cat(e)))}</em></button>` : evBtn(e)).join('')}${view === 'day' && it.tk.length ? `<h3>${L('Bu gün biten görevler', 'Tasks due this day')}</h3><div class="cal-tasks">${it.tk.map(CBN.tasks.row).join('')}</div>` : it.tk.map(tkBtn).join('')}${!it.ev.length && !it.tk.length ? (view === 'day' ? empty('🗓️', L('Bu gün boş', 'Nothing on this day'), L('Etkinlik ya da görev ekleyebilirsin.', 'Add an event or a task.')) : `<span class="cal-none">—</span>`) : ''}</div>
+          <div class="cal-list">${it.ev.map(e => view === 'day' ? `<button type="button" class="cal-row c-${cat(e)}${e.done ? ' done' : ''}" ${eventTarget(e)}><time>${e.start ? esc(e.start) + (e.end ? '–' + esc(e.end) : '') : L('Tüm gün', 'All day')}</time><span><b>${esc(e.title)}</b>${e.location ? `<small>📍 ${esc(e.location)}</small>` : ''}${e.desc ? `<small>${esc(e.desc.slice(0, 140))}</small>` : ''}</span><em>${esc(catName(cat(e)))}</em></button>` : evBtn(e)).join('')}${view === 'day' && it.tk.length ? `<h3>${L('Bu gün biten görevler', 'Tasks due this day')}</h3><div class="cal-tasks">${it.tk.map(CBN.tasks.row).join('')}</div>` : it.tk.map(tkBtn).join('')}${!it.ev.length && !it.tk.length ? (view === 'day' ? empty('🗓️', L('Bu gün boş', 'Nothing on this day'), L('Etkinlik ya da görev ekleyebilirsin.', 'Add an event or a task.')) : `<span class="cal-none">—</span>`) : ''}</div>
           ${view === 'day' ? `<div class="cbn-actions left"><button type="button" class="cbn-btn" data-add="${d}">＋ ${L('Etkinlik', 'Event')}</button><button type="button" class="cbn-btn ghost" data-addt="${d}">＋ ${L('Görev', 'Task')}</button></div>` : ''}</section>`; }).join('')}</div>`;
     }
     const leg = [...Object.keys(CATS).map(k => [k, catName(k)]), ['tasks', L('Görevler', 'Tasks')]];
@@ -95,12 +115,17 @@
         <div class="cbn-seg sm" role="group" aria-label="${L('Takvim görünümü', 'Calendar view')}">${[['day', L('Gün', 'Day')], ['week', L('Hafta', 'Week')], ['month', L('Ay', 'Month')]].map(v => `<button type="button" data-v="${v[0]}" class="${view === v[0] ? 'on' : ''}" aria-pressed="${view === v[0]}">${v[1]}</button>`).join('')}</div></div>
       <div class="cal-leg" role="group" aria-label="${L('Kategoriler', 'Categories')}">${leg.map(l => `<button type="button" class="cal-lg c-${l[0] === 'tasks' ? 'task' : l[0]}${hide.has(l[0]) ? ' off' : ''}" data-cat="${l[0]}" aria-pressed="${!hide.has(l[0])}"><i></i>${esc(l[1])}</button>`).join('')}</div>
       ${body}
-      <p class="cbn-hint">${L('Google Calendar bağlı değil — burada yalnızca CBN’ye girdiğin kayıtlar görünür.', 'Google Calendar is not connected — only records you enter in CBN appear here.')}</p>`;
+      <p class="cbn-hint">${L('İş sayfasındaki hatırlatmalar bu cihazda otomatik görünür. Google Takvim bağlı değil.', 'Work Desk reminders appear automatically on this device. Google Calendar is not connected.')}</p>`;
     const setView = v => { S.settings.calView = v; CBN.saveSettings(); CBN.refresh(); };
     main.querySelectorAll('[data-v]').forEach(b => b.onclick = () => setView(b.dataset.v));
     main.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const k = +b.dataset.go; if (!k) cursor = td; else if (view === 'month') { const d = pd(cursor); d.setDate(1); d.setMonth(d.getMonth() + k); cursor = ymd(d); } else cursor = addDays(cursor, k * (view === 'week' ? 7 : 1)); CBN.refresh(); });
     main.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { const k = b.dataset.cat; if (hide.has(k)) hide.delete(k); else hide.add(k); CBN.refresh(); });
     main.querySelectorAll('[data-ev]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const e = S.events.find(x => x.id === b.dataset.ev); if (e) form(e); });
+    main.querySelectorAll('[data-work-reminder]').forEach(button => button.onclick = event => {
+      event.stopPropagation();
+      const reminder = work.find(item => item.id === button.dataset.workReminder);
+      if (reminder) workReminderDetails(reminder);
+    });
     main.querySelectorAll('[data-tk]').forEach(b => b.onclick = ev => { ev.stopPropagation(); const t = S.tasks.find(x => x.id === b.dataset.tk); if (t) CBN.tasks.form(t); });
     main.querySelectorAll('[data-day]').forEach(b => b.onclick = ev => { ev.stopPropagation(); cursor = b.dataset.day; setView('day'); });
     main.querySelectorAll('[data-add]').forEach(b => b.onclick = ev => { ev.stopPropagation(); form({ date: b.dataset.add }); });
@@ -111,4 +136,7 @@
 
   CBN.calendar = { CATS, catName, cat, blank, form, providers };
   CBN.register('calendar', { render });
+  window.addEventListener('baba:work-reminders', () => {
+    if (/^#cbn\/calendar(?:\/|$)/.test(location.hash)) CBN.refresh();
+  });
 })();

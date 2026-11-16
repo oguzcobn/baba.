@@ -584,3 +584,7 @@ body.cbn-mode{min-height:100dvh}
 .cbn-notification-info strong{font-size:14px;overflow-wrap:anywhere}
 .cbn-notification-info small{font-size:12px;color:var(--c-mute)}
 .cbn-notification-row.late .cbn-notification-info small{color:var(--c-err)}
+
+.cal-it.c-work.done, .cal-row.c-work.done { opacity: .62; }
+.cal-it.c-work.done span, .cal-row.c-work.done b { text-decoration: line-through; }
+.cal-work-note { white-space: pre-wrap; overflow-wrap: anywhere; }

@@ -16,7 +16,12 @@ const Is = (() => {
   const P = x => Array.isArray(x) ? T(x[0], x[1]) : x;
   const REPS = { yok: ['Tek sefer', 'One-off'], gun: ['Her gün', 'Every day'], haftaici: ['Hafta içi', 'Weekdays'], hafta: ['Her hafta', 'Every week'], ay: ['Her ay', 'Every month'] };
   const REP = new Proxy(REPS, { get: (o, k) => o[k] ? P(o[k]) : undefined });
-  const rems = () => ls.get('is_rem', []), saveR = a => ls.set('is_rem', a);
+  const reminderKey = 'is_rem';
+  const rems = () => ls.get(reminderKey, []);
+  function saveR(reminders) {
+    ls.set(reminderKey, reminders);
+    window.dispatchEvent(new Event('baba:work-reminders'));
+  }
   const notes = () => ls.get('is_notes', []), saveN = a => ls.set('is_notes', a);
   let el = null, tick = null, q = '';
 
@@ -28,16 +33,46 @@ const Is = (() => {
     const t = a < 60 ? T('şimdi', 'now') : a < 3600 ? Math.round(a / 60) + T(' dk', ' min') : a < 86400 ? Math.floor(a / 3600) + T(' sa ', ' h ') + Math.round((a % 3600) / 60) + T(' dk', ' min') : Math.round(a / 86400) + T(' gün', ' days');
     return a < 60 ? T('şimdi', 'now') : s > 0 ? T(t + ' sonra', 'in ' + t) : T(t + ' geçti', t + ' ago');
   }
-  function nextOf(at, rep) {
+  function nextOccurrence(at, rep) {
     const d = new Date(at);
-    do {
-      if (rep === 'gun') d.setDate(d.getDate() + 1);
-      else if (rep === 'haftaici') { do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); }
-      else if (rep === 'hafta') d.setDate(d.getDate() + 7);
-      else if (rep === 'ay') d.setMonth(d.getMonth() + 1);
-      else return null;
-    } while (d.getTime() <= Date.now());
-    return d.getTime();
+    if (rep === 'gun') d.setDate(d.getDate() + 1);
+    else if (rep === 'haftaici') { do d.setDate(d.getDate() + 1); while (d.getDay() === 0 || d.getDay() === 6); }
+    else if (rep === 'hafta') d.setDate(d.getDate() + 7);
+    else if (rep === 'ay') d.setMonth(d.getMonth() + 1);
+    else return null;
+    const next = d.getTime();
+    return next > at ? next : null;
+  }
+  function nextOf(at, rep) {
+    const now = Date.now();
+    let next = nextOccurrence(at, rep);
+    while (next !== null && next <= now) next = nextOccurrence(next, rep);
+    return next;
+  }
+
+  function calendarItems(from, to) {
+    const first = new Date(from + 'T00:00:00').getTime();
+    const end = new Date(to + 'T00:00:00');
+    end.setDate(end.getDate() + 1);
+    const last = end.getTime();
+    const items = [];
+    for (const reminder of rems()) {
+      if (!reminder || !reminder.id || !Number.isFinite(reminder.at) || !reminder.title) continue;
+      let at = reminder.at;
+      while (at !== null && at < last) {
+        if (at >= first) {
+          const date = new Date(at);
+          items.push({
+            id: reminder.id + ':' + at, title: reminder.title, desc: reminder.note || '', cat: 'work',
+            date: date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()),
+            start: pad(date.getHours()) + ':' + pad(date.getMinutes()), workReminder: true,
+            done: Boolean(reminder.done), repeat: REPS[reminder.rep] || REPS.yok,
+          });
+        }
+        at = reminder.done ? null : nextOccurrence(at, reminder.rep);
+      }
+    }
+    return items;
   }
 
   /* ---------- bildirim motoru (her sayfada çalışır) ---------- */
@@ -193,5 +228,10 @@ const Is = (() => {
         upd((n, all) => { if (b.dataset.x === 'pin') n.pin = !n.pin; else all.splice(all.indexOf(n), 1); }); drawNotes(); });
     });
   }
-  return { open, start, _check: check };
+  window.addEventListener('storage', event => {
+    if (event.key !== reminderKey && event.key !== null) return;
+    if (el && el.isConnected) drawRems();
+    window.dispatchEvent(new Event('baba:work-reminders'));
+  });
+  return { open, start, calendarItems, _check: check };
 })();
