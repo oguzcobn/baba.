@@ -47,6 +47,24 @@ test.describe('1919 world map diplomacy and army actions', () => {
     await expect(page.locator('.modalbg')).toHaveCount(0);
     await expect(page.locator('.bottom [data-a="cancelmove"]')).toHaveCount(0);
   });
+  test('army order is applied after declaring war on the selected country',async({page})=>{
+    await select(page,'c300');
+    await page.locator('.sidebody [data-tab="diplomacy"]').click();
+    page.once('dialog',d=>d.accept());
+    await page.locator('.dip-target [data-d="war:gr"]').click();
+    await select(page,'c792');
+    await page.locator('.tabs [data-tab="province"]').click();
+    await page.locator('.bottom [data-a="move"]').click();
+    await select(page,'c300');
+    await expect(page.locator('.modalbg [data-modal="go"]')).toBeVisible();
+    await page.locator('.modalbg [data-modal="go"]').click();
+    await expect(page.locator('.modalbg')).toHaveCount(0);
+    await expect.poll(async()=>page.evaluate(()=>{
+      const s=JSON.parse(localStorage.getItem('baba_1919_age_v1'));
+      return !!s?.p?.find(p=>p.id==='c792')?.moved;
+    }),{timeout:7000}).toBe(true);
+    await expect(page.locator('.bottom [data-a="cancelmove"]')).toHaveCount(0);
+  });
   test('cancel army target mode, no stale action after restarting campaign',async({page})=>{
     await page.locator('.bottom [data-a="move"]').click();
     await page.locator('.bottom [data-a="cancelmove"]').click();
