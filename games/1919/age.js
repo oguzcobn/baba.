@@ -69,6 +69,7 @@ if(a==="save"){save();toast("Kaydedildi.");return}
 if(a==="center"){zoom=1;px=py=0;transform();return}
 if(a==="plus"||a==="minus"){zoom=clamp(zoom+(a==="plus"?.2:-.2),1,3);transform();return}
 if(!S)return;
+if(marching&&(a==="move"||a==="end"||a==="recruit"))return toast("Ordu hareketi sürerken yeni bir asker emri veremezsin.");
 if(a==="end")return next();
 if(a==="move"){
 const p=prov(sel);if(!p||p.owner!==S.me)return;
