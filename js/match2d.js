@@ -61,6 +61,10 @@ const Match2D = (() => {
   const shape = s => ({ x: 3 + (100 - s.y) / 100 * 52, y: 4 + s.x / 100 * 60 });
   const zoneOf = x => x < 35 ? 1 : x < 70 ? 2 : 3; // getZone(): 1 savunma, 2 orta saha, 3 hücum (hücum yönü sağa)
   const RUN = 8.2, JOG = 6.4, DRIB = .78; // m/s; top sürerken hız %22 düşer (DRIB)
+  // Türkçe ek uyumu: Salah'ın, Onuachu'nun, Fabinho'nun, Muçi'de, Şimşir'den
+  const trs = (name, k) => { const s = String(name || ''), low = s.toLocaleLowerCase('tr-TR'), yV = /[^aeıioöuü]y$/.test(low), vs = low.match(/[aeıioöuü]/g), v = yV ? 'i' : vs ? vs[vs.length - 1] : 'e', last = low.slice(-1), endV = yV || /[aeıioöuü]/.test(last), hard = /[fstkçşhpćčš]/.test(last);
+    const v4 = 'aı'.includes(v) ? 'ı' : 'ei'.includes(v) ? 'i' : 'ou'.includes(v) ? 'u' : 'ü', v2 = 'aıou'.includes(v) ? 'a' : 'e';
+    return s + '’' + (k === 'gen' ? (endV ? 'n' : '') + v4 + 'n' : (hard ? 't' : 'd') + v2 + (k === 'abl' ? 'n' : '')); };
   const has = (p, t) => p && p.traits && p.traits.includes(t);
   const runSp = p => RUN * clamp(.95 + ((p && p.r || 70) - 70) * .004, .82, 1.17) * (has(p, 'SPEED_DRIBBLER') ? 1.1 : 1);
   const dribSp = p => runSp(p) * DRIB * (has(p, 'SPEED_DRIBBLER') ? 1.08 : 1);
@@ -395,7 +399,7 @@ const Match2D = (() => {
       if ((crowd >= 2 || (plan.style === 'kisa' && Math.random() < .5)) && near && plan.dec < plan.maxBuild + 2) {
         // Ver-kaç (one-two): pas ver, hemen ileri koş, top boşlukta seni bulsun
         const runTo = { x: clamp(a.x + 13, 40, 88), y: clamp(a.y + (a.y < 34 ? 3 : -3), 6, 62) }, me = holder;
-        return [passTo(near, AF(near), { txt: T(`${tn(holder)} ile ${tn(near)} arasında duvar pas…`, `${tn(holder)} plays a one-two with ${tn(near)}…`), runs: [{ p: me, at: runTo, sp: runSp(me) }] }), { k: 'call', fn: () => [passTo(me, runTo, { through: true, txt: T(`…ve top geri ${tn(me)}'de!`, `…and it comes back to ${tn(me)}!`) })] }];
+        return [passTo(near, AF(near), { txt: T(`${tn(holder)} ile ${tn(near)} arasında duvar pas…`, `${tn(holder)} plays a one-two with ${tn(near)}…`), runs: [{ p: me, at: runTo, sp: runSp(me) }] }), { k: 'call', fn: () => [passTo(me, runTo, { through: true, txt: T(`…ve top geri ${trs(tn(me), 'loc')}!`, `…and it comes back to ${tn(me)}!`) })] }];
       }
       const central = a.y > 22 && a.y < 46, centerClosed = live(def()).filter(d => { const b = AF(d); return b.x > a.x && b.x < a.x + 18 && b.y > 22 && b.y < 46; }).length >= 3;
       if (central && centerClosed) {
@@ -451,7 +455,7 @@ const Match2D = (() => {
       if (out === 'offside') { const off = offsideMove(); if (off) return off; out = plan.out = 'block'; if (plan.c) plan.c.actualOut = 'block'; } // ofsayt kurulamadıysa metin de 'blok' yazar
       if (set === 'overlap' || set === 'cross') {
         const Wm = wideMan() || plan.assister || S, flank = AF(Wm).y < 34 ? 6 : 62, fb = live(att).find(p => p.pos === 'BK' && Math.abs(AF(p).y - flank) < 26 && p !== Wm);
-        L.push(...getTo(Wm, { x: 76 + rnd(6), y: flank }, T(`Top kanatta ${tn(Wm)}'de`, `It's out wide to ${tn(Wm)}`)));
+        L.push(...getTo(Wm, { x: 76 + rnd(6), y: flank }, T(`Top kanatta ${trs(tn(Wm), 'loc')}`, `It's out wide to ${tn(Wm)}`)));
         const runs = [{ p: S, at: { x: 92 + rnd(3), y: set === 'cross' ? (flank < 34 ? 40 : 28) : 34 + (Math.random() - .5) * 6 }, sp: runSp(S) }];
         if (fb) runs.push({ p: fb, at: { x: 95, y: flank < 34 ? 3 : 65 }, sp: runSp(fb) });
         const farW = live(att).find(p => p.pos === 'KN' && p !== Wm && p !== S); // ters kanat arka direğe koşar
@@ -470,7 +474,7 @@ const Match2D = (() => {
         const lineX = (() => { const ds = live(def()).filter(p => p.pos === 'ST' || p.pos === 'BK').map(p => AF(p).x); return ds.length ? Math.max(...ds) : 88; })();
         const spot = { x: clamp(Math.max(lineX + 6, 86), 84, 93), y: 30 + rnd(8) };
         L.push({ k: 'hold', d: .35, runs: [{ p: S, at: towards(S, spot, 4), sp: runSp(S) }], txt: T(`${tn(S)} stoperlerin arasına çapraz koşuya başladı`, `${tn(S)} darts between the centre-backs`) });
-        L.push({ k: 'call', fn: () => { if (has(pm, 'PLAYMAKER')) bubble(T(`${tn(pm)}'ten kilit pas!`, `Killer ball from ${tn(pm)}!`), holder, '#0b3d91'); return [passTo(S, spot, { through: true, txt: T(`Savunma arkasına ara pas — ${tn(S)} kaleciyle karşı karşıya!`, `Through ball — ${tn(S)} is one-on-one!`) }), shot({ oneOnOne: true })]; } });
+        L.push({ k: 'call', fn: () => { if (has(pm, 'PLAYMAKER')) bubble(T(`${trs(tn(pm), 'abl')} kilit pas!`, `Killer ball from ${tn(pm)}!`), holder, '#0b3d91'); return [passTo(S, spot, { through: true, txt: T(`Savunma arkasına ara pas — ${tn(S)} kaleciyle karşı karşıya!`, `Through ball — ${tn(S)} is one-on-one!`) }), shot({ oneOnOne: true })]; } });
         return L;
       }
       if (set === 'target') {
@@ -494,7 +498,7 @@ const Match2D = (() => {
       if (set === 'corner') {
         const sh = wpick(live(att).filter(p => p.pos === 'FV' || p.pos === 'KN' || p.pos === 'OS'), p => SCW[p.pos] || 1);
         L.push(...getTo(sh, { x: 84, y: 30 + rnd(8) }, T(`${tn(sh)} ceza sahası önünde`, `${tn(sh)} on the edge of the box`)));
-        L.push({ k: 'shot', shooter: sh, out: 'corner', gy: Math.random() < .5 ? GY0 + 1 : GY1 - 1, txt: T(`${tn(sh)}'in şutu savunmadan sekti…`, `${tn(sh)}'s shot is deflected…`) });
+        L.push({ k: 'shot', shooter: sh, out: 'corner', gy: Math.random() < .5 ? GY0 + 1 : GY1 - 1, txt: T(`${trs(tn(sh), 'gen')} şutu savunmadan sekti…`, `${tn(sh)}'s shot is deflected…`) });
         return L;
       }
       if (set === 'fk' || set === 'pen' || set === 'red') {
@@ -626,7 +630,7 @@ const Match2D = (() => {
       if (att === c.side) return [];
       att = c.side; holder = null;
       const nh = live(att).filter(p => p.pos !== 'KL').sort((a, b) => dist(a, ball) - dist(b, ball))[0];
-      return nh ? [passTo(nh, null, { noCut: true, txt: T(`${tn(nh)} araya girdi, top ${teamName(att)}'de`, `${tn(nh)} steps in — ${teamName(att)} have it`) })] : [];
+      return nh ? [passTo(nh, null, { noCut: true, txt: T(`${tn(nh)} araya girdi, top ${trs(teamName(att), 'loc')}`, `${tn(nh)} steps in — ${teamName(att)} have it`) })] : [];
     }
     /* --------- taç, kale vuruşu ve serbest vuruşla oyunun yeniden başlaması --------- */
     function restart(c, r) {
@@ -708,7 +712,7 @@ const Match2D = (() => {
       const Wm = wpick(live(att).filter(p => p.pos === 'KN' || p.pos === 'BK'), p => p.pos === 'KN' ? 2 : 1), S = live(att).find(p => p.pos === 'FV');
       if (!Wm || !S || Wm === S) return null;
       const flank = AF(Wm).y < 34 ? 5 : 63, far = live(att).find(p => p.pos === 'KN' && p !== Wm), cb = live(def()).find(p => p.pos === 'ST') || nearest(def(), ball)[0];
-      const L = getTo(Wm, { x: 78 + rnd(6), y: flank }, T(`Top kanatta ${tn(Wm)}'de`, `It's out wide to ${tn(Wm)}`));
+      const L = getTo(Wm, { x: 78 + rnd(6), y: flank }, T(`Top kanatta ${trs(tn(Wm), 'loc')}`, `It's out wide to ${tn(Wm)}`));
       const runs = [{ p: S, at: { x: 93, y: flank < 34 ? 38 : 30 }, sp: runSp(S) }]; if (far) runs.push({ p: far, at: { x: 94, y: flank < 34 ? 45 : 23 }, sp: runSp(far) });
       L.push({ k: 'carry', to: Wm, at: { x: 96, y: flank < 34 ? 4 : 64 }, runs, txt: T(`${tn(Wm)} çizgiye iniyor, ceza sahası doluyor`, `${tn(Wm)} gets to the byline as the box fills up`) });
       L.push({ k: 'call', fn: () => [passTo(S, null, { lob: true, cross: true, follow: true, noCut: true, txt: T(`${tn(Wm)} ortayı açtı…`, `${tn(Wm)} swings the cross in…`) }), { k: 'lose', d: .5, by: cb, clear: true, txt: cb ? T(`${tn(cb)} ortayı kafayla uzaklaştırdı`, `${tn(cb)} heads the cross clear`) : '' }] });
@@ -886,7 +890,7 @@ const Match2D = (() => {
         if (diagnostics) diagnostics.goals.push({ side: att, x: ball.x, y: ball.y, goalLine: dir[att] > 0 ? W : 0, valid: dir[att] > 0 ? ball.x >= W : ball.x <= 0 });
         c.counted = true; if (att === 'h') score[0]++; else score[1]++; q('.m2d-sc').textContent = score[0] + ' – ' + score[1]; flash = 'GOL!'; startCheer(att);
         showFlash(T('GOOOL!', 'GOAL!'), tn(S), att === 'h' ? hc : ac); shake(450);
-        const flair = b.header && has(S, 'AERIAL_THREAT') ? T(`${tn(S)} kule gibi yükseldi!`, `${tn(S)} towers above everyone!`) : b.curve && has(S, 'FINESSE_SHOT') ? T(`${tn(S)}'tan falsolu plase!`, `A curler from ${tn(S)}!`) : b.fk ? T('Barajın üstünden ağlara!', 'Over the wall and in!') : b.pen ? T('Penaltıyı gole çevirdi!', 'Penalty converted!') : null;
+        const flair = b.header && has(S, 'AERIAL_THREAT') ? T(`${tn(S)} kule gibi yükseldi!`, `${tn(S)} towers above everyone!`) : b.curve && has(S, 'FINESSE_SHOT') ? T(`${trs(tn(S), 'abl')} falsolu plase!`, `A curler from ${tn(S)}!`) : b.fk ? T('Barajın üstünden ağlara!', 'Over the wall and in!') : b.pen ? T('Penaltıyı gole çevirdi!', 'Penalty converted!') : null;
         if (flair) bubble(flair, S, att === 'h' ? hc : ac);
         com(c.min, T(`GOOOL! ${S.name}${c.as ? ' (asist: ' + c.as + ')' : ''}! Skor ${score[0]}–${score[1]}`, `GOAL! ${S.name}${c.as ? ' (assist: ' + c.as + ')' : ''}! It’s ${score[0]}–${score[1]}`), 'goal');
         if (typeof AdvAudio !== 'undefined') { AdvAudio.note(784, .15, 'triangle', .05); setTimeout(() => AdvAudio.note(1046, .25, 'triangle', .05), 140); }
@@ -924,7 +928,7 @@ const Match2D = (() => {
         }
       }
       if (b.k === 'foul') { const red = b.card === 'R'; if (b.card) beats.unshift({ k: 'card', p: b.fouler, red, dogso: b.dogso, d: 1.5 }); beats.splice(b.card ? 1 : 0, 0, { k: 'call', fn: () => { if (red && b.fouler) startLeaving(b.fouler); const spot = b.foulSpot || AF(b.victim); setPiece(foulRestart(spot), spot, plan.out); plan.stage = 'over'; return []; } }); }
-      if (b.k === 'shot') { if (b.out === 'corner') { beats = [{ k: 'hold', d: .24, txt: T('Kornere çıktı.', 'Out for a corner.') }, { k: 'call', fn: () => { setPiece('CORNER', null, plan.out); plan.stage = 'over'; return []; } }]; } else beats = [{ k: 'result', d: b.out === 'goal' ? 1.25 : .8, out: b.out, header: b.header, curve: b.curve, fk: b.fk, pen: b.pen }]; plan.stage = 'over'; }
+      if (b.k === 'shot') { if (b.out === 'corner') { beats = [{ k: 'hold', d: .24, txt: T('Kornere çıktı.', 'Out for a corner.') }, { k: 'call', fn: () => { setPiece('CORNER', null, plan.out); plan.stage = 'over'; return []; } }]; } else beats = [{ k: 'result', d: b.out === 'goal' ? 3.4 : .8, out: b.out, header: b.header, curve: b.curve, fk: b.fk, pen: b.pen }]; plan.stage = 'over'; }
       if (b.k === 'card') setState('CARD_SHOWN');
       if (b.k === 'regroup') { let snapped = false; P.h.concat(P.a).forEach(p => { if (p.goal && !p.off && !p.leaving && Math.hypot(p.goal.x - p.x, p.goal.y - p.y) > 1.2) { p.x = p.goal.x; p.y = p.goal.y; snapped = true; } p.goal = null; }); if (snapped) seg++; }
       if (b.k === 'stray') { pendingRestart = b.restart; lastLoser = att; plan.stage = 'over'; beats = []; if (b.restart.kind === 'THROWIN') ars[ball.y < H / 2 ? 1 : 0].flag = performance.now() + 1200; }
@@ -984,7 +988,10 @@ const Match2D = (() => {
       if (holder && beat && beat.k === 'hold' && state === 'PLAYING' && !beat.hold) { const a = AF(holder); if (!isUnderPressure(holder) && a.x < 96) { const f = AF({ x: a.x + dt * dribSp(holder) * .35, y: a.y }); holder.x = holder.tx = f.x; holder.y = holder.ty = f.y; } }
       if (!beat) return;
       if (state !== 'PLAYING' && state !== 'CARD_SHOWN') { movePlayers(dt, ts); return; }
-      if (beat.k === 'result' || beat.k === 'foul' || beat.k === 'card' || beat.k === 'tackle') { movePlayers(dt, ts); return; }
+      if (beat.k === 'result' || beat.k === 'foul' || beat.k === 'card' || beat.k === 'tackle') {
+        // gol sevinci: koşu hedefleri burada uygulanır (yoksa oyuncular yerinde kalır); "GOOOL!" yazısı 1,3 sn sonra çekilir ki sevinç görünsün
+        if (beat.k === 'result') { ['h', 'a'].forEach(s => live(s).forEach(p => { if (p.run) { p.tx = p.run.x; p.ty = p.run.y; p.sp = p.run.sp; } })); if (beat.out === 'goal' && bt > 1.3) q('.m2d-flash').hidden = true; }
+        movePlayers(dt, ts); return; }
       const bA = AF(ball);
       ['h', 'a'].forEach(s => live(s).forEach(p => {
         if (locked(p)) return;
@@ -1210,7 +1217,7 @@ const Match2D = (() => {
       ctx.fillStyle = '#14181d'; for (let x = 8; x < W; x += 16) { ctx.fillRect(x, -STAND, .7, STAND - SEAT0); ctx.fillRect(x, H + SEAT0, .7, STAND - SEAT0); } for (let y = 10; y < H; y += 16) { ctx.fillRect(-STAND, y, STAND - SEAT0, .7); ctx.fillRect(W + SEAT0, y, STAND - SEAT0, .7); }
       // taraftarlar: sürekli kıpırdayan noktalar; Meksika dalgası yalnızca ev sahibi öndeyken ya da baskı kurarken döner
       const since = cheer ? (now - cheer.t) / 1000 : 99, wave = (t * .09) % 1;
-      const waveOn = !cheer && (score[0] > score[1] || momentum >= 62);
+      const waveOn = !(cheer && since < 6) && (score[0] > score[1] || momentum >= 62); // gol kutlaması bitince dalga yeniden başlayabilir
       const homeAttack = att === 'h' && state === 'PLAYING' && AF(ball).x > 68;
       groups.forEach((list, col) => {
         ctx.fillStyle = col; ctx.beginPath();

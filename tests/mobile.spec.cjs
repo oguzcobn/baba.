@@ -288,8 +288,8 @@ test.describe('Manager career matchday, transfers and kits',()=>{
   await page.locator('.cr-vsi').click({timeout:1500}).catch(()=>{});
   await expect(page.locator('.cr-dyn [data-m="hucum"]')).toHaveClass(/on/);
   await expect(page.locator('.cr-shouts [data-sh]')).toHaveCount(4);
-  await page.locator('[data-l="sub"]').scrollIntoViewIfNeeded();
-  await page.locator('[data-l="sub"]').click();
+  // rastgele erken bir sakatlık pencereyi kendiliğinden açmış olabilir
+  if(!(await page.locator('.crm-subs .crm').isVisible())){await page.locator('[data-l="pause"]').click();await page.locator('[data-l="sub"]').click();}
   const sub=page.locator('.crm-subs .crm');
   await expect(sub.locator('.crm-x')).toBeVisible();
   expect(await sub.locator('[data-i]').count()).toBeLessThanOrEqual(9);

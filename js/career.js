@@ -10,6 +10,10 @@ const Career = (() => {
   'use strict';
   const KEY = 'baba_career_save', VER = 1, WEEKS = 34, MAXSQ = 30, MINSQ = 16;
   const T = (tr, en) => (typeof I18N !== 'undefined' && I18N.lang === 'en') ? en : tr;
+  // Türkçe ek uyumu: Salah'ın, Onuachu'nun, Fabinho'nun, Muçi'de, Şimşir'den
+  const trs = (name, k) => { const s = String(name || ''), low = s.toLocaleLowerCase('tr-TR'), yV = /[^aeıioöuü]y$/.test(low), vs = low.match(/[aeıioöuü]/g), v = yV ? 'i' : vs ? vs[vs.length - 1] : 'e', last = low.slice(-1), endV = yV || /[aeıioöuü]/.test(last), hard = /[fstkçşhpćčš]/.test(last);
+    const v4 = 'aı'.includes(v) ? 'ı' : 'ei'.includes(v) ? 'i' : 'ou'.includes(v) ? 'u' : 'ü', v2 = 'aıou'.includes(v) ? 'a' : 'e';
+    return s + '’' + (k === 'gen' ? (endV ? 'n' : '') + v4 + 'n' : (hard ? 't' : 'd') + v2 + (k === 'abl' ? 'n' : '')); };
   const esc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rnd = n => Math.floor(Math.random() * n), pick = a => a[rnd(a.length)], clamp = (x, a, b) => Math.max(a, Math.min(b, x)), chance = p => Math.random() < p;
   const poisson = l => { let L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; };
@@ -383,9 +387,9 @@ const Career = (() => {
       if (Math.random() < .035) {
         const mine = Math.random() < L.me / (L.me + L.op), nm = mine ? scorerMe()[0].p.name : scorerOp()[0].name, out = pick(['save', 'save', 'miss', 'miss', 'post', 'block', 'offside']), S2 = mine ? SM : SO;
         if (out === 'offside') S2.off++; else { S2.shots++; S2.xg += .08 + Math.random() * .2; if (out === 'save') S2.on++; }
-        const txt = { save: T(`${nm}'nin şutunu kaleci son anda çeldi!`, `Great save to deny ${nm}!`), miss: T(`${nm} vurdu, top az farkla auta çıktı.`, `${nm} shoots — just wide.`), post: T(`${nm} vurdu, top direkten döndü!`, `${nm} hits the post!`), block: T(`${nm}'nin şutunda savunma araya girdi.`, `${nm}'s shot is blocked.`), offside: T(`${nm} ofsayta takıldı.`, `${nm} is caught offside.`) }[out];
+        const txt = { save: T(`${trs(nm, 'gen')} şutunu kaleci son anda çeldi!`, `Great save to deny ${nm}!`), miss: T(`${nm} vurdu, top az farkla auta çıktı.`, `${nm} shoots — just wide.`), post: T(`${nm} vurdu, top direkten döndü!`, `${nm} hits the post!`), block: T(`${trs(nm, 'gen')} şutunda savunma araya girdi.`, `${nm}'s shot is blocked.`), offside: T(`${nm} ofsayta takıldı.`, `${nm} is caught offside.`) }[out];
         let clip = null;
-        const show = () => { const real = (clip && clip.actualOut) || out; if (real !== out && out === 'offside') { S2.off--; S2.shots++; S2.xg += .06; } line(`${m}' ${real === out ? txt : T(`${nm}'nin şutunda savunma araya girdi.`, `${nm}'s shot is blocked.`)}`, 'ch'); }; // sahada ne oynandıysa o yazılır
+        const show = () => { const real = (clip && clip.actualOut) || out; if (real !== out && out === 'offside') { S2.off--; S2.shots++; S2.xg += .06; } line(`${m}' ${real === out ? txt : T(`${trs(nm, 'gen')} şutunda savunma araya girdi.`, `${nm}'s shot is blocked.`)}`, 'ch'); }; // sahada ne oynandıysa o yazılır
         if (m2 && !quick) tv(clip = { side: mine ? meH : opH, min: m, sc: nm, out, onShow: show }); else show();
       }
       // kartlar

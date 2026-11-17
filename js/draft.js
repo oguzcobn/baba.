@@ -8,6 +8,10 @@ const Draft = (() => {
   const rnd = n => Math.floor(Math.random() * n);
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const avg = a => a.length ? a.reduce((s, v) => s + v, 0) / a.length : 68;
+  // Türkçe ek uyumu: Salah'ın, Onuachu'nun, Fabinho'nun, Muçi'de, Şimşir'den
+  const trs = (name, k) => { const s = String(name || ''), low = s.toLocaleLowerCase('tr-TR'), yV = /[^aeıioöuü]y$/.test(low), vs = low.match(/[aeıioöuü]/g), v = yV ? 'i' : vs ? vs[vs.length - 1] : 'e', last = low.slice(-1), endV = yV || /[aeıioöuü]/.test(last), hard = /[fstkçşhpćčš]/.test(last);
+    const v4 = 'aı'.includes(v) ? 'ı' : 'ei'.includes(v) ? 'i' : 'ou'.includes(v) ? 'u' : 'ü', v2 = 'aıou'.includes(v) ? 'a' : 'e';
+    return s + '’' + (k === 'gen' ? (endV ? 'n' : '') + v4 + 'n' : (hard ? 't' : 'd') + v2 + (k === 'abl' ? 'n' : '')); };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const CLUB = id => (typeof DRAFT_CLUBS !== 'undefined' ? DRAFT_CLUBS.find(c => c.id === id) : null);
 
@@ -569,7 +573,8 @@ const Draft = (() => {
   let CHM = null;
   function cardInner(p) {
     const c = CLUB(p.club) || DRAFT_CLUBS[0], k = CHM ? CHM.get(p) : null, n = nation(p) || '–';
-    return `<i style="background:${c.c1}"></i><b>${esc(p.name)}</b><small>${PZ(p.pos)} · ${hide() ? '??' : p.r} · ${n}</small>${k == null ? '' : `<span class="chem c${k}">${'●'.repeat(k)}${'○'.repeat(3 - k)}</span>`}`;
+    const kit = typeof ClubID !== 'undefined' && ClubID.jersey ? `<i class="kit">${ClubID.jersey(c, { size: 24 })}</i>` : `<i style="background:${c.c1}"></i>`; // kulübün gerçek forması
+    return `${kit}<b>${esc(p.name)}</b><small>${PZ(p.pos)} · ${hide() ? '??' : p.r} · ${n}</small>${k == null ? '' : `<span class="chem c${k}">${'●'.repeat(k)}${'○'.repeat(3 - k)}</span>`}`;
   }
   function slotHtml(s) { const p = S.picks[s.id]; return `<div class="slot ${p ? 'full' : ''}${swapCls('s', s.id)}" style="left:${s.x}%;top:${s.y}%" ${p ? `data-slot="${s.id}" role="button" tabindex="0"` : ''}>${p ? cardInner(p) : `<span>${PZ(s.pos)}</span>`}</div>`; }
 
@@ -810,7 +815,7 @@ const Draft = (() => {
       if (gh > ga) { H.w++; H.p += 3; A.l++; H.form.push('G'); A.form.push('M'); } else if (gh < ga) { A.w++; A.p += 3; H.l++; H.form.push('M'); A.form.push('G'); } else { H.d++; A.d++; H.p++; A.p++; H.form.push('B'); A.form.push('B'); }
       return { h, a, gh, ga, ev, lh, la, physics: physical && physical.stats };
     }
-    el.innerHTML = `<section class="dr-hero"><p class="eyebrow">${T('Sezon simülasyonu', 'Season simulation')} · ${T(`${esc(out.name)}'in yerini sen aldın`, `you have taken ${esc(out.name)}’s place`)}</p><h1 class="display">${T('Hafta', 'Week')} <em class="wk">0</em><span class="slash">/34</span></h1>
+    el.innerHTML = `<section class="dr-hero"><p class="eyebrow">${T('Sezon simülasyonu', 'Season simulation')} · ${T(`${trs(esc(out.name), 'gen')} yerini sen aldın`, `you have taken ${esc(out.name)}’s place`)}</p><h1 class="display">${T('Hafta', 'Week')} <em class="wk">0</em><span class="slash">/34</span></h1>
       <div class="dr-meta"><span class="chip">${T('Puan', 'Points')} <b class="pts">0</b></span><span class="chip">${T('G-B-M', 'W-D-L')} <b class="wdl">0-0-0</b></span><span class="chip">${T('Gol', 'Goals')} <b class="gl">0:0</b></span><button class="chip toggle" data-a="fast">⏩ ${T('Hızlandır', 'Speed up')}</button></div></section>
       <section class="season"><div class="live"><div class="live-card"><span class="eyebrow lc-t">${T('Maç günü', 'Matchday')}</span><div class="score"><span class="tn h">—</span><b class="sc">0 – 0</b><span class="tn a">—</span></div><div class="minute"><i></i></div><div class="goals-ev"></div><div class="feed"></div></div>
         <div class="bar"><i></i></div><div class="mini-kings"></div></div>
@@ -892,7 +897,7 @@ const Draft = (() => {
     const xi = DRAFT_SLOTS.map(s => S.picks[s.id]).filter(Boolean), ch = chemOf(xi);
     el.innerHTML = `
       ${renderShowcase(xi, ch, 'stats')}
-      <section class="dr-hero"><p class="eyebrow">${T('Sezon sonu', 'End of season')} · ${T(`${esc(L.out)}'in yerini sen aldın`, `you took ${esc(L.out)}’s place`)}</p>
+      <section class="dr-hero"><p class="eyebrow">${T('Sezon sonu', 'End of season')} · ${T(`${trs(esc(L.out), 'gen')} yerini sen aldın`, `you took ${esc(L.out)}’s place`)}</p>
       <div class="end-head"><div class="big-pts">${L.pts}<small>/102</small></div><div><h2>${T(L.rank + '. sıra', 'Finished ' + L.rank + ([, 'st', 'nd', 'rd'][L.rank % 10 > 3 || [11, 12, 13].includes(L.rank % 100) ? 0 : L.rank % 10] || 'th'))} · ${msg}</h2><p class="muted">${L.w}${FL('G')} ${L.d}${FL('B')} ${L.l}${FL('M')} · ${T('Gol', 'Goals')} ${L.gf}:${L.ga}</p>${L.best ? `<span class="chip on">🏆 ${T('Yeni rekor', 'New record')}</span>` : `<span class="chip">${T('Rekor', 'Record')} ${Math.max(L.prevBest, L.pts)}</span>`}</div></div></section>
       <nav class="st-tabs">${[['awards', T('🏅 Ödüller', '🏅 Awards')], ['table', T('Puan durumu', 'League table')], ['goals', T('Gol krallığı', 'Top scorers')], ['assists', T('Asist krallığı', 'Top assists')], ['mine', T('Takımım', 'My team')]].map(([k, t]) => `<button class="${tab === k ? 'on' : ''}" data-t="${k}">${t}</button>`).join('')}</nav>
       <section class="st-body">${body}</section>
