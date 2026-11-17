@@ -40,6 +40,65 @@ const ClubID = (() => {
       <path d="${body}" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="1.5"/><path d="M42 4 Q50 14 58 4" fill="none" stroke="${o.c2 === o.c1 ? '#fff' : o.c2}" stroke-width="4"/>
       <g transform="translate(58 30) scale(.16)">${crestInner(o)}</g><text x="50" y="76" text-anchor="middle" font-size="18" font-weight="900" font-family="system-ui,sans-serif" fill="${o.kit === 'dikey' || o.kit === 'yarim' ? '#fff' : num}" stroke="rgba(0,0,0,.35)" stroke-width=".8">9</text></svg>`;
   }
+  /* =====================================================================
+     SVG FORMA BİLEŞENİ — renderJerseySVG(kit, opts)
+     kit:  { type, c1, c2, trim }   type: striped | halves | hoops | sash | solid-trim | pin | band
+     opts: { size, num, name (alt yazı), cls, title }
+     Kulüplerin gerçek renk ve desen düzenleri KITS tablosundadır (özgün çizim; arma / sponsor yok).
+     ===================================================================== */
+  const KITS_REAL = {
+    ts:    { home: { type: 'striped', c1: '#8a1538', c2: '#5cb8f0', trim: '#c9a227' }, away: { type: 'solid-trim', c1: '#f4f6f8', c2: '#8a1538', trim: '#5cb8f0' } },
+    gs:    { home: { type: 'halves', c1: '#fdb912', c2: '#a90432', trim: '#a90432' }, away: { type: 'solid-trim', c1: '#f4f4f4', c2: '#a90432', trim: '#fdb912' } },
+    fb:    { home: { type: 'striped', c1: '#ffed00', c2: '#002d72', trim: '#002d72' }, away: { type: 'solid-trim', c1: '#f4f4f4', c2: '#002d72', trim: '#ffed00' } },
+    bjk:   { home: { type: 'striped', c1: '#f4f4f4', c2: '#111111', trim: '#111111', wide: true }, away: { type: 'solid-trim', c1: '#111111', c2: '#f4f4f4', trim: '#f4f4f4' } },
+    ibfk:  { home: { type: 'solid-trim', c1: '#e8562a', c2: '#1b2e5a', trim: '#1b2e5a' }, away: { type: 'solid-trim', c1: '#1b2e5a', c2: '#e8562a', trim: '#e8562a' } },
+    goz:   { home: { type: 'striped', c1: '#f5c400', c2: '#c8102e', trim: '#c8102e' }, away: { type: 'solid-trim', c1: '#f4f4f4', c2: '#c8102e', trim: '#f5c400' } },
+    sam:   { home: { type: 'striped', c1: '#e30613', c2: '#ffffff', trim: '#e30613' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#e30613', trim: '#e30613' } },
+    kas:   { home: { type: 'solid-trim', c1: '#002f6c', c2: '#ffffff', trim: '#ffffff' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#002f6c', trim: '#002f6c' } },
+    kon:   { home: { type: 'striped', c1: '#00843d', c2: '#ffffff', trim: '#00843d' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#00843d', trim: '#00843d' } },
+    ala:   { home: { type: 'striped', c1: '#f37021', c2: '#00843d', trim: '#00843d' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#f37021', trim: '#00843d' } },
+    riz:   { home: { type: 'striped', c1: '#006a4e', c2: '#2f7fd0', trim: '#ffffff' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#006a4e', trim: '#2f7fd0' } },
+    gfk:   { home: { type: 'striped', c1: '#d71920', c2: '#111111', trim: '#111111' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#d71920', trim: '#111111' } },
+    eyu:   { home: { type: 'striped', c1: '#6a1b9a', c2: '#ffd600', trim: '#ffd600' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#6a1b9a', trim: '#ffd600' } },
+    koc:   { home: { type: 'striped', c1: '#00843d', c2: '#111111', trim: '#111111' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#00843d', trim: '#111111' } },
+    gen:   { home: { type: 'striped', c1: '#c8102e', c2: '#111111', trim: '#111111' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#c8102e', trim: '#111111' } },
+    ers:   { home: { type: 'striped', c1: '#0055a4', c2: '#ffffff', trim: '#0055a4' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#0055a4', trim: '#0055a4' } },
+    amed:  { home: { type: 'halves', c1: '#00843d', c2: '#e30613', trim: '#ffffff' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#00843d', trim: '#e30613' } },
+    corum: { home: { type: 'striped', c1: '#d40000', c2: '#111111', trim: '#111111' }, away: { type: 'solid-trim', c1: '#ffffff', c2: '#d40000', trim: '#111111' } }
+  };
+  const OLD2NEW = { duz: 'solid-trim', dikey: 'striped', ince: 'pin', yatay: 'hoops', yarim: 'halves', capraz: 'sash', bant: 'band', kol: 'solid-trim' };
+  const NEW2DISC = { striped: 'dikey', pin: 'ince', hoops: 'yatay', halves: 'yarim', sash: 'capraz', band: 'bant', 'solid-trim': 'kol' };
+  // takım nesnesi ({id,c1,c2,kit,identity}) → forma tanımı. Gerçek kulüp tabloda yoksa kimlik editöründeki desen kullanılır.
+  function kitOf(team, which) {
+    const real = team && KITS_REAL[team.id];
+    if (real && !team.identity) return real[which === 'away' ? 'away' : 'home'];
+    const c1 = (team && team.c1) || '#ff4d00', c2 = (team && team.c2) || '#111111', type = OLD2NEW[team && team.kit] || 'solid-trim';
+    if (which === 'away') return { type: 'solid-trim', c1: lum(c1) > 190 ? '#16181c' : '#f4f6f8', c2: c1, trim: c2 };
+    return { type, c1, c2, trim: c2, sleeves: team && team.kit === 'kol' };
+  }
+  const discKit = k => NEW2DISC[k && k.type] || 'duz';
+  function renderJerseySVG(kit, opts) {
+    kit = Object.assign({ type: 'solid-trim', c1: '#888', c2: '#fff' }, kit || {}); opts = opts || {};
+    const id = 'jk' + (++uidN), px = opts.size || 64, c1 = kit.c1, c2 = kit.c2, trim = kit.trim || c2, t = kit.type;
+    const body = 'M30 8 L42 4 Q50 12 58 4 L70 8 L94 22 L84 42 L74 37 L74 96 L26 96 L26 37 L16 42 L6 22 Z';
+    let pat = `<rect width="100" height="100" fill="${c1}"/>`;
+    if (t === 'striped') { const n = kit.wide ? 5 : 7, w = 48 / n; for (let i = 1; i < n; i += 2) pat += `<rect x="${26 + i * w}" y="0" width="${w}" height="100" fill="${c2}"/>`; pat += `<path d="M6 22 L30 8 L26 37 L16 42 Z" fill="${c1}"/><path d="M94 22 L70 8 L74 37 L84 42 Z" fill="${c1}"/><path d="M12 30 L24 22 L26 37 L16 42 Z" fill="${c2}"/><path d="M88 30 L76 22 L74 37 L84 42 Z" fill="${c2}"/>`; }
+    if (t === 'pin') for (let x = 30; x < 74; x += 6.2) pat += `<rect x="${x}" width="1.3" height="100" fill="${c2}"/>`;
+    if (t === 'halves') pat += `<rect x="50" width="50" height="100" fill="${c2}"/>`;
+    if (t === 'hoops') for (let y = 14; y < 96; y += 18) pat += `<rect y="${y}" width="100" height="9" fill="${c2}"/>`;
+    if (t === 'sash') pat += `<path d="M22 6 L40 6 L80 96 L62 96 Z" fill="${c2}"/>`;
+    if (t === 'band') pat += `<rect y="40" width="100" height="14" fill="${c2}"/>`;
+    if (t === 'solid-trim') pat += (kit.sleeves ? `<path d="M6 22 L30 8 L26 37 L16 42 Z M94 22 L70 8 L74 37 L84 42 Z" fill="${c2}"/>` : `<path d="M11.5 32 L21 37.5 L16 42 L8.6 27 Z" fill="${c2}"/><path d="M88.5 32 L79 37.5 L84 42 L91.4 27 Z" fill="${c2}"/><rect x="26" y="90" width="48" height="6" fill="${c2}"/>`);
+    const busy = t === 'striped' || t === 'halves' || t === 'hoops', ink = opts.ink || (busy || lum(c1) <= 150 ? '#ffffff' : '#14161a'), halo = ink === '#ffffff' ? (busy ? 'rgba(0,0,0,.8)' : 'rgba(0,0,0,.5)') : 'rgba(255,255,255,.7)';
+    const num = opts.num != null && opts.num !== '' ? `<text x="50" y="${opts.name ? 66 : 70}" text-anchor="middle" font-size="${String(opts.num).length > 1 ? 30 : 34}" font-weight="900" font-family="system-ui,-apple-system,Segoe UI,Arial,sans-serif" fill="${ink}" stroke="${halo}" stroke-width="${busy ? 3.4 : 2.2}" paint-order="stroke" letter-spacing="-1">${esc(opts.num)}</text>` : '';
+    return `<svg class="cid-jersey ${opts.cls || ''}" viewBox="0 0 100 100" width="${px}" height="${px}" ${opts.title ? `role="img" aria-label="${esc(opts.title)}"` : 'aria-hidden="true"'}><defs><clipPath id="${id}"><path d="${body}"/></clipPath></defs>
+      <g clip-path="url(#${id})">${pat}<path d="M26 37 L26 96 M74 37 L74 96" stroke="rgba(0,0,0,.12)" stroke-width="2"/></g>
+      <path d="M42 4 Q50 14 58 4" fill="none" stroke="${trim}" stroke-width="4.5" stroke-linecap="round"/>
+      <path d="${body}" fill="none" stroke="rgba(0,0,0,.45)" stroke-width="1.6" stroke-linejoin="round"/>${num}</svg>`;
+  }
+  const jersey = (team, opts) => renderJerseySVG(kitOf(team, opts && opts.away ? 'away' : 'home'), opts);
+  if (typeof window !== 'undefined') window.renderJerseySVG = renderJerseySVG;
+
   /* -------- logo -------- */
   const SHAPE_PATH = { kalkan: 'M10 8 H90 V58 Q90 96 50 114 Q10 96 10 58 Z', altigen: 'M50 4 L94 30 L94 86 L50 114 L6 86 L6 30 Z', elmas: 'M50 2 L98 58 L50 116 L2 58 Z', yuvarlak: 'M50 6 A52 52 0 1 1 49.9 6 Z', rozet: 'M50 6 A52 52 0 1 1 49.9 6 Z' };
   function symbol(sym, col) {
@@ -117,5 +176,5 @@ const ClubID = (() => {
     });
     refresh(true);
   }
-  return { get, set, editor, logo, shirt, autoShort, CITIES };
+  return { get, set, editor, logo, shirt, autoShort, CITIES, renderJerseySVG, jersey, kitOf, discKit, KITS: KITS_REAL };
 })();

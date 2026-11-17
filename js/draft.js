@@ -560,7 +560,7 @@ const Draft = (() => {
     bindShowcase();
   }
 
-  function crest(c, cls) { return `<span class="crest ${cls || ''}" style="--c1:${c.c1};--c2:${c.c2}"><b>${esc(c.short)}</b></span>`; }
+  function crest(c, cls) { /* kulüp, düz renkli rozet yerine gerçek forma deseniyle gösterilir */ if (typeof ClubID !== 'undefined' && ClubID.jersey) return `<span class="crest kit ${cls || ''}">${ClubID.jersey(c, { size: cls === 'lg' ? 58 : 46 })}<b>${esc(c.short)}</b></span>`; return `<span class="crest ${cls || ''}" style="--c1:${c.c1};--c2:${c.c2}"><b>${esc(c.short)}</b></span>`; }
   function tileHtml(c) {
     const used = S.drawn.includes(c.id), cur = S.club === c.id;
     return `<div class="ct ${used ? 'used' : ''} ${cur ? 'win' : ''}" data-club="${c.id}">${crest(c)}<small>${esc(c.name)}</small></div>`;

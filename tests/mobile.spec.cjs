@@ -235,8 +235,102 @@ test.describe('Manager career is a separate mode',()=>{
   expect(save.week).toBe(1);
   expect(save.squad.length).toBeGreaterThan(15);
   expect(await page.evaluate(()=>localStorage.getItem('draft_state'))).toBe(draftBefore);
+  // hızlı maçtan sonra maç sonu raporu açılır; kapatınca Kulüp Merkezi'ne dönülür
+  await expect(page.locator('.crm-report .cr-rep')).toBeVisible();
+  await page.locator('.crm-report .crm-x').click();
   await page.locator('[data-tab="league"]').click();
   await expect(page.locator('.cr-table.league tr.me')).toBeVisible();
+ });
+});
+
+test.describe('Manager career matchday, transfers and kits',()=>{
+ test.use({viewport:{width:390,height:844}});
+ const start=async page=>{
+  const dialogs=[];page.on('dialog',d=>{dialogs.push(d.message());d.dismiss();});
+  await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));
+  await page.goto(BASE+'#career');
+  await page.locator('.cr-clubsel').selectOption('ts');
+  await expect(page.locator('.cr-kitprev svg.cid-jersey')).toHaveCount(2);
+  await page.locator('[data-s="club"]').click();
+  await page.locator('[data-sp="0"]').click();
+  return dialogs;
+ };
+ test('real kits, unique shirt numbers, league columns and in-game modals',async({page})=>{
+  const dialogs=await start(page);
+  await expect(page.locator('.cr-head-kits svg.cid-jersey')).toHaveCount(2);
+  const squad=await page.evaluate(()=>Career.state().squad.map(p=>({n:p.num,pos:p.pos,name:p.name,age:p.age})));
+  expect(new Set(squad.map(p=>p.n)).size).toBe(squad.length);
+  expect(squad.find(p=>p.name==='André Onana').n).toBe(1);
+  expect(squad.find(p=>p.name==='Fabinho').age).toBeGreaterThan(30);
+  await page.locator('.cr-tabs [data-tab="squad"]').click();
+  await expect(page.locator('.cr-slot svg.cid-jersey')).toHaveCount(11);
+  await page.evaluate(()=>window.scrollTo(0,1200));
+  await page.locator('.cr-tabs [data-tab="league"]').click();
+  expect(await page.evaluate(()=>scrollY)).toBeLessThan(500);
+  await expect(page.locator('.cr-table.league thead')).toContainText('AG');
+  await expect(page.locator('.cr-table.league thead')).toContainText('YG');
+  await expect(page.locator('.cr-kings .cr-king')).toHaveCount(2);
+  await page.locator('.cr-tabs [data-tab="transfer"]').click();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(0);
+  await page.evaluate(()=>{Career.state().budget=.05;});
+  await page.locator('[data-buy]').first().click();
+  await expect(page.locator('.crm-ov .crm')).toContainText(/Bütçe Yetersiz|Insufficient Budget/);
+  await page.locator('.crm-ov [data-yes]').click();
+  await page.locator('[data-sell]').last().click();
+  await expect(page.locator('.crm-ov .crm [data-yes]')).toBeVisible();
+  await page.locator('.crm-ov [data-no]').click();
+  expect(dialogs).toEqual([]);
+ });
+ test('mentality carries into the match; shouts, nine-man bench, half-time talk and report',async({page})=>{
+  await start(page);
+  await page.evaluate(()=>{const S=Career.state();S.tv=false;S.ment='hucum';S.week=0;});
+  await page.locator('[data-a="live"]').click();
+  await page.locator('.cr-vsi').click({timeout:1500}).catch(()=>{});
+  await expect(page.locator('.cr-dyn [data-m="hucum"]')).toHaveClass(/on/);
+  await expect(page.locator('.cr-shouts [data-sh]')).toHaveCount(4);
+  await page.locator('[data-l="sub"]').scrollIntoViewIfNeeded();
+  await page.locator('[data-l="sub"]').click();
+  const sub=page.locator('.crm-subs .crm');
+  await expect(sub.locator('.crm-x')).toBeVisible();
+  expect(await sub.locator('[data-i]').count()).toBeLessThanOrEqual(9);
+  const box=await sub.boundingBox();
+  expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(844);
+  expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(390);
+  await sub.locator('.crm-x').click();
+  // rastgele bir sakatlık zorunlu değişiklik penceresi açarsa kapat (otomatik değişiklik yapılır)
+  await page.addLocatorHandler(page.locator('.crm-subs .crm-x'),async x=>{await x.click();});
+  await page.locator('[data-l="spd"]').click();await page.locator('[data-l="spd"]').click();
+  const ht=page.locator('.crm-ht .crm');
+  await expect(ht).toBeVisible({timeout:20000});
+  await expect(ht.locator('[data-talk]')).toHaveCount(4);
+  await ht.locator('[data-talk="atesle"]').click();
+  await ht.locator('[data-go]').click();
+  await expect(ht).toBeHidden();
+  await page.locator('[data-sh="baski"]').click();
+  await expect(page.locator('.cr-feed')).toContainText(/Kenar komutu|Touchline shout/);
+  await page.locator('[data-l="skip"]').click();
+  const rep=page.locator('.cr-rep-wrap .cr-rep');
+  await expect(rep).toBeVisible();
+  await expect(rep).toContainText(/xG/);
+  await expect(rep.locator('.cr-rep-mvp')).toBeVisible();
+  expect(await rep.locator('.cr-rep-pl').count()).toBeGreaterThanOrEqual(22);
+  const log=await page.evaluate(()=>Career.state().matchLog);
+  const ft=log.lines.find(l=>l.cls==='ft').txt, names=await page.evaluate(()=>{const S=Career.state(),n=id=>S.teams.find(t=>t.id===id).name;return [n(S.matchLog.res.h),n(S.matchLog.res.a)];});
+  expect(ft.indexOf(names[0])).toBeLessThan(ft.indexOf(names[1]));
+  expect(ft).toContain(log.res.gh+'–'+log.res.ga);
+ });
+ test('2D pitch kicks off the second half after the half-time talk and the match reaches full time',async({page})=>{
+  test.setTimeout(150000);
+  await start(page);
+  await page.locator('[data-a="live"]').click();
+  await page.locator('.cr-vsi').click({timeout:1500}).catch(()=>{});
+  await expect(page.locator('.cr-pitch2d canvas').first()).toBeVisible();
+  await page.addLocatorHandler(page.locator('.crm-subs .crm-x'),async x=>{await x.click();});
+  await page.locator('[data-l="spd"]').click();await page.locator('[data-l="spd"]').click();
+  await expect(page.locator('.crm-ht .crm')).toBeVisible({timeout:60000});
+  await page.locator('.crm-ht [data-go]').click();
+  await expect(page.locator('.cr-rep-wrap .cr-rep')).toBeVisible({timeout:80000});
+  await expect(page.locator('.cr-pitch2d')).toBeHidden();
  });
 });
 

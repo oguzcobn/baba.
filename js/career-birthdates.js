@@ -205,7 +205,7 @@ const CAREER_PLAYER_BIRTHDATES = Object.freeze({
   "Dušan Vlahović": "2000-01-28",
   "Milot Rashica": "1996-06-28",
   "Tiago Djaló": "2000-04-09",
-  "Fabinho": "2001-03-29",
+  "Fabinho": "1993-10-23",
   "Stefan Savić": "1991-01-08",
   "Ruslan Malinovskyi": "1993-05-04",
   "Ernest Muçi": "2001-03-19",

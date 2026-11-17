@@ -1,0 +1,201 @@
+/* BABA. — Menajerlik Kariyeri: SVG ikonlar, formalar, modallar, maç raporu, antrenman, pazarlık */
+.ci{width:1.15em;height:1.15em;display:inline-block;vertical-align:-.2em;flex:none}
+.cid-jersey{display:block;flex:none;filter:drop-shadow(0 3px 5px rgba(0,0,0,.35))}
+#careerRoot .cr-head{scroll-margin-top:84px}
+#careerRoot .cr-tabs{z-index:6}
+#careerRoot .cr-tabs button{display:inline-flex;align-items:center;gap:7px}
+#careerRoot .cr-ico .ci{width:38px;height:38px}
+.cr-fac>span .ci{width:30px;height:30px}
+
+/* başlık ve takım seçiminde 1. / 2. forma */
+.cr-head-kits{display:flex;gap:10px;align-items:flex-end}
+.cr-head-kits figure,.cr-kitprev figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+.cr-head-kits figcaption,.cr-kitprev figcaption{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.cr-kitprev{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 12px;border-radius:14px;background:rgba(127,127,127,.12)}
+.cr-kitprev p{margin:0;display:flex;flex-direction:column;gap:2px}.cr-kitprev p span{font-size:12.5px;opacity:.7}
+.cr-vs .cid-jersey{margin:0 auto}
+.cr-featured-kit{flex:none;display:grid;place-items:center}
+.cr-score-kit{display:inline-block;vertical-align:middle;margin:0 6px;font-style:normal}
+.cr-score-kit .cid-jersey{display:inline-block;vertical-align:middle}
+
+/* kadro sahası: gerçek formalar */
+#careerRoot .cr-pitch.kits .cr-slot.kit{background:transparent;box-shadow:none;padding:0;width:clamp(58px,17%,92px);gap:0;color:#fff;border-radius:10px;cursor:pointer;will-change:transform}
+#careerRoot .cr-slot.kit .cid-jersey{width:clamp(40px,64%,60px);height:auto;aspect-ratio:1}
+#careerRoot .cr-slot.kit>b{font-size:11.5px;font-weight:800;color:#fff;background:rgba(6,16,10,.82);padding:2px 7px;border-radius:7px;margin-top:-3px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-slot-meta{display:flex;gap:5px;align-items:center;font-size:10px;font-weight:800;margin-top:1px;text-shadow:0 1px 2px rgba(0,0,0,.7)}
+#careerRoot .cr-slot.kit .cr-slot-meta .pz{font-style:normal;color:#c9f7c0!important}
+#careerRoot .cr-slot.kit .cr-slot-meta em{font-style:normal;color:#fff;font-size:10.5px}
+#careerRoot .cr-slot.kit .cr-cond{width:70%;height:3px;margin-top:2px;background:rgba(0,0,0,.45)}
+#careerRoot .cr-slot.kit.sel{outline:3px solid #78ef56;outline-offset:3px}
+#careerRoot .cr-slot.kit.meh .cid-jersey{filter:drop-shadow(0 0 5px #f4b400)}
+#careerRoot .cr-slot.kit.bad .cid-jersey{filter:drop-shadow(0 0 6px #ff4d5e)}
+.cr-slot-ghost{display:grid;place-items:center;width:46px;height:46px;border-radius:12px;border:2px dashed rgba(255,255,255,.6);color:rgba(255,255,255,.8)}
+.cr-slot-ghost .ci{width:26px;height:26px}
+.cr-slot.pop{animation:crPop .45s cubic-bezier(.22,1,.36,1)}
+@keyframes crPop{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}}
+
+/* kadro listesi ve yedek kulübesi */
+.cr-plrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:stretch}
+.cr-plrow .cr-pl{width:100%;min-width:0;text-align:left}
+.cr-num{display:inline-block;min-width:1.7em;font-style:normal;font-weight:800;opacity:.6;font-variant-numeric:tabular-nums}
+.cr-bt{border:1px solid rgba(127,127,127,.4);background:transparent;color:inherit;border-radius:12px;width:42px;display:grid;place-items:center;cursor:pointer;opacity:.7}
+.cr-bt .ci{width:20px;height:20px}
+.cr-bt.on{background:#59e13b;color:#09170d;border-color:#59e13b;opacity:1}
+.cr-bt[disabled]{opacity:.25;cursor:not-allowed}
+.cr-list-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cr-list-head .eyebrow{margin:0;display:flex;align-items:center;gap:6px}
+.cr-list-head b.full{color:#59e13b}
+.cr-list.bench{max-height:none}
+
+/* antrenman */
+.cr-train-opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px;margin:6px 0 8px}
+.cr-train-opts button,.cr-focus button{border:1px solid rgba(127,127,127,.35);background:rgba(127,127,127,.08);color:inherit;border-radius:12px;padding:10px 8px;font:inherit;font-size:12.5px;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;text-align:center}
+.cr-train-opts .ci{width:22px;height:22px}
+.cr-train-opts button.on,.cr-focus button.on{background:#59e13b;color:#09170d;border-color:#59e13b}
+.cr-fam{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:13px;margin-top:8px}
+.cr-fam i{height:8px;border-radius:8px;background:rgba(127,127,127,.25);overflow:hidden}.cr-fam i b{display:block;height:100%;background:linear-gradient(90deg,#f4b400,#59e13b)}
+.cr-focus{display:flex;flex-direction:column;gap:5px}
+.cr-focus button{flex-direction:row;justify-content:flex-start;gap:8px;padding:8px 10px;text-align:left}
+.cr-focus button b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-focus .pz{font-size:10.5px;font-weight:800}.cr-focus em{font-style:normal;font-size:12px;opacity:.8;white-space:nowrap}
+
+/* transfer */
+.cr-table tr.poor td{opacity:.62}.cr-table tr.poor td:last-child{opacity:1}
+.cr-sell{display:flex;flex-direction:column;max-height:640px;overflow-y:auto;overflow-x:hidden}
+.cr-sell-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 2px;border-bottom:1px solid rgba(127,127,127,.2)}
+.cr-sell-id{min-width:0}.cr-sell-id b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-sell-id small{display:block;font-size:12px;opacity:.7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-sell-price{font-weight:800;font-size:13px;white-space:nowrap}
+.cr-exp{font-style:normal;color:#f4b400}
+.cr-scouting{display:flex;gap:8px;align-items:center;margin:4px 0;font-size:14px}
+
+/* lig */
+.cr-table td.tm{display:flex;align-items:center;gap:7px}
+.cr-table td.tm .cid-jersey{filter:none}
+.cr-kings{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cr-king{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.cr-king li{display:grid;grid-template-columns:18px 20px minmax(0,1fr) auto auto;gap:6px;align-items:center;font-size:13.5px;padding:5px 6px;border-radius:8px}
+.cr-king li.me{background:rgba(89,225,59,.16)}
+.cr-king li i{font-style:normal;font-size:11px;opacity:.6;text-align:right}
+.cr-king li b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr-king li small{opacity:.6;font-size:11px}.cr-king li strong{font-variant-numeric:tabular-nums;min-width:20px;text-align:right}
+.cr-king .cid-jersey{filter:none}
+.cr-ga{display:inline-flex;gap:10px}.cr-ga i{font-style:normal;display:inline-flex;gap:4px;align-items:center}
+@media (max-width:700px){.cr-kings{grid-template-columns:1fr}.cr-head-kits .cid-jersey{width:44px;height:44px}}
+
+/* koyu temalı oyun içi modal */
+.crm-ov{position:fixed;inset:0;z-index:9700;background:rgba(3,9,14,.74);backdrop-filter:blur(5px);display:grid;place-items:center;padding:max(12px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom));animation:crmIn .18s}
+@keyframes crmIn{from{opacity:0}}
+.crm{position:relative;box-sizing:border-box;width:min(620px,100%);max-height:min(88dvh,calc(100vh - 24px));overflow:auto;overscroll-behavior:contain;background:#0f2433;color:#eef8fb;border:1px solid #2f556a;border-radius:20px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);outline:none;animation:crmPop .22s cubic-bezier(.2,1.2,.4,1)}
+@keyframes crmPop{from{transform:translateY(14px) scale(.97);opacity:0}}
+.crm-sm .crm{width:min(430px,100%)}
+.crm-report .crm,.crm-subs .crm,.crm-ht .crm{width:min(780px,100%)}
+.crm-x{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;border:1px solid #3d6576;background:#173547;color:#eef8fb;display:grid;place-items:center;cursor:pointer;z-index:2}
+.crm-x:hover{background:#21495f}.crm-x .ci{width:18px;height:18px}
+.crm h3{margin:0 44px 8px 0;font-size:21px;letter-spacing:-.02em;color:#fff}.crm h3 small{font-size:13px;opacity:.7;font-weight:600}
+.crm p{margin:0 0 10px;line-height:1.5;color:#cfe3ea}.crm .eyebrow{color:#9fd0e0}
+.crm-note{font-size:13px;color:#a9c6d1!important}
+.crm-lbl{font-size:11.5px!important;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#a7cbdd!important;margin:14px 0 6px!important}
+.crm-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:16px}
+.crm-btn{font:inherit;font-weight:800;font-size:14.5px;border-radius:12px;border:1px solid #b1f3c0;background:#9ce9ae;color:#0b271b;padding:11px 18px;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.crm-btn.ghost{background:#1d3a4b;color:#f1faff;border-color:#3d6576}
+.crm-btn.alt{background:#ffd166;border-color:#ffe09a;color:#3a2a00}
+.crm-btn.danger{background:#ff6b78;border-color:#ff9aa3;color:#2c0308}
+.crm-btn:hover{filter:brightness(1.08)}
+.crm button:focus-visible,.crm input:focus-visible{outline:3px solid #b5f4bc;outline-offset:2px}
+.crm-alert{width:54px;height:54px;border-radius:50%;background:#3b2a12;color:#ffc65c;display:grid;place-items:center;margin-bottom:10px}.crm-alert .ci{width:28px;height:28px}
+.crm .cr-subcols button{background:#193d50;border:1px solid #426d80;color:#f1faff}
+.crm .cr-subcols button span{color:#a1f5b3}.crm .cr-subcols button.on{border-color:#91e6a6;box-shadow:0 0 0 2px rgba(145,230,166,.35)}
+.crm .cr-subcols button.inj{background:#4a2330}
+.crm .cr-ment button{background:#152f40;border:1px solid #3b6172;color:#d6ebef;font-weight:800}
+.crm .cr-ment button.on{background:#a0ebad;color:#0a2619;border-color:#a0ebad}
+.cr-live-ov .cr-sub{display:none!important}
+
+/* pazarlık ve imza kartı */
+.cr-deal-head{display:flex;gap:14px;align-items:center;margin-right:40px}
+.cr-deal-modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:12px 0}
+.cr-deal-modes button{font:inherit;font-weight:800;font-size:13.5px;border:1px solid #3b6172;background:#152f40;color:#d6ebef;border-radius:12px;padding:10px;cursor:pointer;display:flex;gap:6px;align-items:center;justify-content:center}
+.cr-deal-modes button.on{background:#a0ebad;color:#0a2619;border-color:#a0ebad}
+.cr-deal-f{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;margin:10px 0;font-size:14px;font-weight:700}
+.cr-deal-f span small{display:block;font-weight:500;opacity:.7;font-size:12px}
+.cr-deal-f input[type=range]{grid-column:1/-1;width:100%;accent-color:#9ce9ae;height:28px}
+.cr-deal-f output{font-weight:900;font-size:17px;color:#fff;font-variant-numeric:tabular-nums}
+.cr-deal-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}
+.cr-deal-sum span{background:#132c3c;border-radius:12px;padding:9px 10px;font-size:11.5px;color:#a9c6d1}
+.cr-deal-sum b{display:block;font-size:15px;color:#fff}
+.cr-deal-sum span.bad{background:#4a1c26}.cr-deal-sum span.bad b{color:#ff9ca5}
+.cr-deal-msg{border-left:4px solid #3d6576;background:#132c3c;border-radius:10px;padding:10px 12px;font-size:14px}
+.cr-deal-msg.bad{border-color:#ff6b78;background:#3a1a23;color:#ffd5d9!important}
+.cr-deal-msg.warn{border-color:#ffd166;background:#3a3016;color:#ffe9b3!important}
+.cr-sign{text-align:center;overflow:hidden}
+.cr-sign h3{margin:6px 0;font-size:24px}.cr-sign h3 b{font-size:30px;color:#a0ebad}
+.cr-sign-tag{display:inline-block;font-weight:900!important;letter-spacing:.2em;font-size:12px;color:#0a2619!important;background:#a0ebad;border-radius:99px;padding:5px 14px;animation:crSignTag .5s .1s both}
+.cr-sign-kit{display:grid;place-items:center;animation:crSignKit .8s cubic-bezier(.2,1.3,.4,1) both}
+.cr-sign-kit .cid-jersey{filter:drop-shadow(0 16px 24px rgba(0,0,0,.5))}
+.cr-sign-ink{width:200px;height:36px;margin:2px auto 0;display:block}
+.cr-sign-ink path{fill:none;stroke:#a0ebad;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:420;stroke-dashoffset:420;animation:crInk 1.3s .55s ease-out forwards}
+@keyframes crSignKit{from{transform:translateY(-70px) rotate(-14deg) scale(.5);opacity:0}}
+@keyframes crSignTag{from{transform:scale(.4);opacity:0}}
+@keyframes crInk{to{stroke-dashoffset:0}}
+
+/* maç raporu */
+.cr-rep{color:inherit}
+.cr-rep-head h2{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin:4px 0 12px;font-size:clamp(15px,2.4vw,20px)}
+.cr-rep-head h2 span{display:flex;align-items:center;gap:8px;min-width:0}.cr-rep-head h2 span:last-child{justify-content:flex-end;text-align:right}
+.cr-rep-head h2 b{font-size:clamp(26px,5vw,38px);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cr-rep-mvp{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:linear-gradient(110deg,#3a2f10,#1a3344);border:1px solid #c9a227;border-radius:16px;padding:12px 16px;margin-bottom:12px}
+.cr-rep-mvp small{display:flex;gap:5px;align-items:center;font-weight:900;letter-spacing:.14em;font-size:11px;color:#ffd166}
+.cr-rep-mvp b{display:block;font-size:20px;color:#fff}.cr-rep-mvp span{font-size:12.5px;opacity:.75}
+.cr-rep-mvp strong{font-size:34px;font-weight:900;color:#ffd166;font-variant-numeric:tabular-nums}
+.cr-rep-stats{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}
+.cr-rep-row{display:grid;grid-template-columns:64px 1fr 64px;align-items:center;font-size:13.5px;row-gap:3px}
+.cr-rep-row b{font-variant-numeric:tabular-nums;font-size:15px}.cr-rep-row b:last-of-type{text-align:right}
+.cr-rep-row span{text-align:center;opacity:.8;font-size:12.5px}
+.cr-rep-bar{grid-column:1/-1;height:5px;border-radius:5px;background:#d9596f;overflow:hidden}.cr-rep-bar i{display:block;height:100%;background:#78dd91}
+.cr-rep-cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cr-rep-team h4{display:flex;gap:7px;align-items:center;margin:0 0 6px;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+.cr-rep-pl{display:grid;grid-template-columns:34px minmax(0,1fr) auto 40px;gap:6px;align-items:center;padding:5px 6px;border-radius:8px;font-size:13px}
+.cr-rep-pl:nth-child(odd){background:rgba(255,255,255,.045)}
+.cr-rep-pl.mvp{background:rgba(255,209,102,.16);box-shadow:inset 3px 0 0 #ffd166}
+.cr-rep-pl .pz{font-size:10px;font-weight:800;opacity:.75}
+.cr-rep-pl b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cr-rep-pl b small{font-weight:500;opacity:.6}
+.cr-rep-pl em{font-style:normal;display:inline-flex;gap:1px;color:#cfe3ea}.cr-rep-pl em .ci{width:14px;height:14px}
+.cr-rep-pl strong{text-align:center;border-radius:7px;padding:2px 0;background:#2a4759;font-variant-numeric:tabular-nums}
+.cr-rep-pl strong.hi{background:#2a8f4c;color:#fff}.cr-rep-pl strong.lo{background:#a23a48;color:#fff}
+.cr-rep-wrap{background:#102738;border:1px solid #2d5366;border-radius:16px;padding:14px 16px;overflow:auto;flex:1 1 auto;min-height:0;color:#eef8fb}
+.cr-rep-feed{flex:none}.cr-rep-feed summary{cursor:pointer;font-weight:700;padding:8px 2px;color:#cfe3ea}
+.cr-rep-feed .cr-feed{max-height:180px}
+.cr-live-ov .cr-dyn{display:flex;flex-direction:column;gap:8px;min-height:0}
+.cr-wait{font-size:13px;color:#ffd166;align-self:center;margin-right:auto}
+@media (max-width:620px){.cr-rep-cols{grid-template-columns:1fr}.crm{padding:16px}.cr-deal-sum{grid-template-columns:1fr}}
+
+/* devre arası ve kenar komutları */
+.cr-ht-stats{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.cr-ht-stats span{background:#132c3c;border-radius:10px;padding:7px 11px;font-size:12.5px;color:#a9c6d1}.cr-ht-stats b{color:#fff;margin-left:4px}
+.cr-ht-talks{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.cr-ht-talks button{font:inherit;text-align:left;border:1px solid #3b6172;background:#152f40;color:#e6f3f7;border-radius:14px;padding:11px 12px;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:2px 9px;align-items:center}
+.cr-ht-talks .ci{width:24px;height:24px;grid-row:span 2}.cr-ht-talks small{opacity:.7;font-size:12px;line-height:1.3}
+.cr-ht-talks button.on{background:#a0ebad;color:#0a2619;border-color:#a0ebad}
+.cr-live-ov .cr-shouts button{display:flex;gap:6px;align-items:center;justify-content:center}
+.cr-live-ov .cr-shouts button[aria-disabled=true]{opacity:.45}
+.cr-live-ov .cr-plan-lbl{display:flex;gap:6px;align-items:center;margin:2px 0 0;font-size:11.5px;font-weight:800;text-transform:uppercase}
+@media (max-width:520px){.cr-ht-talks{grid-template-columns:1fr}}
+
+/* maç önü VS ekranı */
+.cr-vsi{position:fixed;inset:0;z-index:9650;display:grid;place-items:center;background:radial-gradient(ellipse at center,#12384a 0%,#040b11 75%);color:#fff;cursor:pointer;animation:crmIn .25s;transition:opacity .3s}
+.cr-vsi.out{opacity:0}
+.cr-vsi-in{text-align:center;width:min(820px,94vw)}
+.cr-vsi-tag{display:inline-block;margin:0 0 18px;font-weight:900;letter-spacing:.3em;font-size:14px;background:#ffd166;color:#2b1e00;border-radius:99px;padding:7px 20px;animation:crSignTag .5s both}
+.cr-vsi-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.cr-vsi-t{display:flex;flex-direction:column;align-items:center;gap:6px}
+.cr-vsi-t .cid-jersey{width:clamp(96px,24vw,170px);height:auto;aspect-ratio:1}
+.cr-vsi-t b{font-size:clamp(17px,3.6vw,30px);letter-spacing:-.02em}.cr-vsi-t small{letter-spacing:.2em;font-size:11px;opacity:.7}
+.cr-vsi-t.l{animation:crVsL .7s cubic-bezier(.2,1.1,.3,1) both}.cr-vsi-t.r{animation:crVsR .7s cubic-bezier(.2,1.1,.3,1) both}
+.cr-vsi-vs{font-size:clamp(34px,8vw,72px);font-weight:900;font-style:italic;color:#ffd166;animation:crSignTag .5s .35s both}
+.cr-vsi-sub{margin:18px 0 0;opacity:.7;letter-spacing:.12em;font-size:12px}
+@keyframes crVsL{from{transform:translateX(-60vw);opacity:0}}
+@keyframes crVsR{from{transform:translateX(60vw);opacity:0}}
+@media (prefers-reduced-motion:reduce){.cr-vsi-t.l,.cr-vsi-t.r,.cr-sign-kit,.crm,.cr-slot.pop{animation:none}.cr-sign-ink path{animation:none;stroke-dashoffset:0}}
+/* devre arası ve değişiklik pencerelerinde ana düğme her zaman görünür kalır */
+.crm-ht .crm-row,.crm-subs .crm-row{position:sticky;bottom:-22px;z-index:2;margin-bottom:-22px;padding:14px 0 22px;background:linear-gradient(to top,#0f2433 72%,rgba(15,36,51,0))}
+@media (max-width:620px){.crm-ht .crm-row,.crm-subs .crm-row{bottom:-16px;margin-bottom:-16px;padding-bottom:16px}}
