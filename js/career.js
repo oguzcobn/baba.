@@ -58,12 +58,12 @@ const Career = (() => {
   // gol şekilleri: plana göre olasılık
   const GOALS = () => ({ long: T('ceza sahası dışından müthiş bir şutla', 'with a stunning strike from outside the box'), cross: T('kanattan gelen ortada kafayla', 'with a header from a cross'), through: T('ara pasla kaleciyle karşı karşıya kalıp soğukkanlı bir vuruşla', 'one-on-one after a through ball, coolly'), corner: T('kornerden gelen topta', 'from a corner'), pen: T('penaltıdan', 'from the penalty spot'), rebound: T('dönen topu tamamlayarak', 'by tucking in the rebound'), fk: T('frikikten kavisli bir vuruşla', 'with a curling free kick'), cutin: T('içeri kat edip uzak köşeye plase vuruşla', 'cutting inside and curling into the far corner'), cutback: T('çizgiden geri çıkan topa vurarak', 'from a cutback'), target: T('pivotun indirdiği topa ilk vuruşla', 'first time from the target man’s lay-off') });
   const GW = { dengeli: { long: 1, cross: 1, through: 1.2, corner: .6, pen: .4, rebound: .8, fk: .3, cutin: .8, cutback: 1, target: .6 }, kisa: { through: 1.8, cutback: 1.4, rebound: 1, cutin: 1, long: .6, cross: .5, corner: .5, pen: .5, fk: .3, target: .3 }, kanat: { cross: 2.6, cutback: 2, corner: .9, cutin: 1.2, through: .6, long: .5, rebound: .9, pen: .4, fk: .3, target: .5 }, arapas: { through: 3, cutin: .8, long: .6, cutback: .8, cross: .5, rebound: .6, corner: .5, pen: .5, fk: .3, target: .4 }, uzun: { target: 2.6, cross: 1.6, corner: 1, rebound: 1.2, long: 1, through: .5, cutback: .4, pen: .4, fk: .4, cutin: .3 }, kontra: { through: 2.8, cutin: 1, long: .8, cutback: 1, cross: .5, rebound: .5, corner: .4, pen: .5, fk: .3, target: .4 } };
-  const clubs = () => (typeof DRAFT_CLUBS !== 'undefined' ? DRAFT_CLUBS : []);
+  const clubs = () => (typeof CAREER_2026_EXPANSION !== 'undefined' ? CAREER_2026_EXPANSION.getAllCareerClubs() : (typeof DRAFT_CLUBS !== 'undefined' ? DRAFT_CLUBS : []));
   const CLUB = id => clubs().find(c => c.id === id);
   const NAT = n => (typeof DRAFT_NAT !== 'undefined' && DRAFT_NAT[n]) || 'TR';
 
   /* ---------------- gerçek doğum tarihleri ---------------- */
-  const birthDate = name => (typeof CAREER_PLAYER_BIRTHDATES !== 'undefined' && CAREER_PLAYER_BIRTHDATES[name]) || null;
+  const birthDate = name => (typeof CAREER_PLAYER_BIRTHDATES !== 'undefined' && CAREER_PLAYER_BIRTHDATES[name]) || (typeof CAREER_2026_EXPANSION !== 'undefined' && CAREER_2026_EXPANSION.EXTRA_DOB[name]) || null;
   // Each career season is anchored to 16 November; do not use the real-world clock
   // or replaying a saved season would silently change players' ages.
   function realAge(dob, seasonYear) {
@@ -178,6 +178,8 @@ const Career = (() => {
     S.fac = Object.assign({ train: 0, med: 0, stadium: 0, scout: 0 }, S.fac || {});
     if (!S.scouts) S.scouts = S.scout ? [S.scout] : []; S.scout = null; S.scouted = S.scouted || []; S.cold = S.cold || {};
     if (!S.lg) { S.lg = {}; S.squad.forEach(p => { if (p.sg || p.sa) S.lg[p.name] = { g: p.sg || 0, a: p.sa || 0, c: me().id }; }); }
+    if (!S.myLeague) S.myLeague = 'TUR_SL';
+    if (!S.otherLeagues) initOtherLeaguesAndUEFA(false);
     assignNums(); cleanBench();
   }
   const P = id => S.squad.find(p => p.id === id);
@@ -263,9 +265,13 @@ const Career = (() => {
       const weakest = clubs().map(c => ({ c, s: avg(clubXI(c).map(p => p.r)) })).sort((a, b) => a.s - b.s)[0];
       S.replaced = weakest ? weakest.c.id : null;
     }
-    S.teams = clubs().filter(c => c.id !== (kind === 'club' ? clubId : S.replaced)).map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2 })).concat([mine]);
+    const myLg = kind === 'club' ? ((CLUB(clubId) && CLUB(clubId).league) || 'TUR_SL') : 'TUR_SL';
+    S.myLeague = myLg;
+    S.myUefa = kind === 'club' ? ((CLUB(clubId) && CLUB(clubId).uefa) || null) : null;
+    S.teams = clubs().filter(c => (c.league || 'TUR_SL') === myLg && c.id !== (kind === 'club' ? clubId : S.replaced)).map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, league: c.league || 'TUR_SL' })).concat([mine]);
     while (S.teams.length > 18) S.teams.splice(S.teams.findIndex(t => !t.me), 1);
     S.fix = fixtures(S.teams.map(t => t.id).sort(() => Math.random() - .5)); S.table = freshTable();
+    initOtherLeaguesAndUEFA(true);
     S.rev = kind === 'club' ? clamp(S.squad.reduce((a, p) => a + wage(p), 0) * WEEKS * 1.02 / estIncome(), 1, 5) : 1;
     autoXI(); assignNums(); autoBench(); S.famKey = famKey(); S.offers = sponsorOffers();
     news(kind === 'club' ? T(`${mine.name} yönetimi seni teknik direktör olarak açıkladı. Hedef: üst sıralar!`, `${mine.name} have appointed you as manager. The target: the top of the table!`)
@@ -663,6 +669,7 @@ const Career = (() => {
     S.fam = clamp(famNow() + 2 + ({ hucum: 4, savunma: 4, top: 6, fizik: 0, dinlen: -2 }[S.training] || 0), 15, 100); S.famKey = famKey();
     S.focus = (S.focus || []).filter(id => { const p = P(id); if (!p) return false; if (p.age > 23 || p.r >= p.pot) { news(T(`🎯 ${p.name} bireysel gelişim programını tamamladı.`, `🎯 ${p.name} has completed his individual programme.`)); return false; } return true; });
     news(`${won ? '✅' : draw ? '➖' : '❌'} ${T('Hafta', 'Week')} ${w + 1}: ${teamName(mr.h)} ${mr.gh}–${mr.ga} ${teamName(mr.a)}`, won ? 'good' : draw ? '' : 'bad');
+    simOtherLeaguesAndUEFA(w);
     S.week++;
     if (S.week >= WEEKS) seasonEnd(); else rollEvent();
     autoFixXI(); cleanBench(); save();
@@ -702,7 +709,9 @@ const Career = (() => {
       if (p.age >= 37 || (p.age >= 35 && chance(.4))) gone.push(p);
     });
     gone.forEach(p => { S.squad = S.squad.filter(x => x !== p); news(T(`👋 ${p.name} futbolu bıraktı.`, `👋 ${p.name} has retired.`)); });
+    applyPyramidPromotionsAndUEFA();
     S.season++; S.year++; syncSavedAges(); S.week = 0; S.results = []; S.table = freshTable(); S.fix = fixtures(S.teams.map(t => t.id).sort(() => Math.random() - .5));
+    initOtherLeaguesAndUEFA(true);
     S.sponsor = null; S.offers = sponsorOffers(); S.pending = null;
     // her sezon 2 altyapı oyuncusu
     for (let i = 0; i < 2 && S.squad.length < MAXSQ; i++) { const y = regen('tr', { age: 17, r: 56 + rnd(8) }); y.youth = true; S.squad.push(y); news(T(`🌱 Altyapıdan A takıma: ${y.name} (${PZ(y.pos)}, potansiyel ${y.pot}).`, `🌱 Academy graduate: ${y.name} (${PZ(y.pos)}, potential ${y.pot}).`), 'good'); }
@@ -848,7 +857,12 @@ const Career = (() => {
           <details class="cr-idwrap"><summary>🛡️ ${T('Kulüp kimliğini ayarla (isim, renk, forma, şehir, logo)', 'Set up your club identity (name, colours, kit, city, crest)')}</summary><div class="cr-idhost"></div></details>
           <button class="pill big" data-s="new">${T('Kulübümü kur', 'Found my club')} →</button></article>
         <article class="cr-choice"><span class="cr-ico">🏟️</span><h2>${T('Mevcut Kulübü Çalıştır', 'Manage an Existing Club')}</h2><p>${T('Süper Lig kulüplerinden birinin başına geç: gerçek kadro, kulübün gücüne göre bütçe.', 'Take charge of a Süper Lig club: real squad, budget by club size.')}</p>
-          <select class="cr-clubsel" aria-label="${T('Kulüp seç', 'Choose a club')}">${clubs().map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><div class="cr-kitprev" aria-live="polite"></div><button class="pill big" data-s="club">${T('Göreve başla', 'Take the job')} →</button></article>
+          <select class="cr-clubsel" aria-label="${T('Kulüp seç', 'Choose a club')}">
+            <optgroup label="Süper Lig">${clubs().filter(c => (c.league || 'TUR_SL') === 'TUR_SL').map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</optgroup>
+            <optgroup label="TFF 1. Lig">${clubs().filter(c => c.league === 'TUR_1L').map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</optgroup>
+            <optgroup label="TFF 2. Lig Beyaz Grup">${clubs().filter(c => c.league === 'TUR_2L_BEYAZ').map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</optgroup>
+            <optgroup label="TFF 2. Lig Kırmızı Grup">${clubs().filter(c => c.league === 'TUR_2L_KIRMIZI').map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</optgroup>
+          </select><div class="cr-kitprev" aria-live="polite"></div><button class="pill big" data-s="club">${T('Göreve başla', 'Take the job')} →</button></article>
         <article class="cr-choice ${dn ? '' : 'off'}"><span class="cr-ico">📥</span><h2>${T('Son Draft Kadromu Aktar', 'Import My Last Draft Squad')}</h2><p>${dn ? T(`Draft’ta kurduğun ${dn} kişilik kadro kariyerine taşınır; eksikler altyapıdan tamamlanır. Bütçe 12 M€.`, `Your ${dn}-player Draft squad moves into the career; gaps are filled from the academy. Budget €12M.`) : T('Önce Draft modunda bir kadro kur.', 'Build a squad in Draft mode first.')}</p>
           ${dn ? `<button class="pill big" data-s="draft">${T('Kadromu aktar', 'Import squad')} →</button>` : `<a class="pill big ghost" href="#draft">${T('Draft Moduna git', 'Go to Draft mode')} →</a>`}</article>
       </div></section>`;
@@ -983,7 +997,7 @@ const Career = (() => {
       <div><article class="cr-card"><p class="eyebrow">${T('Fikstür', 'Fixtures')}</p><div class="cr-row"><button class="pill sm ghost" data-fw="-1" ${w <= 0 ? 'disabled' : ''} aria-label="${T('Önceki hafta', 'Previous week')}">←</button><b>${T('Hafta', 'Week')} ${w + 1}</b><button class="pill sm ghost" data-fw="1" ${w >= WEEKS - 1 ? 'disabled' : ''} aria-label="${T('Sonraki hafta', 'Next week')}">→</button></div>
         <ul class="cr-fix">${S.fix[w].map(([h, a], i) => { const r = res && res[i]; const mine = h === me().id || a === me().id; return `<li class="${mine ? 'me' : ''}"><span>${esc(teamName(h))}</span><b>${r ? r.gh + ' – ' + r.ga : '–'}</b><span>${esc(teamName(a))}</span></li>`; }).join('')}</ul></article>
         <article class="cr-card"><p class="eyebrow">${T('Takımımızın golcüleri', 'Our scorers')}</p><ol class="cr-scorers">${S.squad.filter(p => p.sg || p.sa).sort((a, b) => b.sg - a.sg || b.sa - a.sa).slice(0, 8).map(p => `<li><b>${esc(p.name)}</b><span class="cr-ga"><i>${ic('ball')}${p.sg}</i><i>${ic('assist')}${p.sa}</i></span></li>`).join('') || `<li class="muted">${T('Henüz gol yok', 'No goals yet')}</li>`}</ol></article>
-        ${S.history.length ? `<article class="cr-card"><p class="eyebrow">${T('Geçmiş sezonlar', 'Past seasons')}</p><ul class="cr-news">${S.history.map(h => `<li>${h.champ ? '🏆' : ''} ${T('Sezon', 'Season')} ${h.season} (${h.year}) · ${h.rank}. · ${h.pts} ${T('puan', 'pts')} · ${esc(h.top)}</li>`).join('')}</ul></article>` : ''}</div></div>`;
+        ${uefaAndPyramidHTML()}${S.history.length ? `<article class="cr-card"><p class="eyebrow">${T('Geçmiş sezonlar', 'Past seasons')}</p><ul class="cr-news">${S.history.map(h => `<li>${h.champ ? '🏆' : ''} ${T('Sezon', 'Season')} ${h.season} (${h.year}) · ${h.rank}. · ${h.pts} ${T('puan', 'pts')} · ${esc(h.top)}</li>`).join('')}</ul></article>` : ''}</div></div>`;
   }
 
   function clubTab() {
@@ -1041,6 +1055,146 @@ const Career = (() => {
     $('[data-fac]').forEach(b => b.onclick = () => { const k = b.dataset.fac, c = facCost(k); if (S.budget < c) return poor(c, FAC()[k][0]); S.budget -= c; S.fac[k]++; news(T(`🏗️ ${FAC()[k][0]} seviye ${S.fac[k]} oldu.`, `🏗️ ${FAC()[k][0]} upgraded to level ${S.fac[k]}.`), 'good'); save(); render(); });
     $('[data-fw]').forEach(b => b.onclick = () => { const w = fxWeek == null ? Math.min(S.week, WEEKS - 1) : fxWeek; fxWeek = clamp(w + +b.dataset.fw, 0, WEEKS - 1); render(); });
     const idh = host.querySelector('.cr-idhost'); if (idh && typeof ClubID !== 'undefined') ClubID.editor(idh, () => { const h = host.querySelector('.cr-head'); if (h) { const m = me(), c = ClubID.get(); Object.assign(m, { name: c.name || m.name, c1: c.c1, c2: c.c2, kit: c.kit, short: c.short || ClubID.autoShort(c.name) }); h.querySelector('h1').textContent = m.name; save(); } });
+  }
+
+  /* ---------------- Çoklu Lig Piramidi & UEFA İsviçre Sistemi ---------------- */
+  const LG_LABEL = () => ({
+    TUR_SL: T('Süper Lig', 'Süper Lig'),
+    TUR_1L: T('TFF 1. Lig', 'TFF 1. Lig'),
+    TUR_2L_BEYAZ: T('TFF 2. Lig Beyaz Grup', 'TFF 2. Lig White Group'),
+    TUR_2L_KIRMIZI: T('TFF 2. Lig Kırmızı Grup', 'TFF 2. Lig Red Group')
+  });
+  const UEFA_LABEL = () => ({
+    UEFA_UCL: T('UEFA Şampiyonlar Ligi', 'UEFA Champions League'),
+    UEFA_UEL: T('UEFA Avrupa Ligi', 'UEFA Europa League'),
+    UEFA_UECL: T('UEFA Konferans Ligi', 'UEFA Conference League')
+  });
+
+  function initOtherLeaguesAndUEFA(resetUefa) {
+    if (!S) return;
+    const myLg = S.myLeague || 'TUR_SL';
+    S.otherLeagues = {};
+    ['TUR_SL', 'TUR_1L', 'TUR_2L_BEYAZ', 'TUR_2L_KIRMIZI'].forEach(lg => {
+      if (lg === myLg) return;
+      const inActive = new Set(S.teams.map(t => t.id));
+      const tms = clubs().filter(c => (c.league || 'TUR_SL') === lg && !inActive.has(c.id)).slice(0, 18);
+      S.otherLeagues[lg] = tms.map(c => ({
+        id: c.id, name: c.name, short: c.short,
+        str: Math.round(avg(clubXI(c).map(p => p.r))),
+        p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0
+      }));
+    });
+    if (resetUefa || S.uefaState === undefined) buildUefaSwissStage();
+  }
+
+  function buildUefaSwissStage() {
+    if (typeof CAREER_2026_EXPANSION === 'undefined' || !S.myUefa) { S.uefaState = null; return; }
+    const cupId = S.myUefa, isUECL = cupId === 'UEFA_UECL';
+    const matchWeeks = isUECL ? [2, 6, 10, 14, 18, 22] : [2, 5, 9, 13, 17, 21, 25, 29];
+    const pool = CAREER_2026_EXPANSION.UEFA_CLUBS.filter(c => c.uefa === cupId).slice(0, 35);
+    while (pool.length < 35) {
+      const idx = pool.length + 1;
+      pool.push({ id: `eu_${cupId}_${idx}`, name: `Avrupa FK ${idx}`, short: `EU${idx}`, country: 'EUR', uefa: cupId, coef: 30 + idx, ovr: isUECL ? 73 : cupId === 'UEFA_UEL' ? 77 : 81, c1: '#003399', c2: '#FFCC00' });
+    }
+    const myEntry = { id: me().id, name: me().name, short: me().short, country: 'TUR', uefa: cupId, coef: 45, ovr: rating(), c1: me().c1, c2: me().c2, me: true };
+    const all36 = pool.concat([myEntry]).sort((a, b) => b.coef - a.coef);
+    const opponents = pool.slice().sort(() => Math.random() - .5).slice(0, matchWeeks.length);
+    const myMatches = opponents.map((opp, i) => ({
+      week: matchWeeks[i], home: i % 2 === 0,
+      opp: { id: opp.id, name: opp.name, short: opp.short, ovr: opp.ovr, c1: opp.c1, c2: opp.c2 },
+      played: false, gh: null, ga: null
+    }));
+    const table = {};
+    all36.forEach(t => { table[t.id] = { id: t.id, name: t.name, short: t.short, ovr: t.ovr, me: !!t.me, p: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 }; });
+    S.uefaState = { cupId, name: UEFA_LABEL()[cupId], matchWeeks, myMatches, table };
+  }
+
+  function simOtherLeaguesAndUEFA(weekIdx) {
+    if (S.otherLeagues) {
+      Object.values(S.otherLeagues).forEach(list => {
+        const sh = list.slice().sort(() => Math.random() - .5);
+        for (let i = 0; i + 1 < sh.length; i += 2) {
+          const H = sh[i], A = sh[i + 1];
+          const gh = poisson(Math.max(.3, 1.3 * Math.exp((H.str - A.str) / 14)));
+          const ga = poisson(Math.max(.3, 1.1 * Math.exp((A.str - H.str) / 14)));
+          H.p++; A.p++; H.gf += gh; H.ga += ga; A.gf += ga; A.ga += gh;
+          if (gh > ga) { H.w++; A.l++; H.pts += 3; } else if (gh < ga) { A.w++; H.l++; A.pts += 3; } else { H.d++; A.d++; H.pts++; A.pts++; }
+        }
+        list.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+      });
+    }
+    const U = S.uefaState; if (!U) return;
+    const m = U.myMatches.find(x => x.week === weekIdx && !x.played); if (!m) return;
+    const myPow = rating(), opPow = m.opp.ovr;
+    const lh = m.home ? 1.35 * Math.exp((myPow - opPow) / 12) : 1.35 * Math.exp((opPow - myPow) / 12);
+    const la = m.home ? 1.15 * Math.exp((opPow - myPow) / 12) : 1.15 * Math.exp((myPow - opPow) / 12);
+    const gh = poisson(clamp(lh, .25, 3.4)), ga = poisson(clamp(la, .25, 3.4));
+    m.played = true; m.gh = gh; m.ga = ga;
+    const myGf = m.home ? gh : ga, myGa = m.home ? ga : gh;
+    const applyRow = (r, f, a) => { if (!r) return; r.p++; r.gf += f; r.ga += a; if (f > a) { r.w++; r.pts += 3; } else if (f < a) r.l++; else { r.d++; r.pts++; } };
+    applyRow(U.table[me().id], myGf, myGa); applyRow(U.table[m.opp.id], myGa, myGf);
+    const others = Object.values(U.table).filter(x => x.id !== me().id && x.id !== m.opp.id).sort(() => Math.random() - .5);
+    for (let i = 0; i + 1 < others.length; i += 2) {
+      const A = others[i], B = others[i + 1];
+      const g1 = poisson(clamp(1.25 * Math.exp((A.ovr - B.ovr) / 14), .3, 3.2)), g2 = poisson(clamp(1.15 * Math.exp((B.ovr - A.ovr) / 14), .3, 3.2));
+      applyRow(A, g1, g2); applyRow(B, g2, g1);
+    }
+    const winBonus = U.cupId === 'UEFA_UCL' ? 2.1 : U.cupId === 'UEFA_UEL' ? 0.65 : 0.4;
+    if (myGf > myGa) S.budget += winBonus; else if (myGf === myGa) S.budget += winBonus * 0.35;
+    const uRank = Object.values(U.table).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga)).findIndex(x => x.me) + 1;
+    news(`🌍 ${U.name}: ${m.home ? me().name : m.opp.name} ${gh}–${ga} ${m.home ? m.opp.name : me().name} (İsviçre Ligi Sırası: #${uRank}/36)`, myGf > myGa ? 'good' : myGf === myGa ? '' : 'bad');
+  }
+
+  function applyPyramidPromotionsAndUEFA() {
+    const tab2 = sorted(), myRank = tab2.findIndex(t => t.me) + 1, curLg = S.myLeague || 'TUR_SL';
+    let targetLg = curLg;
+    if (curLg === 'TUR_SL') {
+      if (myRank >= 16) { targetLg = 'TUR_1L'; news(T(`📉 ${me().name} Süper Lig'de ${myRank}. olarak TFF 1. Lig'e düştü.`, `📉 ${me().name} finished ${myRank}th and were relegated to TFF 1. Lig.`), 'bad'); }
+      S.myUefa = myRank <= 2 ? 'UEFA_UCL' : myRank === 3 ? 'UEFA_UEL' : myRank === 4 ? 'UEFA_UECL' : null;
+      if (S.myUefa) news(`🌍 ${me().name} yeni sezonda ${UEFA_LABEL()[S.myUefa]} (36 takımlı İsviçre Sistemi) bileti aldı!`, 'big');
+    } else if (curLg === 'TUR_1L') {
+      S.myUefa = null;
+      if (myRank <= 2 || (myRank <= 7 && chance(.35))) { targetLg = 'TUR_SL'; news(T(`🎉 TEBRİKLER! ${me().name} Süper Lig'e yükseldi!`, `🎉 PROMOTED! ${me().name} are promoted to the Süper Lig!`), 'big'); }
+      else if (myRank >= 16) { targetLg = chance(.5) ? 'TUR_2L_BEYAZ' : 'TUR_2L_KIRMIZI'; news(T(`📉 ${me().name} TFF 2. Lig'e düştü.`, `📉 ${me().name} were relegated to TFF 2. Lig.`), 'bad'); }
+    } else {
+      S.myUefa = null;
+      if (myRank === 1 || (myRank <= 6 && chance(.3))) { targetLg = 'TUR_1L'; news(T(`🎉 TEBRİKLER! ${me().name} TFF 1. Lig'e yükseldi!`, `🎉 PROMOTED! ${me().name} are promoted to TFF 1. Lig!`), 'big'); }
+    }
+    if (targetLg !== curLg) {
+      S.myLeague = targetLg;
+      const m = me(), pool = clubs().filter(c => (c.league || 'TUR_SL') === targetLg && c.id !== m.id).slice(0, 17);
+      S.teams = pool.map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, league: targetLg })).concat([m]);
+    } else {
+      // Aynı ligde kaldıysak son 3 AI takımını alt/üst ligden gelen 3 takımla değiştir
+      const m = me(), stay = tab2.filter(t => t.me || tab2.indexOf(t) < 15);
+      const subLg = curLg === 'TUR_SL' ? 'TUR_1L' : curLg === 'TUR_1L' ? 'TUR_2L_BEYAZ' : 'TUR_1L';
+      const incoming = (S.otherLeagues && S.otherLeagues[subLg] ? S.otherLeagues[subLg].slice(0, 3) : []).map(x => CLUB(x.id)).filter(Boolean);
+      incoming.forEach(c => { if (stay.length < 18 && !stay.some(s => s.id === c.id)) stay.push({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, league: curLg }); });
+      while (stay.length < 18) { const f = tab2.find(t => !stay.includes(t)); if (!f) break; stay.push(f); }
+      S.teams = stay;
+    }
+  }
+
+  function uefaAndPyramidHTML() {
+    let out = '';
+    if (S.uefaState) {
+      const U = S.uefaState, uRows = Object.values(U.table).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+      const myR = uRows.findIndex(x => x.me) + 1;
+      out += `<article class="cr-card"><p class="eyebrow">🌍 ${esc(U.name)} · ${T('İsviçre Sistemi (36 Takım)', 'Swiss Stage (36 Teams)')} · #${myR}/36</p>
+        <ul class="cr-fix">${U.myMatches.map(m => `<li class="me"><span>H${m.week + 1} · ${esc(m.home ? me().name : m.opp.name)}</span><b>${m.played ? m.gh + ' – ' + m.ga : 'vs'}</b><span>${esc(m.home ? m.opp.name : me().name)}</span></li>`).join('')}</ul>
+        <details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:13px">${T('36 Takımlı UEFA Puan Durumunu Gör', 'View 36-Team UEFA League Table')}</summary>
+        <div class="cr-table-wrap" style="max-height:260px;overflow:auto;margin-top:8px"><table class="cr-table"><thead><tr><th>#</th><th>${T('Kulüp', 'Club')}</th><th>O</th><th>AV</th><th>P</th></tr></thead><tbody>
+        ${uRows.map((r, i) => `<tr class="${r.me ? 'me' : ''} ${i < 8 ? 'cl' : i >= 24 ? 'rel' : ''}"><td>${i + 1}</td><td><b>${esc(r.name)}</b></td><td>${r.p}</td><td>${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`).join('')}
+        </tbody></table></div></details></article>`;
+    }
+    if (S.otherLeagues) {
+      out += `<article class="cr-card"><p class="eyebrow">🇹🇷 ${T('Türkiye Lig Piramidi Canlı Durum', 'Turkish League Pyramid Standings')}</p>
+        ${Object.entries(S.otherLeagues).map(([lg, list]) => `<details style="margin-bottom:6px"><summary style="cursor:pointer;font-weight:700;font-size:13px">${esc(LG_LABEL()[lg] || lg)} (${T('Lider', 'Leader')}: ${esc(list[0] ? list[0].name : '-')})</summary>
+          <div class="cr-table-wrap" style="max-height:200px;overflow:auto;margin-top:6px"><table class="cr-table"><thead><tr><th>#</th><th>${T('Takım', 'Team')}</th><th>O</th><th>AV</th><th>P</th></tr></thead><tbody>
+          ${list.map((r, i) => `<tr class="${i < 2 ? 'cl' : i >= 15 ? 'rel' : ''}"><td>${i + 1}</td><td>${esc(r.name)}</td><td>${r.p}</td><td>${r.gf - r.ga}</td><td><b>${r.pts}</b></td></tr>`).join('')}
+          </tbody></table></div></details>`).join('')}</article>`;
+    }
+    return out;
   }
 
   function open(el) { host = el; S = load(); syncSavedAges(); migrate(); if (S) save(); tab = 'center'; fxWeek = null; selSlot = null; render(); }

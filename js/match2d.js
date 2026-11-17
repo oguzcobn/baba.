@@ -66,8 +66,9 @@ const Match2D = (() => {
     const v4 = 'aı'.includes(v) ? 'ı' : 'ei'.includes(v) ? 'i' : 'ou'.includes(v) ? 'u' : 'ü', v2 = 'aıou'.includes(v) ? 'a' : 'e';
     return s + '’' + (k === 'gen' ? (endV ? 'n' : '') + v4 + 'n' : (hard ? 't' : 'd') + v2 + (k === 'abl' ? 'n' : '')); };
   const has = (p, t) => p && p.traits && p.traits.includes(t);
-  const runSp = p => RUN * clamp(.95 + ((p && p.r || 70) - 70) * .004, .82, 1.17) * (has(p, 'SPEED_DRIBBLER') ? 1.1 : 1);
-  const dribSp = p => runSp(p) * DRIB * (has(p, 'SPEED_DRIBBLER') ? 1.08 : 1);
+  const getAttrs = p => (p && p.attrs) || (typeof Traits !== 'undefined' && Traits.attrs ? Traits.attrs(p && p.name, p && p.pos, p && p.r) : { pace: p && p.r || 70, dribbling: p && p.r || 70, passing: p && p.r || 70, defending: p && p.r || 70 });
+  const runSp = p => { const a = getAttrs(p); return RUN * clamp(.84 + (a.pace - 60) * .009, .78, 1.24) * (has(p, 'SPEED_DRIBBLER') ? 1.08 : 1); };
+  const dribSp = p => { const a = getAttrs(p); const ret = clamp(.74 + (a.dribbling - 60) * .004, .72, .93); return runSp(p) * ret; };
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
   // Top fiziği sabitleri: yerçekimi (m/s²), çim sürtünmesi (1/s), sekme katsayısı
   const GRAV = 9.81, MU = 1.15, REST = .5;
@@ -130,7 +131,7 @@ const Match2D = (() => {
     // gerçek forma numarası verilmişse o kullanılır; yoksa mevkiye uygun ve takım içinde benzersiz numara atanır
     const usedNums = { h: new Set(), a: new Set() };
     function freeNum(side, pos, want) { const used = usedNums[side]; let n = Number.isInteger(want) && want > 0 && want < 100 && !used.has(want) ? want : (NUM_PREF[pos] || []).find(x => !used.has(x)); if (!n) { n = 26; while (used.has(n)) n++; } used.add(n); return n; }
-    const mk = (team, side) => team.xi.map((p, i) => { const s = team.slots[i] || { x: 50, y: 50 }, b = shape(s); return { name: p.name, pos: p.pos, r: p.r || 75, num: freeNum(side, p.pos, p.num), stam: clamp(p.cond == null ? 100 : p.cond, 15, 100), card: null, side, base: b, x: b.x, y: b.y, tx: b.x, ty: b.y, traits: p.traits || (typeof Traits !== 'undefined' ? Traits.of(p.name, p.pos, p.r || 75) : []), off: false, run: null }; });
+    const mk = (team, side) => team.xi.map((p, i) => { const s = team.slots[i] || { x: 50, y: 50 }, b = shape(s), traits = p.traits || (typeof Traits !== 'undefined' ? Traits.of(p.name, p.pos, p.r || 75) : []), attrs = p.attrs || (typeof Traits !== 'undefined' && Traits.attrs ? Traits.attrs(p.name, p.pos, p.r || 75) : null); return { name: p.name, pos: p.pos, r: p.r || 75, num: freeNum(side, p.pos, p.num), stam: clamp(p.cond == null ? 100 : p.cond, 15, 100), card: null, side, base: b, x: b.x, y: b.y, tx: b.x, ty: b.y, traits, attrs, stunUntil: 0, off: false, run: null }; });
     const P = { h: mk(o.home, 'h'), a: mk(o.away, 'a') };
     const ball = { x: W / 2, y: H / 2, z: 0, vx: 0, vy: 0, vz: 0, trail: [] };
     /* --------- bağımsız top fiziği: vx, vy, vz + çim sürtünmesi + sekme ---------
@@ -343,6 +344,13 @@ const Match2D = (() => {
         const best = cand.map(c => ({ c: { x: clamp(c.x, 4, 100), y: clamp(c.y, 4, 64) } })).map(o => Object.assign(o, { s: Math.min(...live(def()).map(d => dist(AF(d), o.c))) })).sort((a, b) => b.s - a.s)[i] || { c: cand[0] };
         const f = toField(att, best.c); m.run = { x: f.x, y: f.y, sp: JOG + 1 };
       });
+      // Hızlı hücumcular (Pace >= 80 veya SPEED_DRIBBLER) savunma arkasına derin koşu atar:
+      const lineX = (() => { const ds = live(def()).filter(d => d.pos !== 'KL').map(d => AF(d).x); return ds.length ? Math.max(...ds) : 80; })();
+      const sprinter = live(att).filter(p => p !== holder && (p.pos === 'FV' || p.pos === 'KN') && (getAttrs(p).pace >= 80 || has(p, 'SPEED_DRIBBLER'))).sort((a, b) => getAttrs(b).pace - getAttrs(a).pace)[0];
+      if (sprinter && h.x > 38 && h.x < 78 && lineX < 92) {
+        const runTarget = toField(att, { x: clamp(lineX + 5.5, 58, 96), y: clamp(AF(sprinter).y + (AF(sprinter).y < 34 ? 4 : -4), 8, 60) });
+        sprinter.run = { x: runTarget.x, y: runTarget.y, sp: Math.min(10, runSp(sprinter) * 1.05) };
+      }
     }
 
     /* --------- karar mekanizması: decidePlayerAction() --------- */
@@ -381,7 +389,24 @@ const Match2D = (() => {
         const t = choosePass(holder, opts.length ? opts : mates.filter(p => p.pos !== 'KL'));
         return t ? [passTo(t, AF(t), { txt: T(`${tn(holder)} → ${tn(t)}`, `${tn(holder)} finds ${tn(t)}`) })] : [{ k: 'hold', d: .4 }];
       }
-      // 2. BÖLGE — oyunun yönünü değiştirme, ver-kaç, ters top
+      // 2. BÖLGE — oyunun yönünü değiştirme, ver-kaç, ters top, çalım ve derin ara pas
+      const hAttr = getAttrs(holder), nearestDef = nearest(def(), holder)[0], defDist = nearestDef ? dist(nearestDef, holder) : 99;
+      if (nearestDef && defDist < 5.5 && (has(holder, 'SPEED_DRIBBLER') || hAttr.dribbling >= 78) && Math.random() < 0.55) {
+        const dAttr = getAttrs(nearestDef);
+        const atkRoll = hAttr.dribbling * 0.65 + hAttr.pace * 0.35 + (Math.random() * 14 - 7);
+        const defRoll = dAttr.defending * 0.65 + dAttr.pace * 0.35 + (Math.random() * 14 - 7);
+        if (atkRoll >= defRoll - 4) {
+          nearestDef.stunUntil = performance.now() + 950; nearestDef.run = null;
+          const burstAt = { x: clamp(a.x + 10, 35, 90), y: clamp(a.y + (AF(nearestDef).y >= a.y ? -5 : 5), 6, 62) };
+          bubble(T('ÇALIM!', 'SKILL!'), holder, '#ff4d00');
+          return [{ k: 'carry', to: holder, at: burstAt, txt: T(`⚡ ${tn(holder)} şık bir çalımla ${tn(nearestDef)}'i geçti!`, `⚡ ${tn(holder)} beats ${tn(nearestDef)} with a quick dribble!`) }];
+        }
+      }
+      const deepRunner = mates.find(p => (p.pos === 'FV' || p.pos === 'KN') && (getAttrs(p).pace >= 80 || has(p, 'SPEED_DRIBBLER')) && AF(p).x > a.x + 8 && AF(p).x < 90 && laneOpen(holder, p));
+      if (deepRunner && (hAttr.passing >= 76 || has(holder, 'PLAYMAKER') || plan.style === 'arapas') && Math.random() < 0.45) {
+        const leadSpot = { x: clamp(AF(deepRunner).x + 9, 55, 92), y: clamp(AF(deepRunner).y, 10, 58) };
+        return [passTo(deepRunner, leadSpot, { through: true, txt: T(`🧠 ${tn(holder)} savunma arkasına koşan ${tn(deepRunner)}'in önüne bıraktı!`, `🧠 ${tn(holder)} threads a through ball for ${tn(deepRunner)}!`) })];
+      }
       const crowd = live(def()).filter(d => dist(d, holder) < 9).length;
       const near = mates.filter(p => p.pos !== 'KL' && dist(p, holder) < 16 && laneOpen(holder, p)).sort((x, y) => dist(x, holder) - dist(y, holder))[0];
       // hücum planı: kanatlardan orta → oyunu çizgiye aç; uzun top → pivota şişir, kenarlar ikinci topa koşsun
@@ -1033,7 +1058,8 @@ const Match2D = (() => {
     }
     const locked = p => p === holder || (beat && (beat.k === 'pass' || beat.k === 'carry') && beat.to === p);
     function movePlayers(dt) {
-      ['h', 'a'].forEach(s => live(s).forEach(p => { if (locked(p) && beat && beat.k !== 'result') return; const sp = Math.min(p.sp || JOG, 10) * dt, dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy); if (d > .01) { const m = Math.min(d, sp); p.x += dx / d * m; p.y += dy / d * m; } if (p.run && Math.hypot(p.run.x - p.x, p.run.y - p.y) < .4 && !(beat && beat.k === 'result')) p.run = null; }));
+      const nowMs = performance.now();
+      ['h', 'a'].forEach(s => live(s).forEach(p => { if (locked(p) && beat && beat.k !== 'result') return; if (p.stunUntil && nowMs < p.stunUntil) return; const sp = Math.min(p.sp || JOG, 10) * dt, dx = p.tx - p.x, dy = p.ty - p.y, d = Math.hypot(dx, dy); if (d > .01) { const m = Math.min(d, sp); p.x += dx / d * m; p.y += dy / d * m; } if (p.run && Math.hypot(p.run.x - p.x, p.run.y - p.y) < .4 && !(beat && beat.k === 'result')) p.run = null; }));
       const all = live('h').concat(live('a'));
       for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) { const A = all[i], B = all[j], dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy) || .01; const MIN = state === 'PLAYING' || state === 'CARD_SHOWN' ? 3.1 : 2.1; if (d < MIN && !(A.wall && B.wall)) { const m = (MIN - d) / 2 * .7, ux = dx / d, uy = dy / d; /* ayrışma kuvveti: daireler üst üste binmez */ if (!locked(A)) { A.x -= ux * m; A.y -= uy * m; } if (!locked(B)) { B.x += ux * m; B.y += uy * m; } } }
       P.h.concat(P.a).forEach(p => { p.x = clamp(p.x, -2, W + 2); p.y = clamp(p.y, -1.5, H + 1.5); });
