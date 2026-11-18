@@ -7,7 +7,7 @@
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
   const COVER = (id, w) => `img/library/${id}-${w}.webp`;
-  const SRCSET = id => `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w`;
+  const SRCSET = id => `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
@@ -71,7 +71,7 @@ const BABALibrary = (() => {
 
     root.innerHTML = `<div class="lb">
       <section class="lb-hero" aria-labelledby="lbTitle">
-        <div class="lb-media" aria-hidden="true"><img class="lb-poster" src="img/library/hero-1920.webp" srcset="img/library/hero-960.webp 960w, img/library/hero-1920.webp 1920w" sizes="100vw" alt=""><video class="lb-vid" muted loop playsinline preload="none" poster="img/library/hero-1920.webp"></video></div>
+        <div class="lb-media" aria-hidden="true"><img class="lb-poster" src="img/library/hero-1920.webp" srcset="img/library/hero-960.webp 960w, img/library/hero-1920.webp 1920w, img/library/hero-2560.webp 2560w" sizes="100vw" alt=""><video class="lb-vid" muted loop playsinline preload="none" poster="img/library/hero-2560.webp"></video></div>
         <div class="lb-shade" aria-hidden="true"></div><div class="lb-spot" aria-hidden="true"></div><div class="lb-grain" aria-hidden="true"></div>
         <div class="lb-hero-in">
           <p class="lb-kicker"><span class="lb-live"></span>${T('BABA. Oyun Kütüphanesi', 'BABA. Game Library')} · ${esc(date)}</p>
@@ -148,8 +148,12 @@ const BABALibrary = (() => {
     let userPaused = ls.get('baba_lib_video_paused', false);
     const setCtl = () => { const p = vid.paused; ctl.innerHTML = icon(p ? I.play : I.pause); ctl.setAttribute('aria-pressed', String(p)); ctl.setAttribute('aria-label', p ? T('Arka plan videosunu oynat', 'Play background video') : T('Arka plan videosunu duraklat', 'Pause background video')); };
     if (!RM && !saveData) {
-      const big = Math.max(screen.width, screen.height) * (window.devicePixelRatio || 1) > 1700 && innerWidth > 900;
-      vid.src = big ? 'media/oyunlar-hero-1080.mp4' : 'media/oyunlar-hero-720.mp4';
+      // Ekranın gerçek piksel genişliğine göre en uygun kalite (720p → 4K)
+      const px = Math.max(innerWidth, innerHeight * 16 / 9) * Math.min(window.devicePixelRatio || 1, 3);
+      const net = navigator.connection && navigator.connection.effectiveType;
+      const slow = net && /(^|-)2g|3g/.test(net);
+      const phone = innerWidth <= 900;
+      vid.src = slow ? 'media/oyunlar-hero-720.mp4' : phone ? 'media/oyunlar-hero-1080.mp4' : px <= 1300 ? 'media/oyunlar-hero-720.mp4' : px <= 1950 ? 'media/oyunlar-hero-1080.mp4' : px <= 2700 ? 'media/oyunlar-hero-1440.mp4' : 'media/oyunlar-hero-2160.mp4';
       vid.addEventListener('playing', () => hero.classList.add('vid-on'), { once: true });
       if (!userPaused) vid.play().catch(() => {});
     } else { userPaused = true; }

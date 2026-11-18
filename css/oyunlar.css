@@ -266,3 +266,27 @@ body.lib-mode .bb-cover-edit-toggle{background:rgba(255,255,255,.08);color:#fff;
   .lb-tools .bb-cover-edit-toggle{height:40px;padding:0 12px;margin:0;font-size:13px}
   .lb-sort{font-size:0}.lb-sort select{font-size:13px}
 }
+
+/* =====================================================================
+   TAM EKRAN YERLEŞİM — kütüphane sayfası ana kapsayıcının genişlik sınırından çıkar
+   ===================================================================== */
+body.lib-mode main,body.lib-mode #view{max-width:none!important;width:100%;padding:0!important;margin:0!important}
+.lb{--lb-pad:clamp(18px,3.2vw,72px);--lb-max:2200px}
+.lb-hero,.lb-band{width:100%;margin-left:0}
+.lb-hero-in{width:min(var(--lb-max),100%);padding-left:var(--lb-pad);padding-right:var(--lb-pad)}
+.lb-title{font-size:clamp(64px,11vw,240px)}
+.lb-lead{max-width:min(680px,42vw)}
+.lb-continue{right:var(--lb-pad)}
+.lb-vidctl{left:var(--lb-pad)}
+.lb-subnav{margin:0;padding:0 var(--lb-pad)}
+.lb-subnav-in{max-width:var(--lb-max);margin:0 auto}
+.lb-feat,.lb-lib,.lb-cats{width:min(var(--lb-max),100%);margin-left:auto;margin-right:auto;padding-left:var(--lb-pad);padding-right:var(--lb-pad);box-sizing:border-box}
+.lb-score{width:calc(min(var(--lb-max),100%) - 2 * var(--lb-pad));margin:110px auto 40px;box-sizing:border-box}
+.lb-stage{height:clamp(420px,68vh,900px)}
+@media(min-width:1800px){
+  .lb-grid{grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:26px}
+  .lb-cat-tile{min-height:280px}
+  .lb-sec-head h2{font-size:clamp(64px,5vw,112px)}
+}
+@media(max-width:760px){.lb-lead{max-width:none}}
+.lb-sec-head h2{padding-top:.26em}
