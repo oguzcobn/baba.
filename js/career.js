@@ -180,6 +180,20 @@ const Career = (() => {
     if (!S.lg) { S.lg = {}; S.squad.forEach(p => { if (p.sg || p.sa) S.lg[p.name] = { g: p.sg || 0, a: p.sa || 0, c: me().id }; }); }
     if (!S.myLeague) S.myLeague = 'TUR_SL';
     if (!S.otherLeagues) initOtherLeaguesAndUEFA(false);
+    // Eski kayıt düzeltmesi: sezona şampiyon olarak başlamış ama eski lig geçiş hatası yüzünden
+    // hâlâ aynı alt ligde kalmış kulübü bir üst lige taşı.
+    const previous = (S.history || [])[0], oldLeague = S.myLeague || 'TUR_SL';
+    if (S.week === 0 && !S.pending && previous && previous.season === S.season - 1 && previous.rank === 1) {
+      const movement = seasonMovement(oldLeague, 1);
+      if (movement.type === 'promotion' && movement.nextLeague !== oldLeague) {
+        const own = me(), pool = clubs().filter(club => (club.league || 'TUR_SL') === movement.nextLeague && club.id !== own.id).slice(0, 17);
+        S.myLeague = movement.nextLeague; S.myUefa = null;
+        S.teams = pool.map(club => ({ id: club.id, name: club.name, short: club.short, c1: club.c1, c2: club.c2, league: movement.nextLeague })).concat([own]);
+        S.table = freshTable(); S.fix = fixtures(S.teams.map(team => team.id).sort(() => Math.random() - .5)); S.results = [];
+        initOtherLeaguesAndUEFA(true);
+        news(T(`🏆 Eski kayıt düzeltildi: ${own.name} şampiyonluk sonrası ${LG_LABEL()[movement.nextLeague]} ligine yükseltildi.`, `🏆 Save repaired: ${own.name} have been promoted to ${LG_LABEL()[movement.nextLeague]} after winning the title.`), 'big');
+      }
+    }
     assignNums(); cleanBench();
   }
   const P = id => S.squad.find(p => p.id === id);
