@@ -166,8 +166,8 @@ test.describe('HAYAT life simulation',()=>{
  });
  test('old games still accessible',async({page})=>{
   await page.goto(BASE+'#oyunlar');
-  await expect(page.locator('a[href="#draft"]').first()).toBeVisible();
-  await expect(page.locator('a[href="#hayat-oyunu"]').first()).toBeVisible();
+  await expect(page.locator('a[href="#draft"]:visible').first()).toBeVisible();
+  await expect(page.locator('a[href="#hayat-oyunu"]:visible').first()).toBeVisible();
  });
 });
 

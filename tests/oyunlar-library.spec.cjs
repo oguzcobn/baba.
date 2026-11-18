@@ -1,0 +1,35 @@
+const { test, expect } = require('@playwright/test');
+const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
+const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','dsan-shipyard','2048','sudoku','mines','blocks'];
+for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
+  test.use({viewport:vp});
+  test('hero, kapaklar, filtre, arama, vitrin ve son oynanan', async ({page}) => {
+    const errs=[]; page.on('pageerror',e=>errs.push(e.message));
+    await page.addInitScript(() => sessionStorage.setItem('baba_ok','1'));
+    await page.goto(BASE+'#oyunlar');
+    await expect(page.locator('.lb-hero')).toBeVisible();
+    await expect(page.locator('body')).toHaveClass(/lib-mode/);
+    await expect(page.locator('.lb-vid')).toHaveAttribute('src',/media\/oyunlar-hero-(1080|720)\.mp4/);
+    await expect(page.locator('.lb-card')).toHaveCount(IDS.length);
+    for (const id of IDS) await expect(page.locator(`[data-game-cover="${id}"] img`)).toHaveAttribute('src',`img/library/${id}-1280.webp`);
+    const broken = await page.evaluate(async()=>{const imgs=[...document.querySelectorAll('.lb-card img')];await Promise.all(imgs.map(i=>{i.loading='eager';return i.decode().catch(()=>{});}));return imgs.filter(i=>!i.naturalWidth).map(i=>i.src);});
+    expect(broken).toEqual([]);
+    await page.locator('.lb-filters button[data-cat="puz"]').click();
+    await expect(page.locator('.lb-card:not(.lb-hide)')).toHaveCount(3);
+    await expect(page.locator('.lb-count b')).toHaveText('3');
+    await page.locator('.lb-filters button[data-cat="all"]').click();
+    await page.locator('.lb-search input').fill('tersane');
+    await expect(page.locator('.lb-card:not(.lb-hide)')).toHaveCount(1);
+    await page.locator('.lb-search input').fill('');
+    await page.locator('[data-f=next]').click();
+    await expect(page.locator('.lb-slide.on')).toHaveAttribute('data-k','1');
+    const ov = await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+    expect(ov).toBeLessThanOrEqual(1);
+    await page.goto(BASE+'#sudoku'); await page.goto(BASE+'#oyunlar');
+    await expect(page.locator('.lb-continue, .lb-ctas .lb-btn.pri').first()).toBeVisible();
+    await expect(page.locator('.lb-ctas .lb-btn.pri')).toHaveAttribute('href','#sudoku');
+    await page.goto(BASE+'#today');
+    await expect(page.locator('body')).not.toHaveClass(/lib-mode/);
+    expect(errs).toEqual([]);
+  });
+});

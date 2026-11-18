@@ -208,36 +208,23 @@ const App = (() => {
     window.scrollTo(0, 0);
   }
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
+  // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
-    'hayat-oyunu': 'img/covers/hayat.jpg',
-    'futbol': 'img/covers/futbol.jpg',
-    'career': 'img/covers/menajerlik.jpg',
-    'draft': 'img/covers/draft.jpg',
-    'istiklal1919': 'img/covers/1919.jpg',
-    'vadi': 'img/covers/vadi.jpg',
-    'dsan-shipyard': 'img/covers/dsan-shipyard.svg'
+    'hayat-oyunu': 'img/library/hayat-oyunu-1280.webp',
+    'futbol': 'img/library/futbol-1280.webp',
+    'career': 'img/library/career-1280.webp',
+    'draft': 'img/library/draft-1280.webp',
+    'istiklal1919': 'img/library/istiklal1919-1280.webp',
+    'vadi': 'img/library/vadi-1280.webp',
+    'dsan-shipyard': 'img/library/dsan-shipyard-1280.webp',
+    '2048': 'img/library/2048-1280.webp',
+    'sudoku': 'img/library/sudoku-1280.webp',
+    'mines': 'img/library/mines-1280.webp',
+    'blocks': 'img/library/blocks-1280.webp'
   });
   function menu() {
-    const card = (g, i) => {
-      const cover = GAME_COVERS[g.id];
-      const art = cover
-        ? `<div class="card-art card-art-cover" data-game-cover="${g.id}" style="--cover-image:url('${cover}')"><img src="${cover}" alt="${esc(P(g.name))}" loading="lazy" decoding="async"></div>`
-        : `<div class="card-art art-${g.id}" data-game-cover="${g.id}">${ART[g.id]}</div>`;
-      return `<a class="card ${g.id}" href="#${g.id}">${art}
-        <div class="card-meta"><span class="num">0${i + 1}</span><h3>${P(g.name)}</h3><span class="arrow">↗</span></div>
-        <div class="card-tags">${g.tags.map(t => `<span class="chip">${P(t)}</span>`).join('')}<span class="chip dark">🏆 ${g.best()}</span></div></a>`;
-    };
-    root().innerHTML = `
-      <section class="hero"><a class="back" href="#">← ${T('Ana sayfa', 'Home')}</a><p class="eyebrow">${T('Oyunlar', 'Games')} · ${new Date().toLocaleDateString(I18N.locale, { day: 'numeric', month: 'long' })}</p>
-        <h1 class="display xl">${T('Kafa<br>dinle.<br><em>Kadro kur.</em>', 'Unwind.<br>Switch off.<br><em>Pick a squad.</em>')}</h1>
-        <div class="hero-row"><p class="lead">${T(`${GAMES.length} oyun, sıfır reklam. Futbol draftından 3D tersane yönetimine, kısa molalar için seçilmiş bir koleksiyon.`, `${GAMES.length} games, zero adverts. From a football draft to 3D shipyard management — a hand-picked collection for short breaks.`)}</p>
-          <a class="pill big" href="#futbol">⚽ ${T('Futbol: tarafını seç', 'Football: pick your side')} ↗</a> <a class="pill big ghost" href="#draft">${T('Draft’a başla', 'Start the draft')} ↗</a> <a class="pill big ghost" href="#career">🎮 ${T('Menajerlik Kariyeri', 'Manager Career')} ↗</a></div></section>
-      <section class="feature"><a href="#draft" class="feat-card"><div class="feat-art">${ART.draft}</div><div class="feat-txt"><span class="badge">${T('Günün oyunu', 'Game of the day')}</span><h2>Süper Lig<br>Draft</h2><p>${T('Çark 18 Süper Lig kulübü arasında eşit şansla döner; gelen takımın son 10 yıllık kadrosundan seç, 11+2 kur. Teknik direktörünü ve taktiğini belirle, 34 maçlık sezonu canlı izle. Hedef: 102 puan.', 'The wheel spins across 18 Süper Lig clubs with equal odds; pick from that club’s squads of the last 10 years and build an 11 plus 2. Choose your manager and tactics, then follow the 34-match season live. Target: 102 points.')}</p><div class="card-tags"><span class="chip">${T('Futbol', 'Football')}</span><span class="chip">${T('Strateji', 'Strategy')}</span><span class="chip dark">🏆 ${ls.get('draft_best', 0)} ${T('puan', 'pts')}</span></div></div></a></section>
-      <a class="sc-banner" href="#skor"><span class="sc-crown">🏆</span><span><b>${T('Aile skor tablosu', 'Family leaderboard')}</b><small>${T('Haftanın şampiyonu kim? Rekorlar ve Draft düellosu', 'Who’s champion this week? Records and the Draft duel')}</small></span><i>→</i></a>
-      <section class="list"><div class="list-head"><h2 class="display sm">${T('Koleksiyon', 'Collection')}</h2><div class="bb-cover-toolbar"><span class="muted">${GAMES.length} ${T('oyun', 'games')}</span>${isOwner() ? `<button type="button" id="bbCoverEditToggle" class="bb-cover-edit-toggle" aria-controls="bbCoverEditor" aria-expanded="false">✎ ${T('Kapakları Düzenle','Edit covers')}</button>` : ''}</div></div>
-        ${isOwner() ? '<section id="bbCoverEditor" class="bb-cover-editor" hidden></section>' : ''}
-        <div class="cards">${GAMES.map(card).join('')}</div></section>
-`;
+    // Oyun kütüphanesi (js/oyunlar.js): hero video, vitrin, filtrelenebilir kütüphane, kategoriler
+    onLeave(BABALibrary.render({ root: root(), games: GAMES, T, esc, P, isOwner, covers: GAME_COVERS }));
     if (typeof BABACovers !== 'undefined') onLeave(BABACovers.mount({
       container: root(), games: GAMES.map(g => ({ id: g.id, name: P(g.name) })),
       defaults: GAME_COVERS, isOwner: () => isOwner()
@@ -642,6 +629,7 @@ const App = (() => {
     else if ((r === 'seyahat' || r === 'gezilerim') && typeof Travel !== 'undefined') { root().innerHTML = '<div id="tvRoot"></div>'; window.scrollTo(0, 0); Travel.open(root().querySelector('#tvRoot'), r); onLeave(() => Travel.leave()); }
     else if (r === 'foto' && typeof Foto !== 'undefined') { root().innerHTML = '<div id="ftRoot"></div>'; window.scrollTo(0, 0); Foto.open(root().querySelector('#ftRoot')); onLeave(() => Foto.leave()); }
     else hub();
+    if (GAMES.some(g => g.id === r) && typeof BABALibrary !== 'undefined') BABALibrary.track(r);
     if(typeof BABAEnhance!=='undefined') BABAEnhance.enhance();
     if(typeof BABADaily!=='undefined') BABADaily.refresh();
     if(typeof BABAGroups!=='undefined') BABAGroups.refresh();

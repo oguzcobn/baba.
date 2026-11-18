@@ -28,7 +28,7 @@ test.describe('Game cover gallery editor', () => {
     const updatedRow = page.locator('[data-bb-cover-row="hayat-oyunu"]');
     await expect(updatedRow.locator('[data-bb-cover-fit="contain"]')).toHaveAttribute('aria-pressed','true');
     await updatedRow.locator('[data-bb-cover-reset]').click();
-    await expect(page.locator('[data-game-cover="hayat-oyunu"] img')).toHaveAttribute('src','img/covers/hayat.jpg');
+    await expect(page.locator('[data-game-cover="hayat-oyunu"] img')).toHaveAttribute('src','img/library/hayat-oyunu-1280.webp');
     const dims = await page.evaluate(() => ({w:document.documentElement.clientWidth,s:document.documentElement.scrollWidth}));
     expect(dims.s).toBeLessThanOrEqual(dims.w+3);
   });
