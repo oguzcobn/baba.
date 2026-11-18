@@ -6,11 +6,8 @@
   const T = (a, b) => DSAN.T(a, b), U = () => DSAN.util;
   const ST = DSAN.seaTrial = { active: false };
 
-  // Su yüksekliği: shader ile aynı dalgalar (tekne yalpası/baş-kıç vurması için)
-  function waveH(x, z, t) {
-    const w = (dx, dz, k, a, s) => { const l = Math.hypot(dx, dz); return a * Math.sin((dx / l * x + dz / l * z) * k + t * s); };
-    return w(1, .3, .055, .42, 1.3) + w(-.4, 1, .11, .2, 1.9) + w(.7, -.8, .23, .08, 2.8) + w(.2, .9, .41, .035, 3.6);
-  }
+  // Su yüksekliği: shader ile aynı dalga tanımı (tekne yalpası/baş-kıç vurması ve köpük için)
+  const waveH = (x, z, t) => DSAN.world.waveHeight(x, z, t);
 
   // ---------- Rapor ----------
   function report(bp, o) {
@@ -120,13 +117,13 @@
     const hour = o.hour != null && o.hour >= 7 && o.hour <= 18.5 ? o.hour : 18.6;
     const sun = W.sunFor(hour), e = sun.elev;
     const sky = W.makeSky(); scene.add(sky);
-    const water = W.makeWater(Math.round((lvl.water || 150) * 1.1)); water.scale.set(1.6, 1, 1.4); water.position.set(100, -1.2, 0); scene.add(water);
+    const water = W.makeWater(Math.round((lvl.water || 150) * 1.1), renderer); water.scale.set(1.6, 1, 1.4); water.position.set(100, -1.2, 0); scene.add(water);
     scene.fog = new THREE.FogExp2(0xb7c9d6, .00042);
     const hemi = new THREE.HemisphereLight('#cfe3f5', '#2b3440', .55); scene.add(hemi);
     const sl = new THREE.DirectionalLight('#fff', 1.4); sl.position.copy(sun.dir).multiplyScalar(300); scene.add(sl);
     const zen = W.pal('zen', e), hor = W.pal('hor', e), sunCol = W.pal('sun', e);
     sky.material.uniforms.uZen.value.copy(zen); sky.material.uniforms.uHor.value.copy(hor); sky.material.uniforms.uSun.value.copy(sun.dir); sky.material.uniforms.uSunCol.value.copy(sunCol);
-    const wu = water.material.uniforms; wu.uSunDir.value.copy(sun.dir); wu.uSunCol.value.copy(sunCol); wu.uSky.value.copy(hor).lerp(zen, .3); wu.uDeep.value.copy(W.pal('deep', e)); wu.uShallow.value.copy(W.pal('shallow', e));
+    const wu = water.material.uniforms; wu.uZen.value.copy(zen); wu.uSunDir.value.copy(sun.dir); wu.uSunCol.value.copy(sunCol); wu.uSky.value.copy(hor).lerp(zen, .3); wu.uDeep.value.copy(W.pal('deep', e)); wu.uShallow.value.copy(W.pal('shallow', e));
     scene.fog.color.copy(hor).lerp(zen, .2); sl.color.copy(sunCol); renderer.toneMappingExposure = 1.05 + .15 * U().clamp(e * 3, 0, 1);
     let pm = null; try { pm = new THREE.PMREMGenerator(renderer); const es = new THREE.Scene(), esk = W.makeSky(), eu = esk.material.uniforms; esk.scale.setScalar(.01); eu.uSunK.value = 0; eu.uZen.value.copy(sky.material.uniforms.uZen.value).multiplyScalar(.55); eu.uHor.value.copy(sky.material.uniforms.uHor.value).multiplyScalar(.55); eu.uSun.value.copy(sun.dir); eu.uSunCol.value.copy(sky.material.uniforms.uSunCol.value).multiplyScalar(.4); es.add(esk); scene.environment = pm.fromScene(es, 0, .1, 100).texture; } catch (err) { pm = null; }
 

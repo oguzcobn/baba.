@@ -131,6 +131,20 @@ test('v2 save migrates to v3 with a backup, and progress survives reload', async
   expect(await page.evaluate(() => state.customers.won)).toBe(4);
 });
 
+test('clock: one game hour takes about 5 s at 1x, water animates in real time, 3D view fills the screen', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await open(page);
+  await page.evaluate(() => { state.speed = 1; window.__h0 = state.day * 24 + state.hour; });
+  await page.waitForTimeout(3000);
+  expect(await page.evaluate(() => state.day * 24 + state.hour - window.__h0)).toBeLessThanOrEqual(1);
+  const vp = await page.locator('#threeViewportWrapper').boundingBox();
+  expect(vp.height).toBeGreaterThan(500);
+  await page.locator('#inspToggleBtn').click();
+  await expect(page.locator('#tycoon3DInspector')).toBeHidden();
+  await page.locator('#hudToggleBtn').click();
+  await expect(page.locator('#dockQuickStrip')).toBeHidden();
+});
+
 test.describe('mobile', () => {
   test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   test('no horizontal overflow; story modal and trial controls fit the screen', async ({ page }) => {

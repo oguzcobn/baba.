@@ -5,16 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damen Shipyards Antalya (DSAn) — 3D Shipyard Tycoon</title>
   <!-- Tailwind önceden derlendi (tailwind.css) ve Three.js r128 yerel: çevrimdışı/PWA'da da çalışır -->
-  <link rel="stylesheet" href="tailwind.css?v=1">
-  <link rel="stylesheet" href="dsan.css?v=1">
+  <link rel="stylesheet" href="tailwind.css?v=2">
+  <link rel="stylesheet" href="dsan.css?v=2">
   <script src="vendor/three.min.js"></script>
-  <script src="js/dsan-core.js?v=1"></script>
-  <script src="js/dsan-vessels.js?v=1"></script>
-  <script src="js/dsan-hr.js?v=1"></script>
-  <script src="js/dsan-world.js?v=1"></script>
-  <script src="js/dsan-crew.js?v=1"></script>
-  <script src="js/dsan-seatrial.js?v=1"></script>
-  <script src="js/dsan-customers.js?v=1"></script>
+  <script src="js/dsan-core.js?v=2"></script>
+  <script src="js/dsan-vessels.js?v=2"></script>
+  <script src="js/dsan-hr.js?v=2"></script>
+  <script src="js/dsan-world.js?v=2"></script>
+  <script src="js/dsan-crew.js?v=2"></script>
+  <script src="js/dsan-seatrial.js?v=2"></script>
+  <script src="js/dsan-customers.js?v=2"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <style>
     * { box-sizing: border-box; }
@@ -130,7 +130,8 @@
           <button id="speedPauseBtn" data-speed="0" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">⏸</button>
           <button id="speed1xBtn" data-speed="1" class="speed-btn px-2 py-1 rounded text-xs font-semibold bg-sky-600 text-white">1x</button>
           <button id="speed2xBtn" data-speed="2" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">2x</button>
-          <button id="speed4xBtn" data-speed="4" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">4x ⚡</button>
+          <button id="speed4xBtn" data-speed="4" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">4x</button>
+          <button id="speed8xBtn" data-speed="8" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">8x ⚡</button>
         </div>
 
         <button id="muteToggleBtn" title="Ses Efektlerini Aç/Kapat" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/70 text-sky-300 hover:bg-slate-800 text-xs font-medium">
@@ -151,9 +152,9 @@
     <!-- 3D SHIPYARD TYCOON INTERACTIVE WORLD VIEWPORT -->
     <section id="viewport3DSection" class="relative rounded-2xl overflow-hidden glass-panel border border-sky-500/30 shadow-2xl transition-all duration-300">
       <!-- Top Overlay HUD: Camera Presets & Materials -->
-      <div class="absolute top-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+      <div class="dz-hud absolute top-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         <!-- 3D Camera & Mode Controls -->
-        <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto bg-slate-950/85 p-1.5 rounded-xl border border-sky-500/30 backdrop-blur-md">
+        <div class="dz-camrow flex flex-wrap items-center gap-1.5 pointer-events-auto bg-slate-950/85 p-1.5 rounded-xl border border-sky-500/30 backdrop-blur-md">
           <span class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
             3D TYCOON SAHNESİ
@@ -182,12 +183,15 @@
             </select></label>
           <span id="fpsBadge" class="dz-fps" aria-live="off">— FPS</span>
           <button id="expand3DBtn" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/40 transition">
-            ⛶ 3D Boyut
+            ⛶ <span data-i18n="fullView">Tam ekran</span>
+          </button>
+          <button id="hudToggleBtn" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-sky-400 transition" aria-pressed="false">
+            <span data-i18n="hideHud">Arayüzü gizle</span>
           </button>
         </div>
 
         <!-- Multi-Material Stock Bar (Steel/Alu, Composite BV Mode I, Hybrid/Diesel Engines, Outfitting) -->
-        <div class="flex flex-wrap items-center gap-2 bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-700/80 pointer-events-auto text-xs backdrop-blur-md">
+        <div class="dz-matbar flex flex-wrap items-center gap-2 bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-700/80 pointer-events-auto text-xs backdrop-blur-md">
           <div class="flex items-center gap-1" title="Çelik, Alüminyum ve BV Mode I Kompozit Gövde Hammaddesi">
             <span class="text-slate-400">🔩 Çelik/Alü/Kompozit:</span>
             <span id="matSteelDisplay" class="font-mono font-bold text-sky-300">220t</span>
@@ -213,7 +217,7 @@
         <canvas id="shipyardCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
 
         <!-- Bottom-Left 3D Controls Help Pill -->
-        <div class="absolute bottom-3 left-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 backdrop-blur-sm">
+        <div id="dzHelpPill" class="absolute bottom-3 left-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 backdrop-blur-sm">
           <span>🖱️ <strong>Sol Tık Sürükle:</strong> 360° Döndür</span>
           <span>•</span>
           <span><strong>Sağ Tık / Shift:</strong> Kaydır</span>
@@ -224,6 +228,7 @@
         </div>
 
         <!-- Floating 3D Hall / Vessel Inspector Drawer (Opens when clicking a 3D building or ship in Tycoon view!) -->
+        <button id="inspToggleBtn" class="dz-insp-t" aria-controls="tycoon3DInspector" aria-expanded="true"><span data-i18n="inspHide">Paneli kapat ▸</span></button>
         <div id="tycoon3DInspector" class="absolute top-16 right-3 bottom-3 w-80 sm:w-96 z-20 glass-panel rounded-2xl p-4 border border-sky-400/50 shadow-2xl flex flex-col justify-between overflow-y-auto transition-all duration-200">
           <!-- Populated dynamically when a 3D hall, Syncrolift, or vessel is clicked -->
         </div>
@@ -2101,6 +2106,8 @@ git push -u origin main</pre>
 
     function select3DHall(dockId, clickType = 'hall') {
       state.selectedDockId = dockId;
+      const iw = document.getElementById('threeViewportWrapper');
+      if (iw && iw.classList.contains('insp-off') && window.innerWidth >= 900) { iw.classList.remove('insp-off'); document.getElementById('inspToggleBtn').setAttribute('aria-expanded', 'true'); }
       const layout = HALL_3D_LAYOUT.find(h => h.id === dockId);
       if (layout && clickType === 'hall') {
         camControl.desiredTarget.set(layout.x, 5, layout.z);
@@ -2142,7 +2149,7 @@ git push -u origin main</pre>
       camera.lookAt(camControl.target);
 
       // Oyun saatine bağlı sürekli güneş yolu: gündüz → gün batımı → gece (lambalar, su yansımaları, şehir ışıkları)
-      const hourFrac = state.speed > 0 ? Math.min(0.999, (nowMs - lastHourTickAt) / (1100 / state.speed)) : 0;
+      const hourFrac = state.speed > 0 ? Math.min(0.999, (nowMs - lastHourTickAt) / (HOUR_MS / state.speed)) : 0;
       DSAN.world.update(threeAnimTime, frameDt, state.hour + hourFrac, { mode: state.settings.quality });
       DSAN.crew.update(threeAnimTime, frameDt, state, DSAN.world.night());
       DSAN.world.animateBerths(threeAnimTime);
@@ -2968,7 +2975,8 @@ git push -u origin main</pre>
       tabProduction: ['Kızaklar &amp; Üretim', 'Slipways &amp; Production'], tabContracts: ['Müşteri Siparişleri', 'Client Orders'], tabShowroom: ['Filo &amp; Satış Pazarı', 'Fleet &amp; Sales'],
       tabWorkers: ['Çalışanlar &amp; İK', 'Staff &amp; HR'], tabUpgrades: ['Tersane &amp; Tedarik', 'Yard &amp; Supply'], tabCustomers: ['Müşteri Ziyaretleri', 'Client Visits'],
       cxTitle: ['🤝 Müşteri Yolculuğu: Transfer → Otel → Saha Turu → Görüşme → Deniz Denemesi', '🤝 Client Journey: Transfer → Hotel → Yard Tour → Meeting → Sea Trial'],
-      roleGuide: ['📘 Roller, maliyet, verim, moral etkisi ve işe alım koşulları', '📘 Roles, cost, output, morale effect and hiring conditions'], quality: ['Kalite', 'Quality']
+      roleGuide: ['📘 Roller, maliyet, verim, moral etkisi ve işe alım koşulları', '📘 Roles, cost, output, morale effect and hiring conditions'], quality: ['Kalite', 'Quality'],
+      fullView: ['Tam ekran', 'Full screen'], hideHud: ['Arayüzü gizle', 'Hide overlay'], showHud: ['Arayüzü göster', 'Show overlay'], inspHide: ['Paneli kapat ▸', 'Close panel ▸'], inspShow: ['◂ Hol paneli', '◂ Hall panel']
     };
     function applyStaticLang() {
       const en = DSAN.lang() === 'en';
@@ -3186,18 +3194,42 @@ git push -u origin main</pre>
       );
     });
 
-    let is3DExpanded = false;
+    // 3D tam ekran: tarayıcı tam ekranı (destek yoksa sayfayı kaplayan mod); Esc ile çıkılır
+    const viewSection = document.getElementById('viewport3DSection');
+    function set3DFull(on) {
+      viewSection.classList.toggle('dz-full', on);
+      document.body.classList.toggle('dz-noscroll', on);
+      setTimeout(resizeCanvas, 60);
+    }
     document.getElementById('expand3DBtn').addEventListener('click', () => {
       playSound('click');
-      is3DExpanded = !is3DExpanded;
-      const wrapper = document.getElementById('threeViewportWrapper');
-      if (is3DExpanded) {
-        wrapper.className = 'w-full h-[640px] sm:h-[720px] relative bg-slate-950 select-none';
+      const isOn = viewSection.classList.contains('dz-full');
+      if (!isOn) {
+        set3DFull(true);
+        if (viewSection.requestFullscreen) viewSection.requestFullscreen().catch(() => {});
       } else {
-        wrapper.className = 'w-full h-[390px] sm:h-[460px] md:h-[510px] relative bg-slate-950 select-none';
+        if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+        set3DFull(false);
       }
-      setTimeout(resizeCanvas, 50);
     });
+    document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && viewSection.classList.contains('dz-full')) set3DFull(false); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && viewSection.classList.contains('dz-full') && !document.fullscreenElement && !DSAN.ui.anyOpen()) set3DFull(false); });
+    // Arayüzü gizle: sahnenin üstündeki tüm katmanları kaldırır
+    document.getElementById('hudToggleBtn').addEventListener('click', e => {
+      const on = !viewSection.classList.contains('dz-clean'); viewSection.classList.toggle('dz-clean', on);
+      e.currentTarget.setAttribute('aria-pressed', String(on)); e.currentTarget.querySelector('span').dataset.i18n = on ? 'showHud' : 'hideHud'; applyStaticLang();
+    });
+    // Hol paneli katlanabilir; telefonda başlangıçta kapalı
+    const inspWrap = document.getElementById('threeViewportWrapper');
+    function setInspector(open) {
+      inspWrap.classList.toggle('insp-off', !open);
+      const b = document.getElementById('inspToggleBtn'); b.setAttribute('aria-expanded', String(open));
+      b.querySelector('span').dataset.i18n = open ? 'inspHide' : 'inspShow'; applyStaticLang();
+    }
+    document.getElementById('inspToggleBtn').addEventListener('click', () => setInspector(inspWrap.classList.contains('insp-off')));
+    if (window.innerWidth < 900) setInspector(false);
+    // Yardım ipucu ilk etkileşimden sonra kaybolur
+    document.getElementById('shipyardCanvas').addEventListener('pointerdown', () => { const h = document.getElementById('dzHelpPill'); if (h) h.classList.add('dz-gone'); }, { once: true });
 
     // Blueprint Filter Buttons
     document.querySelectorAll('.bp-filter-btn').forEach(btn => {
@@ -3658,6 +3690,8 @@ git push -u origin main</pre>
     });
 
     // --- 12. MAIN GAME LOOP & INITIALIZATION ---
+    // 1x hızda 1 oyun saati = 5 saniye (1 gün ≈ 2 dakika). Eskiden 1,1 sn idi; gece-gündüz çok hızlı dönüyordu.
+    const HOUR_MS = 5000, SIM_STEP_MS = 250;
     let simInterval = null;
     let renderFrameId = null;
     let tickAccumulator = 0;
@@ -3666,12 +3700,12 @@ git push -u origin main</pre>
       if (simInterval) clearInterval(simInterval);
       simInterval = setInterval(() => {
         if (state.speed <= 0) return;
-        tickAccumulator += state.speed;
+        tickAccumulator += state.speed * SIM_STEP_MS / HOUR_MS;
         while (tickAccumulator >= 1) {
           simulateOneHour();
           tickAccumulator -= 1;
         }
-      }, 1100);
+      }, SIM_STEP_MS);
 
       function frameLoop() {
         render3DFrame();
@@ -3681,7 +3715,13 @@ git push -u origin main</pre>
       renderFrameId = requestAnimationFrame(frameLoop);
     }
 
-    window.addEventListener('resize', resizeCanvas);
+    function fitViewport() {
+      const head = document.querySelector('body > header');
+      document.documentElement.style.setProperty('--dz-head', (head ? head.offsetHeight : 110) + 'px');
+      resizeCanvas();
+    }
+    window.addEventListener('resize', fitViewport);
+    window.addEventListener('load', fitViewport);
     window.onload = () => {
       init3DShipyard();
       applyStaticLang();

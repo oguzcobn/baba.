@@ -87,41 +87,76 @@
   }
 
   // ---------------- Su ----------------
-  function makeWater(seg) {
+  // Dalgalar derin su dağılım bağıntısıyla ilerler (ω = √(g·k), k metre başına); 1 m = 0.44 birim. Animasyon gerçek zamana bağlıdır,
+  // oyun hızı (2x/4x) dalgaları hızlandırmaz. Ayrıntı, iki ölçekte yavaşça kayan, döşenebilir bir normal dokusundan gelir.
+  const WAVES = [ // yön, dalga boyu (birim), genlik (birim)
+    { d: [1, .35], L: 120, a: .32 }, { d: [-.45, 1], L: 64, a: .16 }, { d: [.8, -.6], L: 31, a: .07 }, { d: [.15, .95], L: 17, a: .03 }
+  ].map(w => { const l = Math.hypot(w.d[0], w.d[1]), k = 2 * Math.PI / w.L; return { dx: w.d[0] / l, dz: w.d[1] / l, k, a: w.a, w: Math.sqrt(9.81 * k * .44) }; }); // k birim başına; metre başına k = k × 0.44
+  W.WAVES = WAVES;
+  W.waveHeight = (x, z, t, amp) => { let h = 0; for (const w of WAVES) h += w.a * Math.sin((w.dx * x + w.dz * z) * w.k - t * w.w); return h * (amp == null ? 1 : amp); };
+  let normalTex = null;
+  function waterNormalTexture() { // döşenebilir yükseklik alanı → normal haritası (tam sayı frekanslar = dikişsiz)
+    if (normalTex) return normalTex;
+    const N = 256, hgt = new Float32Array(N * N), r = U().rng('dsan-water'), comps = [];
+    for (let i = 0; i < 48; i++) { const fx = Math.round((r() - .5) * 2 * (3 + i * .4)), fy = Math.round((r() - .5) * 2 * (3 + i * .4)); if (!fx && !fy) continue; const f = Math.hypot(fx, fy); comps.push({ fx, fy, a: 1 / Math.pow(f, 1.25), p: r() * 6.283 }); }
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let v = 0; for (const c of comps) v += c.a * Math.sin(6.2832 * (c.fx * x + c.fy * y) / N + c.p); hgt[y * N + x] = v; }
+    const data = new Uint8Array(N * N * 4), at = (x, y) => hgt[((y + N) % N) * N + (x + N) % N];
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+      const dx = (at(x + 1, y) - at(x - 1, y)) * 1.6, dy = (at(x, y + 1) - at(x, y - 1)) * 1.6, l = Math.hypot(dx, dy, 1), o = (y * N + x) * 4;
+      data[o] = (-dx / l * .5 + .5) * 255; data[o + 1] = (-dy / l * .5 + .5) * 255; data[o + 2] = (1 / l * .5 + .5) * 255; data[o + 3] = 255;
+    }
+    normalTex = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+    normalTex.wrapS = normalTex.wrapT = THREE.RepeatWrapping; normalTex.generateMipmaps = true;
+    normalTex.minFilter = THREE.LinearMipmapLinearFilter; normalTex.magFilter = THREE.LinearFilter; normalTex.needsUpdate = true;
+    return normalTex;
+  }
+  function makeWater(seg, renderer) {
     const g = new THREE.PlaneGeometry(1400, 1100, seg, Math.round(seg * .8)); g.rotateX(-Math.PI / 2);
+    const tex = waterNormalTexture();
+    if (renderer && renderer.capabilities) tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
     const uniforms = THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
-      uTime: { value: 0 }, uDeep: { value: new THREE.Color('#06394f') }, uShallow: { value: new THREE.Color('#0f7c94') }, uSky: { value: new THREE.Color('#8ec3e0') },
-      uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color('#fff4e0') }, uNight: { value: 0 }, uAmp: { value: 1 },
+      uTime: { value: 0 }, uDeep: { value: new THREE.Color('#06394f') }, uShallow: { value: new THREE.Color('#0f7c94') }, uSky: { value: new THREE.Color('#8ec3e0') }, uZen: { value: new THREE.Color('#2f6fb1') },
+      uSunDir: { value: new THREE.Vector3(0, 1, 0) }, uSunCol: { value: new THREE.Color('#fff4e0') }, uNight: { value: 0 }, uAmp: { value: 1 }, uNormal: { value: tex },
       uLightPos: { value: Array.from({ length: 8 }, () => new THREE.Vector3()) }, uLightCol: { value: Array.from({ length: 8 }, () => new THREE.Color()) }, uLightN: { value: 0 }
     }]);
+    const wv = WAVES.map(w => `wave(p, vec2(${w.dx.toFixed(4)}, ${w.dz.toFixed(4)}), ${w.k.toFixed(5)}, ${w.a.toFixed(3)}, ${w.w.toFixed(4)}, h, dh);`).join('\n          ');
     const mat = new THREE.ShaderMaterial({
-      uniforms, fog: true, lights: false, extensions: { derivatives: true },
-      vertexShader: `uniform float uTime, uAmp; varying vec3 vW; varying float vH;
+      uniforms, fog: true, lights: false,
+      vertexShader: `uniform float uTime, uAmp; varying vec3 vW; varying vec3 vN; varying float vH;
         #include <fog_pars_vertex>
-        float wv(vec2 p, vec2 d, float k, float a, float s){ return a*sin(dot(normalize(d),p)*k + uTime*s); }
-        void main(){ vec4 w = modelMatrix * vec4(position,1.);
-          float h = wv(w.xz, vec2(1.,.3), .055, .42, 1.3) + wv(w.xz, vec2(-.4,1.), .11, .2, 1.9) + wv(w.xz, vec2(.7,-.8), .23, .08, 2.8) + wv(w.xz, vec2(.2,.9), .41, .035, 3.6);
-          w.y += h * uAmp; vH = h; vW = w.xyz; vec4 mvPosition = viewMatrix * w; gl_Position = projectionMatrix * mvPosition;
+        void wave(vec2 p, vec2 d, float k, float a, float w, inout float h, inout vec2 dh){ float ph = dot(d, p) * k - uTime * w; h += a * sin(ph); dh += d * (a * k * cos(ph)); }
+        void main(){ vec4 wp = modelMatrix * vec4(position, 1.); vec2 p = wp.xz; float h = 0.; vec2 dh = vec2(0.);
+          ${wv}
+          h *= uAmp; dh *= uAmp; wp.y += h; vH = h; vW = wp.xyz; vN = normalize(vec3(-dh.x, 1., -dh.y));
+          vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;
           #include <fog_vertex>
         }`,
-      fragmentShader: `uniform float uTime, uNight; uniform vec3 uDeep, uShallow, uSky, uSunDir, uSunCol; uniform vec3 uLightPos[8]; uniform vec3 uLightCol[8]; uniform int uLightN;
-        varying vec3 vW; varying float vH;
+      fragmentShader: `uniform float uTime, uNight; uniform vec3 uDeep, uShallow, uSky, uZen, uSunDir, uSunCol; uniform sampler2D uNormal;
+        uniform vec3 uLightPos[8]; uniform vec3 uLightCol[8]; uniform int uLightN;
+        varying vec3 vW; varying vec3 vN; varying float vH;
         #include <fog_pars_fragment>
-        void main(){ vec3 n = normalize(cross(dFdx(vW), dFdy(vW))); if (n.y < 0.) n = -n;
-          n = normalize(n + vec3(sin(vW.x*1.7+uTime*2.3)*.05 + sin(vW.z*3.1-uTime*1.5)*.04, 0., cos(vW.z*1.9+uTime*2.)*.05 + sin(vW.x*2.7+uTime*1.1)*.03));
+        vec3 nmap(vec2 uv){ vec3 t = texture2D(uNormal, uv).xyz * 2. - 1.; return vec3(t.x, 0., t.y); }
+        void main(){
+          float dist = length(cameraPosition - vW);
+          float detail = .55 * exp(-dist * .0028);                 // uzakta ayrıntı söner: titreşim/aliasing olmaz
+          vec2 uv = vW.xz;
+          vec3 d1 = nmap(uv / 46. + vec2(uTime * .006, uTime * .004));
+          vec3 d2 = nmap(uv / 17. + vec2(-uTime * .009, uTime * .011));
+          vec3 d3 = nmap(uv / 6.5 + vec2(uTime * .015, -uTime * .012));
+          vec3 n = normalize(vN + (d1 * .55 + d2 * .35 + d3 * .2 * exp(-dist * .01)) * detail);
           vec3 v = normalize(cameraPosition - vW);
-          float fr = .04 + .62 * pow(1. - max(dot(n, v), 0.), 5.);
-          vec3 base = mix(uDeep, uShallow, clamp(vH * .9 + .45, 0., 1.));
-          vec3 col = mix(base, uSky, fr);
-          vec3 r = reflect(-v, n); float sp = pow(max(dot(r, normalize(uSunDir)), 0.), 220.) * 4. + pow(max(dot(r, normalize(uSunDir)), 0.), 24.) * .18;
-          col += uSunCol * sp * (1. - uNight);
+          float cosT = max(dot(n, v), 0.);
+          float fr = .02 + .98 * pow(1. - cosT, 5.);                // Schlick, su F0 ≈ 0.02
+          vec3 r = reflect(-v, n);
+          vec3 skyRef = mix(uSky, uZen, clamp(r.y * 1.6, 0., 1.));
+          vec3 body = mix(uDeep, uShallow, clamp(.35 + vH * .9 + (1. - cosT) * .25, 0., 1.));
+          vec3 col = mix(body, skyRef, clamp(fr * .85, 0., .85));
+          vec3 sd = normalize(uSunDir); float rs = max(dot(r, sd), 0.);
+          col += uSunCol * (pow(rs, 600.) * 6. + pow(rs, 60.) * .35) * (1. - uNight) * smoothstep(-.05, .1, sd.y);
           for (int i = 0; i < 8; i++) { if (i >= uLightN) break;
-            vec3 lp = uLightPos[i]; vec2 d = vW.xz - lp.xz; vec2 vd = normalize(cameraPosition.xz - lp.xz);
-            float al = dot(d, vd); float ac = length(d - vd * al);
-            float s = exp(-ac * ac * .55) * smoothstep(-3., 0., al) * exp(-max(al, 0.) * .045);
-            s *= .45 + .55 * sin(al * 1.4 - uTime * 3. + vH * 7.);
-            col += uLightCol[i] * max(s, 0.) * uNight * 1.3; }
-          float foam = smoothstep(.55, .75, vH) * .25; col += vec3(foam) * (1. - uNight * .7);
+            vec3 L = normalize(uLightPos[i] - vW); float s = pow(max(dot(r, L), 0.), 420.);  // yansıyan lamba: dalgacıklarla kırılan dar ışık sütunu
+            vec2 dd = vW.xz - uLightPos[i].xz; s *= exp(-dot(dd, dd) * .0009);
+            col += uLightCol[i] * s * uNight * 1.6; }
           gl_FragColor = vec4(col, 1.);
           #include <tonemapping_fragment>
           #include <encodings_fragment>
@@ -189,7 +224,7 @@
     W.level = W.resolveLevel(o.mode);
     // Gökyüzü & su
     sky = makeSky(); scene.add(sky);
-    water = makeWater(PRESETS[W.level].water); scene.add(water);
+    water = makeWater(PRESETS[W.level].water, o.renderer); scene.add(water);
     scene.fog = new THREE.FogExp2(0x8ec3e0, 0.0011);
 
     // Rıhtım duvarı, babalar, usturmaçalar
@@ -360,7 +395,7 @@
     if (sky) { const u = sky.material.uniforms; u.uZen.value.copy(zen); u.uHor.value.copy(hor); u.uSun.value.copy(s.dir); u.uSunCol.value.copy(sunCol); u.uNight.value = nightK; sky.position.copy(ctx.camera.position); }
     if (ctx.scene.fog) ctx.scene.fog.color.copy(hor).lerp(zen, .25);
     if (ctx.scene.background && ctx.scene.background.isColor) ctx.scene.background.copy(hor);
-    if (water) { const u = water.material.uniforms; u.uTime.value = t; u.uSunDir.value.copy(s.dir); u.uSunCol.value.copy(sunCol); u.uSky.value.copy(hor).lerp(zen, .3); u.uNight.value = nightK; u.uDeep.value.copy(pal('deep', e)); u.uShallow.value.copy(pal('shallow', e)); }
+    if (water) { const u = water.material.uniforms; u.uTime.value = performance.now() / 1000; u.uZen.value.copy(zen); u.uSunDir.value.copy(s.dir); u.uSunCol.value.copy(sunCol); u.uSky.value.copy(hor).lerp(zen, .3); u.uNight.value = nightK; u.uDeep.value.copy(pal('deep', e)); u.uShallow.value.copy(pal('shallow', e)); }
     if (ctx.renderer) ctx.renderer.toneMappingExposure = 1.05 + .15 * dayK + nightK * .25;
     // Gece ışıkları
     if (lampHeads) lampHeads.material.emissiveIntensity = nightK * 2.2;
