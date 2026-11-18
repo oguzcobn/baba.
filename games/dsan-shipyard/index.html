@@ -1,0 +1,3672 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Damen Shipyards Antalya (DSAn) — 3D Shipyard Tycoon</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            navy: {
+              950: '#040a14',
+              900: '#091426',
+              800: '#10213d',
+              700: '#1a3259'
+            },
+            damen: {
+              blue: '#004b87',
+              orange: '#f37021'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #040a14;
+      color: #f1f5f9;
+      overflow-x: hidden;
+      user-select: none;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #091426; }
+    ::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #38bdf8; }
+    .glass-panel {
+      background: rgba(11, 22, 44, 0.86);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(56, 189, 248, 0.18);
+    }
+    .glass-card {
+      background: rgba(16, 33, 61, 0.78);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      transition: all 0.2s ease;
+    }
+    .glass-card:hover {
+      border-color: rgba(56, 189, 248, 0.45);
+      transform: translateY(-1px);
+    }
+    .tab-active {
+      background: linear-gradient(135deg, rgba(243, 112, 33, 0.28), rgba(14, 165, 233, 0.35));
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.22);
+    }
+    .cam-btn-active {
+      background: rgba(14, 165, 233, 0.35) !important;
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+    }
+  </style>
+<style id="dsan-visual-polish">
+    :root { color-scheme: dark; }
+    html { scroll-behavior: smooth; background: #06101d; }
+    body { background: radial-gradient(ellipse at 52% -18%, #153c60 0, #081727 46%, #040a14 100%); }
+    .glass-panel { background: linear-gradient(145deg, rgba(12, 29, 52, .92), rgba(5, 15, 29, .88)); border-color: rgba(125, 211, 252, .23); box-shadow: 0 18px 50px rgba(0, 0, 0, .25); }
+    .glass-card { background: linear-gradient(145deg, rgba(20, 43, 73, .88), rgba(10, 23, 42, .86)); border-color: rgba(148, 163, 184, .2); box-shadow: 0 8px 26px rgba(0, 0, 0, .16); }
+    .glass-card:hover { border-color: rgba(56, 189, 248, .58); box-shadow: 0 12px 32px rgba(2, 132, 199, .16); }
+    #threeViewportWrapper { border: 1px solid rgba(125, 211, 252, .28); border-radius: 18px; overflow: hidden; box-shadow: 0 20px 58px rgba(0, 0, 0, .34), inset 0 1px rgba(255,255,255,.08); }
+    #shipyardCanvas { touch-action: none; }
+    button, select { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, select:focus-visible { outline: 2px solid #f37021; outline-offset: 2px; }
+    @media (max-width: 640px) { #threeViewportWrapper { border-radius: 12px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-navy-950 text-slate-100">
+
+  <!-- TOP HEADER & KPI BAR -->
+  <header class="sticky top-0 z-30 glass-panel border-b border-sky-500/20 px-3 py-2 sm:px-5">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+      <!-- Brand & Shipyard Name -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 via-blue-700 to-orange-500 flex items-center justify-center shadow-lg shadow-sky-500/20 border border-white/10">
+          <span class="font-extrabold text-xs tracking-tighter text-white">DSAn</span>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 id="shipyardNameDisplay" class="font-extrabold text-sm sm:text-base md:text-lg tracking-tight text-white">Damen Shipyards Antalya (DSAn)</h1>
+            <button id="editYardNameBtn" title="Tersane Adını Değiştir" class="text-[11px] text-sky-400 hover:text-sky-300 px-1.5 py-0.5 rounded bg-sky-500/10 border border-sky-500/20">Düzenle</button>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30">ANTALYA FREE ZONE • 45,587 m²</span>
+          </div>
+          <p class="text-xs text-slate-400 flex flex-wrap items-center gap-2">
+            <span id="dateDisplay" class="font-mono text-sky-300">Gün 1 • 08:00</span>
+            <span>•</span>
+            <span id="marketTrendBadge" class="text-emerald-400 font-medium">Piyasa: Canlı (+%8 Yat &amp; Workboat Talebi)</span>
+            <span class="hidden md:inline text-slate-500">•</span>
+            <span class="hidden md:inline text-amber-300/90 text-[11px]">☀️ 300+ Gün Akdeniz Güneşi • 250+ Teslimat Mirası</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- KPI Metrics -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="px-2.5 py-1 rounded-lg bg-slate-900/90 border border-emerald-500/30 flex items-center gap-1.5">
+          <span class="text-emerald-400 text-[11px] font-semibold uppercase">Kasa</span>
+          <span id="cashDisplay" class="font-mono font-bold text-xs sm:text-sm text-emerald-300">$3,850,000</span>
+        </div>
+
+        <div class="px-2.5 py-1 rounded-lg bg-slate-900/90 border border-amber-500/30 flex items-center gap-1.5">
+          <span class="text-amber-400 text-[11px] font-semibold uppercase">İtibar</span>
+          <span id="repDisplay" class="font-mono font-bold text-xs sm:text-sm text-amber-300">★ 82/100</span>
+        </div>
+
+        <div class="hidden md:flex px-2.5 py-1 rounded-lg bg-slate-900/90 border border-sky-500/30 items-center gap-1.5">
+          <span class="text-sky-400 text-[11px] font-semibold uppercase">Ekip</span>
+          <span id="staffSummaryDisplay" class="font-mono font-bold text-xs text-sky-200">8 Uzman • %91 Moral</span>
+        </div>
+
+        <div class="hidden xl:flex px-2.5 py-1 rounded-lg bg-slate-900/90 border border-purple-500/30 items-center gap-1.5">
+          <span class="text-purple-300 text-[11px] font-semibold uppercase">Günlük Gider</span>
+          <span id="dailyCostDisplay" class="font-mono font-bold text-xs text-purple-200">-$5,800/gün</span>
+        </div>
+      </div>
+
+      <!-- Simulation Speed & GitHub / Audio Controls -->
+      <div class="flex items-center gap-1.5">
+        <div class="flex items-center bg-slate-900/90 p-1 rounded-lg border border-slate-700/70">
+          <button id="speedPauseBtn" data-speed="0" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">⏸</button>
+          <button id="speed1xBtn" data-speed="1" class="speed-btn px-2 py-1 rounded text-xs font-semibold bg-sky-600 text-white">1x</button>
+          <button id="speed2xBtn" data-speed="2" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">2x</button>
+          <button id="speed4xBtn" data-speed="4" class="speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white">4x ⚡</button>
+        </div>
+
+        <button id="muteToggleBtn" title="Ses Efektlerini Aç/Kapat" class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-slate-900/90 border border-slate-700/70 text-sky-300 hover:bg-slate-800 text-xs font-medium">
+          🔊 Ses
+        </button>
+
+        <button id="openGithubModalBtn" class="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-sky-600 hover:from-orange-400 hover:to-sky-500 text-white font-semibold text-xs flex items-center gap-1.5 shadow-md">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          <span>GitHub &amp; İndir</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT LAYOUT -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-2.5 sm:px-5 py-3 flex flex-col gap-3.5">
+
+    <!-- 3D SHIPYARD TYCOON INTERACTIVE WORLD VIEWPORT -->
+    <section id="viewport3DSection" class="relative rounded-2xl overflow-hidden glass-panel border border-sky-500/30 shadow-2xl transition-all duration-300">
+      <!-- Top Overlay HUD: Camera Presets & Materials -->
+      <div class="absolute top-2.5 left-2.5 right-2.5 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        <!-- 3D Camera & Mode Controls -->
+        <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto bg-slate-950/85 p-1.5 rounded-xl border border-sky-500/30 backdrop-blur-md">
+          <span class="px-2 py-0.5 rounded-lg text-[11px] font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            3D TYCOON SAHNESİ
+          </span>
+          <button id="camOverviewBtn" data-cam="overview" class="cam-preset-btn cam-btn-active px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-sky-400 transition">
+            🌍 Genel Tersane
+          </button>
+          <button id="camHalls13Btn" data-cam="halls13" class="cam-preset-btn px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-sky-400 transition">
+            🏗️ DAMEN 1-3 (Çelik/Alü)
+          </button>
+          <button id="camHalls46Btn" data-cam="halls46" class="cam-preset-btn px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-sky-400 transition">
+            🛥️ DAMEN 4-6 (Yat/Kompozit)
+          </button>
+          <button id="camSyncroliftBtn" data-cam="syncrolift" class="cam-preset-btn px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-slate-200 border border-slate-700 hover:border-sky-400 transition">
+            ⚓ 2000t Syncrolift &amp; 560t Lift
+          </button>
+          <button id="toggleAutoOrbitBtn" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/90 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition">
+            🎥 Sinematik Tur
+          </button>
+          <button id="launchHornBtn" class="px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-900/90 hover:bg-sky-900/80 text-sky-300 border border-sky-500/30 transition">
+            🚢 Tersane Sireni Çal
+          </button>
+          <button id="expand3DBtn" class="px-2 py-1 rounded-lg text-[11px] font-semibold bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-400/40 transition">
+            ⛶ 3D Boyut
+          </button>
+        </div>
+
+        <!-- Multi-Material Stock Bar (Steel/Alu, Composite BV Mode I, Hybrid/Diesel Engines, Outfitting) -->
+        <div class="flex flex-wrap items-center gap-2 bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-700/80 pointer-events-auto text-xs backdrop-blur-md">
+          <div class="flex items-center gap-1" title="Çelik, Alüminyum ve BV Mode I Kompozit Gövde Hammaddesi">
+            <span class="text-slate-400">🔩 Çelik/Alü/Kompozit:</span>
+            <span id="matSteelDisplay" class="font-mono font-bold text-sky-300">220t</span>
+          </div>
+          <span class="text-slate-600">|</span>
+          <div class="flex items-center gap-1" title="Dizel, Hibrit ve Tam Elektrikli İtki Sistemleri">
+            <span class="text-slate-400">⚙️ Motor &amp; Hibrit:</span>
+            <span id="matEngineDisplay" class="font-mono font-bold text-amber-300">10 Adet</span>
+          </div>
+          <span class="text-slate-600">|</span>
+          <div class="flex items-center gap-1" title="Lüks Yat İç Mimari, Aviyonik ve Teknik Donatım">
+            <span class="text-slate-400">🧭 Donatım &amp; Lüks:</span>
+            <span id="matLuxuryDisplay" class="font-mono font-bold text-emerald-300">140 Br</span>
+          </div>
+          <button id="quickRestockBtn" class="ml-1 px-2 py-0.5 rounded bg-sky-600/30 hover:bg-sky-500/40 text-sky-200 border border-sky-400/30 font-semibold transition">
+            + Hızlı Tedarik
+          </button>
+        </div>
+      </div>
+
+      <!-- 3D WebGL Canvas Container -->
+      <div id="threeViewportWrapper" class="w-full h-[390px] sm:h-[460px] md:h-[510px] relative bg-slate-950 select-none">
+        <canvas id="shipyardCanvas" class="w-full h-full block cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Bottom-Left 3D Controls Help Pill -->
+        <div class="absolute bottom-3 left-3 z-10 pointer-events-none hidden sm:flex items-center gap-2 bg-slate-950/80 px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 backdrop-blur-sm">
+          <span>🖱️ <strong>Sol Tık Sürükle:</strong> 360° Döndür</span>
+          <span>•</span>
+          <span><strong>Sağ Tık / Shift:</strong> Kaydır</span>
+          <span>•</span>
+          <span><strong>Tekerlek:</strong> Yakınlaş</span>
+          <span>•</span>
+          <span class="text-sky-300 font-semibold">👆 3D Hollere (DAMEN 1-6) veya Gemilere Tıklayın!</span>
+        </div>
+
+        <!-- Floating 3D Hall / Vessel Inspector Drawer (Opens when clicking a 3D building or ship in Tycoon view!) -->
+        <div id="tycoon3DInspector" class="absolute top-16 right-3 bottom-3 w-80 sm:w-96 z-20 glass-panel rounded-2xl p-4 border border-sky-400/50 shadow-2xl flex flex-col justify-between overflow-y-auto transition-all duration-200">
+          <!-- Populated dynamically when a 3D hall, Syncrolift, or vessel is clicked -->
+        </div>
+      </div>
+
+      <!-- Bottom Quick Hall Strip (All 6 Authentic DAMEN Antalya Halls) -->
+      <div id="dockQuickStrip" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 p-2.5 bg-slate-950/95 border-t border-slate-800/80">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+      <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        <button data-tab="production" class="nav-tab tab-active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border border-transparent transition flex items-center gap-2">
+          <span>⚓</span><span>Kızaklar &amp; Üretim</span>
+          <span id="badgeActiveBuilds" class="px-1.5 py-0.5 text-[11px] rounded-full bg-sky-500/30 text-sky-200 font-mono">1/3</span>
+        </button>
+        <button data-tab="contracts" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-2">
+          <span>📋</span><span>Müşteri Siparişleri</span>
+          <span id="badgeContracts" class="px-1.5 py-0.5 text-[11px] rounded-full bg-amber-500/20 text-amber-300 font-mono">4</span>
+        </button>
+        <button data-tab="showroom" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-2">
+          <span>🛥️</span><span>Filo &amp; Satış Pazarı</span>
+          <span id="badgeFleet" class="px-1.5 py-0.5 text-[11px] rounded-full bg-emerald-500/20 text-emerald-300 font-mono">0</span>
+        </button>
+        <button data-tab="workers" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-2">
+          <span>👷</span><span>Çalışanlar &amp; İK</span>
+          <span id="badgeWorkers" class="px-1.5 py-0.5 text-[11px] rounded-full bg-purple-500/20 text-purple-300 font-mono">6</span>
+        </button>
+        <button data-tab="upgrades" class="nav-tab px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white border border-slate-800 transition flex items-center gap-2">
+          <span>🏗️</span><span>Tersane &amp; Tedarik</span>
+        </button>
+      </div>
+
+      <!-- Shift Selector Quick Pill -->
+      <div class="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800 text-xs">
+        <span class="text-slate-400 font-medium">Vardiya &amp; PTW Düzeni:</span>
+        <select id="shiftPolicySelect" class="bg-slate-800 text-sky-300 font-semibold rounded px-2 py-1 border border-slate-700 focus:outline-none focus:border-sky-500">
+          <option value="normal">Normal Vardiya (ISO 45001 Standart Hız &amp; Moral)</option>
+          <option value="quality">IACS / BV Mode I Hassas İşçilik (+Kalite, -%10 Hız)</option>
+          <option value="overtime">Çift Vardiya İhracat Mesaisi (+%35 Hız, +Yorgunluk &amp; +%40 Maaş)</option>
+        </select>
+      </div>
+    </nav>
+
+    <!-- TAB PANELS -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+
+      <!-- LEFT/MAIN COLUMN (2/3 width on desktop) -->
+      <div class="lg:col-span-2 space-y-4">
+
+        <!-- TAB 1: PRODUCTION HALLS (DAMEN 1-6) & PORTFOLIO BLUEPRINTS -->
+        <div id="tab-production" class="tab-panel space-y-4">
+          <!-- Active Halls Detail Cards -->
+          <div class="glass-panel rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                  <span>🏭 Antalya Serbest Bölge — 6 Özel Üretim Holü (DAMEN 1 – DAMEN 6)</span>
+                </h2>
+                <p class="text-xs text-slate-400">Broşürdeki gerçek hol ölçüleri, tavan vinçleri (8 adede kadar), trafo güçleri ve 2.000t Syncrolift / 560t Travel Lift entegrasyonu.</p>
+              </div>
+              <button id="FilterAllBlueprintsBtn" class="text-xs px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/30 font-semibold">
+                Aşağıdan Yeni Model Seç ↓
+              </button>
+            </div>
+            <div id="docksDetailedContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Vessel Blueprint Catalog -->
+          <div class="glass-panel rounded-2xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-base font-bold text-white">📐 Damen Shipyards Antalya Portföyü (Yachting, Workboats &amp; Refit)</h3>
+                <p class="text-xs text-slate-400">11m Interceptor'dan 60m SeaXplorer / SX 6001 Süperyata, Elektrikli Waterbus 2907'den 90m Yat Refit projelerine kadar gerçek DSAn portföyü.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button data-bfilter="all" class="bp-filter-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-600 text-white">Tümü (8)</button>
+                <button data-bfilter="Yacht" class="bp-filter-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">🛥️ Lüks Yatlar</button>
+                <button data-bfilter="Workboat" class="bp-filter-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white">🚢 Workboat &amp; Ticari</button>
+              </div>
+            </div>
+
+            <div id="blueprintsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: CUSTOMER CONTRACTS -->
+        <div id="tab-contracts" class="tab-panel hidden space-y-4">
+          <div class="glass-panel rounded-2xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-white">📋 Küresel İhracat Siparişleri &amp; 90m Syncrolift Refit İhaleleri</h2>
+                <p class="text-xs text-slate-400">Antalya Serbest Bölgesi'nde ihracat satışlarında kurumlar vergisi muafiyeti uygulanır. Sözleşme imzaladığınızda <span class="text-emerald-400 font-semibold">%25 peşinat</span> kasaya girer.</p>
+              </div>
+              <button id="refreshContractsBtn" class="px-3 py-1.5 rounded-xl bg-sky-600/25 hover:bg-sky-600/40 text-sky-200 border border-sky-500/30 text-xs font-semibold transition">
+                🔄 Yeni İhaleler Ara ($5,000)
+              </button>
+            </div>
+
+            <div id="contractsListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: FLEET & SALES SHOWROOM -->
+        <div id="tab-showroom" class="tab-panel hidden space-y-4">
+          <div class="glass-panel rounded-2xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-white">🛥️ 2.000t Syncrolift Teslimat Rıhtımı &amp; Küresel Satış Pazarı</h2>
+                <p class="text-xs text-slate-400">2013'ten bu yana 250+ gemi teslim eden DSAn geleneğiyle, tamamlanan gemilerinizi satın veya pazarlık yapın.</p>
+              </div>
+              <div class="text-xs px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300">
+                Toplam Teslimat: <span id="totalSoldCount" class="font-mono font-bold text-emerald-400">252 Gemi</span>
+              </div>
+            </div>
+
+            <div id="completedFleetContainer" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Past Sales History Table -->
+            <div class="pt-3 border-t border-slate-800/80">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">DSAn Kilometre Taşları &amp; Son Teslimat Kayıtları</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="text-slate-400 border-b border-slate-800">
+                      <th class="py-2 px-2">Gemi Adı / Model</th>
+                      <th class="py-2 px-2">Kategori</th>
+                      <th class="py-2 px-2">Kalite (IACS/BV)</th>
+                      <th class="py-2 px-2">Alıcı / İhracat</th>
+                      <th class="py-2 px-2 text-right">Satış Geliri</th>
+                    </tr>
+                  </thead>
+                  <tbody id="salesHistoryTableBody" class="divide-y divide-slate-800/60">
+                    <!-- Populated by JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: WORKERS & HR MANAGEMENT -->
+        <div id="tab-workers" class="tab-panel hidden space-y-4">
+          <div class="glass-panel rounded-2xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-white">👷 DSAn Mühendislik Havuzu &amp; Uzman İşgücü Yönetimi</h2>
+                <p class="text-xs text-slate-400">İTÜ, YTÜ ve KTÜ mezunu gemi inşa mühendisleri (Cadmatic, Rhino 3D, AutoCAD, IFS), BV Mode I kompozit uzmanları ve kaynak ustalarını hollerinize atayın.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="teamBonusBtn" class="px-3 py-1.5 rounded-xl bg-emerald-600/25 hover:bg-emerald-600/40 border border-emerald-500/30 text-emerald-200 text-xs font-semibold transition">
+                  🎉 Tüm Ekibe Prim Dağıt ($12,000 • +18 Moral)
+                </button>
+                <button id="teamRestBtn" class="px-3 py-1.5 rounded-xl bg-sky-600/25 hover:bg-sky-600/40 border border-sky-500/30 text-sky-200 text-xs font-semibold transition">
+                  ☕ Mola &amp; İkram ($3,500 • -25 Yorgunluk)
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Roster -->
+            <div id="workersRosterGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Job Applicants Pool -->
+          <div class="glass-panel rounded-2xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-sm sm:text-base font-bold text-white">🤝 Teknik Üniversite &amp; Usta Aday Havuzu</h3>
+                <p class="text-xs text-slate-400">Yapısal/mekanik detay mühendisleri, elektrik/AV-IT koordinatörleri ve kompozit/alüminyum ustalarını işe alın.</p>
+              </div>
+              <button id="refreshCandidatesBtn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-xs font-semibold transition">
+                🔍 İlan Ver &amp; Yeni Adaylar Getir ($2,500)
+              </button>
+            </div>
+            <div id="candidatesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: SHIPYARD UPGRADES & SUPPLY CHAIN -->
+        <div id="tab-upgrades" class="tab-panel hidden space-y-4">
+          <!-- Raw Material Purchasing -->
+          <div class="glass-panel rounded-2xl p-4 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 class="text-base sm:text-lg font-bold text-white">📦 1.000+ Yerel Tedarikçi &amp; Çoklu-Malzeme (Çelik, Alüminyum, Kompozit) Deposu</h2>
+                <p class="text-xs text-slate-400">Antalya Serbest Bölgesi'ne gelen gümrüksüz ve KDV'siz çelik, deniz alüminyumu, karbon/cam elyaf kompozit ve hibrit motor stoklarını yönetin.</p>
+              </div>
+              <label class="flex items-center gap-2 text-xs bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-700 cursor-pointer">
+                <input type="checkbox" id="autoBuyMaterialsToggle" class="rounded accent-sky-500" />
+                <span class="text-slate-200 font-medium">Eksik Malzemeyi Üretimde Otomatik Satın Al</span>
+              </label>
+            </div>
+
+            <div id="supplyCardsGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Facility & Dock Upgrades -->
+          <div class="glass-panel rounded-2xl p-4 space-y-3">
+            <div>
+              <h3 class="text-base font-bold text-white">🏗️ Damen Shipyards Antalya (2013–2031) Teknoloji, Sertifika &amp; Hol Yatırımları</h3>
+              <p class="text-xs text-slate-400">Cadmatic/Rhino 3D mühendislik ofisi, BV Mode I Kompozit Merkezi (DAMEN 6), 2.000t Syncrolift Refit rıhtımı ve ISO/Sıfır Atık &amp; Güneş Enerjisi yatırımları.</p>
+            </div>
+            <div id="upgradesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: DSAn FACTS, OPERATIONS LOG & SAVE (1/3 width) -->
+      <aside class="space-y-4">
+        <!-- Shipyard Status & Efficiency Card -->
+        <div class="glass-panel rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+              <span>📊 DSAn Performans &amp; Veriler</span>
+            </h3>
+            <span id="efficiencyBadge" class="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300">%115 Verim</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-slate-400">IACS / BV Kalite Bonusu</div>
+              <div id="statQualityBonus" class="font-mono font-bold text-sm text-sky-300 mt-0.5">+14 Puan</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-slate-400">Üretim Hızı Çarpanı</div>
+              <div id="statSpeedMult" class="font-mono font-bold text-sm text-amber-300 mt-0.5">1.25x Hız</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-slate-400">Toplam İhracat Cirosu</div>
+              <div id="statTotalRevenue" class="font-mono font-bold text-sm text-emerald-300 mt-0.5">$0</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="text-slate-400">Maks. Gemi / Refit Boyu</div>
+              <div id="statMaxLength" class="font-mono font-bold text-sm text-purple-300 mt-0.5">60 Metre</div>
+            </div>
+          </div>
+
+          <!-- Brochure Facts & Milestones Mini-Card -->
+          <div class="p-3 rounded-xl bg-slate-900/95 border border-sky-500/20 space-y-1.5 text-[11px]">
+            <div class="font-bold text-orange-300 uppercase tracking-wider flex items-center justify-between">
+              <span>📌 Antalya Tersanesi Gerçek Verileri</span>
+              <span class="text-sky-300 font-mono">45,587 m²</span>
+            </div>
+            <div class="grid grid-cols-2 gap-x-2 gap-y-1 text-slate-300">
+              <span>• <strong>6 Üretim Holü:</strong> DAMEN 1–6</span>
+              <span>• <strong>37 Tavan Vinci:</strong> 3.2t–25t</span>
+              <span>• <strong>Syncrolift:</strong> 2,000 Ton (90m)</span>
+              <span>• <strong>Travel Lift:</strong> 560 Ton</span>
+              <span>• <strong>Geri Dönüşüm:</strong> %100 Metal</span>
+              <span>• <strong>Yazılım:</strong> Cadmatic &amp; Rhino 3D</span>
+            </div>
+          </div>
+
+          <!-- Role Coverage Bars -->
+          <div class="space-y-1.5 pt-1">
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Mühendislik &amp; Usta Dağılımı</div>
+            <div id="roleCoverageContainer" class="space-y-1.5 text-xs">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Shipyard Event Log -->
+        <div class="glass-panel rounded-2xl p-4 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">📡 Tersane Seyir Defteri</h3>
+            <button id="clearLogBtn" class="text-[11px] text-slate-400 hover:text-slate-200">Temizle</button>
+          </div>
+          <div id="eventLogContainer" class="space-y-2 max-h-64 overflow-y-auto pr-1 text-xs">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Save / Reset Controls -->
+        <div class="glass-panel rounded-2xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span class="text-slate-400">Otomatik Kayıt Aktif</span>
+          <div class="flex items-center gap-2">
+            <button id="saveGameBtn" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 font-medium">💾 Kaydet</button>
+            <button id="resetGameBtn" class="px-2.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/70 text-rose-300 border border-rose-700/40 font-medium">Sıfırla</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- MODAL 1: START BUILD / ASSIGN HALL & CONTRACT -->
+  <div id="buildModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-lg w-full p-5 border border-sky-500/40 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 id="modalVesselTitle" class="text-lg font-bold text-white">Gemi İnşasını Başlat</h3>
+          <p id="modalVesselSubtitle" class="text-xs text-sky-300">Üretim holü (DAMEN 1–6) ve üretim türünü seçin</p>
+        </div>
+        <button id="closeBuildModalBtn" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
+      </div>
+
+      <div id="modalVesselSpecs" class="grid grid-cols-3 gap-2 text-xs bg-slate-900/90 p-3 rounded-xl border border-slate-800">
+        <!-- Populated dynamically -->
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">1. Gemi / Proje Özel İsmi:</label>
+          <input id="customVesselNameInput" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-sky-400" placeholder="Örn: SeaXplorer 6001 veya Waterbus 2907 Electric" />
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">2. İnşa Edilecek Üretim Holü (DAMEN 1 – DAMEN 6):</label>
+          <select id="modalDockSelect" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-sky-400">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 font-semibold mb-1">3. Üretim Amacı (Seri/Stok Üretim veya İhracat Sözleşmesi):</label>
+          <select id="modalContractSelect" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white font-medium focus:outline-none focus:border-sky-400">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+      </div>
+
+      <div id="modalMaterialWarning" class="hidden p-2.5 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs"></div>
+
+      <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+        <button id="cancelBuildModalBtn" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold">Vazgeç</button>
+        <button id="confirmBuildBtn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-sky-500/25">
+          ⚓ Omurgayı Kızağa Koy ve Başlat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: GITHUB PAGES & EXPORT PACKAGE -->
+  <div id="githubModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-2xl w-full p-5 border border-indigo-500/40 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
+            <svg class="w-6 h-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">GitHub Pages Yayınlama &amp; 3D Kaynak Kod Merkezi</h3>
+            <p class="text-xs text-slate-400">Three.js WebGL 3D motoruyla çalışan bu oyunu tek dosya (`index.html`) olarak GitHub Pages üzerinde ücretsiz yayınlayabilirsiniz.</p>
+          </div>
+        </div>
+        <button id="closeGithubModalBtn" class="text-slate-400 hover:text-white p-1 text-lg">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="downloadIndexHtmlBtn" class="p-3.5 rounded-xl bg-gradient-to-r from-sky-600 to-blue-700 hover:from-sky-500 hover:to-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg">
+          <span>⬇️ Oyunu `index.html` Olarak İndir</span>
+        </button>
+        <button id="copyReadmeBtn" class="p-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/30 font-bold text-xs flex items-center justify-center gap-2">
+          <span>📋 Hazır `README.md` Metnini Kopyala</span>
+        </button>
+      </div>
+
+      <div class="space-y-2 text-xs bg-slate-900/95 p-4 rounded-xl border border-slate-800">
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sky-300">Adım Adım GitHub Pages Kurulumu (Terminal Komutları)</span>
+          <button id="copyGitCommandsBtn" class="px-2.5 py-1 rounded bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 font-semibold">Komutları Kopyala</button>
+        </div>
+        <pre id="gitCommandsPre" class="font-mono text-[11px] text-slate-300 overflow-x-auto leading-relaxed bg-slate-950 p-3 rounded-lg border border-slate-800">mkdir dsan-3d-shipyard-tycoon
+cd dsan-3d-shipyard-tycoon
+# İndirdiğiniz index.html dosyasını bu klasöre taşıyın
+git init
+git add index.html README.md
+git commit -m "feat: Damen Shipyards Antalya 3D Shipyard Tycoon v2.0"
+git branch -M main
+git remote add origin https://github.com/KULLANICI_ADINIZ/dsan-3d-shipyard-tycoon.git
+git push -u origin main</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: RENAME SHIPYARD -->
+  <div id="renameModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel rounded-2xl max-w-md w-full p-5 border border-sky-500/40 space-y-4">
+      <h3 class="text-base font-bold text-white">Tersane Adını Güncelle</h3>
+      <input id="newShipyardNameInput" type="text" class="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:border-sky-400" placeholder="Örn: Damen Shipyards Antalya (DSAn)" />
+      <div class="flex justify-end gap-2">
+        <button id="cancelRenameBtn" class="px-3.5 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">İptal</button>
+        <button id="saveRenameBtn" class="px-4 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-bold">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <script>
+    /*************************************************************************
+     * DAMEN SHIPYARDS ANTALYA (DSAn) — 3D SHIPYARD TYCOON ENGINE (Three.js)
+     * Grounded in the official DSAn Brochure (Antalya Free Zone, DAMEN 1-6)
+     *************************************************************************/
+
+    // --- 1. AUTHENTIC PORTFOLIO FROM DAMEN SHIPYARDS ANTALYA BROCHURE ---
+    const VESSEL_BLUEPRINTS = [
+      {
+        id: 'work_pilot_15',
+        name: 'IC 1102 / 1503 High-Speed Interceptor (15m)',
+        category: 'Workboat',
+        length: 15,
+        hullType: 'BV Mode I Kompozit (DSA6)',
+        recommendedHall: 'DAMEN 6 (Kompozit)',
+        buildHours: 58,
+        materialCost: 135000,
+        basePrice: 380000,
+        steelReq: 16,
+        engineReq: 1,
+        luxuryReq: 8,
+        minRep: 0,
+        colorPrimary: '#334155',
+        colorAccent: '#f97316',
+        desc: 'DSAn’ın 2013 ilk ihracat mirası (IC 1102). İleri vakum infüzyon kompozit gövdeli, 55+ knot yüksek hızlı önleme ve devriye botu.'
+      },
+      {
+        id: 'work_tug_24',
+        name: '1906 SAR Arama & Kurtarma Botu (19m)',
+        category: 'Workboat',
+        length: 19,
+        hullType: 'Alüminyum / Kompozit (DSA3/6)',
+        recommendedHall: 'DAMEN 3 (Alüminyum)',
+        buildHours: 76,
+        materialCost: 215000,
+        basePrice: 560000,
+        steelReq: 26,
+        engineReq: 2,
+        luxuryReq: 12,
+        minRep: 0,
+        colorPrimary: '#dc2626',
+        colorAccent: '#f8fafc',
+        desc: 'Sahil Güvenlik ve arama-kurtarma filoları için her hava koşulunda kendi kendine doğrulabilen (self-righting) 19m SAR gemisi.'
+      },
+      {
+        id: 'work_osv_34',
+        name: 'Waterbus 2907 Electric — Sıfır Emisyon (29m)',
+        category: 'Workboat',
+        length: 29,
+        hullType: 'Tam Elektrikli Kompozit Katamaran',
+        recommendedHall: 'DAMEN 6 (Kompozit)',
+        buildHours: 105,
+        materialCost: 340000,
+        basePrice: 890000,
+        steelReq: 38,
+        engineReq: 2,
+        luxuryReq: 26,
+        minRep: 68,
+        colorPrimary: '#0284c7',
+        colorAccent: '#38bdf8',
+        desc: 'DSAn’ın sürdürülebilir kentsel deniz ulaşımı gururu. %100 elektrikli batarya tahrikli, sıfır emisyonlu yolcu katamaranı.'
+      },
+      {
+        id: 'work_sar_46',
+        name: 'FCS 2710 / 3210 Twin-Axe Crew Supplier (32m)',
+        category: 'Workboat',
+        length: 32,
+        hullType: 'Deniz Alüminyumu (Twin-Axe)',
+        recommendedHall: 'DAMEN 3 & DAMEN 2',
+        buildHours: 130,
+        materialCost: 480000,
+        basePrice: 1240000,
+        steelReq: 54,
+        engineReq: 2,
+        luxuryReq: 22,
+        minRep: 72,
+        colorPrimary: '#f37021',
+        colorAccent: '#ffffff',
+        desc: 'Açık deniz rüzgar türbinleri ve enerji platformları için Damen Twin-Axe baltalı burun tasarımına sahip hızlı personel/ikmal gemisi.'
+      },
+      {
+        id: 'yacht_sport_18',
+        name: 'SPa 4008 / 5510 RoPax & Stan Patrol (42m)',
+        category: 'Workboat',
+        length: 42,
+        hullType: 'Çelik Gövde / Alüminyum Üst (DSA1/4)',
+        recommendedHall: 'DAMEN 1 & DAMEN 4',
+        buildHours: 170,
+        materialCost: 740000,
+        basePrice: 1850000,
+        steelReq: 82,
+        engineReq: 3,
+        luxuryReq: 30,
+        minRep: 76,
+        colorPrimary: '#475569',
+        colorAccent: '#94a3b8',
+        desc: 'Açık deniz karakol (Stan Patrol 4008) ve çelik RoPax standartlarında üretilen uzun menzilli çok amaçlı görev gemisi.'
+      },
+      {
+        id: 'yacht_fly_28',
+        name: 'YS 5009 / Yeni Yacht Support Serisi (53m)',
+        category: 'Yacht',
+        length: 53,
+        hullType: 'Çelik / Alüminyum Süperyat Destek',
+        recommendedHall: 'DAMEN 4 & DAMEN 5',
+        buildHours: 215,
+        materialCost: 1120000,
+        basePrice: 2890000,
+        steelReq: 98,
+        engineReq: 3,
+        luxuryReq: 64,
+        minRep: 78,
+        colorPrimary: '#0f766e',
+        colorAccent: '#f8fafc',
+        desc: '2017 ve 2023’te DSAn tarafından teslim edilen efsanevi Yacht Support serisi. Helikopter pisti, denizaltı/tender vinci ve keşif güvertesi.'
+      },
+      {
+        id: 'yacht_explorer_42',
+        name: 'SeaXplorer 58 Expedition Superyacht (58m)',
+        category: 'Yacht',
+        length: 58,
+        hullType: 'Buz Sınıfı Çelik & Lüks Donatım (DSA5)',
+        recommendedHall: 'DAMEN 5 (Modern Yat Holü)',
+        buildHours: 260,
+        materialCost: 1650000,
+        basePrice: 4350000,
+        steelReq: 120,
+        engineReq: 4,
+        luxuryReq: 95,
+        minRep: 82,
+        colorPrimary: '#1e293b',
+        colorAccent: '#e2e8f0',
+        desc: '2023’te Antalya’da teslim edilen ilk SeaXplorer 58! Kutup ve tropikal okyanus keşifleri için tasarlanmış ultra lüks ekspedisyon süperyatı.'
+      },
+      {
+        id: 'yacht_mega_62',
+        name: 'Xplorer SX 6001 Flagship Superyacht & 90m Refit (60m)',
+        category: 'Yacht',
+        length: 60,
+        hullType: 'Özel Çelik / Alüminyum & VIP İç Mimari',
+        recommendedHall: 'DAMEN 1 & DAMEN 5',
+        buildHours: 310,
+        materialCost: 2100000,
+        basePrice: 5650000,
+        steelReq: 145,
+        engineReq: 4,
+        luxuryReq: 125,
+        minRep: 86,
+        colorPrimary: '#0284c7',
+        colorAccent: '#fef08a',
+        desc: '2025’te teslim edilen yeni Xplorer SX 6001 serisi! Hollanda mühendisliği ve Antalya işçiliğinin zirvesi olan amiral gemisi süperyat.'
+      }
+    ];
+
+    const ROLE_DEFINITIONS = {
+      architect: { label: 'Gemi İnşa & Cadmatic/Rhino 3D Mühendisi', icon: '📐', color: 'text-sky-300', bg: 'bg-sky-500/20' },
+      welder:    { label: 'Çelik & Alüminyum Blok Ustası (DSA1/3)', icon: '🔥', color: 'text-amber-300', bg: 'bg-amber-500/20' },
+      mechanic:  { label: 'Mekanik, Borulama & Hibrit Motor Uzmanı', icon: '⚙️', color: 'text-emerald-300', bg: 'bg-emerald-500/20' },
+      outfitter: { label: 'Yat İç Mimari & BV Mode I Kompozit Ustası', icon: '🎨', color: 'text-purple-300', bg: 'bg-purple-500/20' }
+    };
+
+    const UPGRADE_DEFINITIONS = [
+      {
+        id: 'cad_cam_office',
+        name: 'Cadmatic, Rhino 3D, AutoCAD & IFS Mühendislik Havuzu',
+        cost: 290000,
+        desc: '12–14 tam zamanlı (FTE) yapısal ve mekanik detay mühendisi ile IFS ERP entegrasyonu (+12 Kalite Puanı, -%12 Malzeme Maliyeti).',
+        effectText: '+12 Kalite, -%12 Malzeme'
+      },
+      {
+        id: 'gantry_crane',
+        name: 'DAMEN 1–6 Tavan Vinçleri (37 Vinç • 25t) & SPMT Filosu',
+        cost: 320000,
+        desc: 'Hollerdeki 25 tonluk çift kirişli tavan vinçlerini ve sarı çok tekerlekli SPMT gemi taşıyıcılarını modernize eder (+%24 İnşa Hızı).',
+        effectText: '+%24 Hız'
+      },
+      {
+        id: 'cnc_robotic',
+        name: 'DAMEN 1 Gövde Raspalama/Boya & DAMEN 3 Alüminyum Hattı',
+        cost: 380000,
+        desc: '2025 DSA1 dönüşümü: 124×74m (9.176 m²) çelik gövde ve boya holü otomasyonu (+8 Kalite ve +%16 Hız).',
+        effectText: '+8 Kalite, +%16 Hız'
+      },
+      {
+        id: 'crew_campus',
+        name: 'ISO 9001 / 14001 / 45001, Sıfır Atık & LED/Solar Enerji',
+        cost: 240000,
+        desc: '%100 metal geri dönüşümü, %96 ambalaj geri dönüşümü, LED aydınlatma (-%30 enerji) ve İSG Permit-to-Work sistemi (-%35 Yorgunluk).',
+        effectText: '-%35 Yorgunluk & İSG'
+      },
+      {
+        id: 'expand_docks_45m',
+        name: '2.000t Syncrolift & 560t Travel Lift (90m Refit Rıhtımı)',
+        cost: 460000,
+        desc: 'Antalya Serbest Bölgesi 2.000 tonluk Syncrolift ve 560 tonluk Travel Lift kapasitesini tam entegre eder (+4 İtibar & +%15 İhracat Değeri).',
+        effectText: 'Syncrolift + %15 Değer'
+      },
+      {
+        id: 'unlock_dock_4',
+        name: 'DAMEN 6 (DSA6) İleri Teknoloji Kompozit Holü (2026 BV Mode I)',
+        cost: 680000,
+        desc: '117×44m (5.148 m²) DAMEN 6 holünü ileri teknoloji kompozit ve süperyat üretim merkezine dönüştürür (6. Holü Açar + 90m Kapasite).',
+        effectText: 'DAMEN 6 Holü + BV Mode I'
+      }
+    ];
+
+    // --- 2. INITIAL STATE WITH ALL 6 AUTHENTIC DAMEN ANTALYA HALLS (PAGE 8 TABLE) ---
+    function createInitialState() {
+      return {
+        shipyardName: 'Damen Shipyards Antalya (DSAn)',
+        day: 1,
+        hour: 8,
+        speed: 1,
+        muted: false,
+        cash: 3850000,
+        reputation: 82,
+        totalRevenue: 14500000,
+        totalSold: 252, // 250+ vessels delivered since 2013!
+        shiftPolicy: 'normal',
+        autoBuyMaterials: true,
+        blueprintFilter: 'all',
+        maxVesselLength: 60,
+        selectedDockId: 1,
+        materials: {
+          steel: 220,
+          engines: 10,
+          luxury: 140
+        },
+        marketPrices: {
+          steelPer10: 13500,
+          enginePer1: 31000,
+          luxuryPer10: 17500,
+          yachtDemandMult: 1.08,
+          workboatDemandMult: 1.05
+        },
+        upgrades: {
+          gantry_crane: false,
+          cnc_robotic: false,
+          cad_cam_office: false,
+          crew_campus: false,
+          expand_docks_45m: false,
+          unlock_dock_4: false
+        },
+        // All 6 real buildings from Page 8 of the brochure!
+        docks: [
+          {
+            id: 1,
+            code: 'DAMEN 1',
+            name: 'DAMEN 1 — Gövde İnşa & Kumlama/Boya Holü',
+            purpose: 'Hull construction & blasting (2013 / Yenileme 2025)',
+            dims: '124m × 74m • 9,176 m² • Yükseklik 18.8m',
+            cranes: '8 Vinç (5-5-25-25-25-25-25-25t) • 1600 kVA',
+            unlocked: true,
+            activeBuild: {
+              uid: 'b_dsan_1',
+              blueprintId: 'yacht_mega_62',
+              customName: 'Xplorer SX 6001',
+              category: 'Yacht',
+              length: 60,
+              progressHours: 195,
+              totalHours: 310,
+              qualityScore: 91,
+              contractId: null,
+              investedCost: 2100000
+            }
+          },
+          {
+            id: 2,
+            code: 'DAMEN 2',
+            name: 'DAMEN 2 — Donatım (Outfitting) Holü',
+            purpose: 'Outfitting activities (2015)',
+            dims: '150m × 60m • 9,000 m² • Yükseklik 19m',
+            cranes: '5 Vinç (16-16-16-16-3.2t) • 630 kVA',
+            unlocked: true,
+            activeBuild: {
+              uid: 'b_dsan_2',
+              blueprintId: 'work_osv_34',
+              customName: 'Waterbus 2907 Electric',
+              category: 'Workboat',
+              length: 29,
+              progressHours: 72,
+              totalHours: 105,
+              qualityScore: 89,
+              contractId: 'c_init_1',
+              investedCost: 340000
+            }
+          },
+          {
+            id: 3,
+            code: 'DAMEN 3',
+            name: 'DAMEN 3 — Alüminyum Blok İnşa Holü',
+            purpose: 'Aluminium block construction (2015)',
+            dims: '87m × 48m • 4,176 m² • Yükseklik 16m',
+            cranes: '7 Vinç (5-5-25-25-5-5-5t)',
+            unlocked: true,
+            activeBuild: {
+              uid: 'b_dsan_3',
+              blueprintId: 'work_sar_46',
+              customName: 'FCS 3210 Methanol',
+              category: 'Workboat',
+              length: 32,
+              progressHours: 52,
+              totalHours: 130,
+              qualityScore: 88,
+              contractId: null,
+              investedCost: 480000
+            }
+          },
+          {
+            id: 4,
+            code: 'DAMEN 4',
+            name: 'DAMEN 4 — Büyük Gemi Donatım Holü',
+            purpose: 'Outfitting larger vessels (2016)',
+            dims: '111m × 56m • 6,216 m² • Yükseklik 22m',
+            cranes: '7 Vinç (2x5t serisi) • 270 lt/s Basınçlı Hava',
+            unlocked: true,
+            activeBuild: null
+          },
+          {
+            id: 5,
+            code: 'DAMEN 5',
+            name: 'DAMEN 5 — Modern Yat Donatım Tesisleri',
+            purpose: 'Yacht outfitting (2019 / Modernizasyon 2024)',
+            dims: '80m × 50m • 4,000 m² • Yükseklik 24m',
+            cranes: '4 Vinç (2x10t serisi) • 4×181 kW İklimlendirme',
+            unlocked: true,
+            activeBuild: null
+          },
+          {
+            id: 6,
+            code: 'DAMEN 6',
+            name: 'DAMEN 6 — İleri Teknoloji Kompozit Holü',
+            purpose: 'Composite production BV Mode I (2021 / 2026)',
+            dims: '117m × 44m • 5,148 m² • Yükseklik 19m',
+            cranes: '6 Vinç (2x5t) • 3×162 kW İklimlendirme',
+            unlocked: false,
+            activeBuild: null
+          }
+        ],
+        workers: [
+          { id: 'w1', name: 'Selim Karaca (İTÜ)', role: 'architect', skill: 91, morale: 94, fatigue: 10, wage: 880, assignedDock: 1 },
+          { id: 'w2', name: 'Murat Demir', role: 'welder', skill: 87, morale: 90, fatigue: 16, wage: 710, assignedDock: 1 },
+          { id: 'w3', name: 'Sinan Çelik', role: 'welder', skill: 84, morale: 88, fatigue: 18, wage: 680, assignedDock: 3 },
+          { id: 'w4', name: 'Aylin Poyraz (YTÜ)', role: 'mechanic', skill: 89, morale: 92, fatigue: 12, wage: 790, assignedDock: 2 },
+          { id: 'w5', name: 'Cemil Yıldız', role: 'outfitter', skill: 88, morale: 91, fatigue: 14, wage: 760, assignedDock: 1 },
+          { id: 'w6', name: 'Emre Kaptan (KTÜ)', role: 'mechanic', skill: 85, morale: 89, fatigue: 11, wage: 720, assignedDock: 3 },
+          { id: 'w7', name: 'Zeynep Aksoy (BV Mode I)', role: 'outfitter', skill: 90, morale: 93, fatigue: 9, wage: 810, assignedDock: 2 },
+          { id: 'w8', name: 'Burak Soylu (Cadmatic)', role: 'architect', skill: 87, morale: 90, fatigue: 10, wage: 830, assignedDock: 5 }
+        ],
+        candidates: [],
+        contracts: [
+          {
+            id: 'c_init_1',
+            clientName: 'Avrupa Sıfır-Emisyon Deniz Ulaşımı',
+            blueprintId: 'work_osv_34',
+            vesselName: 'Waterbus 2907 Electric',
+            rewardTotal: 1040000,
+            upfrontPaid: 260000,
+            remainingPayout: 780000,
+            minQuality: 82,
+            deadlineDay: 14,
+            accepted: true
+          },
+          {
+            id: 'c_init_2',
+            clientName: 'Sahil Güvenlik & Deniz Güvenliği',
+            blueprintId: 'work_tug_24',
+            vesselName: 'TCSG-915 (1906 SAR)',
+            rewardTotal: 650000,
+            upfrontPaid: 0,
+            remainingPayout: 650000,
+            minQuality: 80,
+            deadlineDay: 16,
+            accepted: false
+          },
+          {
+            id: 'c_init_3',
+            clientName: 'Kuzey Denizi Offshore Wind BV',
+            blueprintId: 'work_sar_46',
+            vesselName: 'FCS 2710 Purus Wind',
+            rewardTotal: 1460000,
+            upfrontPaid: 0,
+            remainingPayout: 1460000,
+            minQuality: 84,
+            deadlineDay: 22,
+            accepted: false
+          },
+          {
+            id: 'c_init_4',
+            clientName: 'Monaco Expedition Yachting SA',
+            blueprintId: 'yacht_explorer_42',
+            vesselName: 'M/Y SeaXplorer 58 Pink Shadow',
+            rewardTotal: 4950000,
+            upfrontPaid: 0,
+            remainingPayout: 4950000,
+            minQuality: 88,
+            deadlineDay: 30,
+            accepted: false
+          },
+          {
+            id: 'c_init_5',
+            clientName: 'Global Superyacht Fleet Holdings',
+            blueprintId: 'yacht_fly_28',
+            vesselName: 'YS 5009 Dapple Support',
+            rewardTotal: 3320000,
+            upfrontPaid: 0,
+            remainingPayout: 3320000,
+            minQuality: 85,
+            deadlineDay: 26,
+            accepted: false
+          }
+        ],
+        completedFleet: [],
+        salesHistory: [
+          { name: 'Xplorer SX 6001', model: 'Xplorer SX 6001 (60m)', category: 'Yacht', quality: 95, buyer: '2025 DSAn Teslimatı (İhracat)', price: 5850000 },
+          { name: 'SeaXplorer 58', model: 'SeaXplorer 58 (58m)', category: 'Yacht', quality: 94, buyer: '2023 İlk Yat Projesi Teslimatı', price: 4480000 },
+          { name: 'YS 5009', model: 'Yacht Support YS 5009 (50m)', category: 'Yacht', quality: 91, buyer: '2017 İlk Yacht Support Teslimatı', price: 2950000 },
+          { name: 'IC 1102', model: '1102 Interceptor (11m)', category: 'Workboat', quality: 89, buyer: '2013 DSAn İlk İhracat Projesi', price: 360000 }
+        ],
+        logs: [
+          { time: 'Gün 1, 08:00', text: 'Damen Shipyards Antalya (DSAn) 3D Tersane Simülasyonu başlatıldı. 45.587 m² kapalı alanda üretim aktif.', type: 'info' },
+          { time: 'Gün 1, 08:00', text: 'DAMEN 1 Holünde Xplorer SX 6001, DAMEN 2 Holünde Waterbus 2907 Electric ve DAMEN 3 Holünde FCS 3210 inşa ediliyor.', type: 'success' }
+        ]
+      };
+    }
+
+    let state = createInitialState();
+    let activeTab = 'production';
+    let selectedBlueprintForModal = null;
+    let preselectedDockForModal = null;
+
+    // Load saved state safely (v2 key for 6-hall DSAn structure)
+    try {
+      const saved = localStorage.getItem('dsan_3d_tycoon_save_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.docks && parsed.docks.length === 6) {
+          state = Object.assign(createInitialState(), parsed);
+        }
+      }
+    } catch (e) {}
+
+    // --- 3. WEB AUDIO SYNTHESIZER ---
+    let audioCtx = null;
+    function ensureAudio() {
+      if (state.muted) return null;
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playSound(type) {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+
+      if (type === 'click') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(540, now);
+        osc.frequency.exponentialRampToValueAtTime(790, now + 0.06);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } else if (type === 'cash') {
+        [880, 1174.66, 1567.98].forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+          gain.gain.setValueAtTime(0.08, now + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.22);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.06);
+          osc.stop(now + idx * 0.06 + 0.23);
+        });
+      } else if (type === 'horn') {
+        [110, 164.81, 220].forEach((freq) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.linearRampToValueAtTime(freq * 0.98, now + 0.85);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.05, now + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.92);
+        });
+      } else if (type === 'weld') {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(340, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.12);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      }
+    }
+
+    // --- 4. HELPER UTILITIES ---
+    function fmtMoney(n) {
+      return '$' + Math.round(n).toLocaleString('en-US');
+    }
+
+    function getBlueprint(id) {
+      return VESSEL_BLUEPRINTS.find(b => b.id === id) || VESSEL_BLUEPRINTS[0];
+    }
+
+    function addLog(text, type = 'info') {
+      const timeStr = `Gün ${state.day}, ${String(state.hour).padStart(2, '0')}:00`;
+      state.logs.unshift({ time: timeStr, text, type });
+      if (state.logs.length > 40) state.logs.pop();
+      renderLogs();
+    }
+
+    function showToast(title, subtitle = '', tone = 'sky') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const borderMap = {
+        sky: 'border-sky-400/50 bg-slate-900/95 text-sky-200',
+        emerald: 'border-emerald-400/50 bg-slate-900/95 text-emerald-200',
+        amber: 'border-amber-400/50 bg-slate-900/95 text-amber-200',
+        rose: 'border-rose-400/50 bg-slate-900/95 text-rose-200'
+      };
+      const el = document.createElement('div');
+      el.className = `p-3 rounded-xl border shadow-xl pointer-events-auto transition-all duration-300 ${borderMap[tone] || borderMap.sky}`;
+      el.innerHTML = `
+        <div class="font-bold text-xs text-white">${title}</div>
+        ${subtitle ? `<div class="text-[11px] opacity-90 mt-0.5">${subtitle}</div>` : ''}
+      `;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(8px)';
+        setTimeout(() => el.remove(), 280);
+      }, 3600);
+    }
+
+    const FIRST_NAMES = ['Kaan', 'Deniz', 'Barış', 'Burak', 'Levent', 'Zeynep', 'Elif', 'Tayfun', 'Hakan', 'Volkan', 'Serkan', 'Defne', 'Oğuz', 'Kerem'];
+    const LAST_NAMES = ['Kaptan (İTÜ)', 'Yılmaz (YTÜ)', 'Aksoy (KTÜ)', 'Soylu', 'Poyraz', 'Karadeniz', 'Çetin', 'Bozkurt', 'Aydın', 'Korkmaz', 'Şahin', 'Vural'];
+
+    function generateCandidates() {
+      const roles = ['architect', 'welder', 'mechanic', 'outfitter'];
+      const list = [];
+      for (let i = 0; i < 3; i++) {
+        const role = roles[Math.floor(Math.random() * roles.length)];
+        const skill = 76 + Math.floor(Math.random() * 22);
+        const wage = Math.round((500 + skill * 4.2) / 10) * 10;
+        const name = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)] + ' ' + LAST_NAMES[Math.floor(Math.random() * LAST_NAMES.length)];
+        list.push({
+          id: 'cand_' + Date.now() + '_' + i,
+          name,
+          role,
+          skill,
+          morale: 92,
+          fatigue: 5,
+          wage,
+          hiringBonus: wage * 3
+        });
+      }
+      state.candidates = list;
+    }
+
+    if (!state.candidates || state.candidates.length === 0) {
+      generateCandidates();
+    }
+
+    // --- 5. CALCULATE SHIPYARD MODIFIERS ---
+    function getYardStats() {
+      let speedMult = 1.15; // Antalya 300+ sunny days base advantage
+      let qualityBonus = 8;
+      let materialDiscount = 1.0;
+      let fatigueRateMult = 1.0;
+
+      if (state.upgrades.gantry_crane) speedMult += 0.24;
+      if (state.upgrades.cnc_robotic) {
+        speedMult += 0.16;
+        qualityBonus += 8;
+      }
+      if (state.upgrades.cad_cam_office) {
+        qualityBonus += 12;
+        materialDiscount = 0.88;
+      }
+      if (state.upgrades.crew_campus) {
+        fatigueRateMult = 0.65;
+      }
+
+      if (state.shiftPolicy === 'overtime') {
+        speedMult *= 1.35;
+        fatigueRateMult *= 1.5;
+      } else if (state.shiftPolicy === 'quality') {
+        speedMult *= 0.90;
+        qualityBonus += 7;
+      }
+
+      const totalWorkers = state.workers.length;
+      const avgMorale = totalWorkers > 0
+        ? Math.round(state.workers.reduce((s, w) => s + w.morale, 0) / totalWorkers)
+        : 85;
+      const architects = state.workers.filter(w => w.role === 'architect');
+      if (architects.length > 0) {
+        const bestArch = Math.max(...architects.map(a => a.skill));
+        qualityBonus += Math.round((bestArch - 70) * 0.25);
+      }
+
+      let wageMult = state.shiftPolicy === 'overtime' ? 1.4 : 1.0;
+      const dailyWages = Math.round(state.workers.reduce((s, w) => s + w.wage, 0) * wageMult);
+      const dockOverhead = state.docks.filter(d => d.unlocked).length * 380;
+      const dailyCost = dailyWages + dockOverhead;
+
+      return {
+        speedMult,
+        qualityBonus,
+        materialDiscount,
+        fatigueRateMult,
+        avgMorale,
+        dailyCost
+      };
+    }
+
+    function getDockSpeedHoursPerTick(dockId) {
+      const stats = getYardStats();
+      const assigned = state.workers.filter(w => w.assignedDock === dockId);
+      if (assigned.length === 0) {
+        return 0.32 * stats.speedMult; // Base automated subcontractor progress
+      }
+      let workerContribution = 0;
+      assigned.forEach(w => {
+        const moraleFactor = 0.55 + (w.morale / 100) * 0.65;
+        const fatiguePenalty = w.fatigue > 75 ? 0.55 : 1.0;
+        workerContribution += (w.skill / 80) * 0.58 * moraleFactor * fatiguePenalty;
+      });
+      return (0.4 + workerContribution) * stats.speedMult;
+    }
+
+    // --- 6. SIMULATION TICK (1 HOUR PER TICK) ---
+    let launchedSeaTrialShips3D = [];
+
+    function simulateOneHour() {
+      state.hour += 1;
+      if (state.hour >= 24) {
+        state.hour = 0;
+        state.day += 1;
+        processDailyTick();
+      }
+
+      const startHour = state.shiftPolicy === 'overtime' ? 6 : 8;
+      const endHour = state.shiftPolicy === 'overtime' ? 22 : 19;
+      const isWorkingHour = state.hour >= startHour && state.hour <= endHour;
+
+      if (isWorkingHour) {
+        const stats = getYardStats();
+
+        state.docks.forEach(dock => {
+          if (!dock.unlocked || !dock.activeBuild) return;
+          const build = dock.activeBuild;
+          const hourlyProgress = getDockSpeedHoursPerTick(dock.id);
+          build.progressHours = Math.min(build.totalHours, build.progressHours + hourlyProgress);
+
+          const assigned = state.workers.filter(w => w.assignedDock === dock.id);
+          if (assigned.length > 0) {
+            const avgSkill = assigned.reduce((s, w) => s + w.skill, 0) / assigned.length;
+            const targetQuality = Math.min(100, Math.round(avgSkill * 0.85 + stats.qualityBonus));
+            build.qualityScore = Math.round(build.qualityScore * 0.92 + targetQuality * 0.08);
+          }
+
+          assigned.forEach(w => {
+            w.fatigue = Math.min(100, +(w.fatigue + 0.5 * stats.fatigueRateMult).toFixed(1));
+            if (w.fatigue > 82 && Math.random() < 0.16) {
+              w.morale = Math.max(35, w.morale - 1);
+            }
+          });
+
+          if (build.progressHours >= build.totalHours) {
+            completeVesselBuild(dock);
+          }
+        });
+      } else {
+        state.workers.forEach(w => {
+          w.fatigue = Math.max(0, +(w.fatigue - 2.5).toFixed(1));
+        });
+      }
+
+      updateHeaderUI();
+      renderDockQuickStrip();
+      renderTycoon3DInspector();
+      if (activeTab === 'production') {
+        renderDocksDetailed();
+      }
+      sync3DSceneWithState();
+    }
+
+    function processDailyTick() {
+      const stats = getYardStats();
+      state.cash -= stats.dailyCost;
+      addLog(`Antalya Serbest Bölge günlük işletme ve personel gideri ödendi: -${fmtMoney(stats.dailyCost)} (Gelir vergisi muafiyeti aktif)`, 'info');
+
+      const yachtShift = 0.96 + Math.random() * 0.24;
+      const workShift = 0.96 + Math.random() * 0.20;
+      state.marketPrices.yachtDemandMult = +yachtShift.toFixed(2);
+      state.marketPrices.workboatDemandMult = +workShift.toFixed(2);
+
+      state.contracts.forEach(c => {
+        if (c.accepted && state.day > c.deadlineDay) {
+          addLog(`⚠️ ${c.clientName} sözleşmesinin teslim süresi geçti! İtibar kaybı (-2).`, 'warn');
+          state.reputation = Math.max(30, state.reputation - 2);
+          c.deadlineDay += 6;
+        }
+      });
+
+      saveGameSilent();
+      renderAllPanels();
+    }
+
+    function completeVesselBuild(dock) {
+      const build = dock.activeBuild;
+      if (!build) return;
+      const bp = getBlueprint(build.blueprintId);
+
+      playSound('horn');
+      spawnSeaTrialShip3D(bp);
+
+      const exportBonusMult = state.upgrades.expand_docks_45m ? 1.15 : 1.0;
+      const contractIdx = state.contracts.findIndex(c => c.id === build.contractId);
+
+      if (contractIdx !== -1) {
+        const contract = state.contracts[contractIdx];
+        const qualityBonusMoney = build.qualityScore >= contract.minQuality
+          ? Math.round(contract.rewardTotal * ((build.qualityScore - contract.minQuality) * 0.009))
+          : -Math.round(contract.rewardTotal * 0.05);
+
+        const finalPayout = Math.round((contract.remainingPayout + qualityBonusMoney) * exportBonusMult);
+        state.cash += finalPayout;
+        state.totalRevenue += contract.upfrontPaid + finalPayout;
+        state.totalSold += 1;
+        state.reputation = Math.min(100, state.reputation + (build.qualityScore >= contract.minQuality ? 3 : 1));
+
+        state.salesHistory.unshift({
+          name: build.customName,
+          model: bp.name,
+          category: bp.category,
+          quality: build.qualityScore,
+          buyer: `${contract.clientName} (Sözleşme)`,
+          price: contract.upfrontPaid + finalPayout
+        });
+
+        state.contracts.splice(contractIdx, 1);
+        generateSingleContract();
+
+        showToast(
+          `🚢 2.000t Syncrolift ile Teslim Edildi: ${build.customName}`,
+          `${contract.clientName} kalan ödeme + kalite primi olarak ${fmtMoney(finalPayout)} ödedi!`,
+          'emerald'
+        );
+        addLog(`🎉 ${build.customName} (${bp.name}) ${dock.code} holünden çıkıp 2.000t Syncrolift ile denize indirildi! Tahsilat: +${fmtMoney(finalPayout)}`, 'success');
+      } else {
+        const demandMult = bp.category === 'Yacht' ? state.marketPrices.yachtDemandMult : state.marketPrices.workboatDemandMult;
+        const qualityMult = 0.88 + (build.qualityScore / 100) * 0.35;
+        const estimatedValue = Math.round(bp.basePrice * demandMult * qualityMult * exportBonusMult);
+
+        state.completedFleet.unshift({
+          uid: build.uid,
+          blueprintId: build.blueprintId,
+          customName: build.customName,
+          modelName: bp.name,
+          category: bp.category,
+          length: bp.length,
+          qualityScore: build.qualityScore,
+          investedCost: build.investedCost,
+          marketOffer: estimatedValue,
+          negotiated: false
+        });
+
+        showToast(
+          `🛥️ Syncrolift ile Denize İndirildi: ${build.customName}`,
+          `Kalite: ${build.qualityScore}/100 • Filo & İhracat Pazarından satabilirsiniz!`,
+          'sky'
+        );
+        addLog(`⚓ ${build.customName} (${bp.name}) ${dock.code} holünden sarı SPMT taşıyıcılarla 2.000t Syncrolift'e taşındı ve denize indirildi! Değeri: ${fmtMoney(estimatedValue)}.`, 'success');
+      }
+
+      dock.activeBuild = null;
+      sync3DSceneWithState();
+      renderAllPanels();
+    }
+
+    function generateSingleContract() {
+      const clientsYacht = ['Monaco Expedition Charter', 'Amels & Damen Superyacht VIP', 'Antibes Explorer Holdings', 'Dubai Royal Marina', 'Miami Superyacht Brokerage'];
+      const clientsWork = ['Avrupa Kentsel Deniz Ulaşımı', 'Kuzey Denizi Rüzgar Enerjisi BV', 'Sahil Güvenlik Komutanlığı', 'Akdeniz Offshore Hizmetleri', 'Rotterdam Liman İdaresi'];
+
+      const unlockedBlueprints = VESSEL_BLUEPRINTS.filter(b => b.length <= state.maxVesselLength);
+      const bp = unlockedBlueprints[Math.floor(Math.random() * unlockedBlueprints.length)];
+      const isYacht = bp.category === 'Yacht';
+      const clientList = isYacht ? clientsYacht : clientsWork;
+      const clientName = clientList[Math.floor(Math.random() * clientList.length)];
+      const prefix = isYacht ? 'M/Y ' : 'DSAn ';
+      const vesselNames = ['SeaXplorer', 'Waterbus', 'Interceptor', 'TwinAxe', 'Poyraz', 'Toros', 'Olympos', 'Kaleiçi'];
+      const vName = prefix + vesselNames[Math.floor(Math.random() * vesselNames.length)] + '-' + Math.floor(100 + Math.random() * 899);
+
+      const premium = 1.14 + Math.random() * 0.18;
+      const rewardTotal = Math.round((bp.basePrice * premium) / 5000) * 5000;
+      const daysNeeded = Math.max(10, Math.round(bp.buildHours / 7) + 6);
+
+      state.contracts.push({
+        id: 'c_' + Date.now() + '_' + Math.floor(Math.random() * 999),
+        clientName,
+        blueprintId: bp.id,
+        vesselName: vName,
+        rewardTotal,
+        upfrontPaid: 0,
+        remainingPayout: rewardTotal,
+        minQuality: 78 + Math.floor(Math.random() * 12),
+        deadlineDay: state.day + daysNeeded,
+        accepted: false
+      });
+    }
+
+    /*************************************************************************
+     * 7. FULL 3D WEBGL SHIPYARD TYCOON ENGINE (THREE.JS r128)
+     * Models the Antalya Free Zone, 6 DAMEN Halls, 2000t Syncrolift,
+     * 560t Travel Lift, yellow SPMT transporters, 3D ships, cranes & sparks!
+     *************************************************************************/
+    const canvas = document.getElementById('shipyardCanvas');
+    let scene, camera, renderer, raycaster, mouseVec;
+    let sunLight, ambientLight, hemiLight;
+    let waterMesh, waterGeo, skyDome, skyMaterial, skyTextures = {}, currentSkyPhase = '';
+    let hallMeshesMap = {}; // dockId -> { buildingGroup, roofMesh, craneBridge, shipGroup, spmtGroup, sparkPoints, statusRing }
+    let syncroliftPlatform = null;
+    let travelLiftFrame = null;
+    let workerFigures3D = [];
+    let interactableMeshes = [];
+    let autoOrbitEnabled = false;
+
+    // Spherical Orbit Camera State
+    const camControl = {
+      target: new THREE.Vector3(0, 4, 5),
+      desiredTarget: new THREE.Vector3(0, 4, 5),
+      theta: 0.42,
+      phi: 1.02,
+      radius: 135,
+      desiredTheta: 0.42,
+      desiredPhi: 1.02,
+      desiredRadius: 135,
+      isDragging: false,
+      isPanning: false,
+      lastX: 0,
+      lastY: 0,
+      pointerDownX: 0,
+      pointerDownY: 0
+    };
+
+    // Real-proportioned positions of DAMEN 1 - DAMEN 6 in the 3D Antalya Free Zone yard
+    const HALL_3D_LAYOUT = [
+      { id: 1, code: 'DAMEN 1', sub: '124x74m • Gövde & Boya', x: -58, z: -26, w: 30, d: 38, h: 13.5, roofColor: 0x004b87 },
+      { id: 2, code: 'DAMEN 2', sub: '150x60m • Donatım',      x: -20, z: -28, w: 26, d: 44, h: 14.0, roofColor: 0x0284c7 },
+      { id: 3, code: 'DAMEN 3', sub: '87x48m • Alüminyum',     x:  14, z: -24, w: 22, d: 28, h: 11.8, roofColor: 0x0369a1 },
+      { id: 4, code: 'DAMEN 4', sub: '111x56m • Büyük Gemi',   x:  46, z: -26, w: 25, d: 35, h: 15.5, roofColor: 0x1d4ed8 },
+      { id: 5, code: 'DAMEN 5', sub: '80x50m • Yat Holü (24m)',x: -42, z:  16, w: 24, d: 27, h: 17.5, roofColor: 0xf37021 },
+      { id: 6, code: 'DAMEN 6', sub: '117x44m • Kompozit BV1', x:  -8, z:  17, w: 22, d: 34, h: 14.0, roofColor: 0x0d9488 }
+    ];
+
+    function make3DLabelTexture(titleText, subText, badgeColor = '#f37021') {
+      const c = document.createElement('canvas');
+      c.width = 512;
+      c.height = 160;
+      const g = c.getContext('2d');
+      g.fillStyle = 'rgba(6, 15, 32, 0.92)';
+      g.strokeStyle = badgeColor;
+      g.lineWidth = 6;
+      g.beginPath();
+      g.roundRect(8, 8, 496, 144, 22);
+      g.fill();
+      g.stroke();
+
+      g.fillStyle = '#ffffff';
+      g.font = '800 44px Inter, sans-serif';
+      g.textAlign = 'center';
+      g.fillText(titleText, 256, 68);
+
+      g.fillStyle = '#7dd3fc';
+      g.font = '600 26px JetBrains Mono, monospace';
+      g.fillText(subText, 256, 118);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.needsUpdate = true;
+      return tex;
+    }
+
+    function makeSkyTexture(phase) {
+      const c = document.createElement('canvas'); c.width = 1024; c.height = 512;
+      const ctx = c.getContext('2d');
+      const palettes = {
+        day: ['#124e7a', '#4d9fca', '#f6c69c'],
+        golden: ['#293b61', '#bb806e', '#f7b36f'],
+        night: ['#030b19', '#102744', '#334862']
+      };
+      const colors = palettes[phase], grad = ctx.createLinearGradient(0, 0, 0, c.height);
+      grad.addColorStop(0, colors[0]); grad.addColorStop(.62, colors[1]); grad.addColorStop(1, colors[2]);
+      ctx.fillStyle = grad; ctx.fillRect(0, 0, c.width, c.height);
+      if (phase !== 'night') {
+        for (let i = 0; i < 13; i++) {
+          const x = 30 + ((i * 173) % 980), y = 85 + ((i * 47) % 185), w = 82 + ((i * 29) % 110);
+          const cloud = ctx.createRadialGradient(x, y, 4, x, y, w);
+          cloud.addColorStop(0, phase === 'golden' ? 'rgba(255,224,196,.16)' : 'rgba(239,249,255,.16)');
+          cloud.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = cloud; ctx.fillRect(x-w, y-w*.48, w*2, w);
+        }
+      } else {
+        for (let i = 0; i < 100; i++) {
+          const x = (i * 197 + 41) % c.width, y = (i * 83 + 19) % 270;
+          ctx.fillStyle = `rgba(224,241,255,${.25 + (i % 5) * .1})`; ctx.fillRect(x, y, i % 7 === 0 ? 2 : 1, i % 7 === 0 ? 2 : 1);
+        }
+      }
+      const tex = new THREE.CanvasTexture(c); tex.encoding = THREE.sRGBEncoding; tex.needsUpdate = true; return tex;
+    }
+
+    function buildShipyardSky() {
+      skyTextures = { day: makeSkyTexture('day'), golden: makeSkyTexture('golden'), night: makeSkyTexture('night') };
+      skyMaterial = new THREE.MeshBasicMaterial({ map: skyTextures.day, side: THREE.BackSide, depthWrite: false, fog: false });
+      skyDome = new THREE.Mesh(new THREE.SphereGeometry(700, 40, 24), skyMaterial);
+      skyDome.frustumCulled = false; skyDome.renderOrder = -100; scene.add(skyDome);
+    }
+
+    function init3DShipyard() {
+      if (!window.THREE || !canvas) return;
+      const wrapper = document.getElementById('threeViewportWrapper');
+      const W = Math.max(320, wrapper.clientWidth);
+      const H = Math.max(280, wrapper.clientHeight);
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x56a1c8);
+      scene.fog = new THREE.FogExp2(0x56a1c8, 0.0018);
+      buildShipyardSky();
+
+      camera = new THREE.PerspectiveCamera(44, W / H, 1, 1100);
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.08;
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      raycaster = new THREE.Raycaster();
+      mouseVec = new THREE.Vector2();
+
+      // Lighting
+      ambientLight = new THREE.AmbientLight(0xdbeafe, 0.65);
+      scene.add(ambientLight);
+
+      hemiLight = new THREE.HemisphereLight(0x7dd3fc, 0x0f172a, 0.55);
+      hemiLight.position.set(0, 120, 0);
+      scene.add(hemiLight);
+
+      sunLight = new THREE.DirectionalLight(0xfffbeb, 1.15);
+      sunLight.position.set(85, 130, 75);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 10;
+      sunLight.shadow.camera.far = 350;
+      const d = 115;
+      sunLight.shadow.camera.left = -d;
+      sunLight.shadow.camera.right = d;
+      sunLight.shadow.camera.top = d;
+      sunLight.shadow.camera.bottom = -d;
+      scene.add(sunLight);
+
+      // 1. MEDITERRANEAN SEA (Animated Vertex Wave Mesh)
+      waterGeo = new THREE.PlaneGeometry(520, 420, 56, 46);
+      waterGeo.rotateX(-Math.PI / 2);
+      const waterMat = new THREE.MeshStandardMaterial({
+        color: 0x087fa8,
+        roughness: 0.28,
+        metalness: 0.18,
+        flatShading: false
+      });
+      waterMesh = new THREE.Mesh(waterGeo, waterMat);
+      waterMesh.position.set(0, -1.2, 70);
+      waterMesh.receiveShadow = true;
+      scene.add(waterMesh);
+
+      // 2. ANTALYA FREE ZONE CONCRETE APRON & QUAY WALLS
+      const apronGroup = new THREE.Group();
+      const mainGroundGeo = new THREE.BoxGeometry(175, 3.2, 95);
+      const mainGroundMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.85 });
+      const mainGround = new THREE.Mesh(mainGroundGeo, mainGroundMat);
+      mainGround.position.set(-4, 0, -8);
+      mainGround.receiveShadow = true;
+      apronGroup.add(mainGround);
+
+      // Yellow safety quay edge stripe
+      const quayEdgeGeo = new THREE.BoxGeometry(175, 0.25, 1.4);
+      const quayEdgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+      const quayEdge = new THREE.Mesh(quayEdgeGeo, quayEdgeMat);
+      quayEdge.position.set(-4, 1.65, 38.6);
+      apronGroup.add(quayEdge);
+
+      // SPMT Transport Roads (Asphalt lanes with yellow markings from halls to Syncrolift)
+      const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+      const mainRoad = new THREE.Mesh(new THREE.BoxGeometry(165, 0.12, 12), roadMat);
+      mainRoad.position.set(-4, 1.62, -2);
+      apronGroup.add(mainRoad);
+
+      const waterfrontRoad = new THREE.Mesh(new THREE.BoxGeometry(165, 0.12, 10), roadMat);
+      waterfrontRoad.position.set(-4, 1.62, 33);
+      apronGroup.add(waterfrontRoad);
+
+      scene.add(apronGroup);
+
+      // 3. BEYDAĞLARI / TAURUS MOUNTAINS BACKDROP (Antalya Coastline)
+      const mountainMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.95, flatShading: true });
+      const mountainPeaks = [
+        { x: -130, z: -115, r: 65, h: 68 },
+        { x: -65,  z: -125, r: 75, h: 88 },
+        { x:  10,  z: -130, r: 80, h: 95 },
+        { x:  85,  z: -120, r: 70, h: 78 },
+        { x: 145,  z: -105, r: 60, h: 62 }
+      ];
+      mountainPeaks.forEach(p => {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(p.r, p.h, 7), mountainMat);
+        cone.position.set(p.x, p.h / 2 - 2, p.z);
+        scene.add(cone);
+      });
+
+      // 4. BUILD ALL 6 AUTHENTIC DAMEN ANTALYA PRODUCTION HALLS (DAMEN 1 - DAMEN 6)
+      HALL_3D_LAYOUT.forEach(cfg => {
+        const hallGroup = new THREE.Group();
+        hallGroup.position.set(cfg.x, 1.6, cfg.z);
+
+        // Left & Right Wall Pillars (Open front & top view window so players see the 3D ship inside!)
+        const wallMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.6, metalness: 0.2 });
+        const damenBlueStripeMat = new THREE.MeshStandardMaterial({ color: cfg.roofColor, roughness: 0.4, metalness: 0.3 });
+
+        const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1.4, cfg.h, cfg.d), wallMat);
+        leftWall.position.set(-cfg.w / 2 + 0.7, cfg.h / 2, 0);
+        leftWall.castShadow = true;
+        leftWall.receiveShadow = true;
+        hallGroup.add(leftWall);
+
+        const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1.4, cfg.h, cfg.d), wallMat);
+        rightWall.position.set(cfg.w / 2 - 0.7, cfg.h / 2, 0);
+        rightWall.castShadow = true;
+        rightWall.receiveShadow = true;
+        hallGroup.add(rightWall);
+
+        const backWall = new THREE.Mesh(new THREE.BoxGeometry(cfg.w, cfg.h, 1.4), wallMat);
+        backWall.position.set(0, cfg.h / 2, -cfg.d / 2 + 0.7);
+        backWall.castShadow = true;
+        hallGroup.add(backWall);
+
+        // Semi-transparent industrial skylight roof so you can see the 3D vessel & cranes inside the hall!
+        const roofMat = new THREE.MeshStandardMaterial({
+          color: cfg.roofColor,
+          roughness: 0.35,
+          metalness: 0.4,
+          transparent: true,
+          opacity: 0.52
+        });
+        const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(cfg.w + 0.6, 1.0, cfg.d + 0.6), roofMat);
+        roofMesh.position.set(0, cfg.h + 0.5, 0);
+        roofMesh.userData = { type: 'hall', dockId: cfg.id };
+        hallGroup.add(roofMesh);
+        interactableMeshes.push(roofMesh);
+
+        // Front fascia header with DAMEN branding stripe
+        const fascia = new THREE.Mesh(new THREE.BoxGeometry(cfg.w + 0.8, 2.6, 1.2), damenBlueStripeMat);
+        fascia.position.set(0, cfg.h - 0.8, cfg.d / 2);
+        fascia.userData = { type: 'hall', dockId: cfg.id };
+        hallGroup.add(fascia);
+        interactableMeshes.push(fascia);
+
+        // Hall Floor Pad (Interactive)
+        const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+        const floorMesh = new THREE.Mesh(new THREE.BoxGeometry(cfg.w - 2, 0.3, cfg.d - 2), floorMat);
+        floorMesh.position.set(0, 0.15, 0);
+        floorMesh.receiveShadow = true;
+        floorMesh.userData = { type: 'hall', dockId: cfg.id };
+        hallGroup.add(floorMesh);
+        interactableMeshes.push(floorMesh);
+
+        // Selection Highlight Border Ring
+        const ringGeo = new THREE.RingGeometry(Math.max(cfg.w, cfg.d) * 0.58, Math.max(cfg.w, cfg.d) * 0.63, 32);
+        ringGeo.rotateX(-Math.PI / 2);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.0 });
+        const statusRing = new THREE.Mesh(ringGeo, ringMat);
+        statusRing.position.set(0, 0.35, 0);
+        hallGroup.add(statusRing);
+
+        // Interior Overhead Bridge Crane (slides along hall Z axis)
+        const craneBridge = new THREE.Group();
+        const beamMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5, roughness: 0.4 });
+        const beam = new THREE.Mesh(new THREE.BoxGeometry(cfg.w - 2.2, 0.9, 1.4), beamMat);
+        craneBridge.add(beam);
+        const hoist = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 2.2), new THREE.MeshStandardMaterial({ color: 0xfacc15 }));
+        hoist.position.set(0, -1.0, 0);
+        craneBridge.add(hoist);
+        craneBridge.position.set(0, cfg.h - 2.2, 0);
+        hallGroup.add(craneBridge);
+
+        // Yellow SPMT Modular Transporters under the vessel (like Brochure Page 1 & 3!)
+        const spmtGroup = new THREE.Group();
+        const spmtMat = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.4 });
+        const leftSpmt = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, cfg.d * 0.58), spmtMat);
+        leftSpmt.position.set(-3.2, 0.75, 0);
+        const rightSpmt = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.1, cfg.d * 0.58), spmtMat);
+        rightSpmt.position.set(3.2, 0.75, 0);
+        spmtGroup.add(leftSpmt, rightSpmt);
+        hallGroup.add(spmtGroup);
+
+        // 3D Ship Container inside this hall
+        const shipGroup = new THREE.Group();
+        shipGroup.position.set(0, 1.4, 0);
+        hallGroup.add(shipGroup);
+
+        // 3D Welding Spark Particle System inside this hall
+        const sparkCount = 35;
+        const sparkPos = new Float32Array(sparkCount * 3);
+        for (let i = 0; i < sparkCount * 3; i++) sparkPos[i] = 0;
+        const sparkGeo = new THREE.BufferGeometry();
+        sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+        const sparkMat = new THREE.PointsMaterial({ color: 0xfde047, size: 0.95, transparent: true, opacity: 0.9 });
+        const sparkPoints = new THREE.Points(sparkGeo, sparkMat);
+        sparkPoints.position.set(0, 4, 0);
+        hallGroup.add(sparkPoints);
+
+        // Floating 3D Billboard Sign above the Hall
+        const labelTex = make3DLabelTexture(cfg.code, cfg.sub, cfg.id === 5 ? '#f37021' : '#38bdf8');
+        const spriteMat = new THREE.SpriteMaterial({ map: labelTex, transparent: true });
+        const labelSprite = new THREE.Sprite(spriteMat);
+        labelSprite.position.set(0, cfg.h + 6.5, 0);
+        labelSprite.scale.set(22, 7, 1);
+        hallGroup.add(labelSprite);
+
+        scene.add(hallGroup);
+        hallMeshesMap[cfg.id] = {
+          cfg,
+          hallGroup,
+          roofMesh,
+          craneBridge,
+          shipGroup,
+          spmtGroup,
+          sparkPoints,
+          statusRing,
+          labelSprite,
+          lastBlueprintId: null,
+          lastStage: -1
+        };
+      });
+
+      // 5. 2,000-TON SYNCROLIFT & 560-TON TRAVEL LIFT (Waterfront Launch & Refit Zone)
+      buildSyncroliftAndTravelLift3D();
+
+      // 6. 3D ANIMATED WORKERS WITH HARDHATS
+      buildAnimatedWorkers3D();
+
+      // Sync initial ships
+      sync3DSceneWithState();
+      setup3DCameraEvents();
+    }
+
+    function buildSyncroliftAndTravelLift3D() {
+      // A) 2,000-Ton Syncrolift (Right-South Waterfront Basin, x: 35, z: 48)
+      const syncGroup = new THREE.Group();
+      syncGroup.position.set(35, 0, 50);
+
+      const pierMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.8 });
+      const leftPier = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.6, 36), pierMat);
+      leftPier.position.set(-11, 0.2, 0);
+      syncGroup.add(leftPier);
+
+      const rightPier = new THREE.Mesh(new THREE.BoxGeometry(4.5, 3.6, 36), pierMat);
+      rightPier.position.set(11, 0.2, 0);
+      syncGroup.add(rightPier);
+
+      // Winch towers along Syncrolift piers
+      const winchMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.4 });
+      for (let z = -12; z <= 12; z += 8) {
+        const wL = new THREE.Mesh(new THREE.BoxGeometry(2.2, 4.5, 2.2), winchMat);
+        wL.position.set(-11, 3.8, z);
+        const wR = new THREE.Mesh(new THREE.BoxGeometry(2.2, 4.5, 2.2), winchMat);
+        wR.position.set(11, 3.8, z);
+        syncGroup.add(wL, wR);
+      }
+
+      // Movable Syncrolift Steel Platform
+      const platMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.5 });
+      syncroliftPlatform = new THREE.Mesh(new THREE.BoxGeometry(17, 0.8, 32), platMat);
+      syncroliftPlatform.position.set(0, 0.8, 0);
+      syncroliftPlatform.userData = { type: 'syncrolift', dockId: 1 };
+      syncGroup.add(syncroliftPlatform);
+      interactableMeshes.push(syncroliftPlatform);
+
+      // Syncrolift 3D Label
+      const syncTex = make3DLabelTexture('2,000t SYNCROLIFT', '90m Yat & Gemi İndirme / Refit', '#f37021');
+      const syncSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: syncTex, transparent: true }));
+      syncSprite.position.set(0, 14, 0);
+      syncSprite.scale.set(22, 7, 1);
+      syncGroup.add(syncSprite);
+
+      scene.add(syncGroup);
+
+      // B) 560-Ton Travel Lift (Mobile Boat Hoist on Finger Pier, x: 68, z: 22)
+      const tlGroup = new THREE.Group();
+      tlGroup.position.set(66, 1.6, 18);
+
+      const tlMat = new THREE.MeshStandardMaterial({ color: 0xf37021, roughness: 0.35, metalness: 0.3 });
+      const legPositions = [[-7, -7], [7, -7], [-7, 7], [7, 7]];
+      legPositions.forEach(([lx, lz]) => {
+        const col = new THREE.Mesh(new THREE.BoxGeometry(1.3, 16, 1.3), tlMat);
+        col.position.set(lx, 8, lz);
+        tlGroup.add(col);
+      });
+      // Top crossbeams
+      const topL = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.6, 16), tlMat);
+      topL.position.set(-7, 16, 0);
+      const topR = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.6, 16), tlMat);
+      topR.position.set(7, 16, 0);
+      const crossF = new THREE.Mesh(new THREE.BoxGeometry(15.5, 1.5, 1.5), tlMat);
+      crossF.position.set(0, 16, 7);
+      const crossB = new THREE.Mesh(new THREE.BoxGeometry(15.5, 1.5, 1.5), tlMat);
+      crossB.position.set(0, 16, -7);
+      tlGroup.add(topL, topR, crossF, crossB);
+
+      const tlHitBox = new THREE.Mesh(
+        new THREE.BoxGeometry(16, 16, 16),
+        new THREE.MeshBasicMaterial({ visible: false })
+      );
+      tlHitBox.position.set(0, 8, 0);
+      tlHitBox.userData = { type: 'travellift', dockId: 5 };
+      tlGroup.add(tlHitBox);
+      interactableMeshes.push(tlHitBox);
+
+      const tlTex = make3DLabelTexture('560t TRAVEL LIFT', 'Açık Alan Yat Refit & Transfer', '#38bdf8');
+      const tlSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tlTex, transparent: true }));
+      tlSprite.position.set(0, 21, 0);
+      tlSprite.scale.set(20, 6.5, 1);
+      tlGroup.add(tlSprite);
+
+      travelLiftFrame = tlGroup;
+      scene.add(tlGroup);
+    }
+
+    function buildAnimatedWorkers3D() {
+      const helmetColors = [0xef4444, 0xfacc15, 0x38bdf8, 0xffffff];
+      for (let i = 0; i < 14; i++) {
+        const wGroup = new THREE.Group();
+        const body = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.45, 0.5, 1.8, 8),
+          new THREE.MeshStandardMaterial({ color: 0x0284c7 })
+        );
+        body.position.y = 0.9;
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.42, 8, 8),
+          new THREE.MeshStandardMaterial({ color: helmetColors[i % helmetColors.length] })
+        );
+        head.position.y = 2.05;
+        wGroup.add(body, head);
+
+        const baseX = -55 + (i * 9.5);
+        const baseZ = (i % 2 === 0) ? -2 : 32;
+        wGroup.position.set(baseX, 1.65, baseZ);
+        scene.add(wGroup);
+        workerFigures3D.push({ mesh: wGroup, baseX, baseZ, phase: i * 0.9 });
+      }
+    }
+
+    // Creates a 3D procedural Yacht or Workboat mesh inside the Hall based on construction stage!
+    function build3DVesselMesh(bp, progressPct, dockId) {
+      const group = new THREE.Group();
+      const lengthScale = Math.max(12, Math.min(28, bp.length * 0.44));
+      const beamScale = Math.max(4.5, lengthScale * 0.26);
+      const hullColor = new THREE.Color(bp.colorPrimary || '#0284c7');
+      const accentColor = new THREE.Color(bp.colorAccent || '#f8fafc');
+
+      // Stage 1: Keel & Structural Frames (Always visible)
+      const keelMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.6, roughness: 0.4 });
+      const keelSpine = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, lengthScale * 0.9), keelMat);
+      keelSpine.position.y = 0.4;
+      group.add(keelSpine);
+
+      const ribCount = 6;
+      for (let r = 0; r < ribCount; r++) {
+        const rz = -lengthScale * 0.38 + (r / (ribCount - 1)) * (lengthScale * 0.76);
+        const rib = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.9, 1.4, 0.4), keelMat);
+        rib.position.set(0, 1.0, rz);
+        group.add(rib);
+      }
+
+      // Stage 2 (>= 20%): Full 3D Hull + Damen Sea Axe Bow
+      if (progressPct >= 20) {
+        const hullMat = new THREE.MeshStandardMaterial({ color: hullColor, roughness: 0.3, metalness: 0.25 });
+        const mainHull = new THREE.Mesh(new THREE.BoxGeometry(beamScale, 2.8, lengthScale * 0.72), hullMat);
+        mainHull.position.set(0, 1.6, -lengthScale * 0.08);
+        mainHull.castShadow = true;
+        mainHull.userData = { type: 'hall', dockId };
+        group.add(mainHull);
+        interactableMeshes.push(mainHull);
+
+        // Pointed Damen Axe Bow (front +Z)
+        const bowGeo = new THREE.ConeGeometry(beamScale * 0.52, lengthScale * 0.34, 4);
+        bowGeo.rotateX(Math.PI / 2);
+        bowGeo.rotateZ(Math.PI / 4);
+        const bowMesh = new THREE.Mesh(bowGeo, hullMat);
+        bowMesh.position.set(0, 1.6, lengthScale * 0.42);
+        bowMesh.userData = { type: 'hall', dockId };
+        group.add(bowMesh);
+        interactableMeshes.push(bowMesh);
+      }
+
+      // Stage 3 (>= 50%): Superstructure, Bridge, Helideck or Workboat Deck
+      if (progressPct >= 50) {
+        if (bp.category === 'Yacht') {
+          // Teak aft deck / Helideck
+          const teakMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.7 });
+          const aftDeck = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.92, 0.3, lengthScale * 0.68), teakMat);
+          aftDeck.position.set(0, 3.1, -lengthScale * 0.06);
+          group.add(aftDeck);
+
+          // Multi-tier sleek white/silver Superyacht cabin
+          const cabinMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.25, metalness: 0.15 });
+          const deck1 = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.8, 1.8, lengthScale * 0.46), cabinMat);
+          deck1.position.set(0, 4.0, 0);
+          group.add(deck1);
+
+          const bridgeDeck = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.66, 1.5, lengthScale * 0.28), cabinMat);
+          bridgeDeck.position.set(0, 5.5, lengthScale * 0.05);
+          group.add(bridgeDeck);
+
+          // Dark panoramic glass windows
+          const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.8 });
+          const winBand = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.7, 0.6, lengthScale * 0.3), glassMat);
+          winBand.position.set(0, 5.6, lengthScale * 0.06);
+          group.add(winBand);
+        } else {
+          // Workboat / Waterbus / Crew Supplier superstructure
+          const superMat = new THREE.MeshStandardMaterial({ color: accentColor, roughness: 0.4 });
+          const wheelhouse = new THREE.Mesh(new THREE.BoxGeometry(beamScale * 0.82, 2.4, lengthScale * 0.32), superMat);
+          wheelhouse.position.set(0, 4.1, lengthScale * 0.12);
+          group.add(wheelhouse);
+
+          // Workboat aft cargo/crane deck
+          const cranePost = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.4, 3.2, 8),
+            new THREE.MeshStandardMaterial({ color: 0xfacc15 })
+          );
+          cranePost.position.set(beamScale * 0.25, 4.2, -lengthScale * 0.22);
+          group.add(cranePost);
+        }
+      }
+
+      // Stage 4 (>= 80%): Radar Mast, Satcom Domes & Ready Flag
+      if (progressPct >= 80) {
+        const mastMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.5 });
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.35, 3.0, 8), mastMat);
+        mast.position.set(0, 7.2, lengthScale * 0.05);
+        group.add(mast);
+
+        const dome = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 10), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+        dome.position.set(0, 8.8, lengthScale * 0.05);
+        group.add(dome);
+      }
+
+      return group;
+    }
+
+    function spawnSeaTrialShip3D(bp) {
+      if (!scene) return;
+      const shipMesh = build3DVesselMesh(bp, 100, 1);
+      shipMesh.position.set(35, -0.5, 55); // Starts from the 2,000t Syncrolift!
+      scene.add(shipMesh);
+      launchedSeaTrialShips3D.push({ mesh: shipMesh, z: 55, x: 35, life: 420 });
+    }
+
+    function sync3DSceneWithState() {
+      if (!scene) return;
+      state.docks.forEach(dock => {
+        const hObj = hallMeshesMap[dock.id];
+        if (!hObj) return;
+
+        // Highlight selected dock ring
+        if (state.selectedDockId === dock.id) {
+          hObj.statusRing.material.opacity = 0.85;
+          hObj.statusRing.material.color.setHex(0x38bdf8);
+        } else if (dock.activeBuild) {
+          hObj.statusRing.material.opacity = 0.35;
+          hObj.statusRing.material.color.setHex(0x10b981);
+        } else {
+          hObj.statusRing.material.opacity = 0.0;
+        }
+
+        // Dim locked hall (DAMEN 6 until unlocked)
+        hObj.roofMesh.material.opacity = dock.unlocked ? 0.48 : 0.22;
+
+        if (!dock.unlocked || !dock.activeBuild) {
+          if (hObj.lastBlueprintId !== null) {
+            while (hObj.shipGroup.children.length > 0) {
+              hObj.shipGroup.remove(hObj.shipGroup.children[0]);
+            }
+            hObj.lastBlueprintId = null;
+            hObj.lastStage = -1;
+          }
+          hObj.sparkPoints.visible = false;
+          return;
+        }
+
+        const b = dock.activeBuild;
+        const bp = getBlueprint(b.blueprintId);
+        const pct = Math.min(100, Math.round((b.progressHours / b.totalHours) * 100));
+        const stageBucket = pct < 20 ? 1 : (pct < 50 ? 2 : (pct < 80 ? 3 : 4));
+
+        if (hObj.lastBlueprintId !== b.blueprintId || hObj.lastStage !== stageBucket) {
+          while (hObj.shipGroup.children.length > 0) {
+            hObj.shipGroup.remove(hObj.shipGroup.children[0]);
+          }
+          const newVesselMesh = build3DVesselMesh(bp, pct, dock.id);
+          hObj.shipGroup.add(newVesselMesh);
+          hObj.lastBlueprintId = b.blueprintId;
+          hObj.lastStage = stageBucket;
+        }
+        hObj.sparkPoints.visible = state.speed > 0;
+      });
+    }
+
+    function setup3DCameraEvents() {
+      if (!canvas) return;
+
+      canvas.addEventListener('pointerdown', (e) => {
+        camControl.pointerDownX = e.clientX;
+        camControl.pointerDownY = e.clientY;
+        camControl.lastX = e.clientX;
+        camControl.lastY = e.clientY;
+        if (e.button === 2 || e.shiftKey) {
+          camControl.isPanning = true;
+        } else {
+          camControl.isDragging = true;
+        }
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!camControl.isDragging && !camControl.isPanning) return;
+        const dx = e.clientX - camControl.lastX;
+        const dy = e.clientY - camControl.lastY;
+        camControl.lastX = e.clientX;
+        camControl.lastY = e.clientY;
+
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+          autoOrbitEnabled = false;
+        }
+
+        if (camControl.isDragging) {
+          camControl.desiredTheta -= dx * 0.0075;
+          camControl.desiredPhi = Math.max(0.32, Math.min(1.42, camControl.desiredPhi - dy * 0.0065));
+        } else if (camControl.isPanning) {
+          const panSpeed = 0.14;
+          camControl.desiredTarget.x = Math.max(-75, Math.min(75, camControl.desiredTarget.x - dx * panSpeed));
+          camControl.desiredTarget.z = Math.max(-45, Math.min(65, camControl.desiredTarget.z - dy * panSpeed));
+        }
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        const distMoved = Math.hypot(e.clientX - camControl.pointerDownX, e.clientY - camControl.pointerDownY);
+        camControl.isDragging = false;
+        camControl.isPanning = false;
+
+        // If it was a clean click (not a drag), perform 3D Raycasting!
+        if (distMoved < 6 && e.target === canvas) {
+          handle3DRaycastClick(e);
+        }
+      });
+
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        camControl.desiredRadius = Math.max(42, Math.min(220, camControl.desiredRadius + e.deltaY * 0.08));
+      }, { passive: false });
+    }
+
+    function handle3DRaycastClick(e) {
+      if (!raycaster || !camera) return;
+      const rect = canvas.getBoundingClientRect();
+      mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouseVec, camera);
+      const hits = raycaster.intersectObjects(interactableMeshes, true);
+      if (hits.length > 0) {
+        let obj = hits[0].object;
+        while (obj && (!obj.userData || !obj.userData.dockId) && obj.parent) {
+          obj = obj.parent;
+        }
+        if (obj && obj.userData && obj.userData.dockId) {
+          const dockId = obj.userData.dockId;
+          playSound('click');
+          select3DHall(dockId, obj.userData.type);
+        }
+      }
+    }
+
+    function select3DHall(dockId, clickType = 'hall') {
+      state.selectedDockId = dockId;
+      const layout = HALL_3D_LAYOUT.find(h => h.id === dockId);
+      if (layout && clickType === 'hall') {
+        camControl.desiredTarget.set(layout.x, 5, layout.z);
+        camControl.desiredRadius = 78;
+        camControl.desiredPhi = 0.98;
+      } else if (clickType === 'syncrolift') {
+        camControl.desiredTarget.set(35, 2, 50);
+        camControl.desiredRadius = 68;
+      } else if (clickType === 'travellift') {
+        camControl.desiredTarget.set(66, 4, 18);
+        camControl.desiredRadius = 62;
+      }
+      sync3DSceneWithState();
+      renderTycoon3DInspector();
+      renderDockQuickStrip();
+    }
+
+    let threeAnimTime = 0;
+    function render3DFrame() {
+      if (!renderer || !scene || !camera) return;
+      threeAnimTime += (state.speed === 0 ? 0.01 : 0.02 + state.speed * 0.012);
+
+      if (autoOrbitEnabled) {
+        camControl.desiredTheta += 0.0032;
+      }
+
+      // Smoothly interpolate camera spherical coordinates
+      camControl.theta += (camControl.desiredTheta - camControl.theta) * 0.09;
+      camControl.phi += (camControl.desiredPhi - camControl.phi) * 0.09;
+      camControl.radius += (camControl.desiredRadius - camControl.radius) * 0.09;
+      camControl.target.lerp(camControl.desiredTarget, 0.09);
+
+      camera.position.x = camControl.target.x + camControl.radius * Math.sin(camControl.phi) * Math.sin(camControl.theta);
+      camera.position.y = camControl.target.y + camControl.radius * Math.cos(camControl.phi);
+      camera.position.z = camControl.target.z + camControl.radius * Math.sin(camControl.phi) * Math.cos(camControl.theta);
+      camera.lookAt(camControl.target);
+
+      // Day / Night Sun Lighting adjustment
+      const phase = state.hour < 5 || state.hour >= 21 ? 'night' : state.hour < 7 || state.hour >= 18 ? 'golden' : 'day';
+      const phaseColors = { day: 0x56a1c8, golden: 0x9d746d, night: 0x071326 };
+      if (sunLight && scene) {
+        sunLight.intensity = phase === 'night' ? 0.28 : phase === 'golden' ? 0.82 : 1.28;
+        sunLight.color.setHex(phase === 'golden' ? 0xffc27a : 0xfffbeb);
+        ambientLight.intensity = phase === 'night' ? 0.42 : phase === 'golden' ? 0.58 : 0.78;
+        hemiLight.intensity = phase === 'night' ? 0.34 : phase === 'golden' ? 0.44 : 0.62;
+        scene.background.setHex(phaseColors[phase]); scene.fog.color.setHex(phaseColors[phase]);
+        if (phase !== currentSkyPhase && skyMaterial) { skyMaterial.map = skyTextures[phase]; skyMaterial.needsUpdate = true; currentSkyPhase = phase; }
+        if (waterMesh) waterMesh.material.color.setHex(phase === 'night' ? 0x075170 : phase === 'golden' ? 0x247b91 : 0x087fa8);
+      }
+
+      // Animate Mediterranean sea waves
+      if (waterGeo) {
+        const pos = waterGeo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const vx = pos.getX(i);
+          const vz = pos.getZ(i);
+          const waveY = Math.sin(vx * 0.06 + threeAnimTime * 2.0) * 0.35 + Math.cos(vz * 0.08 + threeAnimTime * 1.6) * 0.28;
+          pos.setY(i, waveY);
+        }
+        pos.needsUpdate = true;
+        waterGeo.computeVertexNormals();
+      }
+
+      // Animate hall overhead cranes & 3D welding spark particles
+      state.docks.forEach((dock, idx) => {
+        const hObj = hallMeshesMap[dock.id];
+        if (!hObj) return;
+        if (dock.activeBuild && state.speed > 0) {
+          hObj.craneBridge.position.z = Math.sin(threeAnimTime * 1.1 + idx) * (hObj.cfg.d * 0.32);
+
+          // Update welding sparks
+          const spAttr = hObj.sparkPoints.geometry.attributes.position;
+          for (let s = 0; s < spAttr.count; s++) {
+            let sy = spAttr.getY(s) - 0.22;
+            let sx = spAttr.getX(s) + (Math.random() - 0.5) * 0.35;
+            let sz = spAttr.getZ(s) + (Math.random() - 0.5) * 0.35;
+            if (sy < -1.5) {
+              sy = 2.5 + Math.random() * 2.0;
+              sx = (Math.random() - 0.5) * 6;
+              sz = (Math.random() - 0.5) * 12;
+            }
+            spAttr.setXYZ(s, sx, sy, sz);
+          }
+          spAttr.needsUpdate = true;
+        }
+      });
+
+      // Animate 2,000t Syncrolift gentle heave & 560t Travel Lift motion
+      if (syncroliftPlatform) {
+        syncroliftPlatform.position.y = 0.5 + Math.sin(threeAnimTime * 0.9) * 0.45;
+      }
+      if (travelLiftFrame && state.speed > 0) {
+        travelLiftFrame.position.z = 18 + Math.sin(threeAnimTime * 0.55) * 6;
+      }
+
+      // Animate 3D Hardhat Workers patrolling the yard
+      workerFigures3D.forEach(w => {
+        w.mesh.position.x = w.baseX + Math.sin(threeAnimTime * 0.8 + w.phase) * 5.5;
+      });
+
+      // Animate Launched Sea Trial Vessels sailing out into Antalya Bay
+      for (let i = launchedSeaTrialShips3D.length - 1; i >= 0; i--) {
+        const item = launchedSeaTrialShips3D[i];
+        item.z += 0.28;
+        item.mesh.position.z = item.z;
+        item.mesh.position.y = -0.4 + Math.sin(threeAnimTime * 2 + i) * 0.2;
+        item.life -= 1;
+        if (item.life <= 0) {
+          scene.remove(item.mesh);
+          launchedSeaTrialShips3D.splice(i, 1);
+        }
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    function resizeCanvas() {
+      const wrapper = document.getElementById('threeViewportWrapper');
+      if (!wrapper || !renderer || !camera) return;
+      const W = Math.max(320, wrapper.clientWidth);
+      const H = Math.max(280, wrapper.clientHeight);
+      camera.aspect = W / H;
+      camera.updateProjectionMatrix();
+      renderer.setSize(W, H);
+    }
+
+    // --- 8. FLOATING 3D TYCOON INSPECTOR DRAWER ---
+    function renderTycoon3DInspector() {
+      const drawer = document.getElementById('tycoon3DInspector');
+      if (!drawer) return;
+      const dock = state.docks.find(d => d.id === state.selectedDockId) || state.docks[0];
+      const assigned = state.workers.filter(w => w.assignedDock === dock.id);
+      const speedHr = getDockSpeedHoursPerTick(dock.id).toFixed(2);
+
+      if (!dock.unlocked) {
+        drawer.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-300">🔒 KİLİTLİ ÜRETİM HOLÜ</span>
+              <span class="text-[11px] font-mono text-slate-400">3D Seçili</span>
+            </div>
+            <h3 class="text-sm font-bold text-white">${dock.name}</h3>
+            <p class="text-xs text-slate-300">${dock.dims}</p>
+            <p class="text-xs text-slate-400">${dock.cranes}</p>
+            <p class="text-xs text-amber-300 bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/30">
+              2026 dönüşümü ile DAMEN 6 ileri teknoloji kompozit (BV Mode I) holünü açmak için yatırımlar sekmesini kullanın.
+            </p>
+          </div>
+          <button data-action="go-upgrades" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-sky-600 text-white text-xs font-bold shadow">
+            🏗️ DAMEN 6 Holünü Aç ($680,000)
+          </button>
+        `;
+        return;
+      }
+
+      if (!dock.activeBuild) {
+        drawer.innerHTML = `
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300">✓ ÜRETİME HAZIR HOL</span>
+              <span class="text-[11px] font-mono text-sky-300">${dock.code}</span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-white">${dock.name}</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">${dock.dims}</p>
+              <p class="text-[11px] text-sky-300 mt-0.5">🏗️ ${dock.cranes}</p>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-1">
+              <div class="flex justify-between">
+                <span class="text-slate-400">Atanmış Mühendis/Usta:</span>
+                <strong class="text-sky-300">${assigned.length} Kişi (${speedHr} sa/vuruş)</strong>
+              </div>
+              <div class="text-[11px] text-slate-400 truncate">
+                ${assigned.length > 0 ? assigned.map(w => w.name).join(', ') : 'Genel taşeron ekibi aktif'}
+              </div>
+            </div>
+            <div class="space-y-1.5">
+              <div class="text-[11px] font-semibold text-slate-300">Hızlı 3D Gemi İnşası Başlat:</div>
+              <div class="grid grid-cols-1 gap-1.5">
+                ${VESSEL_BLUEPRINTS.slice(0, 3).map(bp => `
+                  <button data-action="open-build-modal" data-bpid="${bp.id}" data-dock="${dock.id}" class="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 flex items-center justify-between text-left transition">
+                    <div>
+                      <div class="text-xs font-bold text-white">${bp.name}</div>
+                      <div class="text-[10px] text-slate-400">${bp.hullType}</div>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-sky-300">Başlat →</span>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+          <button data-action="quick-start-dock" data-dock="${dock.id}" class="mt-2 w-full py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-bold shadow">
+            ⚓ Tüm Portföyden Gemi Seç (${dock.code})
+          </button>
+        `;
+        return;
+      }
+
+      const b = dock.activeBuild;
+      const bp = getBlueprint(b.blueprintId);
+      const pct = Math.min(100, Math.round((b.progressHours / b.totalHours) * 100));
+      const stageLabel = pct < 20 ? '1. Omurga & SPMT Blok Montajı'
+                       : pct < 50 ? '2. Gövde Kaynağı & Ana Makine'
+                       : pct < 80 ? '3. Üst Yapı & Mühendislik Donatımı'
+                       : '4. Boya & 2000t Syncrolift Testi';
+
+      drawer.innerHTML = `
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/20 text-sky-300">${dock.code} • 3D İNŞAAT AKTİF</span>
+            <span class="font-mono font-bold text-xs text-emerald-300">%${pct}</span>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">${b.customName}</h3>
+            <p class="text-[11px] text-sky-300">${bp.name} (${bp.length}m)</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">${dock.dims} • ${dock.cranes}</p>
+          </div>
+          <div class="space-y-1">
+            <div class="flex justify-between text-[11px]">
+              <span class="text-amber-300 font-medium">${stageLabel}</span>
+              <span class="font-mono text-slate-400">${Math.round(b.progressHours)}/${b.totalHours}s</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-orange-500 via-sky-400 to-emerald-400" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+            <div><span class="text-slate-400 block">IACS/BV Kalite:</span><strong class="text-amber-300 font-mono">★ ${b.qualityScore}/100</strong></div>
+            <div><span class="text-slate-400 block">Holdeki Ekip:</span><strong class="text-sky-300 font-mono">👷 ${assigned.length} Uzman</strong></div>
+          </div>
+        </div>
+        <div class="space-y-1.5 pt-2 border-t border-slate-800">
+          <button data-action="boost-build" data-dock="${dock.id}" class="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold transition">
+            ⚡ 3D Vardiyayı Hızlandır (+15 Saat • $28,000)
+          </button>
+          <div class="flex gap-1.5">
+            <button data-action="go-workers" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold">
+              👷 Mühendis Ata
+            </button>
+            <button data-action="quick-sea-trial" class="flex-1 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 text-[11px] font-semibold">
+              🚢 3D Test Gemisi
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- 9. UI RENDER FUNCTIONS ---
+    function updateHeaderUI() {
+      const stats = getYardStats();
+      document.getElementById('shipyardNameDisplay').textContent = state.shipyardName;
+      document.getElementById('dateDisplay').textContent = `Gün ${state.day} • ${String(state.hour).padStart(2, '0')}:00`;
+      document.getElementById('cashDisplay').textContent = fmtMoney(state.cash);
+      document.getElementById('repDisplay').textContent = `★ ${state.reputation}/100`;
+      document.getElementById('staffSummaryDisplay').textContent = `${state.workers.length} Uzman • %${stats.avgMorale} Moral`;
+      document.getElementById('dailyCostDisplay').textContent = `-${fmtMoney(stats.dailyCost)}/gün`;
+
+      const yPct = Math.round((state.marketPrices.yachtDemandMult - 1) * 100);
+      const ySign = yPct >= 0 ? `+${yPct}%` : `${yPct}%`;
+      const trendEl = document.getElementById('marketTrendBadge');
+      trendEl.textContent = `Küresel İhracat Talebi: ${ySign}`;
+      trendEl.className = yPct >= 0 ? 'text-emerald-400 font-medium' : 'text-amber-400 font-medium';
+
+      document.getElementById('matSteelDisplay').textContent = `${state.materials.steel}t`;
+      document.getElementById('matEngineDisplay').textContent = `${state.materials.engines} Adet`;
+      document.getElementById('matLuxuryDisplay').textContent = `${state.materials.luxury} Br`;
+
+      const unlockedDocks = state.docks.filter(d => d.unlocked).length;
+      const busyDocks = state.docks.filter(d => d.unlocked && d.activeBuild).length;
+      document.getElementById('badgeActiveBuilds').textContent = `${busyDocks}/${unlockedDocks}`;
+      document.getElementById('badgeContracts').textContent = String(state.contracts.length);
+      document.getElementById('badgeFleet').textContent = String(state.completedFleet.length);
+      document.getElementById('badgeWorkers').textContent = String(state.workers.length);
+
+      document.getElementById('statQualityBonus').textContent = `+${stats.qualityBonus} Puan`;
+      document.getElementById('statSpeedMult').textContent = `${stats.speedMult.toFixed(2)}x Hız`;
+      document.getElementById('statTotalRevenue').textContent = fmtMoney(state.totalRevenue);
+      document.getElementById('statMaxLength').textContent = `${state.maxVesselLength}m (Refit 90m)`;
+      document.getElementById('efficiencyBadge').textContent = `%${Math.round(stats.speedMult * 100)} Verim`;
+
+      const roleContainer = document.getElementById('roleCoverageContainer');
+      if (roleContainer) {
+        roleContainer.innerHTML = Object.entries(ROLE_DEFINITIONS).map(([roleKey, info]) => {
+          const count = state.workers.filter(w => w.role === roleKey).length;
+          return `
+            <div class="flex items-center justify-between bg-slate-900/70 px-2.5 py-1.5 rounded-lg border border-slate-800/80">
+              <span class="flex items-center gap-1.5 text-slate-300 truncate"><span>${info.icon}</span><span class="truncate">${info.label}</span></span>
+              <span class="font-mono font-bold ${info.color} shrink-0 ml-1">${count} Kişi</span>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderDockQuickStrip() {
+      const container = document.getElementById('dockQuickStrip');
+      if (!container) return;
+      container.innerHTML = state.docks.map(dock => {
+        const isSelected = state.selectedDockId === dock.id;
+        const borderCls = isSelected ? 'border-sky-400 bg-sky-950/50' : 'border-slate-800/80 bg-slate-900/90';
+
+        if (!dock.unlocked) {
+          return `
+            <div data-action="focus-3d-hall" data-dock="${dock.id}" class="cursor-pointer p-2 rounded-xl border ${borderCls} flex items-center justify-between opacity-75 hover:opacity-100 transition">
+              <div class="truncate">
+                <div class="text-xs font-bold text-slate-400">🔒 ${dock.code}</div>
+                <div class="text-[10px] text-slate-500 truncate">Kompozit Holü</div>
+              </div>
+              <button data-action="go-upgrades" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 text-[10px] font-semibold">Aç</button>
+            </div>
+          `;
+        }
+        if (!dock.activeBuild) {
+          return `
+            <div data-action="focus-3d-hall" data-dock="${dock.id}" class="cursor-pointer p-2 rounded-xl border ${borderCls} flex items-center justify-between hover:border-sky-400/60 transition">
+              <div class="truncate">
+                <div class="text-xs font-bold text-white">${dock.code}</div>
+                <div class="text-[10px] text-emerald-400">Müsait • 3D Odakla</div>
+              </div>
+              <button data-action="quick-start-dock" data-dock="${dock.id}" class="px-2 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-bold transition shrink-0">
+                + Gemi Seç
+              </button>
+            </div>
+          `;
+        }
+        const b = dock.activeBuild;
+        const pct = Math.min(100, Math.round((b.progressHours / b.totalHours) * 100));
+        return `
+          <div data-action="focus-3d-hall" data-dock="${dock.id}" class="cursor-pointer p-2 rounded-xl border ${borderCls} space-y-1 hover:border-sky-400 transition">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white truncate">${dock.code}: ${b.customName}</span>
+              <span class="text-[10px] font-mono font-bold text-sky-300">%${pct}</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div class="h-full bg-gradient-to-r from-orange-500 to-sky-400" style="width:${pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDocksDetailed() {
+      const container = document.getElementById('docksDetailedContainer');
+      if (!container) return;
+      container.innerHTML = state.docks.map(dock => {
+        const assignedWorkers = state.workers.filter(w => w.assignedDock === dock.id);
+        const speedPerHr = getDockSpeedHoursPerTick(dock.id).toFixed(2);
+
+        if (!dock.unlocked) {
+          return `
+            <div class="glass-card rounded-xl p-4 border border-slate-800 flex flex-col justify-between opacity-80">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h4 class="font-bold text-sm text-slate-300">🔒 ${dock.name}</h4>
+                  <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-400">2026 Dönüşümü</span>
+                </div>
+                <p class="text-xs text-sky-300 mt-1">${dock.dims} • ${dock.cranes}</p>
+                <p class="text-xs text-slate-400 mt-1.5">Damen Shipyards Group'un Kompozit Bilgi Merkezi (BV Mode I) olan DAMEN 6 holünü yatırımlar sekmesinden devreye alabilirsiniz.</p>
+              </div>
+              <button data-action="go-upgrades" class="mt-3 w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-semibold">
+                🏗️ Tersane Yatırımlarına Git
+              </button>
+            </div>
+          `;
+        }
+
+        if (!dock.activeBuild) {
+          return `
+            <div class="glass-card rounded-xl p-4 flex flex-col justify-between">
+              <div>
+                <div class="flex items-center justify-between">
+                  <h4 class="font-bold text-sm text-white">${dock.name}</h4>
+                  <button data-action="focus-3d-hall" data-dock="${dock.id}" class="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-medium">🎥 3D Göster</button>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">${dock.dims} • ${dock.cranes}</p>
+                <p class="text-xs text-slate-300 mt-1.5">Atanmış Ekip: <strong class="text-sky-300">${assignedWorkers.length} Uzman</strong> (${speedPerHr} saat/vuruş hız)</p>
+                <div class="mt-2 flex flex-wrap gap-1">
+                  ${assignedWorkers.length > 0
+                    ? assignedWorkers.map(w => `<span class="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-200">${ROLE_DEFINITIONS[w.role].icon} ${w.name}</span>`).join('')
+                    : `<span class="text-[11px] text-amber-300">⚠️ Hızlı üretim için Mühendislik & İK sekmesinden bu hole uzman atayın.</span>`
+                  }
+                </div>
+              </div>
+              <button data-action="quick-start-dock" data-dock="${dock.id}" class="mt-3 w-full py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white text-xs font-bold shadow">
+                ⚓ Bu Holde Yeni Üretim Başlat
+              </button>
+            </div>
+          `;
+        }
+
+        const b = dock.activeBuild;
+        const bp = getBlueprint(b.blueprintId);
+        const pct = Math.min(100, Math.round((b.progressHours / b.totalHours) * 100));
+        const remHours = Math.max(0, Math.ceil((b.totalHours - b.progressHours) / Math.max(0.2, +speedPerHr)));
+        const stageName = pct < 20 ? '1. Omurga & SPMT Blok Montajı'
+                        : pct < 50 ? '2. Gövde Kaynağı & Ana Makine'
+                        : pct < 80 ? '3. Üst Yapı & Kabin Donatımı'
+                        : '4. Boya & 2000t Syncrolift Deniz Tecrübesi';
+
+        return `
+          <div class="glass-card rounded-xl p-4 border border-sky-500/40 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="text-[11px] font-semibold uppercase tracking-wider ${bp.category === 'Yacht' ? 'text-sky-400' : 'text-amber-400'}">${dock.code} • ${dock.dims}</span>
+                <h4 class="font-bold text-sm sm:text-base text-white">${b.customName} <span class="text-xs font-normal text-slate-400">(${bp.name})</span></h4>
+              </div>
+              <button data-action="focus-3d-hall" data-dock="${dock.id}" class="px-2.5 py-1 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 font-mono font-bold text-xs">🎥 %${pct}</button>
+            </div>
+
+            <div class="space-y-1">
+              <div class="flex justify-between text-xs">
+                <span class="text-sky-300 font-medium">${stageName}</span>
+                <span class="font-mono text-slate-400">~${remHours} vuruş kaldı</span>
+              </div>
+              <div class="w-full h-2.5 rounded-full bg-slate-900 overflow-hidden p-0.5 border border-slate-700">
+                <div class="h-full rounded-full bg-gradient-to-r from-orange-500 via-sky-400 to-emerald-400 transition-all duration-300" style="width:${pct}%"></div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 text-xs bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+              <div>
+                <span class="text-slate-400 block text-[10px]">IACS/BV Kalite</span>
+                <span class="font-mono font-bold text-amber-300">★ ${b.qualityScore}/100</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px]">Hol Ekibi</span>
+                <span class="font-mono font-bold text-sky-300">👷 ${assignedWorkers.length} Uzman</span>
+              </div>
+              <div>
+                <span class="text-slate-400 block text-[10px]">Üretim Türü</span>
+                <span class="font-semibold ${b.contractId ? 'text-emerald-300' : 'text-purple-300'}">${b.contractId ? 'İhracat Söz.' : 'Seri Üretim'}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 pt-1">
+              <button data-action="boost-build" data-dock="${dock.id}" class="flex-1 py-1.5 px-3 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold transition">
+                ⚡ Hızlandır (+15 Saat • $28,000)
+              </button>
+              <button data-action="go-workers" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium">
+                👷 Ekip Ata
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderBlueprintsCatalog() {
+      const grid = document.getElementById('blueprintsGrid');
+      if (!grid) return;
+      const stats = getYardStats();
+      const filtered = VESSEL_BLUEPRINTS.filter(bp => state.blueprintFilter === 'all' || bp.category === state.blueprintFilter);
+
+      grid.innerHTML = filtered.map(bp => {
+        const lengthLocked = bp.length > state.maxVesselLength;
+        const repLocked = state.reputation < bp.minRep;
+        const isLocked = lengthLocked || repLocked;
+        const discountedCost = Math.round(bp.materialCost * stats.materialDiscount);
+        const demandMult = bp.category === 'Yacht' ? state.marketPrices.yachtDemandMult : state.marketPrices.workboatDemandMult;
+        const estSale = Math.round(bp.basePrice * demandMult);
+
+        return `
+          <div class="glass-card rounded-xl p-4 flex flex-col justify-between ${isLocked ? 'opacity-70' : ''}">
+            <div class="space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${bp.category === 'Yacht' ? 'bg-sky-500/20 text-sky-300' : 'bg-orange-500/20 text-orange-300'}">
+                    ${bp.category === 'Yacht' ? '🛥️ DSAn Yachting' : '🚢 DSAn Workboats'} • ${bp.length}m
+                  </span>
+                  <h4 class="font-bold text-sm sm:text-base text-white mt-1">${bp.name}</h4>
+                </div>
+                <div class="text-right">
+                  <div class="text-[10px] text-slate-400">Tahmini İhracat</div>
+                  <div class="font-mono font-bold text-sm text-emerald-400">${fmtMoney(estSale)}</div>
+                </div>
+              </div>
+
+              <p class="text-xs text-slate-400 leading-relaxed">${bp.desc}</p>
+
+              <div class="grid grid-cols-3 gap-1.5 text-[11px] bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                <div>
+                  <span class="text-slate-400 block">İnşa Süresi</span>
+                  <span class="font-mono font-semibold text-white">⏱️ ${bp.buildHours} Saat</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Nakit Maliyet</span>
+                  <span class="font-mono font-semibold text-amber-300">${fmtMoney(discountedCost)}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block">Önerilen Hol</span>
+                  <span class="font-medium text-sky-200 truncate block">${bp.recommendedHall}</span>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
+                <span class="px-2 py-0.5 rounded bg-slate-800">🔩 ${bp.steelReq}t Gövde</span>
+                <span class="px-2 py-0.5 rounded bg-slate-800">⚙️ ${bp.engineReq} İtki</span>
+                <span class="px-2 py-0.5 rounded bg-slate-800">🧭 ${bp.luxuryReq} Donatım</span>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center justify-between">
+              ${lengthLocked
+                ? `<span class="text-xs text-rose-300 font-medium">🔒 Maks. Boy ${state.maxVesselLength}m (${bp.length}m gerekir)</span>`
+                : repLocked
+                ? `<span class="text-xs text-amber-300 font-medium">🔒 Min. İtibar ★ ${bp.minRep} Gerekir</span>`
+                : `<button data-action="open-build-modal" data-bpid="${bp.id}" class="w-full py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs transition shadow">
+                    ⚓ Kızağa Koy ve Üret
+                   </button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderContracts() {
+      const container = document.getElementById('contractsListContainer');
+      if (!container) return;
+
+      container.innerHTML = state.contracts.map(c => {
+        const bp = getBlueprint(c.blueprintId);
+        const upfront = Math.round(c.rewardTotal * 0.25);
+        const daysLeft = c.deadlineDay - state.day;
+        const inProgress = state.docks.some(d => d.activeBuild && d.activeBuild.contractId === c.id);
+
+        return `
+          <div class="glass-card rounded-xl p-4 flex flex-col justify-between border ${c.accepted ? 'border-emerald-500/40' : 'border-slate-800'}">
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-2">
+                <div>
+                  <span class="text-[11px] font-bold uppercase tracking-wider ${bp.category === 'Yacht' ? 'text-sky-400' : 'text-amber-400'}">${c.clientName}</span>
+                  <h4 class="font-bold text-sm sm:text-base text-white">${c.vesselName} <span class="text-xs font-normal text-slate-400">(${bp.name})</span></h4>
+                </div>
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${c.accepted ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+                  ${inProgress ? '⚙️ 3D Holde Üretiliyor' : (c.accepted ? '✓ Sözleşme İmzalandı' : 'İhracat Teklifi')}
+                </span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-xs bg-slate-900/90 p-2.5 rounded-lg border border-slate-800">
+                <div>
+                  <span class="text-slate-400 block text-[10px]">FOB İhracat Bedeli</span>
+                  <span class="font-mono font-bold text-emerald-400">${fmtMoney(c.rewardTotal)}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px]">IACS Min. Kalite</span>
+                  <span class="font-mono font-bold text-amber-300">★ ${c.minQuality}/100</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px]">Teslim Süresi</span>
+                  <span class="font-mono font-bold text-sky-300">Gün ${c.deadlineDay} (${daysLeft}g)</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-2.5 border-t border-slate-800 flex items-center gap-2">
+              ${!c.accepted ? `
+                <button data-action="accept-contract" data-cid="${c.id}" class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                  ✍️ İmzala ve %25 Peşinat Al (+${fmtMoney(upfront)})
+                </button>
+              ` : inProgress ? `
+                <span class="text-xs text-sky-300 font-medium">⚓ Üretim holünde inşa ediliyor, tamamlanınca Syncrolift ile teslim edilecek.</span>
+              ` : `
+                <button data-action="build-for-contract" data-cid="${c.id}" data-bpid="${bp.id}" class="flex-1 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition">
+                  ⚓ Şimdi Kızağa Koy ve İnşayı Başlat
+                </button>
+              `}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderShowroom() {
+      const container = document.getElementById('completedFleetContainer');
+      const totalSoldEl = document.getElementById('totalSoldCount');
+      const tableBody = document.getElementById('salesHistoryTableBody');
+      if (totalSoldEl) totalSoldEl.textContent = `${state.totalSold} Gemi`;
+
+      if (container) {
+        if (state.completedFleet.length === 0) {
+          container.innerHTML = `
+            <div class="p-6 rounded-xl bg-slate-900/70 border border-slate-800 text-center space-y-2">
+              <div class="text-2xl">🛥️</div>
+              <div class="text-sm font-bold text-white">Syncrolift Rıhtımında Satış Bekleyen Geminiz Yok</div>
+              <p class="text-xs text-slate-400 max-w-md mx-auto">DAMEN 1–6 hollerinde seri üretim amacıyla ürettiğiniz yat ve workboatlar tamamlandığında burada listelenir.</p>
+            </div>
+          `;
+        } else {
+          container.innerHTML = state.completedFleet.map(ship => {
+            const profit = ship.marketOffer - ship.investedCost;
+            return `
+              <div class="glass-card rounded-xl p-4 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-4">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${ship.category === 'Yacht' ? 'bg-sky-500/20 text-sky-300' : 'bg-orange-500/20 text-orange-300'}">${ship.category} • ${ship.length}m</span>
+                    <h4 class="font-bold text-base text-white">${ship.customName} <span class="text-xs font-normal text-slate-400">(${ship.modelName})</span></h4>
+                  </div>
+                  <div class="flex flex-wrap items-center gap-4 text-xs text-slate-300">
+                    <span>IACS/BV Kalite: <strong class="text-amber-300">★ ${ship.qualityScore}/100</strong></span>
+                    <span>Maliyet: <strong class="font-mono text-slate-200">${fmtMoney(ship.investedCost)}</strong></span>
+                    <span>Vergisiz Net Kâr: <strong class="font-mono text-emerald-400">+${fmtMoney(profit)}</strong></span>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="text-right mr-2">
+                    <div class="text-[10px] text-slate-400">Alıcı Teklifi</div>
+                    <div class="font-mono font-bold text-base text-emerald-300">${fmtMoney(ship.marketOffer)}</div>
+                  </div>
+                  ${!ship.negotiated ? `
+                    <button data-action="negotiate-sale" data-uid="${ship.uid}" class="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-semibold">
+                      🤝 Pazarlık Yap
+                    </button>
+                  ` : ''}
+                  <button data-action="sell-vessel" data-uid="${ship.uid}" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow">
+                    💰 Hemen Sat (${fmtMoney(ship.marketOffer)})
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      if (tableBody) {
+        tableBody.innerHTML = state.salesHistory.slice(0, 8).map(item => `
+          <tr class="text-slate-300">
+            <td class="py-2 px-2 font-semibold text-white">${item.name} <span class="text-slate-400 font-normal">(${item.model})</span></td>
+            <td class="py-2 px-2">${item.category}</td>
+            <td class="py-2 px-2 font-mono text-amber-300">★ ${item.quality}</td>
+            <td class="py-2 px-2">${item.buyer}</td>
+            <td class="py-2 px-2 text-right font-mono font-bold text-emerald-400">${fmtMoney(item.price)}</td>
+          </tr>
+        `).join('');
+      }
+    }
+
+    function renderWorkers() {
+      const rosterGrid = document.getElementById('workersRosterGrid');
+      const candGrid = document.getElementById('candidatesGrid');
+
+      if (rosterGrid) {
+        rosterGrid.innerHTML = state.workers.map(w => {
+          const rInfo = ROLE_DEFINITIONS[w.role] || ROLE_DEFINITIONS.welder;
+          const unlockedDocks = state.docks.filter(d => d.unlocked);
+          return `
+            <div class="glass-card rounded-xl p-4 space-y-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-xl ${rInfo.bg} flex items-center justify-center text-lg">${rInfo.icon}</div>
+                  <div>
+                    <h4 class="font-bold text-sm text-white">${w.name}</h4>
+                    <span class="text-xs ${rInfo.color} font-medium">${rInfo.label}</span>
+                  </div>
+                </div>
+                <span class="font-mono text-xs text-slate-300 bg-slate-900 px-2 py-1 rounded border border-slate-800">${fmtMoney(w.wage)}/gün</span>
+              </div>
+
+              <div class="grid grid-cols-3 gap-2 text-xs bg-slate-900/80 p-2 rounded-lg border border-slate-800">
+                <div>
+                  <span class="text-slate-400 block text-[10px]">Uzmanlık</span>
+                  <span class="font-mono font-bold text-sky-300">${w.skill}/100</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px]">Moral</span>
+                  <span class="font-mono font-bold ${w.morale >= 75 ? 'text-emerald-300' : 'text-amber-300'}">%${w.morale}</span>
+                </div>
+                <div>
+                  <span class="text-slate-400 block text-[10px]">Yorgunluk</span>
+                  <span class="font-mono font-bold ${w.fatigue <= 60 ? 'text-slate-200' : 'text-rose-400'}">%${Math.round(w.fatigue)}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <label class="text-slate-400 font-medium">Görev Holü:</label>
+                <select data-action="assign-worker-dock" data-wid="${w.id}" class="bg-slate-900 text-white font-semibold rounded-lg px-2.5 py-1.5 border border-slate-700 focus:outline-none focus:border-sky-400">
+                  ${unlockedDocks.map(d => `<option value="${d.id}" ${w.assignedDock === d.id ? 'selected' : ''}>${d.code} (${d.name.split('—')[1] || d.name})</option>`).join('')}
+                </select>
+              </div>
+
+              <div class="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-800/80 text-xs">
+                <button data-action="train-worker" data-wid="${w.id}" class="flex-1 py-1.5 px-2 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/30 font-semibold transition">
+                  🎓 Eğit (+4 Beceri • $4,500)
+                </button>
+                <button data-action="fire-worker" data-wid="${w.id}" title="İşten Çıkar" class="py-1.5 px-2.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 text-rose-300 border border-rose-800/50 font-medium">
+                  Çıkar
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (candGrid) {
+        candGrid.innerHTML = state.candidates.map(c => {
+          const rInfo = ROLE_DEFINITIONS[c.role] || ROLE_DEFINITIONS.welder;
+          return `
+            <div class="glass-card rounded-xl p-3.5 flex flex-col justify-between space-y-3 border border-slate-800">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">${rInfo.icon}</span>
+                  <div>
+                    <h4 class="font-bold text-sm text-white">${c.name}</h4>
+                    <span class="text-[11px] ${rInfo.color}">${rInfo.label}</span>
+                  </div>
+                </div>
+                <div class="mt-2.5 flex items-center justify-between text-xs bg-slate-900 p-2 rounded-lg">
+                  <span>Beceri: <strong class="text-sky-300 font-mono">${c.skill}/100</strong></span>
+                  <span>Maaş: <strong class="text-emerald-300 font-mono">${fmtMoney(c.wage)}/g</strong></span>
+                </div>
+              </div>
+              <button data-action="hire-candidate" data-cid="${c.id}" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition">
+                + İşe Al (İmza: ${fmtMoney(c.hiringBonus)})
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderUpgradesAndSupply() {
+      const supplyGrid = document.getElementById('supplyCardsGrid');
+      const upgradesGrid = document.getElementById('upgradesGrid');
+      const autoToggle = document.getElementById('autoBuyMaterialsToggle');
+      if (autoToggle) autoToggle.checked = !!state.autoBuyMaterials;
+
+      if (supplyGrid) {
+        supplyGrid.innerHTML = `
+          <div class="glass-card rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-white">🔩 Çelik, Alüminyum &amp; BV Kompozit</span>
+              <span class="font-mono font-bold text-sky-300">${state.materials.steel} Ton</span>
+            </div>
+            <p class="text-xs text-slate-400">DAMEN 1 (Çelik), DAMEN 3 (Alüminyum) ve DAMEN 6 (Kompozit) holleri için gümrüksüz Serbest Bölge hammaddesi.</p>
+            <button data-action="buy-material" data-mat="steel" class="w-full py-2 rounded-xl bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/40 text-sky-200 text-xs font-bold">
+              + 50 Ton Satın Al (${fmtMoney(state.marketPrices.steelPer10 * 5)})
+            </button>
+          </div>
+
+          <div class="glass-card rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-white">⚙️ Hibrit, Elektrikli &amp; Dizel İtki</span>
+              <span class="font-mono font-bold text-amber-300">${state.materials.engines} Adet</span>
+            </div>
+            <p class="text-xs text-slate-400">Waterbus 2907 Electric batarya sistemleri, FCS Twin-Axe ana makineleri ve SeaXplorer tahrik paketleri.</p>
+            <button data-action="buy-material" data-mat="engines" class="w-full py-2 rounded-xl bg-amber-600/30 hover:bg-amber-600/50 border border-amber-500/40 text-amber-200 text-xs font-bold">
+              + 3 Motor Paketi Al (${fmtMoney(state.marketPrices.enginePer1 * 3)})
+            </button>
+          </div>
+
+          <div class="glass-card rounded-xl p-4 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-sm font-bold text-white">🧭 Yat İç Mimari &amp; AV/IT Aviyonik</span>
+              <span class="font-mono font-bold text-emerald-300">${state.materials.luxury} Birim</span>
+            </div>
+            <p class="text-xs text-slate-400">DAMEN 5 yat holü için VIP süit donatımı, tik güverte ve köprüüstü navigasyon/iletişim sistemleri.</p>
+            <button data-action="buy-material" data-mat="luxury" class="w-full py-2 rounded-xl bg-emerald-600/30 hover:bg-emerald-600/50 border border-emerald-500/40 text-emerald-200 text-xs font-bold">
+              + 40 Birim Satın Al (${fmtMoney(state.marketPrices.luxuryPer10 * 4)})
+            </button>
+          </div>
+        `;
+      }
+
+      if (upgradesGrid) {
+        upgradesGrid.innerHTML = UPGRADE_DEFINITIONS.map(up => {
+          const owned = !!state.upgrades[up.id];
+          return `
+            <div class="glass-card rounded-xl p-4 flex flex-col justify-between border ${owned ? 'border-emerald-500/40' : 'border-slate-800'}">
+              <div class="space-y-1.5">
+                <div class="flex items-start justify-between gap-2">
+                  <h4 class="font-bold text-sm text-white">${up.name}</h4>
+                  <span class="px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${owned ? 'bg-emerald-500/20 text-emerald-300' : 'bg-sky-500/20 text-sky-300'}">
+                    ${owned ? '✓ Kuruldu' : up.effectText}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400">${up.desc}</p>
+              </div>
+              <div class="mt-3 pt-2.5 border-t border-slate-800">
+                ${owned
+                  ? `<span class="text-xs text-emerald-400 font-semibold">✓ Tersanede Aktif</span>`
+                  : `<button data-action="buy-upgrade" data-upid="${up.id}" class="w-full py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 text-white text-xs font-bold shadow">
+                      Yatırım Yap ve Kur (${fmtMoney(up.cost)})
+                     </button>`
+                }
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('eventLogContainer');
+      if (!container) return;
+      const colorMap = {
+        info: 'text-slate-300 border-slate-800',
+        success: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/5',
+        warn: 'text-amber-300 border-amber-500/30 bg-amber-500/5'
+      };
+      container.innerHTML = state.logs.map(item => `
+        <div class="p-2 rounded-lg border ${colorMap[item.type] || colorMap.info}">
+          <div class="text-[10px] font-mono text-slate-400">${item.time}</div>
+          <div class="mt-0.5 leading-snug">${item.text}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderAllPanels() {
+      updateHeaderUI();
+      renderDockQuickStrip();
+      renderTycoon3DInspector();
+      renderDocksDetailed();
+      renderBlueprintsCatalog();
+      renderContracts();
+      renderShowroom();
+      renderWorkers();
+      renderUpgradesAndSupply();
+      renderLogs();
+    }
+
+    // --- 10. BUILD MODAL WORKFLOW ---
+    function openBuildModal(blueprintId, preferredDockId = null, preselectedContractId = null) {
+      const bp = getBlueprint(blueprintId);
+      selectedBlueprintForModal = bp;
+      preselectedDockForModal = preferredDockId;
+
+      const stats = getYardStats();
+      const cashCost = Math.round(bp.materialCost * stats.materialDiscount);
+
+      document.getElementById('modalVesselTitle').textContent = `${bp.name}`;
+      document.getElementById('modalVesselSubtitle').textContent = `${bp.hullType} • Önerilen: ${bp.recommendedHall}`;
+
+      document.getElementById('modalVesselSpecs').innerHTML = `
+        <div><span class="text-slate-400 block">Nakit Maliyet</span><strong class="font-mono text-amber-300">${fmtMoney(cashCost)}</strong></div>
+        <div><span class="text-slate-400 block">Gerekli Malzeme</span><strong class="font-mono text-sky-300">${bp.steelReq}t / ${bp.engineReq}M / ${bp.luxuryReq}D</strong></div>
+        <div><span class="text-slate-400 block">Baz İhracat Değeri</span><strong class="font-mono text-emerald-300">${fmtMoney(bp.basePrice)}</strong></div>
+      `;
+
+      const defaultNamesYacht = ['SeaXplorer 6002', 'YS 5009 Shadow', 'M/Y Antalya Star', 'Xplorer SX-04', 'M/Y Olympos'];
+      const defaultNamesWork = ['Waterbus 2907-E2', 'FCS 3210 Aqua', 'TCSG-916 SAR', 'IC 1503 Interceptor', 'SPa 4008 Guardian'];
+      const namePool = bp.category === 'Yacht' ? defaultNamesYacht : defaultNamesWork;
+      document.getElementById('customVesselNameInput').value = namePool[Math.floor(Math.random() * namePool.length)];
+
+      const emptyDocks = state.docks.filter(d => d.unlocked && !d.activeBuild);
+      const dockSelect = document.getElementById('modalDockSelect');
+      if (emptyDocks.length === 0) {
+        dockSelect.innerHTML = `<option value="">⚠️ Boş Hol Yok (Mevcut üretimin bitmesini bekleyin)</option>`;
+      } else {
+        dockSelect.innerHTML = emptyDocks.map(d => `
+          <option value="${d.id}" ${preferredDockId === d.id ? 'selected' : ''}>${d.name} (${d.dims.split('•')[0]})</option>
+        `).join('');
+      }
+
+      const matchingContracts = state.contracts.filter(c => c.blueprintId === bp.id);
+      const contractSelect = document.getElementById('modalContractSelect');
+      let contractOptionsHtml = `<option value="stock">🛥️ Seri/Stok Üretim (Tamamlanınca İhracat Pazarında Sat)</option>`;
+      matchingContracts.forEach(c => {
+        const sel = preselectedContractId === c.id ? 'selected' : '';
+        contractOptionsHtml += `<option value="${c.id}" ${sel}>📋 Sözleşme: ${c.clientName} (${c.vesselName} • Ödül: ${fmtMoney(c.rewardTotal)})</option>`;
+      });
+      contractSelect.innerHTML = contractOptionsHtml;
+
+      if (preselectedContractId) {
+        const foundC = state.contracts.find(c => c.id === preselectedContractId);
+        if (foundC) document.getElementById('customVesselNameInput').value = foundC.vesselName;
+      }
+
+      const warnEl = document.getElementById('modalMaterialWarning');
+      const missingSteel = Math.max(0, bp.steelReq - state.materials.steel);
+      const missingEng = Math.max(0, bp.engineReq - state.materials.engines);
+      const missingLux = Math.max(0, bp.luxuryReq - state.materials.luxury);
+
+      if (missingSteel > 0 || missingEng > 0 || missingLux > 0) {
+        const extraBuyCost = Math.round(
+          (missingSteel / 10) * state.marketPrices.steelPer10 +
+          missingEng * state.marketPrices.enginePer1 +
+          (missingLux / 10) * state.marketPrices.luxuryPer10
+        );
+        warnEl.classList.remove('hidden');
+        warnEl.innerHTML = `⚠️ Depoda eksik hammadde var (${missingSteel}t Gövde, ${missingEng} Motor, ${missingLux} Donatım). Başlatırsanız 1.000+ yerel tedarikçi ağından otomatik olarak <strong>${fmtMoney(extraBuyCost)}</strong> karşılığında tedarik edilecek.`;
+      } else {
+        warnEl.classList.add('hidden');
+      }
+
+      document.getElementById('buildModal').classList.remove('hidden');
+    }
+
+    function confirmStartBuild() {
+      const bp = selectedBlueprintForModal;
+      if (!bp) return;
+
+      const dockId = Number(document.getElementById('modalDockSelect').value);
+      const dock = state.docks.find(d => d.id === dockId && d.unlocked && !d.activeBuild);
+      if (!dock) {
+        showToast('⚠️ Uygun Üretim Holü Yok', 'Lütfen boş bir üretim holü (DAMEN 1–6) seçin.', 'rose');
+        return;
+      }
+
+      const stats = getYardStats();
+      const baseCashCost = Math.round(bp.materialCost * stats.materialDiscount);
+      const missingSteel = Math.max(0, bp.steelReq - state.materials.steel);
+      const missingEng = Math.max(0, bp.engineReq - state.materials.engines);
+      const missingLux = Math.max(0, bp.luxuryReq - state.materials.luxury);
+
+      const extraBuyCost = Math.round(
+        (missingSteel / 10) * state.marketPrices.steelPer10 +
+        missingEng * state.marketPrices.enginePer1 +
+        (missingLux / 10) * state.marketPrices.luxuryPer10
+      );
+
+      const totalImmediateCost = baseCashCost + extraBuyCost;
+      if (state.cash < totalImmediateCost) {
+        showToast('⚠️ Yetersiz Kasa Bakiyesi', `Bu üretimi başlatmak için ${fmtMoney(totalImmediateCost)} gerekiyor.`, 'rose');
+        return;
+      }
+
+      state.cash -= totalImmediateCost;
+      state.materials.steel = Math.max(0, state.materials.steel - bp.steelReq + missingSteel);
+      state.materials.engines = Math.max(0, state.materials.engines - bp.engineReq + missingEng);
+      state.materials.luxury = Math.max(0, state.materials.luxury - bp.luxuryReq + missingLux);
+
+      const chosenContractVal = document.getElementById('modalContractSelect').value;
+      let contractId = null;
+      if (chosenContractVal && chosenContractVal !== 'stock') {
+        const contract = state.contracts.find(c => c.id === chosenContractVal);
+        if (contract) {
+          contractId = contract.id;
+          if (!contract.accepted) {
+            const upfront = Math.round(contract.rewardTotal * 0.25);
+            contract.accepted = true;
+            contract.upfrontPaid = upfront;
+            contract.remainingPayout = contract.rewardTotal - upfront;
+            state.cash += upfront;
+            addLog(`✍️ ${contract.clientName} sözleşmesi imzalandı ve ${fmtMoney(upfront)} peşinat alındı.`, 'success');
+          }
+        }
+      }
+
+      const customName = (document.getElementById('customVesselNameInput').value || '').trim() || bp.name;
+      dock.activeBuild = {
+        uid: 'build_' + Date.now(),
+        blueprintId: bp.id,
+        customName,
+        category: bp.category,
+        length: bp.length,
+        progressHours: 0,
+        totalHours: bp.buildHours,
+        qualityScore: Math.min(99, 78 + stats.qualityBonus),
+        contractId,
+        investedCost: totalImmediateCost
+      };
+
+      state.selectedDockId = dock.id;
+      playSound('weld');
+      document.getElementById('buildModal').classList.add('hidden');
+      select3DHall(dock.id, 'hall');
+      showToast(`⚓ 3D Omurga Kızağa Konuldu: ${customName}`, `${dock.code} holünde üretim başladı!`, 'emerald');
+      addLog(`⚓ ${dock.code} holünde ${customName} (${bp.name}) 3D inşası başlatıldı. Maliyet: ${fmtMoney(totalImmediateCost)}.`, 'info');
+      renderAllPanels();
+    }
+
+    // --- 11. EVENT LISTENERS & CAMERA PRESET BUTTONS ---
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+      const target = document.getElementById(`tab-${tabId}`);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.nav-tab').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.classList.add('tab-active');
+        } else {
+          btn.classList.remove('tab-active');
+        }
+      });
+      renderAllPanels();
+    }
+
+    document.querySelectorAll('.nav-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playSound('click');
+        switchTab(btn.getAttribute('data-tab'));
+      });
+    });
+
+    // 3D Camera Preset Buttons
+    document.querySelectorAll('.cam-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playSound('click');
+        autoOrbitEnabled = false;
+        document.querySelectorAll('.cam-preset-btn').forEach(b => b.classList.remove('cam-btn-active'));
+        btn.classList.add('cam-btn-active');
+
+        const preset = btn.getAttribute('data-cam');
+        if (preset === 'overview') {
+          camControl.desiredTarget.set(0, 4, 5);
+          camControl.desiredTheta = 0.42;
+          camControl.desiredPhi = 1.02;
+          camControl.desiredRadius = 135;
+        } else if (preset === 'halls13') {
+          camControl.desiredTarget.set(-22, 5, -26);
+          camControl.desiredTheta = 0.18;
+          camControl.desiredPhi = 0.95;
+          camControl.desiredRadius = 92;
+        } else if (preset === 'halls46') {
+          camControl.desiredTarget.set(-10, 5, 16);
+          camControl.desiredTheta = -0.35;
+          camControl.desiredPhi = 0.96;
+          camControl.desiredRadius = 88;
+        } else if (preset === 'syncrolift') {
+          camControl.desiredTarget.set(42, 2, 42);
+          camControl.desiredTheta = 0.65;
+          camControl.desiredPhi = 1.08;
+          camControl.desiredRadius = 74;
+        }
+      });
+    });
+
+    document.getElementById('toggleAutoOrbitBtn').addEventListener('click', () => {
+      playSound('click');
+      autoOrbitEnabled = !autoOrbitEnabled;
+      showToast(
+        autoOrbitEnabled ? '🎥 Sinematik 3D Tur Aktif' : '🎥 Sinematik Tur Durduruldu',
+        'Kamerayı fareyle istediğiniz zaman döndürebilirsiniz.',
+        'sky'
+      );
+    });
+
+    let is3DExpanded = false;
+    document.getElementById('expand3DBtn').addEventListener('click', () => {
+      playSound('click');
+      is3DExpanded = !is3DExpanded;
+      const wrapper = document.getElementById('threeViewportWrapper');
+      if (is3DExpanded) {
+        wrapper.className = 'w-full h-[640px] sm:h-[720px] relative bg-slate-950 select-none';
+      } else {
+        wrapper.className = 'w-full h-[390px] sm:h-[460px] md:h-[510px] relative bg-slate-950 select-none';
+      }
+      setTimeout(resizeCanvas, 50);
+    });
+
+    // Blueprint Filter Buttons
+    document.querySelectorAll('.bp-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playSound('click');
+        state.blueprintFilter = btn.getAttribute('data-bfilter');
+        document.querySelectorAll('.bp-filter-btn').forEach(b => {
+          b.className = 'bp-filter-btn px-3 py-1 rounded-lg text-xs font-semibold text-slate-300 hover:text-white';
+        });
+        btn.className = 'bp-filter-btn px-3 py-1 rounded-lg text-xs font-semibold bg-sky-600 text-white';
+        renderBlueprintsCatalog();
+      });
+    });
+
+    // Speed Buttons
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        playSound('click');
+        state.speed = Number(btn.getAttribute('data-speed'));
+        document.querySelectorAll('.speed-btn').forEach(b => {
+          b.className = 'speed-btn px-2 py-1 rounded text-xs font-semibold text-slate-300 hover:text-white';
+        });
+        btn.className = 'speed-btn px-2 py-1 rounded text-xs font-semibold bg-sky-600 text-white';
+      });
+    });
+
+    document.getElementById('shiftPolicySelect').addEventListener('change', (e) => {
+      playSound('click');
+      state.shiftPolicy = e.target.value;
+      showToast('⚙️ Vardiya & İSG Düzeni Güncellendi', e.target.options[e.target.selectedIndex].text, 'sky');
+      renderAllPanels();
+    });
+
+    document.getElementById('muteToggleBtn').addEventListener('click', () => {
+      state.muted = !state.muted;
+      document.getElementById('muteToggleBtn').textContent = state.muted ? '🔇 Sessiz' : '🔊 Ses';
+    });
+
+    document.getElementById('launchHornBtn').addEventListener('click', () => {
+      playSound('horn');
+      spawnSeaTrialShip3D(VESSEL_BLUEPRINTS[6]);
+      showToast('🚢 DSAn Tersane Sireni & Deniz Tecrübesi', '2.000t Syncrolift üzerinden yeni bir gemi Akdeniz’e açıldı!', 'sky');
+    });
+
+    document.getElementById('quickRestockBtn').addEventListener('click', () => {
+      const cost = 95000;
+      if (state.cash < cost) {
+        showToast('⚠️ Yetersiz Bakiye', 'Hızlı tedarik paketi için $95,000 gerekiyor.', 'rose');
+        return;
+      }
+      state.cash -= cost;
+      state.materials.steel += 40;
+      state.materials.engines += 1;
+      state.materials.luxury += 25;
+      playSound('cash');
+      showToast('📦 Hızlı Tedarik Tamamlandı', '+40t Gövde Malzemesi, +1 İtki Paketi, +25 Donatım eklendi.', 'emerald');
+      renderAllPanels();
+    });
+
+    document.getElementById('FilterAllBlueprintsBtn').addEventListener('click', () => {
+      document.getElementById('blueprintsGrid').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    document.getElementById('refreshContractsBtn').addEventListener('click', () => {
+      if (state.cash < 5000) {
+        showToast('⚠️ Yetersiz Bakiye', '$5,000 gerekiyor.', 'rose');
+        return;
+      }
+      state.cash -= 5000;
+      state.contracts = state.contracts.filter(c => c.accepted);
+      while (state.contracts.length < 5) {
+        generateSingleContract();
+      }
+      playSound('click');
+      showToast('📋 Yeni Küresel İhaleler Alındı', 'Yat ve Workboat ihracat teklifleri güncellendi.', 'sky');
+      renderAllPanels();
+    });
+
+    document.getElementById('teamBonusBtn').addEventListener('click', () => {
+      if (state.cash < 12000) {
+        showToast('⚠️ Yetersiz Bakiye', 'Ekip primi için $12,000 gerekiyor.', 'rose');
+        return;
+      }
+      state.cash -= 12000;
+      state.workers.forEach(w => { w.morale = Math.min(100, w.morale + 18); });
+      playSound('cash');
+      showToast('🎉 Tüm DSAn Ekibine Prim Dağıtıldı!', 'Çalışanların morali +18 puan yükseldi.', 'emerald');
+      addLog('🎉 Tüm mühendis ve ustalara $12,000 ihracat başarı primi dağıtıldı (+18 Moral).', 'success');
+      renderAllPanels();
+    });
+
+    document.getElementById('teamRestBtn').addEventListener('click', () => {
+      if (state.cash < 3500) {
+        showToast('⚠️ Yetersiz Bakiye', '$3,500 gerekiyor.', 'rose');
+        return;
+      }
+      state.cash -= 3500;
+      state.workers.forEach(w => {
+        w.fatigue = Math.max(0, w.fatigue - 25);
+        w.morale = Math.min(100, w.morale + 4);
+      });
+      playSound('click');
+      showToast('☕ Dinlenme & İkram Molası', 'Tüm çalışanların yorgunluğu 25 puan düştü.', 'sky');
+      renderAllPanels();
+    });
+
+    document.getElementById('refreshCandidatesBtn').addEventListener('click', () => {
+      if (state.cash < 2500) {
+        showToast('⚠️ Yetersiz Bakiye', '$2,500 gerekiyor.', 'rose');
+        return;
+      }
+      state.cash -= 2500;
+      generateCandidates();
+      playSound('click');
+      showToast('🔍 Yeni Adaylar Başvurdu', 'İTÜ, YTÜ ve KTÜ mezunu yeni mühendis ve ustalar hazır.', 'sky');
+      renderAllPanels();
+    });
+
+    document.getElementById('autoBuyMaterialsToggle').addEventListener('change', (e) => {
+      state.autoBuyMaterials = e.target.checked;
+    });
+
+    document.getElementById('clearLogBtn').addEventListener('click', () => {
+      state.logs = [];
+      renderLogs();
+    });
+
+    function saveGameSilent() {
+      try {
+        localStorage.setItem('dsan_3d_tycoon_save_v2', JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    document.getElementById('saveGameBtn').addEventListener('click', () => {
+      saveGameSilent();
+      playSound('click');
+      showToast('💾 Oyun Kaydedildi', '3D Tersane ilerlemeniz kaydedildi.', 'emerald');
+    });
+
+    document.getElementById('resetGameBtn').addEventListener('click', () => {
+      state = createInitialState();
+      generateCandidates();
+      saveGameSilent();
+      playSound('click');
+      sync3DSceneWithState();
+      showToast('🔄 Oyun Sıfırlandı', 'Damen Shipyards Antalya başlangıç durumuna döndürüldü.', 'amber');
+      renderAllPanels();
+    });
+
+    document.getElementById('editYardNameBtn').addEventListener('click', () => {
+      document.getElementById('newShipyardNameInput').value = state.shipyardName;
+      document.getElementById('renameModal').classList.remove('hidden');
+    });
+    document.getElementById('cancelRenameBtn').addEventListener('click', () => {
+      document.getElementById('renameModal').classList.add('hidden');
+    });
+    document.getElementById('saveRenameBtn').addEventListener('click', () => {
+      const val = (document.getElementById('newShipyardNameInput').value || '').trim();
+      if (val) {
+        state.shipyardName = val;
+        updateHeaderUI();
+        saveGameSilent();
+      }
+      document.getElementById('renameModal').classList.add('hidden');
+    });
+
+    document.getElementById('closeBuildModalBtn').addEventListener('click', () => {
+      document.getElementById('buildModal').classList.add('hidden');
+    });
+    document.getElementById('cancelBuildModalBtn').addEventListener('click', () => {
+      document.getElementById('buildModal').classList.add('hidden');
+    });
+    document.getElementById('confirmBuildBtn').addEventListener('click', confirmStartBuild);
+
+    document.getElementById('openGithubModalBtn').addEventListener('click', () => {
+      playSound('click');
+      document.getElementById('githubModal').classList.remove('hidden');
+    });
+    document.getElementById('closeGithubModalBtn').addEventListener('click', () => {
+      document.getElementById('githubModal').classList.add('hidden');
+    });
+
+    function copyTextSafe(text, successTitle) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => showToast(successTitle, 'Panoya kopyalandı!', 'emerald'));
+          return;
+        }
+      } catch (e) {}
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      showToast(successTitle, 'Panoya kopyalandı!', 'emerald');
+    }
+
+    document.getElementById('downloadIndexHtmlBtn').addEventListener('click', () => {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      playSound('cash');
+      showToast('⬇️ index.html İndirildi', 'Doğrudan GitHub deponuza yükleyebilirsiniz!', 'emerald');
+    });
+
+    document.getElementById('copyReadmeBtn').addEventListener('click', () => {
+      const readme = `# ⚓ Damen Shipyards Antalya (DSAn) — 3D Shipyard Tycoon\n\nThree.js (WebGL) ve Tailwind CSS ile geliştirilmiş, Antalya Serbest Bölgesi'ndeki gerçek **Damen Shipyards Antalya (DSAn)** verilerine dayanan 3 boyutlu tersane simülatörü.\n\n## 🚀 Özellikler\n- **Tam 3 Boyutlu İnteraktif Tersane Sahnesi:** 45.587 m² kapalı alana sahip DAMEN 1 – DAMEN 6 üretim holleri, 2.000 tonluk Syncrolift, 560 tonluk Travel Lift ve sarı SPMT taşıyıcılar.\n- **Gerçek DSAn Gemi Portföyü:** SeaXplorer 58, Xplorer SX 6001, Yacht Support YS 5009, Waterbus 2907 Electric, FCS 2710/3210 Twin-Axe, 1906 SAR ve IC 1102/1503 Interceptor.\n- **Mühendislik & İK Yönetimi:** Cadmatic, Rhino 3D, AutoCAD ve IFS kullanan gemi inşa mühendisleri ve BV Mode I kompozit/kaynak ustaları.\n\n## 🌐 GitHub Pages ile Çalıştırma\nTek dosyalık (\`index.html\`) mimariye sahiptir; doğrudan GitHub Pages üzerinde çalışır.`;
+      copyTextSafe(readme, '📋 README.md Kopyalandı');
+    });
+
+    document.getElementById('copyGitCommandsBtn').addEventListener('click', () => {
+      const cmds = document.getElementById('gitCommandsPre').textContent;
+      copyTextSafe(cmds, '💻 Git Komutları Kopyalandı');
+    });
+
+    // Global Delegated Action Clicks
+    document.body.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+
+      if (action === 'focus-3d-hall') {
+        const dockId = Number(btn.getAttribute('data-dock'));
+        playSound('click');
+        select3DHall(dockId, 'hall');
+      } else if (action === 'quick-sea-trial') {
+        playSound('horn');
+        spawnSeaTrialShip3D(VESSEL_BLUEPRINTS[Math.floor(Math.random() * VESSEL_BLUEPRINTS.length)]);
+        select3DHall(1, 'syncrolift');
+        showToast('🚢 3D Deniz Tecrübesi Başlatıldı', 'Syncrolift platformundan yeni bir gemi Akdeniz’e indirildi!', 'sky');
+      } else if (action === 'go-upgrades') {
+        playSound('click');
+        switchTab('upgrades');
+      } else if (action === 'go-workers') {
+        playSound('click');
+        switchTab('workers');
+      } else if (action === 'quick-start-dock') {
+        playSound('click');
+        const dockId = Number(btn.getAttribute('data-dock'));
+        openBuildModal(VESSEL_BLUEPRINTS[0].id, dockId);
+      } else if (action === 'open-build-modal') {
+        playSound('click');
+        const bpId = btn.getAttribute('data-bpid');
+        const preferredDock = btn.getAttribute('data-dock') ? Number(btn.getAttribute('data-dock')) : null;
+        openBuildModal(bpId, preferredDock);
+      } else if (action === 'boost-build') {
+        const dockId = Number(btn.getAttribute('data-dock'));
+        const dock = state.docks.find(d => d.id === dockId);
+        if (!dock || !dock.activeBuild) return;
+        if (state.cash < 28000) {
+          showToast('⚠️ Yetersiz Bakiye', 'Hızlandırma için $28,000 gerekiyor.', 'rose');
+          return;
+        }
+        state.cash -= 28000;
+        dock.activeBuild.progressHours = Math.min(dock.activeBuild.totalHours, dock.activeBuild.progressHours + 15);
+        playSound('weld');
+        showToast('⚡ 3D Hol Vardiyası Hızlandırıldı', `${dock.activeBuild.customName} inşası +15 saat ilerledi!`, 'sky');
+        if (dock.activeBuild.progressHours >= dock.activeBuild.totalHours) {
+          completeVesselBuild(dock);
+        } else {
+          sync3DSceneWithState();
+          renderAllPanels();
+        }
+      } else if (action === 'accept-contract') {
+        const cid = btn.getAttribute('data-cid');
+        const c = state.contracts.find(item => item.id === cid);
+        if (!c || c.accepted) return;
+        const upfront = Math.round(c.rewardTotal * 0.25);
+        c.accepted = true;
+        c.upfrontPaid = upfront;
+        c.remainingPayout = c.rewardTotal - upfront;
+        state.cash += upfront;
+        playSound('cash');
+        showToast(`✍️ Sözleşme İmzalandı: ${c.clientName}`, `${fmtMoney(upfront)} peşinat kasaya eklendi!`, 'emerald');
+        addLog(`✍️ ${c.clientName} ile ${c.vesselName} sözleşmesi imzalandı. Peşinat: +${fmtMoney(upfront)}.`, 'success');
+        renderAllPanels();
+      } else if (action === 'build-for-contract') {
+        playSound('click');
+        const cid = btn.getAttribute('data-cid');
+        const bpId = btn.getAttribute('data-bpid');
+        switchTab('production');
+        openBuildModal(bpId, null, cid);
+      } else if (action === 'negotiate-sale') {
+        const uid = btn.getAttribute('data-uid');
+        const ship = state.completedFleet.find(s => s.uid === uid);
+        if (!ship || ship.negotiated) return;
+        ship.negotiated = true;
+        const repFactor = state.reputation >= 75 ? 0.09 : 0.04;
+        const bonus = Math.round(ship.marketOffer * (repFactor + (Math.random() * 0.05 - 0.01)));
+        ship.marketOffer += bonus;
+        playSound('click');
+        showToast('🤝 Pazarlık Başarılı!', `Alıcı teklifini +${fmtMoney(bonus)} artırdı!`, 'emerald');
+        renderShowroom();
+      } else if (action === 'sell-vessel') {
+        const uid = btn.getAttribute('data-uid');
+        const idx = state.completedFleet.findIndex(s => s.uid === uid);
+        if (idx === -1) return;
+        const ship = state.completedFleet[idx];
+        state.cash += ship.marketOffer;
+        state.totalRevenue += ship.marketOffer;
+        state.totalSold += 1;
+        state.reputation = Math.min(100, state.reputation + (ship.qualityScore >= 82 ? 2 : 1));
+
+        state.salesHistory.unshift({
+          name: ship.customName,
+          model: ship.modelName,
+          category: ship.category,
+          quality: ship.qualityScore,
+          buyer: ship.category === 'Yacht' ? 'Uluslararası Süperyat Alıcısı' : 'Avrupa Denizcilik Filo A.Ş.',
+          price: ship.marketOffer
+        });
+
+        state.completedFleet.splice(idx, 1);
+        playSound('cash');
+        showToast(`💰 İhracat Satışı Tamamlandı: ${ship.customName}`, `${fmtMoney(ship.marketOffer)} vergisiz olarak kasaya eklendi!`, 'emerald');
+        addLog(`💰 ${ship.customName} (${ship.modelName}) ${fmtMoney(ship.marketOffer)} bedelle ihraç edildi!`, 'success');
+        renderAllPanels();
+      } else if (action === 'train-worker') {
+        const wid = btn.getAttribute('data-wid');
+        const w = state.workers.find(item => item.id === wid);
+        if (!w) return;
+        if (state.cash < 4500) {
+          showToast('⚠️ Yetersiz Bakiye', 'Mesleki eğitim için $4,500 gerekiyor.', 'rose');
+          return;
+        }
+        state.cash -= 4500;
+        w.skill = Math.min(100, w.skill + 4);
+        w.morale = Math.min(100, w.morale + 5);
+        playSound('click');
+        showToast(`🎓 Damen Standartları Eğitimi: ${w.name}`, `Uzmanlık puanı ${w.skill}/100 seviyesine yükseldi!`, 'sky');
+        renderAllPanels();
+      } else if (action === 'fire-worker') {
+        const wid = btn.getAttribute('data-wid');
+        if (state.workers.length <= 2) {
+          showToast('⚠️ Minimum Ekip Sınırı', 'Tersanede en az 2 uzman çalışmalıdır.', 'amber');
+          return;
+        }
+        state.workers = state.workers.filter(w => w.id !== wid);
+        playSound('click');
+        showToast('👷 Personel Ayrıldı', 'Çalışan kadrodan çıkarıldı.', 'amber');
+        renderAllPanels();
+      } else if (action === 'hire-candidate') {
+        const cid = btn.getAttribute('data-cid');
+        const cIdx = state.candidates.findIndex(c => c.id === cid);
+        if (cIdx === -1) return;
+        const cand = state.candidates[cIdx];
+        if (state.cash < cand.hiringBonus) {
+          showToast('⚠️ Yetersiz Bakiye', `İşe alım imza bedeli için ${fmtMoney(cand.hiringBonus)} gerekiyor.`, 'rose');
+          return;
+        }
+        state.cash -= cand.hiringBonus;
+        state.workers.push({
+          id: 'w_' + Date.now(),
+          name: cand.name,
+          role: cand.role,
+          skill: cand.skill,
+          morale: 92,
+          fatigue: 5,
+          wage: cand.wage,
+          assignedDock: state.selectedDockId || 1
+        });
+        state.candidates.splice(cIdx, 1);
+        playSound('cash');
+        showToast(`👷 Yeni Uzman Katıldı: ${cand.name}`, `${ROLE_DEFINITIONS[cand.role].label} kadroya eklendi!`, 'emerald');
+        addLog(`👷 ${cand.name} (${ROLE_DEFINITIONS[cand.role].label}, Beceri ${cand.skill}) işe alındı.`, 'success');
+        renderAllPanels();
+      } else if (action === 'buy-material') {
+        const mat = btn.getAttribute('data-mat');
+        if (mat === 'steel') {
+          const cost = state.marketPrices.steelPer10 * 5;
+          if (state.cash < cost) return showToast('⚠️ Yetersiz Bakiye', fmtMoney(cost) + ' gerekiyor.', 'rose');
+          state.cash -= cost;
+          state.materials.steel += 50;
+        } else if (mat === 'engines') {
+          const cost = state.marketPrices.enginePer1 * 3;
+          if (state.cash < cost) return showToast('⚠️ Yetersiz Bakiye', fmtMoney(cost) + ' gerekiyor.', 'rose');
+          state.cash -= cost;
+          state.materials.engines += 3;
+        } else if (mat === 'luxury') {
+          const cost = state.marketPrices.luxuryPer10 * 4;
+          if (state.cash < cost) return showToast('⚠️ Yetersiz Bakiye', fmtMoney(cost) + ' gerekiyor.', 'rose');
+          state.cash -= cost;
+          state.materials.luxury += 40;
+        }
+        playSound('cash');
+        showToast('📦 Hammadde Depoya Eklendi', 'Serbest Bölge gümrüksüz tedarik siparişi tamamlandı.', 'emerald');
+        renderAllPanels();
+      } else if (action === 'buy-upgrade') {
+        const upId = btn.getAttribute('data-upid');
+        const up = UPGRADE_DEFINITIONS.find(u => u.id === upId);
+        if (!up || state.upgrades[upId]) return;
+        if (state.cash < up.cost) {
+          showToast('⚠️ Yetersiz Bakiye', `${up.name} için ${fmtMoney(up.cost)} gerekiyor.`, 'rose');
+          return;
+        }
+        state.cash -= up.cost;
+        state.upgrades[upId] = true;
+
+        if (upId === 'expand_docks_45m') {
+          state.maxVesselLength = Math.max(state.maxVesselLength, 90);
+        } else if (upId === 'unlock_dock_4') {
+          state.maxVesselLength = 90;
+          const d6 = state.docks.find(d => d.id === 6);
+          if (d6) d6.unlocked = true;
+        }
+        state.reputation = Math.min(100, state.reputation + 4);
+        playSound('horn');
+        sync3DSceneWithState();
+        showToast(`🏗️ Yatırım Tamamlandı: ${up.name}`, 'Tersane kapasitesi ve verimliliği arttı (+4 İtibar)!', 'emerald');
+        addLog(`🏗️ ${up.name} tersaneye kuruldu (${fmtMoney(up.cost)}).`, 'success');
+        renderAllPanels();
+      }
+    });
+
+    document.body.addEventListener('change', (e) => {
+      const sel = e.target.closest('[data-action="assign-worker-dock"]');
+      if (!sel) return;
+      const wid = sel.getAttribute('data-wid');
+      const newDockId = Number(sel.value);
+      const worker = state.workers.find(w => w.id === wid);
+      if (worker) {
+        worker.assignedDock = newDockId;
+        playSound('click');
+        showToast('👷 Görev Holü Değiştirildi', `${worker.name} → DAMEN ${newDockId} ekibine atandı.`, 'sky');
+        renderAllPanels();
+      }
+    });
+
+    // --- 12. MAIN GAME LOOP & INITIALIZATION ---
+    let simInterval = null;
+    let renderFrameId = null;
+    let tickAccumulator = 0;
+
+    function startMainLoop() {
+      if (simInterval) clearInterval(simInterval);
+      simInterval = setInterval(() => {
+        if (state.speed <= 0) return;
+        tickAccumulator += state.speed;
+        while (tickAccumulator >= 1) {
+          simulateOneHour();
+          tickAccumulator -= 1;
+        }
+      }, 1100);
+
+      function frameLoop() {
+        render3DFrame();
+        renderFrameId = requestAnimationFrame(frameLoop);
+      }
+      if (renderFrameId) cancelAnimationFrame(renderFrameId);
+      renderFrameId = requestAnimationFrame(frameLoop);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.onload = () => {
+      init3DShipyard();
+      renderAllPanels();
+      startMainLoop();
+    };
+  </script>
+</body>
+</html>

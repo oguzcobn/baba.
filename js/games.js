@@ -153,6 +153,7 @@ const App = (() => {
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
+    { id: 'dsan-shipyard', name: ['Damen Tersane Tycoon', 'Damen Shipyard Tycoon'], tags: [['3D Yönetim', '3D Management'], ['Gemi İnşası', 'Shipbuilding'], ['Tersane', 'Shipyard']], best: () => T('Antalya · 3D', 'Antalya · 3D') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
     { id: 'sudoku', name: 'Sudoku', tags: [['Mantık', 'Logic'], ['3 seviye', '3 levels']], best: () => { const b = ls.get('bb_best_sudoku', null); return b ? fmtT(b) : '—'; } },
     { id: 'mines', name: ['Mayın Tarlası', 'Minesweeper'], tags: [['Klasik', 'Classic'], ['Dikkat', 'Focus']], best: () => { const b = ls.get('bb_best_mines', null); return b ? fmtT(b) : '—'; } },
@@ -213,7 +214,8 @@ const App = (() => {
     'career': 'img/covers/menajerlik.jpg',
     'draft': 'img/covers/draft.jpg',
     'istiklal1919': 'img/covers/1919.jpg',
-    'vadi': 'img/covers/vadi.jpg'
+    'vadi': 'img/covers/vadi.jpg',
+    'dsan-shipyard': 'img/covers/dsan-shipyard.svg'
   });
   function menu() {
     const card = (g, i) => {
@@ -228,7 +230,7 @@ const App = (() => {
     root().innerHTML = `
       <section class="hero"><a class="back" href="#">← ${T('Ana sayfa', 'Home')}</a><p class="eyebrow">${T('Oyunlar', 'Games')} · ${new Date().toLocaleDateString(I18N.locale, { day: 'numeric', month: 'long' })}</p>
         <h1 class="display xl">${T('Kafa<br>dinle.<br><em>Kadro kur.</em>', 'Unwind.<br>Switch off.<br><em>Pick a squad.</em>')}</h1>
-        <div class="hero-row"><p class="lead">${T('Altı oyun, sıfır reklam. Futbol draftından vadide medeniyet kurmaya, kısa molalar için seçilmiş bir koleksiyon.', 'Six games, zero adverts. From a football draft to building a civilisation in the valley — a hand-picked collection for short breaks.')}</p>
+        <div class="hero-row"><p class="lead">${T(`${GAMES.length} oyun, sıfır reklam. Futbol draftından 3D tersane yönetimine, kısa molalar için seçilmiş bir koleksiyon.`, `${GAMES.length} games, zero adverts. From a football draft to 3D shipyard management — a hand-picked collection for short breaks.`)}</p>
           <a class="pill big" href="#futbol">⚽ ${T('Futbol: tarafını seç', 'Football: pick your side')} ↗</a> <a class="pill big ghost" href="#draft">${T('Draft’a başla', 'Start the draft')} ↗</a> <a class="pill big ghost" href="#career">🎮 ${T('Menajerlik Kariyeri', 'Manager Career')} ↗</a></div></section>
       <section class="feature"><a href="#draft" class="feat-card"><div class="feat-art">${ART.draft}</div><div class="feat-txt"><span class="badge">${T('Günün oyunu', 'Game of the day')}</span><h2>Süper Lig<br>Draft</h2><p>${T('Çark 18 Süper Lig kulübü arasında eşit şansla döner; gelen takımın son 10 yıllık kadrosundan seç, 11+2 kur. Teknik direktörünü ve taktiğini belirle, 34 maçlık sezonu canlı izle. Hedef: 102 puan.', 'The wheel spins across 18 Süper Lig clubs with equal odds; pick from that club’s squads of the last 10 years and build an 11 plus 2. Choose your manager and tactics, then follow the 34-match season live. Target: 102 points.')}</p><div class="card-tags"><span class="chip">${T('Futbol', 'Football')}</span><span class="chip">${T('Strateji', 'Strategy')}</span><span class="chip dark">🏆 ${ls.get('draft_best', 0)} ${T('puan', 'pts')}</span></div></div></a></section>
       <a class="sc-banner" href="#skor"><span class="sc-crown">🏆</span><span><b>${T('Aile skor tablosu', 'Family leaderboard')}</b><small>${T('Haftanın şampiyonu kim? Rekorlar ve Draft düellosu', 'Who’s champion this week? Records and the Draft duel')}</small></span><i>→</i></a>
@@ -302,6 +304,22 @@ const App = (() => {
         }
       }
       location.href = VADI_URL;
+    };
+  }
+
+  /* ==================== DAMEN SHIPYARD TYCOON ==================== */
+  const DSAN_SHIPYARD_URL = 'games/dsan-shipyard/index.html';
+  function dsanShipyard() {
+    const b = shell(T('Damen Tersane Tycoon', 'Damen Shipyard Tycoon'), `<div class="vd-bar"><p class="bb-tip">${T('Antalya Serbest Bölge’de tersaneni yönet, gemiler inşa et ve üretim hattını büyüt.', 'Manage your shipyard in Antalya Free Zone, build vessels and grow your production line.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${DSAN_SHIPYARD_URL}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
+      <div class="dsan-frame"><iframe src="${DSAN_SHIPYARD_URL}" title="Damen Shipyard Tycoon" allow="fullscreen; autoplay" allowfullscreen loading="eager"></iframe></div>
+      <p class="bb-tip">${T('Üretim, sözleşmeler, showroom, çalışanlar ve yükseltmeler sekmelerini kullan. Telefonda tam ekran için cihazı yatay çevirebilirsin.', 'Use the production, contracts, showroom, workers and upgrades tabs. Turn your phone sideways for a wider full-screen view.')}</p>`, T('3D tersane yönetimi · Antalya', '3D shipyard management · Antalya'));
+    b.closest('.game-page').classList.add('dsan-page');
+    const frame = b.querySelector('.dsan-frame'), button = b.querySelector('[data-a=full]');
+    button.onclick = async () => {
+      click();
+      const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) { try { await req.call(frame); return; } catch (_) {} }
+      window.open(DSAN_SHIPYARD_URL, '_blank', 'noopener');
     };
   }
 
@@ -614,6 +632,7 @@ const App = (() => {
     else if (r === 'skor' && typeof Scores !== 'undefined') { root().innerHTML = '<div id="scRoot"></div>'; window.scrollTo(0, 0); Scores.mount(root().querySelector('#scRoot')); }
     else if (r === 'istiklal1919') istiklal1919();
     else if (r === 'vadi') vadi();
+    else if (r === 'dsan-shipyard') dsanShipyard();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();

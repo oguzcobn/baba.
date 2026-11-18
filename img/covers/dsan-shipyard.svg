@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" role="img" aria-labelledby="title desc">
+<title id="title">Damen Shipyard Tycoon</title><desc id="desc">Antalya kıyısında tersane, vinçler ve inşa edilen gemi</desc>
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#122b49"/><stop offset=".55" stop-color="#3288a6"/><stop offset="1" stop-color="#f2a15e"/></linearGradient>
+ <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#31a5b6"/><stop offset="1" stop-color="#07506c"/></linearGradient>
+ <linearGradient id="hull" x2="0" y2="1"><stop stop-color="#f7f4e9"/><stop offset="1" stop-color="#cbd6d8"/></linearGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="24"/></filter>
+</defs>
+<rect width="1200" height="760" fill="url(#sky)"/><circle cx="900" cy="245" r="94" fill="#ffd18c" opacity=".8" filter="url(#blur)"/><circle cx="900" cy="245" r="53" fill="#ffe2ad"/>
+<path d="M0 440 170 310l105 76 160-168 146 156 157-116 142 117 156-128 164 147v170H0Z" fill="#203a4a" opacity=".9"/><path d="M0 480 130 385l123 66 144-114 128 123 149-95 138 99 153-107 139 107 96-62v173H0Z" fill="#182c3b"/>
+<rect y="514" width="1200" height="246" fill="url(#sea)"/><path d="M0 550q120-22 240 0t240 0 240 0 240 0 240 0 240 0M0 604q120-22 240 0t240 0 240 0 240 0 240 0 240 0" fill="none" stroke="#a8e4dc" stroke-opacity=".28" stroke-width="5"/>
+<path d="M0 477h1200v62H0Z" fill="#64717a"/><path d="M0 487h1200v7H0Z" fill="#ffd052"/>
+<!-- hangars -->
+<g><path d="M60 390 60 262 230 210 400 262v128Z" fill="#d6dee0"/><path d="M60 262 230 210 400 262 230 306Z" fill="#f2f3ed"/><path d="M84 390V277l146-43 146 43v113Z" fill="#b9c5c8"/><path d="M114 390V294l116-34 116 34v96Z" fill="#263b4a"/><path d="M430 390V286l130-40 132 40v104Z" fill="#cbd5d8"/><path d="M430 286 560 246l132 40-132 40Z" fill="#f2f3ed"/><path d="M454 390v-90l106-31 107 31v90Z" fill="#263b4a"/></g>
+<!-- cranes -->
+<g stroke="#f4b347" stroke-linejoin="round"><path d="M760 490V148h22v342M730 154h247v20H730zM753 180h16v120h-16zM978 174v54h-12v-38h-52v-12Z" fill="#f4b347"/><path d="M800 492V258h18v234M785 262h150v16H785zM812 282h12v90h-12z" fill="#ffcc62"/></g>
+<!-- ship -->
+<path d="M363 516h594l-52 81H433Z" fill="#172d3e"/><path d="M405 516h500l-39 44H446Z" fill="url(#hull)"/><path d="M493 488h250v28H493z" fill="#e8ece8"/><path d="M535 450h110v38H535z" fill="#e6ebe8"/><path d="M560 425h55v25h-55z" fill="#d5e1e2"/><path d="M572 425v-26h5v26m27 0v-34h5v34" stroke="#f4b347" stroke-width="5"/><path d="M728 521h120" stroke="#e14934" stroke-width="11"/><path d="M443 569h440" stroke="#7ac8d0" stroke-width="5" opacity=".8"/>
+<text x="70" y="93" fill="#fff" font-family="Arial,sans-serif" font-weight="800" font-size="43" letter-spacing="5">DSAN · ANTALYA</text><text x="68" y="160" fill="#fff" font-family="Arial,sans-serif" font-weight="900" font-size="74" letter-spacing="-3">SHIPYARD</text><text x="73" y="207" fill="#ffe0a8" font-family="Arial,sans-serif" font-weight="700" font-size="27" letter-spacing="8">TYCOON</text>
+</svg>
