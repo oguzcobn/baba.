@@ -687,13 +687,25 @@ const Career = (() => {
     const F = FORMATIONS[S.formation];
     S.xi = S.xi.map((id, i) => { const p = P(id); if (p && avail(p)) return id; const pos = F[i][0], cand = S.squad.filter(q => avail(q) && !S.xi.includes(q.id)).sort((a, b) => eff(b, pos) - eff(a, pos))[0]; if (p) news(T(`${p.name} ${p.inj ? 'sakat' : 'cezalı'} olduğu için ilk 11'den çıkarıldı${cand ? ', yerine ' + cand.name : ''}.`, `${p.name} was removed from the XI (${p.inj ? 'injured' : 'suspended'})${cand ? ', replaced by ' + cand.name : ''}.`), 'warn'); return cand ? cand.id : null; });
   }
+  function seasonMovement(curLg, rank) {
+    let nextLeague = curLg, type = '';
+    if (curLg === 'TUR_SL' && rank >= 16) { nextLeague = 'TUR_1L'; type = 'relegation'; }
+    else if (curLg === 'TUR_1L') {
+      if (rank <= 2 || (rank <= 7 && chance(.35))) { nextLeague = 'TUR_SL'; type = 'promotion'; }
+      else if (rank >= 16) { nextLeague = chance(.5) ? 'TUR_2L_BEYAZ' : 'TUR_2L_KIRMIZI'; type = 'relegation'; }
+    } else if (curLg === 'TUR_2L_BEYAZ' || curLg === 'TUR_2L_KIRMIZI') {
+      if (rank === 1 || (rank <= 6 && chance(.3))) { nextLeague = 'TUR_1L'; type = 'promotion'; }
+    }
+    return { nextLeague, type };
+  }
   function seasonEnd() {
-    const tab2 = sorted(), rank = tab2.findIndex(t => t.me) + 1, champ = rank === 1;
+    const tab2 = sorted(), myIndex = tab2.findIndex(t => t.id === me().id), rank = myIndex >= 0 ? myIndex + 1 : tab2.findIndex(t => t.me) + 1, champ = rank === 1;
+    const movement = seasonMovement(S.myLeague || 'TUR_SL', rank);
     const prize = ((19 - rank) * .35 + (champ ? 6 : 0)) * (S.rev || 1) + (champ && S.sponsor ? S.sponsor.title : 0);
     S.budget += prize; S.pop = clamp(S.pop + (champ ? 15 : rank <= 4 ? 6 : rank >= 16 ? -8 : 0), 10, 100);
     const top = S.squad.slice().sort((a, b) => b.sg - a.sg)[0];
     S.history.unshift({ season: S.season, year: S.year, rank, pts: S.table[me().id].pts, champ, top: top ? top.name + ' (' + top.sg + ')' : '-' , prize: Math.round(prize * 10) / 10 });
-    S.pending = { kind: 'season', rank, champ, prize, top: top ? top.name : '-', topg: top ? top.sg : 0 };
+    S.pending = { kind: 'season', rank, champ, prize, top: top ? top.name : '-', topg: top ? top.sg : 0, nextLeague: movement.nextLeague, movementType: movement.type };
     news(champ ? T(`🏆 ŞAMPİYON! ${me().name} ${S.season}. sezonda ligi kazandı!`, `🏆 CHAMPIONS! ${me().name} win the league in season ${S.season}!`) : T(`Sezon ${rank}. sırada tamamlandı. Ödül: ${M(prize)}`, `Season finished in ${rank}th place. Prize money: ${M(prize)}`), champ ? 'big' : '');
   }
   function newSeason() {
@@ -898,11 +910,11 @@ const Career = (() => {
   }
 
   function centerTab() {
-    const fx = myFixture(S.week), pend = S.pending, rank = sorted().findIndex(t => t.me) + 1;
+    const fx = myFixture(S.week), pend = S.pending, currentStandings = sorted(), myIndex = currentStandings.findIndex(t => t.id === me().id), rank = myIndex >= 0 ? myIndex + 1 : currentStandings.findIndex(t => t.me) + 1;
     const alerts = []; const F = FORMATIONS[S.formation];
     S.xi.forEach((id, i) => { const p = P(id); if (!p) alerts.push(T(`${PZ(F[i][0])} mevkisi boş`, `${PZ(F[i][0])} slot is empty`)); else if (p.cond < 65) alerts.push(T(`${p.name} yorgun (%${Math.round(p.cond)}) — sakatlık riski yüksek`, `${p.name} is tired (${Math.round(p.cond)}%) — high injury risk`)); });
     let card = '';
-    if (pend && pend.kind === 'season') card = `<article class="cr-card big ${pend.champ ? 'gold' : ''}"><p class="eyebrow">${T('Sezon sonu', 'End of season')}</p><h2>${pend.champ ? '🏆 ' + T('ŞAMPİYON!', 'CHAMPIONS!') : T(`${pend.rank}. sıra`, `Finished ${pend.rank}th`)}</h2><p>${T(`Ödül: ${M(pend.prize)} · Gol kralımız: ${esc(pend.top)} (${pend.topg})`, `Prize: ${M(pend.prize)} · Top scorer: ${esc(pend.top)} (${pend.topg})`)}</p><p class="muted">${T('Yeni sezonda gençler gelişir, 32 yaş üstü oyuncular düşüşe geçer, altyapıdan 2 oyuncu gelir.', 'Next season the youngsters improve, over-32s decline, and 2 academy players join.')}</p><button class="pill big" data-a="newseason">${T('Yeni sezona başla', 'Start the new season')} →</button></article>`;
+    if (pend && pend.kind === 'season') card = `<article class="cr-card big ${pend.champ ? 'gold' : ''}"><p class="eyebrow">${T('Sezon sonu', 'End of season')}</p><h2>${pend.champ ? '🏆 ' + T('ŞAMPİYON!', 'CHAMPIONS!') : T(`${pend.rank}. sıra`, `Finished ${pend.rank}th`)}</h2><p>${T(`Ödül: ${M(pend.prize)} · Gol kralımız: ${esc(pend.top)} (${pend.topg})`, `Prize: ${M(pend.prize)} · Top scorer: ${esc(pend.top)} (${pend.topg})`)}</p><p class="muted">${T('Yeni sezonda gençler gelişir, 32 yaş üstü oyuncular düşüşe geçer, altyapıdan 2 oyuncu gelir.', 'Next season the youngsters improve, over-32s decline, and 2 academy players join.')}</p>${pend.nextLeague && pend.nextLeague !== (S.myLeague || 'TUR_SL') ? `<p class="cr-league-move" role="status">${pend.movementType === 'relegation' ? '📉 ' + T('Küme düştün:', 'Relegated to:') : '🎉 ' + T('Yükseldin:', 'Promoted to:')} <b>${esc(LG_LABEL()[pend.nextLeague] || pend.nextLeague)}</b></p>` : ''}<button class="pill big" data-a="newseason">${T('Yeni sezona başla', 'Start the new season')} →</button></article>`;
     else if (!S.sponsor && S.offers) card = `<article class="cr-card big"><p class="eyebrow">${T('Sezon başı', 'Pre-season')} · ${T('Sponsorluk', 'Sponsorship')}</p><h2>${T('Forma sponsorunu seç', 'Pick your shirt sponsor')}</h2><div class="cr-offers">${S.offers.map((o, i) => `<button data-sp="${i}"><b>${esc(o.name)}</b><span>${T('Peşin', 'Upfront')}: <strong>${M(o.up)}</strong></span><span>${T('Galibiyet primi', 'Win bonus')}: ${o.win ? M(o.win) : '—'}</span><span>${T('Şampiyonluk primi', 'Title bonus')}: ${o.title ? M(o.title) : '—'}</span><small>${esc(o.desc)}</small></button>`).join('')}</div></article>`;
     else if (pend && pend.kind === 'event') card = `<article class="cr-card big event"><p class="eyebrow">${T('Karar zamanı', 'Decision time')}</p><h2>${esc(pend.t)}</h2><p>${esc(pend.d)}</p><div class="cr-row">${pend.ch.map(([l, a]) => `<button class="pill ${a.endsWith('ok') || a === 'basin1' || a === 'kavgaceza' ? '' : 'ghost'}" data-ev="${a}">${esc(l)}</button>`).join('')}</div></article>`;
     const opAD = fx ? oppAD(fx.opp) : null, mAD = myAD(S.xi);
@@ -1146,26 +1158,21 @@ const Career = (() => {
   }
 
   function applyPyramidPromotionsAndUEFA() {
-    const tab2 = sorted(), myRank = tab2.findIndex(t => t.me) + 1, curLg = S.myLeague || 'TUR_SL';
-    let targetLg = curLg;
+    const tab2 = sorted(), idIndex = tab2.findIndex(t => t.id === me().id), myRank = idIndex >= 0 ? idIndex + 1 : tab2.findIndex(t => t.me) + 1, curLg = S.myLeague || 'TUR_SL';
+    const pending = S.pending && S.pending.kind === 'season' ? S.pending : null;
+    const movement = pending && pending.nextLeague ? { nextLeague: pending.nextLeague, type: pending.movementType || '' } : seasonMovement(curLg, myRank);
+    const targetLg = movement.nextLeague || curLg;
     if (curLg === 'TUR_SL') {
-      if (myRank >= 16) { targetLg = 'TUR_1L'; news(T(`📉 ${me().name} Süper Lig'de ${myRank}. olarak TFF 1. Lig'e düştü.`, `📉 ${me().name} finished ${myRank}th and were relegated to TFF 1. Lig.`), 'bad'); }
       S.myUefa = myRank <= 2 ? 'UEFA_UCL' : myRank === 3 ? 'UEFA_UEL' : myRank === 4 ? 'UEFA_UECL' : null;
       if (S.myUefa) news(`🌍 ${me().name} yeni sezonda ${UEFA_LABEL()[S.myUefa]} (36 takımlı İsviçre Sistemi) bileti aldı!`, 'big');
-    } else if (curLg === 'TUR_1L') {
-      S.myUefa = null;
-      if (myRank <= 2 || (myRank <= 7 && chance(.35))) { targetLg = 'TUR_SL'; news(T(`🎉 TEBRİKLER! ${me().name} Süper Lig'e yükseldi!`, `🎉 PROMOTED! ${me().name} are promoted to the Süper Lig!`), 'big'); }
-      else if (myRank >= 16) { targetLg = chance(.5) ? 'TUR_2L_BEYAZ' : 'TUR_2L_KIRMIZI'; news(T(`📉 ${me().name} TFF 2. Lig'e düştü.`, `📉 ${me().name} were relegated to TFF 2. Lig.`), 'bad'); }
-    } else {
-      S.myUefa = null;
-      if (myRank === 1 || (myRank <= 6 && chance(.3))) { targetLg = 'TUR_1L'; news(T(`🎉 TEBRİKLER! ${me().name} TFF 1. Lig'e yükseldi!`, `🎉 PROMOTED! ${me().name} are promoted to TFF 1. Lig!`), 'big'); }
-    }
+    } else S.myUefa = null;
     if (targetLg !== curLg) {
+      if (movement.type === 'promotion') news(T(`🎉 TEBRİKLER! ${me().name} ${LG_LABEL()[targetLg]} ligine yükseldi!`, `🎉 PROMOTED! ${me().name} move up to ${LG_LABEL()[targetLg]}!`), 'big');
+      else news(T(`📉 ${me().name} ${LG_LABEL()[targetLg]} ligine düştü.`, `📉 ${me().name} were relegated to ${LG_LABEL()[targetLg]}.`), 'bad');
       S.myLeague = targetLg;
       const m = me(), pool = clubs().filter(c => (c.league || 'TUR_SL') === targetLg && c.id !== m.id).slice(0, 17);
       S.teams = pool.map(c => ({ id: c.id, name: c.name, short: c.short, c1: c.c1, c2: c.c2, league: targetLg })).concat([m]);
     } else {
-      // Aynı ligde kaldıysak son 3 AI takımını alt/üst ligden gelen 3 takımla değiştir
       const m = me(), stay = tab2.filter(t => t.me || tab2.indexOf(t) < 15);
       const subLg = curLg === 'TUR_SL' ? 'TUR_1L' : curLg === 'TUR_1L' ? 'TUR_2L_BEYAZ' : 'TUR_1L';
       const incoming = (S.otherLeagues && S.otherLeagues[subLg] ? S.otherLeagues[subLg].slice(0, 3) : []).map(x => CLUB(x.id)).filter(Boolean);
