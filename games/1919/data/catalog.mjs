@@ -1,0 +1,4 @@
+export const eras=['Kurtuluş ve Sanayileşme','Topyekûn Savaş','Soğuk Savaş ve Jet','Dijital Harp','İnsansız ve Otonom Çağ'];
+export const facilities={civil:['Sivil fabrika',60],mil:['Askerî fabrika',80],yard:['Tersane',100],refinery:['Rafineri',70],depot:['İkmal merkezi',50],air:['Hava üssü',65],radar:['Radar istasyonu',75]};
+export const branches={land:['Piyade kiti','Orta tank','Ana muharebe tankı','Sayısal zırhlı','Yeni nesil zırhlı'],air:['Çift kanatlı uçak','Bombardıman uçağı','Jet avcı','Çok rollü uçak','Düşük görünürlüklü uçak'],drone:[null,null,'Keşif İHA','Taktik İHA','Jet İHA'],navy:['Muhrip','Denizaltı','Fırkateyn','Modern korvet','LHD'],surface:[null,null,null,'Keşif İDA','Çok amaçlı İDA'],industry:['Takım tezgâhı','Seri üretim','Otomasyon','Mikroelektronik','Akıllı fabrika']};
+export function calendar(s){const m=s.month+(s.scenario==='1919'?4:0),year=1919+Math.floor(m/12);return {year,month:m%12,era:[1936,1950,1990,2015].filter(y=>year>=y).length};}
