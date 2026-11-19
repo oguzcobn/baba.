@@ -1,6 +1,6 @@
 "use strict";
 (async()=>{
-if(new URLSearchParams(location.search).get("scenario")==="1919"){home();return;}
+if(new URLSearchParams(location.search).get("scenario")==="1919"){window.Enhance1919?.({world:false});home();return;}
 const root=document.getElementById("app");root.innerHTML='<main class="home"><h1>Dünya haritası yükleniyor…</h1></main>';
 try{
 const response=await fetch("../../data/countries-50m.json");if(!response.ok)throw Error("Harita indirilemedi");
@@ -75,7 +75,7 @@ marchingSvg=function(){
  const sea=seaRoutes.has(routeKey(marching.from,marching.to));
  const art=sea?shipArt:equipment(origin).tank?tankArt:troopArt;
  const path="M"+from.x+" "+from.y+" Q"+((from.x+to.x)/2)+" "+((from.y+to.y)/2-25)+" "+to.x+" "+to.y;
- return '<g pointer-events="none"><path d="'+path+'" fill="none" stroke="#f0d08a" stroke-width="2" stroke-dasharray="5 4"/><g><animateMotion dur="1.15s" path="'+path+'" fill="freeze"/><g transform="scale(.7)">'+art+'</g><text y="-24" text-anchor="middle" class="label" style="font-size:10px">'+marching.count+'</text></g></g>';
+ return '<g pointer-events="none"><path d="'+path+'" fill="none" stroke="#f0d08a" stroke-width="2" stroke-dasharray="5 4"/><g><animateMotion dur="1.15s" path="'+path+'" fill="freeze"/><g class="mk"><g transform="scale(.5)">'+art+'</g><text y="-17" text-anchor="middle" class="label" style="font-size:9px">'+marching.count+'</text></g></g></g>';
 };
 mapSVG=function(){
  const routes=LINKS.filter(l=>l.includes(sel)&&seaRoutes.has(routeKey(...l))).map(([a,b])=>{
@@ -87,7 +87,7 @@ mapSVG=function(){
  const countries=S.p.map(p=>{const a=shapeData.get(p.id),old=previousOwners.get(p.id),fill=color(p);previousOwners.set(p.id,fill);
  return '<path data-p="'+p.id+'" class="province '+(p.id===sel?'active':'')+'" fill="'+fill+'" d="'+a.paths+'" fill-rule="evenodd"><title>'+safe(p.label)+' · '+p.army+' asker</title>'+(old&&old!==fill?'<animate attributeName="fill" from="'+old+'" to="'+fill+'" dur="2s" fill="freeze"/>':'')+'</path>';
  }).join("");
- const markers=S.p.filter(p=>p.id===sel||p.owner===S.me).map(p=>{const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="world-troop" transform="scale(.55)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect x="10" y="-7" width="28" height="13" rx="2" fill="#172322" stroke="#bea876"/><text x="24" y="3" text-anchor="middle" fill="#f3e1b8" font-size="8">'+p.army+'</text><text y="-16" text-anchor="middle" class="label" style="font-size:9px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-17 19v-8h4v-3h5v3h4v-3h5v11Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g>'}).join("");
+ const markers=S.p.filter(p=>p.id===sel||p.owner===S.me).map(p=>{const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}).join("");
  return '<svg id="world" viewBox="0 0 1080 650" aria-label="Oynanabilir dünya haritası"><defs><radialGradient id="world-sea"><stop stop-color="#385667"/><stop offset="1" stop-color="#152b3b"/></radialGradient></defs><rect width="1080" height="650" fill="url(#world-sea)"/>'+countries+routes+S.p.filter(p=>p.owner===S.me||p.id===sel).map(modelSvg).join("")+markers+marchingSvg()+'</svg>';
 };
 outcome=function(){if(S.win||S.loss)return;const territories=own();if(!territories.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer sona erdi: devletin kontrolü çöktü.")}else if(territories.length>=Math.ceil(RAW.length*.6)){S.win=true;dialog=null;log("Zafer: dünya bölgelerinin yüzde 60’ı kontrol ediliyor.")}};
@@ -221,6 +221,7 @@ const oldRender=render;render=function(){
  }
  oldRender();
 };
+window.Enhance1919?.({world:true,equipment,shapeData});
 home();
 }catch(error){root.innerHTML='<main class="home"><h1>Harita açılamadı</h1><p>'+safe(error.message)+'</p><button onclick="location.reload()">Tekrar dene</button></main>'}
 })();
