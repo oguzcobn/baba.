@@ -103,7 +103,7 @@ provincePanel=function(){
  const e=equipment(p);
  return html+'<div class="panel"><h3>Birlik Üretimi</h3><p class="muted">Tank: kara saldırısında güç desteği. Uçak: havadan destek. Gemi: deniz rotasında taşıma.</p><div class="gridbtn">'+[
  ["tank","Tank",180,tankArt],["plane","Uçak",220,planeArt],["ship","Gemi",260,shipArt]
- ].map(([type,label,cost,art])=>'<button data-a="unit-'+type+'" '+(type==="ship"&&!coastal.has(p.id)?'disabled':'')+'><svg viewBox="-30 -30 60 60" width="55" height="55">'+art+'</svg><br>'+label+' · '+cost+' altın<br>Mevcut: '+e[type]+'</button>').join("")+'</div><p class="muted">Deniz sevkiyatı: kaynak bölgede gemi ve 10 altın gerekir. Tankların bir kısmı sevk edilen orduyla taşınır. Uçaklar üslerinde kalır.</p></div>';
+ ].map(([type,label,cost,art])=>'<button data-a="unit-'+type+'" '+(type==="ship"&&!coastal.has(p.id)?'disabled':'')+'><svg viewBox="-30 -30 60 60" width="55" height="55">'+art+'</svg><br>'+label+' · '+cost+' altın · '+StrategyTime.orders[type][1]+' ay<br>Mevcut: '+e[type]+'</button>').join("")+'</div><p class="muted">Deniz sevkiyatı: kaynak bölgede gemi ve 10 altın gerekir. Tankların bir kısmı sevk edilen orduyla taşınır. Uçaklar üslerinde kalır.</p></div>';
 };
 const oldAct=act;
 act=function(action){
@@ -114,8 +114,8 @@ act=function(action){
   const p=prov(sel);if(!p||p.owner!==S.me)return;
   const type=action.slice(5),cost={tank:180,plane:220,ship:260}[type];
   if(!cost)return;if(type==="ship"&&!coastal.has(p.id))return toast("Gemi üretimi kıyı bölgesi gerektirir.");
-  if(!pay(cost))return;equipment(p)[type]++;p.unitType=type;
-  log(p.label+": "+{tank:"tank",plane:"uçak",ship:"gemi"}[type]+" hazırlandı.");save();render();return;
+  if(!pay(cost))return;StrategyTime.enqueue(p,type);
+  log(p.label+": "+{tank:"tank",plane:"uçak",ship:"gemi"}[type]+" üretime alındı.");save();render();return;
  }
  return oldAct(action);
 };
@@ -225,3 +225,4 @@ window.Enhance1919?.({world:true,equipment,shapeData});
 home();
 }catch(error){root.innerHTML='<main class="home"><h1>Harita açılamadı</h1><p>'+safe(error.message)+'</p><button onclick="location.reload()">Tekrar dene</button></main>'}
 })();
+

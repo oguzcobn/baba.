@@ -195,10 +195,10 @@ home=function(){
  _home();
  const hero=document.querySelector("#app .home .hero");if(!hero||hero.querySelector(".compass"))return;
  hero.classList.add("atlas-hero");
- const grand=document.createElement("button");grand.className="gold";grand.textContent="1919–2035+ · Büyük Sefer";grand.onclick=()=>{location.href="campaign.html"+location.search};hero.querySelector(".actions")?.prepend(grand);
  hero.insertAdjacentHTML("afterbegin",'<svg class="compass" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="none" stroke="#e9c58855" stroke-width="1.5"/><circle cx="60" cy="60" r="44" fill="none" stroke="#e9c58833" stroke-dasharray="2 4"/><g class="rose"><path d="M60 8 67 60 60 112 53 60Z" fill="#e9c588"/><path d="M8 60 60 53 112 60 60 67Z" fill="#a7895a"/><path d="M60 8 67 60H53Z" fill="#b43b34"/></g><text x="60" y="6" text-anchor="middle" fill="#e9c588" font-size="9" font-family="Georgia">K</text></svg>');
  hero.insertAdjacentHTML("beforeend",'<div class="howto"><div><i>1</i><b>Devletini seç</b><small>Zorluk ve ülke</small></div><div><i>2</i><b>Ekonomini kur</b><small>Pazar, çiftlik, teknoloji</small></div><div><i>3</i><b>Diplomasi yürüt</b><small>İttifak, ticaret, savaş</small></div><div><i>4</i><b>Cepheye sevk et</b><small>Komşu bölgeleri al</small></div></div>');
  document.querySelector("#app .home")?.classList.add("atlas-menu");
 };
 };
+
 
