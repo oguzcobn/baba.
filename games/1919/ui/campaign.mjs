@@ -1,3 +1,4 @@
+import {historicalOffice} from '../data/history.mjs';
 import anatolia from '../data/anatolia.mjs';
 import {worldMap} from '../data/world.mjs';
 import {calendar,eras,facilities,branches} from '../data/catalog.mjs';
@@ -30,6 +31,7 @@ function draw(){
  line(bar,'span',eras[date.era]);select(bar,[['3','3 ay'],['6','6 ay']],String(s.tempo),v=>{if(!busy){s.tempo=Number(v);save();}});
  button(busy?'Tur ilerliyor…':'Turu bitir',()=>{if(busy)return;busy=true;draw();worker.postMessage({state:s,map:map.map(({path,...g})=>g)});},bar,true).disabled=busy;
  select(panel,map.map(g=>[g.id,g.label]),id,v=>{id=v;draw();});line(panel,'h2',g.label);line(panel,'small',names.get(p.owner)+' · '+p.army+' asker · Direniş %'+Math.round(p.resist));
+ const office=historicalOffice(p.owner,date);if(office){const ref=line(panel,'a',office.office+' · '+office.name);ref.href=office.source;ref.target='_blank';ref.rel='noopener';}
  line(panel,'p','Bütçe '+Math.floor(c.gold)+' · İnsan gücü '+c.men+' · Politik güç '+c.pp+' · Çelik '+Math.floor(c.steel)+' · Alaşım '+Math.floor(c.alloy)+' · Yakıt '+Math.floor(c.fuel));
  for(const v of ['Sanayi','Araştırma','Diplomasi','Cephe'])button(v,()=>{section=v;draw();},panel,v===section);
  const box=document.createElement('article');panel.append(box);
