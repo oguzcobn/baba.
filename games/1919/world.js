@@ -77,21 +77,18 @@ marchingSvg=function(){
  const path="M"+from.x+" "+from.y+" Q"+((from.x+to.x)/2)+" "+((from.y+to.y)/2-25)+" "+to.x+" "+to.y;
  return '<g pointer-events="none"><path d="'+path+'" fill="none" stroke="#f0d08a" stroke-width="2" stroke-dasharray="5 4"/><g><animateMotion dur="1.15s" path="'+path+'" fill="freeze"/><g class="mk"><g transform="scale(.5)">'+art+'</g><text y="-17" text-anchor="middle" class="label" style="font-size:9px">'+marching.count+'</text></g></g></g>';
 };
-atlasLayers=function(){
+mapSVG=function(){
  const routes=LINKS.filter(l=>l.includes(sel)&&seaRoutes.has(routeKey(...l))).map(([a,b])=>{
  const x=shapeData.get(a),y=shapeData.get(b);
  // Never paint misleading cross-continental lines for long sea passages.
  if(!x||!y||Math.abs(x.x-y.x)>230||!Geo1919.nearForVisual(x,y,230))return "";
  return '<path class="sea-lane" d="M'+x.x+' '+x.y+' L'+y.x+' '+y.y+'" fill="none" stroke="#b7d5e2" stroke-dasharray="5 4" stroke-width="1.1" pointer-events="none"/>';
  }).join("");
- const markers=S.p.filter(p=>p.id===sel||p.owner===S.me).map(p=>{const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}).join("");
- return {atlasMarkers:routes+S.p.filter(p=>p.owner===S.me||p.id===sel).map(modelSvg).join("")+markers+marchingSvg()};
-};
-mapSVG=function(){
  const countries=S.p.map(p=>{const a=shapeData.get(p.id),old=previousOwners.get(p.id),fill=color(p);previousOwners.set(p.id,fill);
  return '<path data-p="'+p.id+'" class="province '+(p.id===sel?'active':'')+'" fill="'+fill+'" d="'+a.paths+'" fill-rule="evenodd"><title>'+safe(p.label)+' · '+p.army+' asker</title>'+(old&&old!==fill?'<animate attributeName="fill" from="'+old+'" to="'+fill+'" dur="2s" fill="freeze"/>':'')+'</path>';
  }).join("");
- return '<svg id="world" viewBox="0 0 1080 650" aria-label="Oynanabilir dünya haritası"><defs><radialGradient id="world-sea"><stop stop-color="#385667"/><stop offset="1" stop-color="#152b3b"/></radialGradient></defs><rect width="1080" height="650" fill="url(#world-sea)"/>'+countries+'<g id="atlasMarkers">'+atlasLayers().atlasMarkers+'</g>' +'</svg>';
+ const markers=S.p.filter(p=>p.id===sel||p.owner===S.me).map(p=>{const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}).join("");
+ return '<svg id="world" viewBox="0 0 1080 650" aria-label="Oynanabilir dünya haritası"><defs><radialGradient id="world-sea"><stop stop-color="#385667"/><stop offset="1" stop-color="#152b3b"/></radialGradient></defs><rect width="1080" height="650" fill="url(#world-sea)"/>'+countries+routes+S.p.filter(p=>p.owner===S.me||p.id===sel).map(modelSvg).join("")+markers+marchingSvg()+'</svg>';
 };
 outcome=function(){if(S.win||S.loss)return;const territories=own();if(!territories.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer sona erdi: devletin kontrolü çöktü.")}else if(territories.length>=Math.ceil(RAW.length*.6)){S.win=true;dialog=null;log("Zafer: dünya bölgelerinin yüzde 60’ı kontrol ediliyor.")}};
 start=function(me,difficulty="normal"){archiveBeforeNew();S=initial(me);S.difficulty=difficulty;sel=N[me][3];tab="province";layer="political";dialog=null;moving=null;marching=null;++marchSeq;previousOwners.clear();save();render()};
@@ -106,7 +103,7 @@ provincePanel=function(){
  const e=equipment(p);
  return html+'<div class="panel"><h3>Birlik Üretimi</h3><p class="muted">Tank: kara saldırısında güç desteği. Uçak: havadan destek. Gemi: deniz rotasında taşıma.</p><div class="gridbtn">'+[
  ["tank","Tank",180,tankArt],["plane","Uçak",220,planeArt],["ship","Gemi",260,shipArt]
- ].map(([type,label,cost,art])=>'<button data-a="unit-'+type+'" '+(type==="ship"&&!coastal.has(p.id)?'disabled':'')+'><svg viewBox="-30 -30 60 60" width="55" height="55">'+art+'</svg><br>'+label+' · '+cost+' altın · '+StrategyTime.orders[type][1]+' ay<br>Mevcut: '+e[type]+'</button>').join("")+'</div><p class="muted">Deniz sevkiyatı: kaynak bölgede gemi ve 10 altın gerekir. Tankların bir kısmı sevk edilen orduyla taşınır. Uçaklar üslerinde kalır.</p></div>';
+ ].map(([type,label,cost,art])=>'<button data-a="unit-'+type+'" '+(type==="ship"&&!coastal.has(p.id)?'disabled':'')+'><svg viewBox="-30 -30 60 60" width="55" height="55">'+art+'</svg><br>'+label+' · '+cost+' altın · '+StrategyTime.orders[type][1]+' ay<br>'+({tank:4,plane:3,ship:7}[type])+' çelik · '+({tank:2,plane:3,ship:4}[type])+' yakıt<br>Mevcut: '+e[type]+'</button>').join("")+'</div><p class="muted">Deniz sevkiyatı: kaynak bölgede gemi ve 10 altın gerekir. Tankların bir kısmı sevk edilen orduyla taşınır. Uçaklar üslerinde kalır.</p></div>';
 };
 const oldAct=act;
 act=function(action){
@@ -117,7 +114,9 @@ act=function(action){
   const p=prov(sel);if(!p||p.owner!==S.me)return;
   const type=action.slice(5),cost={tank:180,plane:220,ship:260}[type];
   if(!cost)return;if(type==="ship"&&!coastal.has(p.id))return toast("Gemi üretimi kıyı bölgesi gerektirir.");
-  if(!pay(cost))return;StrategyTime.enqueue(p,type);
+  const materials=Industry1919.stock(S),steel={tank:4,plane:3,ship:7}[type],fuel={tank:2,plane:3,ship:4}[type];
+  if(materials.steel<steel||materials.fuel<fuel)return toast("Üretim için "+steel+" çelik ve "+fuel+" yakıt gerekli.");
+  if(!pay(cost))return;materials.steel-=steel;materials.fuel-=fuel;StrategyTime.enqueue(p,type);
   log(p.label+": "+{tank:"tank",plane:"uçak",ship:"gemi"}[type]+" üretime alındı.");save();render();return;
  }
  return oldAct(action);
@@ -228,4 +227,5 @@ window.Enhance1919?.({world:true,equipment,shapeData});
 home();
 }catch(error){root.innerHTML='<main class="home"><h1>Harita açılamadı</h1><p>'+safe(error.message)+'</p><button onclick="location.reload()">Tekrar dene</button></main>'}
 })();
+
 
