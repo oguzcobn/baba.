@@ -1,0 +1,20 @@
+.campaign-clock{flex:none;padding:6px 12px;color:#f3dfaf;background:#1c292c;border-block:1px solid #786948;font:600 12px/1.45 system-ui;letter-spacing:.025em}
+.map-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#app .drawer-controls{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #74684b;background:#243336}
+#app .drawer-controls button{border:0;color:#f1ddb0;background:transparent;min-height:44px}
+#app .layout[data-drawer="closed"]{grid-template-columns:minmax(0,1fr) 100px}
+#app .layout[data-drawer="closed"] .sidebody,#app .layout[data-drawer="closed"] .tabs,#app .layout[data-drawer="closed"] #drawer-close{display:none}
+#app .layout[data-drawer="full"]{grid-template-columns:minmax(0,1fr) minmax(300px,42%)}
+#app .province:focus-visible{stroke:#fff3ae;stroke-width:2}
+@media(max-width:700px){
+ #app .campaign-clock{padding:4px 8px;font-size:11px}
+ #app .layout[data-drawer]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,36%)}
+ #app .layout[data-drawer="closed"]{grid-template-rows:minmax(0,1fr) 46px}
+ #app .layout[data-drawer="full"]{grid-template-rows:minmax(0,1fr) minmax(0,62%)}
+ #app .tabs button,#app .bottom button{min-height:44px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #app .layout[data-drawer]{grid-template-columns:minmax(0,1fr) minmax(215px,34%);grid-template-rows:minmax(0,1fr)}
+ #app .layout[data-drawer="closed"]{grid-template-columns:minmax(0,1fr) 100px}
+ #app .layout[data-drawer="full"]{grid-template-columns:minmax(0,1fr) 48%}
+}

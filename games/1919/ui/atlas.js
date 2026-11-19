@@ -1,53 +1,71 @@
-"use strict";
-const AtlasView=(()=>{
- let regions=new Map(),session=null,frame=0,currentMarch=null,collapsed=false;
- function update(root,html,state,dynamic){
-   const shell=document.createElement("template");
-   const fresh=session!==state||!root.querySelector("#world");
-   shell.innerHTML=html;
-   if(fresh){
-     root.replaceChildren(shell.content);session=state;collapsed=false;
-     root.querySelector("#viewport").insertAdjacentHTML("afterbegin",mapSVG());
-     regions=new Map([...root.querySelectorAll("#world [data-p]")].map(el=>[el.dataset.p,el]));
-     for(const el of regions.values()){el.setAttribute("tabindex","0");el.setAttribute("role","button");}
-   }else{
-     for(const selector of [".resources",".bottom",".tabs",".sidebody",".maptip"]){
-       const old=root.querySelector(selector),next=shell.content.querySelector(selector);
-       if(old.innerHTML!==next.innerHTML)old.replaceChildren(...next.childNodes);
-     }
-     for(const el of root.querySelectorAll("[data-layer]"))el.classList.toggle("selected",el.dataset.layer===layer);
-     const targets=new Set(moving?adj(moving):[]);
-     for(const p of state.p){
-       const el=regions.get(p.id);if(!el)continue;
-       el.classList.toggle("active",p.id===sel);el.classList.toggle("target",targets.has(p.id));el.classList.toggle("captured",capturedProvince===p.id);
-       const fill=color(p);if(el.getAttribute("fill")!==fill)el.setAttribute("fill",fill);
-       const title=p.label+" · "+name(p.owner)+" · "+p.army+" asker";
-       if(el.firstElementChild?.textContent!==title)el.firstElementChild.textContent=title;
-     }
-     const layers=dynamic();for(const [id,markup] of Object.entries(layers)){
-       const group=root.querySelector("#"+id);if(group&&group._markup!==markup){group.innerHTML=markup;group._markup=markup;}
-     }
-   }
-   const layout=root.querySelector(".layout"),toggle=root.querySelector("[data-drawer]");
-   const apply=()=>{layout.classList.toggle("atlas-folded",collapsed);toggle.setAttribute("aria-expanded",String(!collapsed));toggle.textContent=collapsed?"Paneli aç":"Paneli kapat";};
-   toggle.onclick=()=>{collapsed=!collapsed;apply();};apply();
-   const canvas=root.querySelector(".atlas-effects");if(currentMarch!==marching||fresh){
-     cancelAnimationFrame(frame);currentMarch=marching;
-     const ctx=canvas.getContext("2d");if(!ctx)return;ctx.clearRect(0,0,canvas.width,canvas.height);
-     if(!marching)return;
-     const a=prov(marching.from),b=prov(marching.to),start=performance.now();
-     const paint=now=>{
-       if(!canvas.isConnected||currentMarch!==marching)return;
-       const svg=root.querySelector("#world"),matrix=svg.getScreenCTM();if(!matrix)return;
-       const rect=canvas.getBoundingClientRect(),ratio=Math.min(2,devicePixelRatio||1);
-       canvas.width=Math.max(1,Math.round(rect.width*ratio));canvas.height=Math.max(1,Math.round(rect.height*ratio));
-       ctx.scale(ratio,ratio);const point=p=>new DOMPoint(p.x*10.5,p.y*5.7+25).matrixTransform(matrix);
-       const from=point(a),to=point(b),t=matchMedia("(prefers-reduced-motion: reduce)").matches?1:Math.min(1,(now-start)/1150);
-       ctx.translate(-rect.left,-rect.top);ctx.strokeStyle="#ebc97b";ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(from.x,from.y);ctx.lineTo(to.x,to.y);ctx.stroke();
-       ctx.fillStyle="#f3d18b";ctx.beginPath();ctx.arc(from.x+(to.x-from.x)*t,from.y+(to.y-from.y)*t,6,0,Math.PI*2);ctx.fill();
-       if(t<1)frame=requestAnimationFrame(paint);
-     };frame=requestAnimationFrame(paint);
-   }
- }
- return {update};
-})();
+import { drawEffects } from "./effects.js";
+const instances = new WeakMap();
+const coast="M10 135 Q80 62 175 108 T310 106 Q441 66 561 87 T781 108 Q916 105 1065 138 L1073 403 Q1036 505 950 573 L839 607 741 564 666 541 555 611 432 592 315 551 209 511 95 481 11 409Z";
+const point=p=>[p.x*10.5,p.y*5.7+25];
+
+function element(parent,tag,attrs={}){
+  const node=document.createElementNS("http://www.w3.org/2000/svg",tag);
+  Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,value));
+  parent.append(node);
+  return node;
+}
+function set(node,key,value){
+  if(node.getAttribute(key)!==value)node.setAttribute(key,value);
+}
+
+function mount(svg,{state,shapeData,polygon,links,seaRoutes}){
+  const shapes=new Map(),icons=new Map(),routes=[];
+  const nodes=new Map(state.p.map(p=>[p.id,p]));
+  element(svg,"rect",{width:1080,height:650,fill:"#29475a"});
+  const ground=element(svg,"g");
+  if(!shapeData){
+    const clip=element(element(svg,"defs"),"clipPath",{id:"anatolia-clip"});
+    element(clip,"path",{d:coast});
+    ground.setAttribute("clip-path","url(#anatolia-clip)");
+  }
+  for(const p of state.p){
+    const shape=shapeData?element(ground,"path",{d:shapeData.get(p.id).paths,"fill-rule":"evenodd"}):element(ground,"polygon",{points:polygon(p)});
+    shape.dataset.p=p.id;
+    shape.setAttribute("role","button");
+    shapes.set(p.id,{shape,title:element(shape,"title")});
+  }
+  const network=element(ground,"g",{"pointer-events":"none"});
+  for(const [from,to] of links){
+    if(shapeData&&!seaRoutes.has([from,to].sort().join("|")))continue;
+    const [x1,y1]=point(nodes.get(from)),[x2,y2]=point(nodes.get(to));
+    if(shapeData&&Math.hypot(x2-x1,y2-y1)>230)continue;
+    const line=element(network,"line",{x1,y1,x2,y2,stroke:"#d8d3b0","stroke-opacity":shapeData?".8":".3","stroke-dasharray":"4 5"});
+    if(shapeData)routes.push({line,from,to});
+  }
+  if(!shapeData)element(svg,"path",{d:coast,fill:"none",stroke:"#d5c393","pointer-events":"none"});
+  return {shapes,icons,routes,overlay:element(svg,"g",{"pointer-events":"none"})};
+}
+export function updateAtlas(options){
+  const svg=document.getElementById("world");
+  const {state,selected,shapeData,moving,adj,color,modelSvg,markerSvg,marching,actionFx,capturedProvince}=options;
+  let atlas=instances.get(svg);
+  if(!atlas){atlas=mount(svg,options);instances.set(svg,atlas);}
+  const targets=new Set(moving?adj(moving):[]);
+  for(const p of state.p){
+    const {shape,title}=atlas.shapes.get(p.id);
+    const label=p.label+" · "+p.army+" asker";
+    if(title.textContent!==label)title.textContent=label;
+    set(shape,"aria-label",label);
+    set(shape,"tabindex",p.id===selected?"0":"-1");
+    set(shape,"fill",color(p));
+    set(shape,"class",["province",p.id===selected?"active":"",targets.has(p.id)?"target":"",p.id===capturedProvince?"captured":""].filter(Boolean).join(" "));
+    let icon=atlas.icons.get(p.id);
+    if(shapeData&&p.owner!==state.me&&p.id!==selected){
+      if(icon){icon.remove();atlas.icons.delete(p.id);}
+      continue;
+    }
+    if(!icon){icon=element(atlas.overlay,"g");atlas.icons.set(p.id,icon);}
+    const signature=[p.army,p.unitType,p.barracks,p.investment,p.market,p.farm,p.fort,p.festivals,actionFx?.id===p.id?actionFx.token:0].join("|");
+    if(icon.dataset.signature!==signature){icon.innerHTML=markerSvg(p)+modelSvg(p);icon.dataset.signature=signature;}
+  }
+  for(const {line,from,to} of atlas.routes)set(line,"display",selected===from||selected===to?"inline":"none");
+  if(marching){
+    const from=state.p.find(p=>p.id===marching.from),to=state.p.find(p=>p.id===marching.to);
+    if(from&&to)drawEffects(svg,point(from),point(to),marching);
+  }
+}
