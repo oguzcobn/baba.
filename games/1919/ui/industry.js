@@ -1,3 +1,4 @@
+import { models } from "../data/models.js";
 import { resources, buildings, branches, families, units, focusNames, laws, numerals, eraAt, recipe, researchCost } from "../data/industry.js";
 import { capacity, count, deposits, usedSlots, slotLimit, marketStock, assigned, quote, budget } from "../engine/industry.js";
 
@@ -36,23 +37,23 @@ function facilityPanel(s,p,coastal,month){
 function linePanel(s){
   const e=s.industry;
   const picker=(id,yard)=>{
-    const models=[];
-    for(const [key,f] of Object.entries(families))for(let lv=f.first;lv<=e.levels[f.branch];lv++){
-      const m=recipe(key,lv);
+    const choices=[];
+    for(const [key,f] of Object.entries(models))for(let lv=f.first;lv<f.first+f.labels.length&&lv<=e.levels[f.branch];lv++){
+      const m=recipe(key,lv,s.me);
       if(m.yard===yard){
         const inputs=Object.entries(m.inputs).filter(([,n])=>n).map(([r,n])=>n+" "+resources[r][0]).join(", ");
-        models.push(option(key+"."+lv,m.name+" · "+m.work+" iş · "+inputs));
+        choices.push(option(key+"."+lv,m.name+" · "+m.work+" iş · "+inputs+" · yakıt katsayısı "+m.fuel));
       }
     }
-    if(!models.length)return info("Bu tesise uygun bir dal araştır.");
-    return select("econ-model-"+id,"Model",models.join(""))+button("line:"+id,id==="arms"||id==="yard"?"Hat aç":"Modeli değiştir");
+    if(!choices.length)return info("Bu tesise uygun bir dal araştır.");
+    return select("econ-model-"+id,"Model",choices.join(""))+button("line:"+id,id==="arms"||id==="yard"?"Hat aç":"Modeli değiştir");
   };
   let html="";
   for(const [type,title] of [["arms","Askerî fabrika"],["yard","Tersane"]]){
     const yard=type==="yard",lines=e.lines.filter(l=>l.yard===yard),slots=capacity(s,yard);
     html+=row(title,assigned(e,yard)+" / "+slots+" tesis tahsisli");
     for(const l of lines){
-      const m=recipe(l.key,l.level);
+      const m=recipe(l.key,l.level,s.me);
       html+='<div class="econ-item">'+row(m.name,pct(l.efficiency)+" verim")+progress(l.work,m.work)+
         info(number(l.work)+" / "+m.work+" iş · "+l.status)+detail("Hat ayarları",
         info("Model değişince kısmi iş kaybedilir ve verim geçici olarak düşer.")+
@@ -60,11 +61,11 @@ function linePanel(s){
     }
     if(assigned(e,yard)<slots)html+=picker(type,yard);
   }
-  return panel("Üretim hatları",html);
+  return panel("Üretim hatları",html+info("Platform adları, çağ içindeki temsilî modelleri gösterir. Araştırma tarihi seferin alternatif tarihine bağlıdır."));
 }
 function trainingPanel(s,p){
   const e=s.industry,stock=Object.entries(e.inventory).filter(([,n])=>n>0).map(([id,n])=>{
-    const [key,lv]=id.split(".");return row(recipe(key,+lv).name,n+" parti");
+    const [key,lv]=id.split(".");return row(recipe(key,+lv,s.me).name,n+" parti");
   }).join("");
   const jobs=e.training.map(j=>row(units[j.key][0]+" · "+(s.p.find(p=>p.id===j.node)?.label||""),Math.ceil(j.left)+" ay"+(j.waitingFuel?" · Yakıt bekliyor":""))).join("");
   const u=Object.entries(units).map(([key,[name,men,months,kit]])=>option(key,name+" · "+men+" insan · "+months+" ay · "+Object.entries(kit).map(([k,n])=>n+" "+families[k].name).join(", "))).join("");

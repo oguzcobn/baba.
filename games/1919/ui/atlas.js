@@ -45,6 +45,7 @@ export function updateAtlas(options){
   const {state,selected,shapeData,moving,adj,color,modelSvg,markerSvg,marching,actionFx,capturedProvince}=options;
   let atlas=instances.get(svg);
   if(!atlas){atlas=mount(svg,options);instances.set(svg,atlas);}
+  const contested=new Set((state.theatre?.fronts||[]).map(b=>b.to));
   const targets=new Set(moving?adj(moving):[]);
   for(const p of state.p){
     const {shape,title}=atlas.shapes.get(p.id);
@@ -53,7 +54,7 @@ export function updateAtlas(options){
     set(shape,"aria-label",label);
     set(shape,"tabindex",p.id===selected?"0":"-1");
     set(shape,"fill",color(p));
-    set(shape,"class",["province",p.id===selected?"active":"",targets.has(p.id)?"target":"",p.id===capturedProvince?"captured":""].filter(Boolean).join(" "));
+    set(shape,"class",["province",contested.has(p.id)?"contested":"",p.occupation?"occupied":"",p.id===selected?"active":"",targets.has(p.id)?"target":"",p.id===capturedProvince?"captured":""].filter(Boolean).join(" "));
     let icon=atlas.icons.get(p.id);
     if(shapeData&&p.owner!==state.me&&p.id!==selected){
       if(icon){icon.remove();atlas.icons.delete(p.id);}
