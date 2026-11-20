@@ -143,6 +143,13 @@
 
   let bestLen = (() => { try { return Number(localStorage.getItem('bb_best_yilan_arenasi')) || 0; } catch (e) { return 0; } })();
   let soundOn = true, selSkin = SKINS[0];
+  const BOT_PROFILES = [
+    { name:'toplayici', risk:0.20, hunt:0.14, react:0.18, error:0.09 },
+    { name:'avci', risk:0.63, hunt:0.95, react:0.12, error:0.08 },
+    { name:'kapan', risk:0.50, hunt:0.75, react:0.15, error:0.11 },
+    { name:'kacak', risk:0.12, hunt:0.08, react:0.11, error:0.045 },
+    { name:'dengeci', risk:0.40, hunt:0.45, react:0.18, error:0.075 }
+  ];
 
   const SFX = (() => {
     let ac = null;
@@ -195,7 +202,9 @@
     return {
       name, skin, isBot, x, y, ang, targetAng: ang,
       segs, score: startLen * 5, boost: false, alive: true,
-      dropAcc: 0, aiT: 0, aiGoalX: 0, aiGoalY: 0
+      dropAcc: 0, aiT: 0, aiGoalX: 0, aiGoalY: 0,
+      profile: BOT_PROFILES[Math.floor(Math.random() * BOT_PROFILES.length)],
+      aiErrorUntil: 0, aiState: 'seekFood', aiStateT: 0, aiSeen: 0
     };
   }
 
@@ -216,12 +225,17 @@
     cam.x = 0; cam.y = 0; cam.zoom = 1;
   }
 
+  let starting = false;
   function startGame() {
-    SFX.ok();
+    if (starting || state === 'play') return;
+    starting = true;
+    try {
+      SFX.ok();
     initArena();
     document.getElementById('menuOv').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
     state = 'play';
+    } finally { starting = false; }
   }
 
   function killSnake(s, killer) {
@@ -249,30 +263,84 @@
     }
   }
 
+  // Açı puanlaması botları hem tehlikeli hem yenilebilir kılar.
+  const wrapAngle = a => Math.atan2(Math.sin(a), Math.cos(a));
+  function botThreat(b, theta, horizon) {
+    const px = b.x + Math.cos(theta) * horizon;
+    const py = b.y + Math.sin(theta) * horizon;
+    let threat = 0;
+    const edge = ARENA_R - Math.hypot(px, py);
+    if (edge < 200) threat += Math.max(0, (200 - edge) / 70) * 2.8;
+    for (const other of snakes) {
+      if (!other.alive || other === b) continue;
+      const body = other.segs;
+      for (let i = 2; i < body.length; i += 5) {
+        const seg = body[i];
+        const d = Math.hypot(seg.x - px, seg.y - py);
+        if (d < 180) threat += (180 - d) / 58 * (other.score > b.score ? 1.2 : 0.84);
+      }
+    }
+    return threat;
+  }
   function updateBot(b, dt) {
     b.aiT -= dt;
-    // Sınırdan uzak dur
-    if (Math.hypot(b.x, b.y) > ARENA_R - 280) {
-      b.targetAng = Math.atan2(-b.y, -b.x); b.boost = false; return;
+    b.aiStateT -= dt;
+    const profile = b.profile;
+    const distEdge = ARENA_R - Math.hypot(b.x, b.y);
+    // Çok yakın tehlikeleri kısa gecikmeli tarar, ancak panikle tam dönüş yapmaz.
+    const nearby = snakes.filter(o => o !== b && o.alive && Math.hypot(o.x - b.x, o.y - b.y) < 590);
+    let victim = null, victimD = Infinity;
+    if (profile.hunt > 0.25) for (const other of nearby) {
+      if (other.score > b.score * 0.83) continue;
+      const d = Math.hypot(other.x - b.x, other.y - b.y);
+      if (d < victimD && d < 460) { victim = other; victimD = d; }
     }
-    // Yakın tehlike kontrolü
-    for (const o of snakes) {
-      if (!o.alive || o === b) continue;
-      for (let i = 0; i < o.segs.length; i += 4) {
-        const d = Math.hypot(o.segs[i].x - b.x, o.segs[i].y - b.y);
-        if (d < 95) { b.targetAng = Math.atan2(b.y - o.segs[i].y, b.x - o.segs[i].x); b.boost = b.score > 140 && d < 65; return; }
-      }
+    const threatAhead = botThreat(b, b.ang, 105);
+    if (b.aiT > 0 && threatAhead < 2.25 && distEdge > 140) return;
+    b.aiT = profile.react + Math.random() * 0.14;
+    let goal = null;
+    let bestValue = -Infinity;
+    for (let i = 0; i < orbs.length; i += 3) {
+      const o = orbs[i], dx = o.x - b.x, dy = o.y - b.y;
+      const d = Math.hypot(dx, dy);
+      if (d > 580) continue;
+      const angle = Math.atan2(dy, dx);
+      const danger = botThreat(b, angle, Math.min(175, d));
+      const score = o.val * 35 - d * 0.17 - danger * 32 - Math.abs(wrapAngle(angle - b.ang)) * 28;
+      if (score > bestValue) { bestValue = score; goal = o; }
     }
-    if (b.aiT <= 0) {
-      b.aiT = 0.4 + Math.random() * 0.8;
-      let best = null, bestD = 380;
-      for (let i = 0; i < orbs.length; i += 2) {
-        const d = Math.hypot(orbs[i].x - b.x, orbs[i].y - b.y) - orbs[i].val * 35;
-        if (d < bestD) { bestD = d; best = orbs[i]; }
-      }
-      if (best) { b.targetAng = Math.atan2(best.y - b.y, best.x - b.x); b.boost = best.val >= 3 && b.score > 120; }
-      else { b.targetAng += (Math.random() - 0.5) * 1.4; b.boost = false; }
+    let desired = goal ? Math.atan2(goal.y - b.y, goal.x - b.x) : b.ang + (Math.random() - 0.5) * 1.4;
+    b.aiState = 'seekFood';
+    if (victim && profile.hunt * 125 > bestValue && threatAhead < 2.5 && distEdge > 350) {
+      const lead = profile.name === 'kapan' ? 0.82 : 0.38;
+      desired = Math.atan2(victim.y + Math.sin(victim.ang) * victimD * lead - b.y,
+        victim.x + Math.cos(victim.ang) * victimD * lead - b.x);
+      b.aiState = 'huntSmaller';
     }
+    if (threatAhead > 2.1 || distEdge < 180) {
+      b.aiState = 'avoidDanger';
+    }
+    // Riskli açılar yerine 7 olası kaçış açısını değerlendir.
+    const angles = [-1.35, -0.9, -0.45, 0, 0.45, 0.9, 1.35].map(o => wrapAngle(desired + o));
+    const direction = angles.reduce((best, angle) => {
+      const score = botThreat(b, angle, 145) * (2.4 - profile.risk)
+        + Math.abs(wrapAngle(angle - desired)) * 0.65
+        + Math.abs(wrapAngle(angle - b.ang)) * 0.18;
+      return score < best.score ? { angle, score } : best;
+    }, { angle: desired, score: Infinity });
+    // Botların riski ve hata oranı var: bazen dar dönüşe girer veya yanlış karar verir.
+    if (Math.random() < profile.error * (threatAhead > 1.2 ? 2 : 1)) {
+      b.aiErrorUntil = time + 0.50 + Math.random() * 0.65;
+      desired = wrapAngle(desired + (Math.random() < 0.5 ? -1 : 1) * (0.55 + Math.random() * 0.95));
+      b.aiState = 'riskyTurn';
+    } else {
+      desired = direction.angle;
+    }
+    if (b.aiErrorUntil > time) desired = wrapAngle(desired + Math.sin(time * 8 + b.score) * 0.18);
+    b.targetAng = desired;
+    b.boost = (b.aiState === 'huntSmaller' && victimD < 280 && b.score > 130)
+      || (b.aiState === 'avoidDanger' && threatAhead > 3.0 && b.score > 115)
+      || (b.aiState === 'seekFood' && goal && goal.val >= 3 && bestValue > 45 && b.score > 155);
   }
 
   let lbTick = 0;
@@ -483,7 +551,20 @@
     update(dt); render();
     raf = requestAnimationFrame(loop);
   }
-  window.onload = () => { resize(); renderSkins(); last = performance.now(); if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+  let initialized = false;
+  function initialize() {
+    if (initialized) return;
+    initialized = true;
+    resize();
+    renderSkins();
+    last = performance.now();
+    if (raf) cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(loop);
+    document.documentElement.dataset.snakeReady = 'true';
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
+  else initialize();
+  addEventListener('pageshow', () => { if (!initialized) initialize(); else resize(); });
 })();
 </script>
 </body>
