@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="warfare-1917">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -69,6 +69,7 @@
   }
   .btn-deploy:hover { filter: brightness(1.18); }
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -116,6 +117,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -169,7 +171,7 @@ function deploySquad(team, sq) {
       team, ...sq, maxHp: sq.hp,
       x: team === 1 ? 25 - k * 22 : W - 25 + k * 22,
       y: gY + (Math.random() - 0.5) * 14,
-      inTrench: -1, advancing: true, cd: Math.random() * 0.4, anim: Math.random() * 6
+      inTrench: -1, pressure: 0, advancing: true, cd: Math.random() * 0.4, anim: Math.random() * 6
     });
   }
 }
@@ -220,6 +222,7 @@ function update(dt) {
   for (let i = st.soldiers.length - 1; i >= 0; i--) {
     const s = st.soldiers[i];
     s.anim += dt * 7; if (s.cd > 0) s.cd -= dt;
+    s.pressure = Math.max(0, (s.pressure || 0) - dt * 0.8);
 
     // Check trench cover (infantry only)
     if (!s.tank && s.advancing) {
@@ -242,15 +245,16 @@ function update(dt) {
 
     if (tgt) {
       if (s.cd <= 0) {
-        s.cd = s.rate;
+        s.cd = s.rate * (1 + s.pressure * 0.48);
         const coverMult = (tgt.inTrench >= 0 && !s.tank) ? 0.55 : 1.0;
         tgt.hp -= s.dmg * coverMult;
+        if (!tgt.tank) tgt.pressure = Math.min(2.4, tgt.pressure + (tgt.inTrench >= 0 ? 0.2 : 0.65));
         st.tracers.push({ x1: s.x + s.team * 14, y1: s.y - (s.inTrench >= 0 ? 12 : 22), x2: tgt.x, y2: tgt.y - 18, life: 0.1 });
         sfx(s.tank ? 120 : 520, 90, 0.07, 'sawtooth', 0.05);
         burst(tgt.x, tgt.y - 18, ['#ef4444', '#fbbf24'], 4);
       }
     } else if (s.advancing || s.tank) {
-      s.x += s.team * s.spd * dt;
+      s.x += s.team * s.spd * dt / (1 + s.pressure * 0.6);
     }
 
     // Reached enemy edge -> drain enemy morale!
@@ -270,7 +274,7 @@ function update(dt) {
     const sh = st.shells[i]; sh.vy += 480 * dt; sh.x += sh.vx * dt; sh.y += sh.vy * dt;
     if (sh.y >= gY) {
       st.shake = 16; sfx(95, 28, 0.35, 'sawtooth', 0.22);
-      st.craters.push({ x: sh.x, y: gY + 6, r: 22 });
+      st.craters.push({ x: sh.x, y: gY + 6, r: 22, fresh: st.time });
       burst(sh.x, gY, ['#f97316', '#fde047', '#451a03', '#64748b'], 24);
       for (const s of st.soldiers) {
         if (s.team === -1 && Math.abs(s.x - sh.x) < 75) s.hp -= 85;
@@ -302,19 +306,21 @@ function render() {
   ctx.save();
   if (st.shake > 0) ctx.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
 
-  // Smoky WWI Sky
-  const sky = ctx.createLinearGradient(0, 0, 0, gY);
-  sky.addColorStop(0, '#17191c'); sky.addColorStop(0.55, '#3b372e'); sky.addColorStop(1, '#715d44');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gY);
-
-  // Muddy No Man's Land
-  const mud = ctx.createLinearGradient(0, gY, 0, H);
-  mud.addColorStop(0, '#443523'); mud.addColorStop(1, '#1a140d');
-  ctx.fillStyle = mud; ctx.fillRect(0, gY, W, H - gY);
+  ctx.fillStyle = '#332922'; ctx.fillRect(0, 0, W, H);
+  arcadeArt.backdrop(ctx, W, H, st.time * 0.015);
+  for (let i = 0; i < 4; i++) {
+    const x = ((st.time * (12 + i * 4) + i * W * .31) % (W + 320)) - 160;
+    arcadeArt.bloom(ctx, x, gY - 55 - i * 16, 150, '#aabaad29');
+  }
 
   // Shell Craters
   ctx.fillStyle = 'rgba(15, 10, 6, 0.75)';
   for (const cr of st.craters) { ctx.beginPath(); ctx.ellipse(cr.x, cr.y, cr.r, cr.r * 0.35, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  for (const cr of st.craters) {
+    const age = st.time - cr.fresh;
+    if (age < 0.55) arcadeArt.bloom(ctx, cr.x, cr.y - 15, 34 + age * 105, '#ffbb6480');
+  }
 
   // 4 Captureable Trenches with Sandbags & Barbed Wire
   for (const tFrac of st.trenches) {
@@ -374,7 +380,7 @@ document.getElementById('btn-sound').addEventListener('click', () => { muted = !
 document.getElementById('btn-menu').addEventListener('click', () => { st.running = false; document.getElementById('menu-ov').classList.remove('hidden'); });
 document.getElementById('btn-charge').addEventListener('click', () => {
   sfx(520, 880, 0.25, 'triangle', 0.14);
-  for (const s of st.soldiers) if (s.team === 1) { s.advancing = true; s.x += 18; }
+  for (const s of st.soldiers) if (s.team === 1) { s.advancing = true; s.pressure = 0; }
 });
 document.getElementById('btn-arty').addEventListener('click', () => {
   if (st.artyCd > 0) return;

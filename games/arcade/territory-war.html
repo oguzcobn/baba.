@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="territory-war">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -54,6 +54,7 @@
   }
   .btn-go:hover { transform: translate(-2px, -2px); }
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -109,6 +110,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -134,6 +136,7 @@ const st = {
 };
 
 function startMatch() {
+  clearTimeout(st.turnTimer);
   const W = canvas.width, H = canvas.height, gY = H * 0.78;
   st.plats = [
     { x: W * 0.08, y: gY, w: W * 0.36, h: 140 },
@@ -145,13 +148,14 @@ function startMatch() {
     st.units.push({ team: 0, x: W * (0.14 + i * 0.075), y: gY - 26, vx: 0, vy: 0, hp: 100, alive: true, face: 1, aim: -0.6 });
     st.units.push({ team: 1, x: W * (0.62 + i * 0.075), y: gY - 26, vx: 0, vy: 0, hp: 100, alive: true, face: -1, aim: -2.5 });
   }
-  st.turn = 0; st.phase = 'aim'; st.proj = null; st.particles = []; st.running = true;
+  st.blast = null; st.turn = 0; st.phase = 'aim'; st.proj = null; st.particles = []; st.running = true;
   document.getElementById('menu-ov').classList.add('hidden');
   document.getElementById('end-ov').classList.add('hidden');
   nextTurn(0);
 }
 
 function nextTurn(idx) {
+  if (!st.running) return;
   const bAlive = st.units.filter(u => u.team === 0 && u.alive).length;
   const rAlive = st.units.filter(u => u.team === 1 && u.alive).length;
   document.getElementById('score-txt').textContent = `🔵 ${bAlive} vs 🔴 ${rAlive}`;
@@ -172,7 +176,7 @@ function nextTurn(idx) {
   document.getElementById('turn-txt').style.color = active.team === 0 ? '#38bdf8' : '#f87171';
 
   if (active.team === 1) {
-    setTimeout(() => runAI(active), 750);
+    st.turnTimer = setTimeout(() => runAI(active), 750);
   }
 }
 
@@ -210,7 +214,7 @@ function fireAction(u, wpn, ang, pwr) {
         o.vx = u.face * 480; o.vy = -340; o.hp -= 22; burst(o.x, o.y, '#facc15', 14);
       }
     }
-    setTimeout(() => nextTurn(st.turn + 1), 950);
+    st.turnTimer = setTimeout(() => nextTurn(st.turn + 1), 950);
   } else if (wpn === 'rifle') {
     sfx(540, 90, 0.16);
     st.proj = { x: u.x + Math.cos(ang) * 18, y: u.y - 12 + Math.sin(ang) * 18, vx: Math.cos(ang) * 1050, vy: Math.sin(ang) * 1050, type: 'rifle', shooter: u, life: 1.5 };
@@ -222,6 +226,7 @@ function fireAction(u, wpn, ang, pwr) {
 }
 
 function explodeGrenade(x, y) {
+  st.blast = { x, y, age: 0 };
   sfx(110, 28, 0.35); st.shake = 14; burst(x, y, '#f97316', 28);
   for (const u of st.units) {
     if (!u.alive) continue;
@@ -234,10 +239,11 @@ function explodeGrenade(x, y) {
     }
   }
   st.proj = null;
-  setTimeout(() => nextTurn(st.turn + 1), 900);
+  st.turnTimer = setTimeout(() => nextTurn(st.turn + 1), 900);
 }
 
 function update(dt) {
+  if (st.blast) st.blast.age += dt;
   if (!st.running) return;
   st.time += dt;
   if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 30);
@@ -267,6 +273,8 @@ function update(dt) {
     }
   }
 
+  if (active && !active.alive && st.phase === 'aim') nextTurn(st.turn + 1);
+
   // Active projectile
   if (st.proj) {
     const p = st.proj;
@@ -280,13 +288,13 @@ function update(dt) {
       if (p.fuse <= 0 || p.y > canvas.height) explodeGrenade(p.x, Math.min(p.y, canvas.height - 10));
     } else {
       p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
-      let hit = false;
+      let hit = st.plats.some(pl => p.x > pl.x && p.x < pl.x + pl.w && p.y > pl.y && p.y < pl.y + pl.h);
       for (const u of st.units) {
-        if (u.alive && u !== p.shooter && Math.hypot(u.x - p.x, (u.y - 16) - p.y) < 20) {
+        if (!hit && u.alive && u !== p.shooter && Math.hypot(u.x - p.x, (u.y - 16) - p.y) < 20) {
           u.hp -= 44; u.vx += Math.sign(p.vx) * 220; u.vy -= 140; burst(p.x, p.y, '#ef4444', 16); hit = true; break;
         }
       }
-      if (hit || p.life <= 0 || p.x < 0 || p.x > canvas.width) { st.proj = null; setTimeout(() => nextTurn(st.turn + 1), 650); }
+      if (hit || p.life <= 0 || p.x < 0 || p.x > canvas.width) { st.proj = null; st.turnTimer = setTimeout(() => nextTurn(st.turn + 1), 650); }
     }
   }
 
@@ -304,8 +312,16 @@ function render() {
   sky.addColorStop(0, '#0f172a'); sky.addColorStop(0.65, '#334155'); sky.addColorStop(1, '#0284c7');
   ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
 
+  arcadeArt.backdrop(ctx, W, H);
+
   // Water pit
   ctx.fillStyle = '#0369a1'; ctx.fillRect(0, H - 36, W, 36);
+
+  ctx.strokeStyle = '#b7eaf17a';
+  for (let x = 0; x < W; x += 18) {
+    const y = H - 22 + Math.sin(x * .06 + performance.now() * .003) * 4;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 11, y); ctx.stroke();
+  }
 
   // Platforms
   for (const pl of st.plats) {
@@ -341,8 +357,26 @@ function render() {
     ctx.beginPath(); ctx.moveTo(active.x, active.y - 16);
     ctx.lineTo(active.x + Math.cos(active.aim) * 110, active.y - 16 + Math.sin(active.aim) * 110); ctx.stroke();
     ctx.setLineDash([]);
+    if (st.wpn === 'grenade') {
+      const speed = 300 + (st.charging ? st.power : .15) * 560;
+      const dx = Math.cos(active.aim), dy = Math.sin(active.aim);
+      ctx.fillStyle = '#ffe8a2';
+      for (let t = .08; t <= .88; t += .08) {
+        const x = active.x + dx * (16 + speed * t) + 7 * st.wind * t * t;
+        const y = active.y - 14 + dy * (16 + speed * t) + 340 * t * t;
+        if (st.plats.some(pl => x > pl.x && x < pl.x + pl.w && y > pl.y && y < pl.y + pl.h)) break;
+        ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill();
+      }
+    }
   }
 
+  if (st.blast && st.blast.age < .42) {
+    const { x, y, age } = st.blast;
+    ctx.save(); ctx.globalAlpha = 1 - age / .42;
+    arcadeArt.bloom(ctx, x, y, 36 + age * 160, '#ffc374d9');
+    arcadeArt.ring(ctx, x, y, 12 + age * 200, '#ffe1aa');
+    ctx.restore();
+  }
   if (st.proj) {
     ctx.fillStyle = st.proj.type === 'grenade' ? '#22c55e' : '#fde047';
     ctx.beginPath(); ctx.arc(st.proj.x, st.proj.y, st.proj.type === 'grenade' ? 6 : 4, 0, Math.PI * 2); ctx.fill();
@@ -355,11 +389,12 @@ document.querySelectorAll('#wpn-bar .w-btn').forEach(b => b.addEventListener('cl
   st.wpn = b.dataset.w;
   document.querySelectorAll('#wpn-bar .w-btn').forEach(x => x.classList.toggle('active', x === b));
 }));
-canvas.addEventListener('pointermove', e => {
+function aimAt(e) {
   const r = canvas.getBoundingClientRect(); st.mx = e.clientX - r.left; st.my = e.clientY - r.top;
   const a = st.units[st.turn];
   if (a && a.team === 0 && st.phase === 'aim') { a.aim = Math.atan2(st.my - (a.y - 16), st.mx - a.x); a.face = Math.cos(a.aim) >= 0 ? 1 : -1; }
-});
+}
+canvas.addEventListener('pointermove', aimAt);
 const startCharge = () => {
   const a = st.units[st.turn];
   if (!st.running || !a || a.team !== 0 || st.phase !== 'aim') return;
@@ -370,7 +405,7 @@ const endCharge = () => {
   const a = st.units[st.turn];
   if (st.charging && a) { st.charging = false; document.getElementById('pwr-bar').style.width = '0%'; fireAction(a, st.wpn, a.aim, st.power); }
 };
-canvas.addEventListener('pointerdown', startCharge);
+canvas.addEventListener('pointerdown', e => { aimAt(e); startCharge(); });
 window.addEventListener('pointerup', endCharge);
 document.getElementById('btn-fire').addEventListener('pointerdown', e => { e.stopPropagation(); startCharge(); });
 document.getElementById('btn-fire').addEventListener('pointerup', e => { e.stopPropagation(); endCharge(); });

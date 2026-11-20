@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="age-of-war">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -92,6 +92,7 @@
   }
   .btn-war:hover { transform: translateY(-2px); }
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -152,6 +153,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -245,7 +247,7 @@ function renderUnitDeck() {
   const era = ERAS[st.era];
   const deck = document.getElementById('unit-deck');
   deck.innerHTML = era.units.map((u, i) => `
-    <button class="act-btn" data-u="${i}" ${st.gold < u.cost ? 'disabled' : ''}>
+    <button class="act-btn" data-u="${i}" ${st.gold < u.cost || st.training?.length >= 4 ? 'disabled' : ''}>
       <span class="ico">${u.icon}</span>
       <span class="nm">${u.name}</span>
       <span class="cs">${u.cost} 🪙</span>
@@ -254,7 +256,7 @@ function renderUnitDeck() {
   deck.querySelectorAll('.act-btn').forEach(b => {
     b.addEventListener('click', () => {
       const u = ERAS[st.era].units[parseInt(b.dataset.u, 10)];
-      if (st.gold >= u.cost) { st.gold -= u.cost; spawnUnit(1, u); beep(320, 520, 0.1); updateHUD(); }
+      if (st.running && st.gold >= u.cost && st.training.length < 4) { st.gold -= u.cost; st.training.push({ unit: u, remaining: u.big ? 2.4 : 1.25 }); beep(320, 520, 0.1); updateHUD(); }
     });
   });
 }
@@ -262,7 +264,7 @@ function renderUnitDeck() {
 function updateHUD() {
   const era = ERAS[st.era];
   document.getElementById('era-label').textContent = era.name;
-  document.getElementById('gold-txt').textContent = `🪙 ${Math.floor(st.gold)}`;
+  document.getElementById('gold-txt').textContent = `🪙 ${Math.floor(st.gold)}${st.training?.length ? ' · Eğitim ' + st.training.length + '/4' : ''}`;
   document.getElementById('xp-txt').textContent = era.xpNeed === Infinity ? `⭐ MAX ÇAĞ` : `⭐ XP: ${Math.floor(st.xp)} / ${era.xpNeed}`;
   document.getElementById('p-base-txt').textContent = `🏰 SEN: ${Math.max(0, Math.ceil(st.pBase))}`;
   document.getElementById('e-base-txt').textContent = `🏯 DÜŞMAN: ${Math.max(0, Math.ceil(st.eBase))}`;
@@ -277,7 +279,7 @@ function updateHUD() {
 }
 
 function startGame() {
-  st.running = true; st.gold = 220; st.xp = 0; st.era = 0; st.enemyEra = 0;
+  st.running = true; st.time = 0; st.training = []; st.gold = 220; st.xp = 0; st.era = 0; st.enemyEra = 0;
   st.pBase = 650; st.pBaseMax = 650; st.eBase = 650; st.eBaseMax = 650;
   st.pTurrets = 0; st.eTurrets = 0; st.specialCd = 0; st.aiTimer = 1.6;
   st.units = []; st.projs = []; st.particles = []; st.corpses = [];
@@ -300,6 +302,15 @@ function update(dt) {
   if (st.specialCd > 0) st.specialCd = Math.max(0, st.specialCd - dt);
 
   const W = canvas.width, gY = canvas.height * 0.77;
+  const recruit = st.training[0];
+  if (recruit) {
+    recruit.remaining -= dt;
+    if (recruit.remaining <= 0) {
+      spawnUnit(1, recruit.unit);
+      st.training.shift();
+    }
+  }
+
   // Passive gold trickle
   st.gold += (7 + st.era * 4) * dt;
 
@@ -308,8 +319,10 @@ function update(dt) {
   st.aiTimer -= dt;
   if (st.aiTimer <= 0) {
     const eEra = ERAS[st.enemyEra];
-    const r = Math.random();
-    const uIdx = r < 0.5 ? 0 : (r < 0.82 ? 1 : 2);
+    const front = st.units.filter(u => u.team === 1 && u.x > W * 0.55);
+    const armored = front.filter(u => u.big).length;
+    const roll = Math.random();
+    const uIdx = armored > 1 ? 1 : front.length >= 3 ? 2 : roll < 0.55 ? 0 : roll < 0.85 ? 1 : 2;
     spawnUnit(-1, eEra.units[uIdx]);
     if (st.eTurrets < Math.min(3, st.enemyEra + 1) && Math.random() < 0.14) st.eTurrets++;
     const mult = st.diff === 'easy' ? 1.35 : (st.diff === 'hard' ? 0.68 : 1.0);
@@ -362,9 +375,9 @@ function update(dt) {
 
     if (target && bestD <= u.rng) {
       if (u.atkCd <= 0) {
-        u.atkCd = 0.85;
+        u.atkCd = u.big ? 1.08 : 0.85;
         if (u.ranged) {
-          st.projs.push({ x: u.x + u.team * 16, y: gY - 26, vx: u.team * 380, vy: -40, dmg: u.dmg, team: u.team, col: u.col });
+          st.projs.push({ x: u.x + u.team * 16, y: gY - 26, vx: u.team * 500, vy: -210 * Math.max(0.04, bestD / 500), dmg: u.dmg, team: u.team, col: u.col });
         } else {
           target.hp -= u.dmg; target.hitFlash = 0.14;
           burst(target.x, gY - 24, '#ef4444', 6);
@@ -435,24 +448,21 @@ function render() {
   ctx.save();
   if (st.shake > 0) ctx.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
 
-  // Sky Gradient
-  const sky = ctx.createLinearGradient(0, 0, 0, gY);
-  era.sky.forEach((c, i) => sky.addColorStop(i / (era.sky.length - 1), c));
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gY);
-
-  // Distant Mountains
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  ctx.beginPath(); ctx.moveTo(0, gY);
-  for (let x = 0; x <= W; x += 140) ctx.lineTo(x, gY - 55 - Math.sin(x * 0.01) * 45);
-  ctx.lineTo(W, gY); ctx.fill();
-
-  // Battlefield Ground
-  ctx.fillStyle = era.ground; ctx.fillRect(0, gY, W, H - gY);
-  ctx.fillStyle = era.turf; ctx.fillRect(0, gY, W, 12);
+  ctx.fillStyle = era.ground; ctx.fillRect(0, 0, W, H);
+  const filters = ['', 'hue-rotate(20deg) saturate(.8)', 'hue-rotate(168deg) saturate(.72)', 'hue-rotate(202deg) brightness(.78)', 'hue-rotate(238deg) saturate(1.5)'];
+  arcadeArt.backdrop(ctx, W, H, st.time * 0.012, filters[st.era]);
+  const ground = ctx.createLinearGradient(0, gY, 0, H);
+  ground.addColorStop(0, era.turf + 'a0');
+  ground.addColorStop(1, '#100b0ded');
+  ctx.fillStyle = ground; ctx.fillRect(0, gY, W, H - gY);
 
   // Left & Right Bases + Turrets
   const drawBase = (x, hp, maxHp, turrets, isPlayer) => {
-    ctx.fillStyle = isPlayer ? '#334155' : '#450a0a';
+    const facade = ctx.createLinearGradient(x - 45, gY - 120, x + 45, gY);
+    facade.addColorStop(0, isPlayer ? '#77869a' : '#984739');
+    facade.addColorStop(0.62, isPlayer ? '#28333d' : '#452327');
+    facade.addColorStop(1, '#151319');
+    ctx.fillStyle = facade;
     ctx.strokeStyle = isPlayer ? '#fbbf24' : '#ef4444'; ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.roundRect(x - 45, gY - 120, 90, 120, [10, 10, 0, 0]); ctx.fill(); ctx.stroke();
     // Battlements

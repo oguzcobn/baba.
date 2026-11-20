@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="fancy-pants-3">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -53,6 +53,7 @@
     font-size: 20px; font-weight: 900; box-shadow: 3px 3px 0 #1e293b; cursor: pointer;
   }
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -101,6 +102,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -130,7 +132,7 @@ function buildLevel(lvl) {
   st.lvl = lvl; st.hp = 3; st.particles = [];
   st.p = { x: 110, y: 260, vx: 0, vy: 0, ground: false, wallDir: 0, face: 1, slide: false, anim: 0, inv: 0, hair: Array.from({ length: 6 }, () => ({ x: 110, y: 240 })) };
   // Handcrafted sketch platforms + ramps + wall-jump towers
-  const shift = (lvl - 1) * 40;
+  const shift = Math.min(7, lvl - 1) * 40;
   st.plats = [
     { x: 0, y: 420, w: 620, h: 120 },
     { x: 680, y: 380, w: 320, h: 160 },
@@ -168,10 +170,20 @@ function updateHUD() {
 
 function jump() {
   const p = st.p;
-  if (p.ground) { p.vy = -560; p.ground = false; sfx(320, 680, 0.12); }
+  if (!st.running) return;
+  p.jumpBuffer = 0.13;
+  consumeJump(p);
+}
+
+function consumeJump(p) {
+  if (!(p.jumpBuffer > 0)) return;
+  if (p.ground || p.grace > 0) {
+    p.vy = -560; p.ground = false; p.grace = 0; p.jumpBuffer = 0;
+    sfx(320, 680, 0.12);
+  }
   else if (p.wallDir !== 0) {
     // Classic Fancy Pants Wall Jump!
-    p.vy = -540; p.vx = -p.wallDir * 420; p.face = -p.wallDir; sfx(420, 820, 0.14);
+    p.jumpBuffer = 0; p.vy = -540; p.vx = -p.wallDir * 420; p.face = -p.wallDir; sfx(420, 820, 0.14);
   }
 }
 
@@ -180,6 +192,9 @@ function update(dt) {
   st.time += dt;
   const p = st.p;
   if (p.inv > 0) p.inv -= dt;
+  p.jumpBuffer = Math.max(0, (p.jumpBuffer || 0) - dt);
+  p.grace = p.ground ? 0.1 : Math.max(0, (p.grace || 0) - dt);
+  consumeJump(p);
   p.slide = st.keys.d && p.ground;
 
   // Momentum-based horizontal movement
@@ -218,7 +233,7 @@ function update(dt) {
     }
   }
 
-  if (p.y > 760) { p.x = 110; p.y = 260; p.vx = 0; p.vy = 0; }
+  if (p.y > 760) { p.x = p.checkpoint?.x ?? 110; p.y = p.checkpoint?.y ?? 260; p.vx = 0; p.vy = 0; }
   p.anim += Math.abs(p.vx) * dt * 0.045;
 
   // Flowing procedural hair physics!
@@ -227,6 +242,11 @@ function update(dt) {
     const prev = p.hair[i - 1], cur = p.hair[i];
     cur.x += (prev.x - p.face * 5 - cur.x) * Math.min(1, dt * 16);
     cur.y += (prev.y - 2.5 - cur.y) * Math.min(1, dt * 16);
+  }
+
+  if (p.ground && p.x > (p.checkpoint?.x ?? 110) + 700) {
+    p.checkpoint = { x: p.x, y: p.y };
+    sfx(600, 900, 0.18);
   }
 
   // Springs
@@ -278,19 +298,18 @@ function update(dt) {
 
 function render() {
   const W = canvas.width, H = canvas.height;
-  // Notebook Ruled Paper Background
-  ctx.fillStyle = '#fdf8ee'; ctx.fillRect(0, 0, W, H);
-  ctx.strokeStyle = 'rgba(59, 130, 246, 0.16)'; ctx.lineWidth = 1;
-  for (let y = (-(st.camY % 32)); y < H; y += 32) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-  }
+  ctx.fillStyle = '#467c91'; ctx.fillRect(0, 0, W, H);
+  arcadeArt.backdrop(ctx, W, H, st.camX * 0.0004);
 
   ctx.save();
   ctx.translate(-Math.round(st.camX), -Math.round(st.camY));
 
   // Hand-drawn Ink Platforms
   for (const pl of st.plats) {
-    ctx.fillStyle = '#fef3c7'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+    if (pl.x + pl.w < st.camX || pl.x > st.camX + W) continue;
+    const rock = ctx.createLinearGradient(0, pl.y, 0, pl.y + pl.h);
+    rock.addColorStop(0, '#dcba70'); rock.addColorStop(1, '#8a4a39');
+    ctx.fillStyle = rock; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.roundRect(pl.x, pl.y, pl.w, pl.h, 8); ctx.fill(); ctx.stroke();
     // Sketch cross-hatching
     ctx.strokeStyle = 'rgba(30,41,59,0.12)'; ctx.lineWidth = 2;
