@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BABA. ARCADE · FANCY PANTS ADVENTURE 3</title>
+<style>
+  :root { --paper: #fdf8ee; --ink: #1e293b; --pants: #f97316; }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--paper); color: var(--ink); font-family: 'Comic Sans MS', 'Segoe UI', system-ui, sans-serif; }
+  #wrap { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  #hud {
+    position: absolute; top: 10px; left: 12px; right: 12px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+  }
+  .sketch-pill {
+    pointer-events: auto; background: rgba(253, 248, 238, 0.92);
+    border: 3px solid #1e293b; border-radius: 16px 6px 14px 8px;
+    padding: 6px 14px; font-weight: 900; font-size: 14px; display: flex; gap: 12px; align-items: center;
+    box-shadow: 4px 4px 0 #1e293b;
+  }
+
+  /* HAND-DRAWN SKETCHBOOK MENU */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: repeating-linear-gradient(0deg, #fdf8ee 0px, #fdf8ee 28px, #dbeafe 29px, #fdf8ee 30px);
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .notebook {
+    max-width: 600px; width: 100%; padding: 30px; text-align: center;
+    background: #fffdf7; border: 4px solid #1e293b; border-radius: 22px 8px 20px 10px;
+    box-shadow: 10px 10px 0 #f97316;
+  }
+  .fp-title { font-size: clamp(28px, 5vw, 44px); font-weight: 900; color: #1e293b; }
+  .fp-title span { color: #f97316; }
+  .btn-run {
+    margin-top: 18px; padding: 14px 36px; border-radius: 16px 6px 14px 8px;
+    border: 3px solid #1e293b; background: #f97316; color: #fff;
+    font-size: 17px; font-weight: 900; cursor: pointer; box-shadow: 5px 5px 0 #1e293b;
+  }
+  .btn-run:hover { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 #1e293b; }
+
+  #touch-bar {
+    position: absolute; bottom: 12px; left: 12px; right: 12px; z-index: 20;
+    display: flex; justify-content: space-between; pointer-events: none;
+  }
+  .t-btn {
+    pointer-events: auto; width: 52px; height: 52px; border-radius: 14px;
+    border: 3px solid #1e293b; background: rgba(255,253,247,0.9); color: #1e293b;
+    font-size: 20px; font-weight: 900; box-shadow: 3px 3px 0 #1e293b; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div class="sketch-pill">
+      <span style="color:#f97316;" id="sq-txt">🌀 0</span>
+      <span id="lvl-txt">📖 BÖLÜM 1</span>
+      <span id="hp-txt" style="color:#dc2626;">❤️❤️❤️</span>
+    </div>
+    <div class="sketch-pill">
+      <button id="btn-sound" style="background:none;border:none;font-size:16px;cursor:pointer;">🔊</button>
+      <button id="btn-menu" style="background:none;border:none;font-size:16px;cursor:pointer;">☰</button>
+    </div>
+  </div>
+
+  <div id="touch-bar">
+    <div style="display:flex;gap:8px;">
+      <button class="t-btn" id="b-left">◄</button>
+      <button class="t-btn" id="b-right">►</button>
+      <button class="t-btn" id="b-slide">▼</button>
+    </div>
+    <button class="t-btn" id="b-jump" style="background:#f97316;color:#fff;">▲</button>
+  </div>
+
+  <div class="overlay" id="menu-ov">
+    <div class="notebook">
+      <div style="font-size:12px;letter-spacing:2px;color:#64748b;font-weight:900;">BABA. ARCADE · DEFTER PLATFORMER</div>
+      <div class="fp-title">FANCY <span>PANTS</span> 3</div>
+      <p style="margin:12px 0;font-size:14px;color:#334155;line-height:1.5;">
+        Turuncu pantolonunu giy, el çizimi defter dünyasında yüksek hızla koş, rampalardan fırlayıp <strong>duvardan zıpla</strong>, eğimlerden <strong>S</strong> ile kay, mürekkep örümceklerini tekmeyle uçur ve spiral kıvrımları toplayıp <strong>Çıkış Kapısına</strong> ulaş!
+      </p>
+      <div style="font-size:12px;color:#64748b;font-weight:800;">A/D veya Yönler: Koş · W/Boşluk: Zıpla (Duvardan Zıplama!) · S: Kayma</div>
+      <button class="btn-run" id="btn-start">✏️ MACERAYA BAŞLA</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="end-ov">
+    <div class="notebook">
+      <div style="font-size:52px;">🚪✨</div>
+      <div class="fp-title" id="end-title">BÖLÜM <span>GEÇİLDİ!</span></div>
+      <p id="end-sub" style="margin:10px 0 18px;font-weight:700;">Harika parkur!</p>
+      <button class="btn-run" id="btn-next">▶ SONRAKİ BÖLÜM</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let actx = null, muted = false;
+function sfx(f1, f2, d = 0.12) {
+  if (muted) return;
+  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+  if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(40, f2), t + d);
+  g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d);
+}
+
+const st = {
+  running: false, lvl: 1, squiggles: 0, hp: 3, time: 0, camX: 0, camY: 0,
+  keys: { l: false, r: false, u: false, d: false },
+  p: { x: 120, y: 200, vx: 0, vy: 0, ground: false, wallDir: 0, face: 1, slide: false, anim: 0, inv: 0, hair: [] },
+  plats: [], springs: [], spiders: [], coins: [], door: { x: 2400, y: 340 }, particles: []
+};
+
+function buildLevel(lvl) {
+  st.lvl = lvl; st.hp = 3; st.particles = [];
+  st.p = { x: 110, y: 260, vx: 0, vy: 0, ground: false, wallDir: 0, face: 1, slide: false, anim: 0, inv: 0, hair: Array.from({ length: 6 }, () => ({ x: 110, y: 240 })) };
+  // Handcrafted sketch platforms + ramps + wall-jump towers
+  const shift = (lvl - 1) * 40;
+  st.plats = [
+    { x: 0, y: 420, w: 620, h: 120 },
+    { x: 680, y: 380, w: 320, h: 160 },
+    { x: 1060, y: 310, w: 260, h: 230 },
+    // Wall-jump chimney!
+    { x: 1380, y: 120, w: 50, h: 320 },
+    { x: 1560, y: 80, w: 50, h: 360 },
+    { x: 1380, y: 440, w: 360, h: 100 },
+    { x: 1610, y: 210, w: 340, h: 40 },
+    { x: 2020, y: 340 - shift * 0.4, w: 580, h: 180 }
+  ];
+  st.springs = [{ x: 560, y: 408 }, { x: 1480, y: 428 }, { x: 1920, y: 198 }];
+  st.spiders = [
+    { x: 420, y: 404, minX: 280, maxX: 520, vx: 75, alive: true, kickVx: 0, kickVy: 0 },
+    { x: 820, y: 364, minX: 700, maxX: 960, vx: 95, alive: true, kickVx: 0, kickVy: 0 },
+    { x: 1750, y: 194, minX: 1630, maxX: 1900, vx: 110, alive: true, kickVx: 0, kickVy: 0 },
+    { x: 2220, y: 324 - shift * 0.4, minX: 2060, maxX: 2340, vx: 120, alive: true, kickVx: 0, kickVy: 0 }
+  ];
+  st.coins = [];
+  for (let x = 220; x < 2350; x += 110) {
+    st.coins.push({ x, y: 220 + Math.sin(x * 0.01) * 90, taken: false });
+  }
+  st.door = { x: 2480, y: 340 - shift * 0.4 };
+  st.running = true;
+  document.getElementById('menu-ov').classList.add('hidden');
+  document.getElementById('end-ov').classList.add('hidden');
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById('sq-txt').textContent = `🌀 ${st.squiggles}`;
+  document.getElementById('lvl-txt').textContent = `📖 BÖLÜM ${st.lvl}`;
+  document.getElementById('hp-txt').textContent = '❤️'.repeat(Math.max(0, st.hp));
+}
+
+function jump() {
+  const p = st.p;
+  if (p.ground) { p.vy = -560; p.ground = false; sfx(320, 680, 0.12); }
+  else if (p.wallDir !== 0) {
+    // Classic Fancy Pants Wall Jump!
+    p.vy = -540; p.vx = -p.wallDir * 420; p.face = -p.wallDir; sfx(420, 820, 0.14);
+  }
+}
+
+function update(dt) {
+  if (!st.running) return;
+  st.time += dt;
+  const p = st.p;
+  if (p.inv > 0) p.inv -= dt;
+  p.slide = st.keys.d && p.ground;
+
+  // Momentum-based horizontal movement
+  const acc = p.ground ? 1900 : 1200;
+  const maxSpd = p.slide ? 540 : 420;
+  if (!p.slide) {
+    if (st.keys.l) { p.vx = Math.max(-maxSpd, p.vx - acc * dt); p.face = -1; }
+    else if (st.keys.r) { p.vx = Math.min(maxSpd, p.vx + acc * dt); p.face = 1; }
+    else p.vx *= p.ground ? Math.pow(0.0008, dt) : Math.pow(0.18, dt);
+  } else {
+    p.vx *= Math.pow(0.25, dt);
+  }
+
+  p.vy += 1280 * dt;
+  p.x += p.vx * dt;
+  p.wallDir = 0;
+
+  // Horizontal platform collisions (detect wall-slide!)
+  for (const pl of st.plats) {
+    if (p.x + 12 > pl.x && p.x - 12 < pl.x + pl.w && p.y > pl.y + 6 && p.y - 36 < pl.y + pl.h) {
+      if (p.vx > 0) { p.x = pl.x - 12; p.vx = 0; p.wallDir = 1; }
+      else if (p.vx < 0) { p.x = pl.x + pl.w + 12; p.vx = 0; p.wallDir = -1; }
+      if (!p.ground && p.vy > 120) p.vy = 120; // smooth wall-slide
+    }
+  }
+
+  p.y += p.vy * dt;
+  p.ground = false;
+  for (const pl of st.plats) {
+    if (p.x + 11 > pl.x && p.x - 11 < pl.x + pl.w) {
+      if (p.vy >= 0 && p.y >= pl.y && p.y - p.vy * dt <= pl.y + 14) {
+        p.y = pl.y; p.vy = 0; p.ground = true;
+      } else if (p.vy < 0 && p.y - 38 <= pl.y + pl.h && p.y - 38 - p.vy * dt >= pl.y + pl.h - 14) {
+        p.y = pl.y + pl.h + 38; p.vy = 0;
+      }
+    }
+  }
+
+  if (p.y > 760) { p.x = 110; p.y = 260; p.vx = 0; p.vy = 0; }
+  p.anim += Math.abs(p.vx) * dt * 0.045;
+
+  // Flowing procedural hair physics!
+  p.hair[0].x = p.x - p.face * 2; p.hair[0].y = p.y - (p.slide ? 22 : 40);
+  for (let i = 1; i < p.hair.length; i++) {
+    const prev = p.hair[i - 1], cur = p.hair[i];
+    cur.x += (prev.x - p.face * 5 - cur.x) * Math.min(1, dt * 16);
+    cur.y += (prev.y - 2.5 - cur.y) * Math.min(1, dt * 16);
+  }
+
+  // Springs
+  for (const sp of st.springs) {
+    if (Math.hypot(p.x - sp.x, p.y - sp.y) < 28 && p.vy >= 0) {
+      p.vy = -780; p.ground = false; sfx(280, 980, 0.2);
+    }
+  }
+
+  // Coins (Squiggles)
+  for (const c of st.coins) {
+    if (!c.taken && Math.hypot(p.x - c.x, p.y - 20 - c.y) < 28) {
+      c.taken = true; st.squiggles++; sfx(720, 1180, 0.08); updateHUD();
+    }
+  }
+
+  // Ink Spiders (Stomp or Slide-Kick!)
+  for (const s of st.spiders) {
+    if (s.alive) {
+      s.x += s.vx * dt;
+      if (s.x < s.minX || s.x > s.maxX) s.vx *= -1;
+      if (Math.hypot(p.x - s.x, (p.y - 16) - s.y) < 26) {
+        if (p.vy > 40 || p.slide) {
+          s.alive = false; s.kickVx = p.face * 480; s.kickVy = -320;
+          if (!p.slide) p.vy = -420;
+          st.squiggles += 5; sfx(240, 620, 0.14); updateHUD();
+        } else if (p.inv <= 0) {
+          st.hp--; p.inv = 1.2; p.vy = -340; p.vx = -p.face * 260; sfx(180, 70, 0.18); updateHUD();
+          if (st.hp <= 0) buildLevel(st.lvl);
+        }
+      }
+    } else {
+      s.kickVy += 900 * dt; s.x += s.kickVx * dt; s.y += s.kickVy * dt;
+    }
+  }
+
+  // Exit Door check
+  if (Math.hypot(p.x - st.door.x, p.y - st.door.y) < 42) {
+    st.running = false; sfx(520, 1280, 0.35);
+    document.getElementById('end-title').innerHTML = `BÖLÜM ${st.lvl} <span>GEÇİLDİ!</span>`;
+    document.getElementById('end-sub').textContent = `Toplam Kıvrım: 🌀 ${st.squiggles}`;
+    document.getElementById('end-ov').classList.remove('hidden');
+  }
+
+  // Smooth Camera
+  st.camX += (p.x - canvas.width * 0.38 - st.camX) * Math.min(1, dt * 7);
+  st.camY += (p.y - canvas.height * 0.58 - st.camY) * Math.min(1, dt * 6);
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  // Notebook Ruled Paper Background
+  ctx.fillStyle = '#fdf8ee'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(59, 130, 246, 0.16)'; ctx.lineWidth = 1;
+  for (let y = (-(st.camY % 32)); y < H; y += 32) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  ctx.save();
+  ctx.translate(-Math.round(st.camX), -Math.round(st.camY));
+
+  // Hand-drawn Ink Platforms
+  for (const pl of st.plats) {
+    ctx.fillStyle = '#fef3c7'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.roundRect(pl.x, pl.y, pl.w, pl.h, 8); ctx.fill(); ctx.stroke();
+    // Sketch cross-hatching
+    ctx.strokeStyle = 'rgba(30,41,59,0.12)'; ctx.lineWidth = 2;
+    for (let hx = pl.x + 12; hx < pl.x + pl.w - 8; hx += 22) {
+      ctx.beginPath(); ctx.moveTo(hx, pl.y + 8); ctx.lineTo(hx - 10, pl.y + 24); ctx.stroke();
+    }
+  }
+
+  // Bouncy Springs
+  for (const sp of st.springs) {
+    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(sp.x - 14, sp.y + 12); ctx.lineTo(sp.x + 14, sp.y + 4); ctx.lineTo(sp.x - 14, sp.y - 4); ctx.stroke();
+    ctx.fillStyle = '#f97316'; ctx.fillRect(sp.x - 18, sp.y - 10, 36, 8); ctx.strokeRect(sp.x - 18, sp.y - 10, 36, 8);
+  }
+
+  // Swirling Golden Squiggles
+  for (const c of st.coins) {
+    if (c.taken) continue;
+    ctx.save(); ctx.translate(c.x, c.y + Math.sin(st.time * 5 + c.x) * 4); ctx.rotate(st.time * 3);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 3.2;
+    ctx.beginPath();
+    for (let a = 0; a < Math.PI * 3.5; a += 0.35) {
+      const r = a * 1.4;
+      if (a === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+      else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+    }
+    ctx.stroke(); ctx.restore();
+  }
+
+  // Ink Spiders
+  for (const s of st.spiders) {
+    ctx.save(); ctx.translate(s.x, s.y);
+    ctx.fillStyle = '#0f172a'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(-4, -3, 3, 0, Math.PI * 2); ctx.arc(4, -3, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2.5;
+    for (let k = -1; k <= 1; k += 2) {
+      for (let j = 0; j < 3; j++) {
+        ctx.beginPath(); ctx.moveTo(k * 10, -2 + j * 4); ctx.lineTo(k * 22, -6 + j * 8 + Math.sin(st.time * 14 + j) * 3); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
+  // Exit Door
+  ctx.fillStyle = '#f97316'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(st.door.x - 24, st.door.y - 72, 48, 72, [20, 20, 0, 0]); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fde047'; ctx.beginPath(); ctx.arc(st.door.x + 12, st.door.y - 34, 4, 0, Math.PI * 2); ctx.fill();
+
+  // FANCY PANTS STICKMAN (Spiky flowing hair + bright orange flowing pants!)
+  const p = st.p;
+  if (p.inv <= 0 || Math.floor(st.time * 16) % 2 === 0) {
+    // Flowing Spiky Hair Trail
+    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    for (let h = 1; h < p.hair.length; h++) {
+      ctx.beginPath(); ctx.moveTo(p.hair[h - 1].x, p.hair[h - 1].y); ctx.lineTo(p.hair[h].x, p.hair[h].y - (h % 2) * 4); ctx.stroke();
+    }
+    ctx.save(); ctx.translate(p.x, p.y); ctx.scale(p.face, 1);
+    const run = p.ground ? Math.sin(p.anim) * 11 : 6;
+    if (p.slide) {
+      ctx.rotate(-0.65); ctx.translate(0, -10);
+    }
+    // Bright Orange Fancy Pants!
+    ctx.fillStyle = '#f97316'; ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-7, -20); ctx.lineTo(7, -20);
+    ctx.lineTo(10 + run, -2); ctx.lineTo(1 + run, -2); ctx.lineTo(0, -12);
+    ctx.lineTo(-1 - run, -2); ctx.lineTo(-10 - run, -2); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // Stickman Torso & Arms
+    ctx.beginPath(); ctx.moveTo(0, -20); ctx.lineTo(2, -34);
+    ctx.moveTo(1, -30); ctx.lineTo(12, -22 - run * 0.4);
+    ctx.moveTo(1, -30); ctx.lineTo(-10, -24 + run * 0.4); ctx.stroke();
+    // Head
+    ctx.fillStyle = '#fffdf7'; ctx.beginPath(); ctx.arc(2, -41, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(5, -42, 1.8, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = true;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = true;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown') st.keys.d = true;
+  if (e.code === 'KeyW' || e.code === 'ArrowUp' || e.code === 'Space') { e.preventDefault(); jump(); }
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = false;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = false;
+  if (e.code === 'KeyS' || e.code === 'ArrowDown') st.keys.d = false;
+});
+const hold = (id, k) => {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', e => { e.preventDefault(); st.keys[k] = true; });
+  el.addEventListener('pointerup', () => st.keys[k] = false);
+  el.addEventListener('pointerleave', () => st.keys[k] = false);
+};
+hold('b-left', 'l'); hold('b-right', 'r'); hold('b-slide', 'd');
+document.getElementById('b-jump').addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
+document.getElementById('btn-start').addEventListener('click', () => buildLevel(1));
+document.getElementById('btn-next').addEventListener('click', () => buildLevel(st.lvl + 1));
+document.getElementById('btn-sound').addEventListener('click', () => { muted = !muted; document.getElementById('btn-sound').textContent = muted ? '🔇' : '🔊'; });
+document.getElementById('btn-menu').addEventListener('click', () => { st.running = false; document.getElementById('menu-ov').classList.remove('hidden'); });
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+window.onload = () => {
+  resize();
+  let last = performance.now();
+  function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+};
+})();
+</script>
+</body>
+</html>
