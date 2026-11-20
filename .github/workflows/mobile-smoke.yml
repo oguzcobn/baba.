@@ -33,16 +33,17 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.58.2-noble
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node tests/match-rules.cjs && node tests/career-birthdates.cjs && node --check js/career.js && node --check js/career-birthdates.js && node --check js/draft.js
       - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-http.log 2>&1 &
-      - run: npx playwright test tests/mobile.spec.cjs tests/game-cover-editor.spec.cjs tests/match2d-browser.spec.cjs --reporter=line --workers=2
+      - run: npx playwright test tests/mobile.spec.cjs tests/game-cover-editor.spec.cjs --reporter=line --workers=2
+      - run: npx playwright test tests/match2d-browser.spec.cjs --reporter=line --workers=1 --retries=1
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mobile-and-match-replay-results
           path: test-results/
