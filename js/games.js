@@ -153,6 +153,12 @@ const App = (() => {
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
+    { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
+    { id: 'wild-ones', name: ['Vahşi Dostlar (Wild Ones)', 'Wild Ones'], tags: [['Topçu', 'Artillery'], ['Yıkılabilir', 'Destructible'], ['1v1 / 2P', '1v1 / 2P']], best: () => T('6 Karakter', '6 Pets') },
+    { id: 'ates-ve-su', name: ['Ateş ve Su: Orman Tapınağı', 'Fire & Water: Forest Temple'], tags: [['Bulmaca', 'Puzzle'], ['2 Kişilik', '2 Players'], ['5 Bölüm', '5 Levels']], best: () => { const b = ls.get('bb_best_ates_ve_su', 0); return b ? `${b}/5` : '0/5'; } },
+    { id: 'yilan-arenasi', name: ['Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'], tags: [['Arcade', 'Arcade'], ['Arena', 'Arena'], ['Neon', 'Neon']], best: () => { const b = ls.get('bb_best_yilan_arenasi', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
+    { id: 'gta-vice-city', name: 'GTA: Vice City', tags: [['Aksiyon', 'Action'], ['Klasik', 'Classic'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
+    { id: 'tekken-3', name: 'Tekken 3', tags: [['Dövüş', 'Fighting'], ['Arcade', 'Arcade'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'hungry-shark', name: ['Aç Köpekbalığı', 'Hungry Shark'], tags: [['Arcade', 'Arcade'], ['Okyanus', 'Ocean'], ['Hayatta Kalma', 'Survival']], best: () => { const b = ls.get('bb_best_hungry_shark', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
     { id: 'dsan-shipyard', name: ['Damen Tersane Tycoon', 'Damen Shipyard Tycoon'], tags: [['3D Yönetim', '3D Management'], ['Gemi İnşası', 'Shipbuilding'], ['Tersane', 'Shipyard']], best: () => T('Antalya · 3D', 'Antalya · 3D') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
@@ -217,6 +223,12 @@ const App = (() => {
     'draft': 'img/library/draft-1280.webp',
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
+    'kafa-topu': 'img/library/kafa-topu-1280.webp',
+    'wild-ones': 'img/library/wild-ones-1280.webp',
+    'ates-ve-su': 'img/library/ates-ve-su-1280.webp',
+    'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
+    'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
+    'tekken-3': 'img/library/tekken-3-1280.webp',
     'hungry-shark': 'img/library/hungry-shark-1280.webp',
     'dsan-shipyard': 'img/library/dsan-shipyard-1280.webp',
     '2048': 'img/library/2048-1280.webp',
@@ -294,6 +306,89 @@ const App = (() => {
       }
       location.href = VADI_URL;
     };
+  }
+
+  /* ==================== YENİ ARCADE & HARİCİ OYUNLAR ==================== */
+  function openEmbeddedGame(cfg) {
+    const b = shell(cfg.title, `<div class="vd-bar"><p class="bb-tip">${cfg.lead}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${cfg.url}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
+      <div class="dsan-frame"><iframe src="${cfg.url}" title="${esc(cfg.title)}" allow="fullscreen; autoplay; gamepad" allowfullscreen loading="eager"></iframe></div>
+      <p class="bb-tip">${cfg.tip}</p>`, cfg.tag);
+    b.closest('.game-page').classList.add('dsan-page');
+    const frame = b.querySelector('.dsan-frame'), button = b.querySelector('[data-a=full]');
+    button.onclick = async () => {
+      click();
+      const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) { try { await req.call(frame); return; } catch (_) {} }
+      window.open(cfg.url, '_blank', 'noopener');
+    };
+    if (cfg.msgType) {
+      const onMsg = e => {
+        const d = e && e.data;
+        if (!d || d.type !== cfg.msgType) return;
+        const sc = Math.round(+d.score || 0);
+        if (sc > 0 && typeof Scores !== 'undefined') Scores.report(cfg.scoreId, sc, {});
+      };
+      window.addEventListener('message', onMsg);
+      onLeave(() => window.removeEventListener('message', onMsg));
+    }
+  }
+  function kafaTopu() {
+    openEmbeddedGame({
+      title: T('Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'),
+      url: 'games/kafa-topu/index.html?v=1',
+      tag: T('Futbol · Süper Lig · 1v1 / 2P', 'Football · Süper Lig · 1v1 / 2P'),
+      lead: T('Süper Lig takımını seç, havadaki güçlendirmeleri kap ve kupayı kaldır.', 'Pick your Süper Lig club, grab floating power-ups and lift the trophy.'),
+      tip: T('1. Oyuncu: A/D/W + Boşluk · 2. Oyuncu: Oklar + Enter. Mobilde ekran düğmelerini kullan.', 'P1: A/D/W + Space · P2: Arrows + Enter. Use on-screen buttons on mobile.'),
+      msgType: 'baba-kafa-topu-score', scoreId: 'kafa-topu'
+    });
+  }
+  function wildOnes() {
+    openEmbeddedGame({
+      title: T('Vahşi Dostlar (Wild Ones)', 'Wild Ones'),
+      url: 'games/wild-ones/index.html?v=1',
+      tag: T('Arcade · Yıkılabilir Topçu Savaşı', 'Arcade · Destructible Artillery'),
+      lead: T('Yıkılabilir adalarda 6 özel karakterle bazuka, misket bombası, hava saldırısı ve nükleer düellosu.', 'Artillery battle across destructible islands with 6 hand-drawn pets and 6 weapons.'),
+      tip: T('A/D yürü, W zıpla, fareyle nişan al, Sol Tık/Boşluk basılı tutup bırakarak ateş et.', 'A/D walk, W jump, aim with mouse, hold & release Click/Space to fire.'),
+      msgType: 'baba-wild-ones-score', scoreId: 'wild-ones'
+    });
+  }
+  function atesVeSu() {
+    openEmbeddedGame({
+      title: T('Ateş ve Su: Orman Tapınağı', 'Fire & Water: Forest Temple'),
+      url: 'games/ates-ve-su/index.html?v=1',
+      tag: T('Bulmaca · 2 Kişilik · 5 Bölüm', 'Puzzle · 2 Players · 5 Levels'),
+      lead: T('Ateş Çocuk ve Su Kız’ı birlikte yöneterek 5 tapınak bölümünü tamamla.', 'Guide Fireboy and Watergirl together through 5 temple puzzle levels.'),
+      tip: T('Ateş: Oklar · Su: WASD · Tek kişide Tab veya mobil düğmeyle karakter değiştir · R yenile.', 'Fire: Arrows · Water: WASD · Tab to switch solo · R restart.'),
+      msgType: 'baba-ates-ve-su-score', scoreId: 'ates-ve-su'
+    });
+  }
+  function yilanArenasi() {
+    openEmbeddedGame({
+      title: T('Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'),
+      url: 'games/yilan-arenasi/index.html?v=1',
+      tag: T('Arcade · Neon Yılan Arenası', 'Arcade · Neon Snake Arena'),
+      lead: T('Enerji kürelerini topla, hızlanarak rakiplerinin önünü kes ve liderlik tablosuna çık.', 'Collect glowing orbs, boost to cut off rivals and climb the leaderboard.'),
+      tip: T('Fare veya dokunmatikle yön ver · Sol Tık / Boşluk / BOOST ile hızlan.', 'Steer with mouse or touch · Hold Click / Space / BOOST to speed up.'),
+      msgType: 'baba-yilan-arenasi-score', scoreId: 'yilan-arenasi'
+    });
+  }
+  function gtaViceCity() {
+    openEmbeddedGame({
+      title: 'GTA: Vice City',
+      url: 'https://www.miniplay.com/game/gta-vice-city',
+      tag: T('Klasik Aksiyon · Harici Bağlantı', 'Classic Action · External'),
+      lead: T('Miniplay üzerinden GTA: Vice City. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'GTA: Vice City via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
+      tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
+    });
+  }
+  function tekken3() {
+    openEmbeddedGame({
+      title: 'Tekken 3',
+      url: 'https://www.miniplay.com/game/tekken-3',
+      tag: T('Arcade Dövüş · Harici Bağlantı', 'Arcade Fighting · External'),
+      lead: T('Miniplay üzerinden Tekken 3. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'Tekken 3 via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
+      tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
+    });
   }
 
   /* ==================== AÇ KÖPEKBALIĞI (HUNGRY SHARK) ==================== */
@@ -649,6 +744,12 @@ const App = (() => {
     else if (r === 'skor' && typeof Scores !== 'undefined') { root().innerHTML = '<div id="scRoot"></div>'; window.scrollTo(0, 0); Scores.mount(root().querySelector('#scRoot')); }
     else if (r === 'istiklal1919') istiklal1919();
     else if (r === 'vadi') vadi();
+    else if (r === 'kafa-topu') kafaTopu();
+    else if (r === 'wild-ones') wildOnes();
+    else if (r === 'ates-ve-su') atesVeSu();
+    else if (r === 'yilan-arenasi') yilanArenasi();
+    else if (r === 'gta-vice-city') gtaViceCity();
+    else if (r === 'tekken-3') tekken3();
     else if (r === 'hungry-shark') hungryShark();
     else if (r === 'dsan-shipyard') dsanShipyard();
     else if (r === '2048') g2048();
