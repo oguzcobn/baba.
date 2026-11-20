@@ -6,8 +6,9 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const COVER = (id, w) => `img/library/${id}-${w}.webp`;
-  const SRCSET = id => `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
+  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world"]);
+  const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
+  const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
@@ -23,6 +24,14 @@ const BABALibrary = (() => {
     mines: { cat: 'puz', accent: '#ff5c7a', time: ['Klasik', 'Classic'], blurb: ['Sayıları oku, bayrakları dik, mayına basmadan alanı temizle.', 'Read the numbers, plant the flags, clear the field without a blast.'] },
     'kafa-topu': { cat: 'foot', accent: '#c8ff3a', time: ['Süper Lig', 'Süper Lig'], isNew: true, blurb: ['Sports Heads mekaniğiyle Süper Lig kafa futbolu: 8 takım, güçlendirmeler, kupa ve 2 kişilik mod.', 'Sports Heads style Süper Lig football: 8 teams, power-ups, championship cup and 2-player mode.'] },
     'wild-ones': { cat: 'arc', accent: '#ffd447', time: ['Topçu', 'Artillery'], isNew: true, blurb: ['Yıkılabilir adalarda 6 karakterle sırayla topçu savaşı: bazuka, misket bombası, hava saldırısı ve nükleer.', 'Turn-based artillery pet battle on destructible islands with bazooka, cluster bomb, airstrike and nuke.'] },
+    'age-of-war': { cat: 'str', accent: '#f8b84e', time: ["5 çağ","5 eras"], isNew: true, blurb: ["Taş Devri'nden geleceğe yüksel, üssünü savun ve asker üret.","Advance from the Stone Age to the future, defend your base and deploy units."] },
+    'gunblood': { cat: 'arc', accent: '#e9954f', time: ["Düello","Duel"], isNew: true, blurb: ["Reflekslerini test et: hızlı silah çekme ve fizik tabanlı western düelloları.","Test your reflexes in physics-based quick-draw western duels."] },
+    'warfare-1917': { cat: 'str', accent: '#c0bb7d', time: ["1917","1917"], isNew: true, blurb: ["Siperlere asker ve tank gönder, topçuyla cepheyi ilerlet.","Command trench infantry, tanks and artillery on the 1917 front."] },
+    'the-waitress': { cat: 'sim', accent: '#ffb6a0', time: ["Kafe","Cafe"], isNew: true, blurb: ["Müşterilerin siparişlerini al, mutfağı ve servisi yönet.","Take orders, run the kitchen and serve customers in a retro cafe."] },
+    'fancy-pants-3': { cat: 'arc', accent: '#ffb955', time: ["Platform","Platform"], isNew: true, blurb: ["Hızlı hareket, kayma ve duvar zıplamasıyla el çizimi dünyayı keşfet.","Dash, slide and wall-jump across a hand-drawn platform world."] },
+    'territory-war': { cat: 'str', accent: '#a1d5ff', time: ["4v4","4v4"], isNew: true, blurb: ["Dört kişilik takımı yönet, sıra tabanlı taktiklerle rakibi yen.","Command a four-person team in turn-based tactical battles."] },
+    'electric-man-2': { cat: 'arc', accent: '#aaf6fe', time: ["Arena","Arena"], isNew: true, blurb: ["Arena rakiplerini döv, elektrikli ağır çekim saldırılarını kullan.","Fight arena opponents with slow-motion electric super attacks."] },
+    'wild-ones-world': { cat: 'arc', accent: '#b9f57a', time: ["Dünya","World"], isNew: true, blurb: ["Wild Ones'un genişletilmiş dünya haritalı, çok karakterli sürümü.","A larger Wild Ones edition with world maps and more characters."] },
     'yilan-arenasi': { cat: 'arc', accent: '#3de0ff', time: ['Arena', 'Arena'], isNew: true, blurb: ['Slither.io tarzı neon yılan arenası: enerji küreleriyle büyü, hızlanıp rakiplerini kes ve zirveye çık.', 'Slither.io style neon snake arena: grow with glowing orbs, boost to cut off rivals and top the board.'] },
     'gta-vice-city': { cat: 'arc', accent: '#ff5cc8', time: ['Klasik', 'Classic'], isNew: true, blurb: ['80’ler Vice City atmosferinde klasik aksiyon deneyimine doğrudan bağlantı.', 'Direct launch into the classic 80s Vice City action experience.'] },
     'tekken-3': { cat: 'arc', accent: '#ff9f43', time: ['Dövüş', 'Fighting'], isNew: true, blurb: ['Efsanevi arcade dövüş turnuvası Tekken 3’e doğrudan bağlantı.', 'Direct launch into the legendary Tekken 3 arcade fighting tournament.'] },
@@ -33,7 +42,7 @@ const BABALibrary = (() => {
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }
   ];
-  const FEATURED = ['kafa-topu', 'wild-ones', 'hungry-shark', 'yilan-arenasi', 'dsan-shipyard'];
+  const FEATURED = ['kafa-topu', 'wild-ones', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
