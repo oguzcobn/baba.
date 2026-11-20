@@ -76,6 +76,8 @@
   }
   .hints { margin-top: 12px; font-size: 12px; color: var(--mute); line-height: 1.6; }
   .hints kbd { padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,0.12); color: #fff; font-family: inherit; font-weight: 800; }
+  .game-hint{align-self:center;max-width:min(820px,96%);background:rgba(8,27,20,.87);border:1px solid rgba(167,243,208,.35);color:#f0fdf4;border-radius:12px;padding:8px 13px;font-size:12px;font-weight:700;line-height:1.4;text-align:center;text-shadow:0 1px #000;pointer-events:none}
+  @media(max-width:650px){.game-hint{font-size:10px;padding:5px 8px;max-width:100%}.hud-top{gap:5px}.hud-top .pill{font-size:10px;padding:5px 8px}}
 </style>
 </head>
 <body>
@@ -86,12 +88,14 @@
     <div class="hud-top">
       <div class="pill" id="lvlPill">🏛️ BÖLÜM 1 / 5</div>
       <div class="pill" id="gemPill">💎 0 / 0 · ⏱️ 0:00</div>
+      <div class="pill" id="deathPill">🛟 Kontrol noktası · 0 düşüş</div>
       <div class="acts">
         <button type="button" class="ibtn" id="rstBtn" title="Bölümü Yenile (R)">↻</button>
         <button type="button" class="ibtn" id="sndBtn" title="Ses">🔊</button>
         <button type="button" class="ibtn" id="menuBtn" title="Bölümler">☰</button>
       </div>
     </div>
+    <div class="game-hint" id="gameHint" role="status" aria-live="polite">Basamakları izleyin, güvenli noktaları kullanın.</div>
 
     <div class="touch-bar">
       <div class="tgrp">
@@ -172,145 +176,759 @@
 
   /* ---- 5 EL YAPIMI ORMAN TAPINAĞI BÖLÜMÜ ---- */
   const LEVELS = [
-    {
-      name: 'İlk Adım',
-      fire: { x: 64, y: 520 }, water: { x: 112, y: 520 },
-      walls: [
-        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
-        [24, 440, 680, 24], [240, 320, 696, 24], [24, 200, 660, 24], [520, 115, 416, 24],
-        [740, 495, 110, 22], [110, 380, 110, 22], [720, 260, 110, 22]
-      ],
-      pools: [
-        { type: 'lava', x: 250, y: 554, w: 120 }, { type: 'water', x: 470, y: 554, w: 120 },
-        { type: 'acid', x: 460, y: 434, w: 100 }, { type: 'lava', x: 540, y: 314, w: 110 },
-        { type: 'water', x: 320, y: 194, w: 110 }
-      ],
-      plates: [{ id: 'a', x: 220, y: 432, col: '#ffd447' }, { id: 'a', x: 760, y: 312, col: '#ffd447' }],
-      levers: [{ id: 'b', x: 180, y: 184, col: '#c56cf0' }],
-      movers: [
-        { id: 'a', x: 704, y: 440, w: 100, h: 20, ax: 704, ay: 340, col: '#ffd447' },
-        { id: 'b', x: 684, y: 200, w: 100, h: 20, ax: 684, ay: 115, col: '#c56cf0' }
-      ],
-      boxes: [{ x: 350, y: 404 }],
-      gems: [
-        { type: 'fire', x: 310, y: 525 }, { type: 'water', x: 530, y: 525 },
-        { type: 'fire', x: 595, y: 284 }, { type: 'water', x: 375, y: 164 },
-        { type: 'fire', x: 250, y: 164 }, { type: 'water', x: 830, y: 284 }
-      ],
-      doors: { fire: { x: 760, y: 61 }, water: { x: 835, y: 61 } }
+  {
+    "name": "Güvenli Başlangıç",
+    "hint": "Ateş ve Su'yu sırayla yukarı çıkar. İlk bölümde zehir yok; yeşil platformlara zıpla.",
+    "fire": {
+      "x": 64,
+      "y": 520
     },
-    {
-      name: 'İkiz Köprüler',
-      fire: { x: 64, y: 520 }, water: { x: 860, y: 520 },
-      walls: [
-        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
-        [24, 445, 340, 24], [596, 445, 340, 24],
-        [180, 325, 600, 24], [24, 210, 300, 24], [636, 210, 300, 24],
-        [340, 125, 280, 24]
-      ],
-      pools: [
-        { type: 'lava', x: 240, y: 554, w: 150 }, { type: 'water', x: 560, y: 554, w: 150 },
-        { type: 'acid', x: 420, y: 319, w: 120 }, { type: 'water', x: 110, y: 204, w: 110 }, { type: 'lava', x: 740, y: 204, w: 110 }
-      ],
-      plates: [{ id: 'a', x: 120, y: 437, col: '#ffd447' }, { id: 'b', x: 820, y: 437, col: '#3de0ff' }],
-      levers: [{ id: 'c', x: 480, y: 309, col: '#ff6b81' }],
-      movers: [
-        { id: 'a', x: 410, y: 530, w: 140, h: 20, ax: 410, ay: 445, col: '#ffd447' },
-        { id: 'b', x: 48, y: 325, w: 105, h: 20, ax: 48, ay: 215, col: '#3de0ff' },
-        { id: 'c', x: 805, y: 325, w: 105, h: 20, ax: 805, ay: 215, col: '#ff6b81' }
-      ],
-      boxes: [{ x: 240, y: 410 }],
-      gems: [
-        { type: 'fire', x: 315, y: 525 }, { type: 'water', x: 635, y: 525 },
-        { type: 'water', x: 165, y: 174 }, { type: 'fire', x: 795, y: 174 },
-        { type: 'fire', x: 380, y: 290 }, { type: 'water', x: 580, y: 290 }
-      ],
-      doors: { fire: { x: 420, y: 71 }, water: { x: 495, y: 71 } }
+    "water": {
+      "x": 108,
+      "y": 520
     },
-    {
-      name: 'Zehirli Vadi',
-      fire: { x: 64, y: 520 }, water: { x: 115, y: 520 },
-      walls: [
-        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
-        [240, 480, 120, 22], [440, 440, 130, 22], [660, 400, 140, 22],
-        [24, 330, 580, 24], [340, 210, 596, 24], [24, 125, 290, 24]
+    "walls": [
+      [
+        0,
+        560,
+        960,
+        40
       ],
-      pools: [
-        { type: 'acid', x: 210, y: 554, w: 560 }, { type: 'lava', x: 180, y: 324, w: 120 },
-        { type: 'water', x: 380, y: 324, w: 120 }, { type: 'acid', x: 560, y: 204, w: 110 }
+      [
+        0,
+        0,
+        24,
+        600
       ],
-      plates: [{ id: 'a', x: 120, y: 322, col: '#ffd447' }, { id: 'b', x: 790, y: 202, col: '#7dff9b' }],
-      levers: [{ id: 'c', x: 720, y: 384, col: '#c56cf0' }],
-      movers: [
-        { id: 'c', x: 820, y: 400, w: 100, h: 20, ax: 820, ay: 220, col: '#c56cf0' },
-        { id: 'a', x: 620, y: 330, w: 120, h: 20, ax: 620, ay: 240, col: '#ffd447' },
-        { id: 'b', x: 220, y: 210, w: 100, h: 20, ax: 220, ay: 125, col: '#7dff9b' }
+      [
+        936,
+        0,
+        24,
+        600
       ],
-      boxes: [{ x: 460, y: 174 }],
-      gems: [
-        { type: 'fire', x: 300, y: 445 }, { type: 'water', x: 505, y: 405 },
-        { type: 'fire', x: 240, y: 294 }, { type: 'water', x: 440, y: 294 },
-        { type: 'fire', x: 615, y: 165 }, { type: 'water', x: 710, y: 175 }
+      [
+        0,
+        0,
+        960,
+        24
       ],
-      doors: { fire: { x: 70, y: 71 }, water: { x: 145, y: 71 } }
-    },
-    {
-      name: 'Asansör Kulesi',
-      fire: { x: 64, y: 520 }, water: { x: 860, y: 520 },
-      walls: [
-        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
-        [24, 430, 260, 24], [676, 430, 260, 24], [360, 460, 240, 24],
-        [200, 310, 560, 24], [24, 195, 280, 24], [656, 195, 280, 24], [350, 115, 260, 24]
+      [
+        118,
+        480,
+        255,
+        22
       ],
-      pools: [
-        { type: 'lava', x: 240, y: 554, w: 160 }, { type: 'water', x: 560, y: 554, w: 160 },
-        { type: 'acid', x: 430, y: 304, w: 100 }, { type: 'lava', x: 100, y: 189, w: 120 }, { type: 'water', x: 740, y: 189, w: 120 }
+      [
+        338,
+        400,
+        260,
+        22
       ],
-      plates: [{ id: 'a', x: 480, y: 452, col: '#ffd447' }, { id: 'b', x: 260, y: 302, col: '#3de0ff' }, { id: 'c', x: 700, y: 302, col: '#ff6b81' }],
-      levers: [],
-      movers: [
-        { id: 'a', x: 290, y: 430, w: 70, h: 20, ax: 290, ay: 315, col: '#ffd447' },
-        { id: 'a', x: 600, y: 430, w: 70, h: 20, ax: 600, ay: 315, col: '#ffd447' },
-        { id: 'b', x: 540, y: 200, w: 100, h: 20, ax: 540, ay: 118, col: '#3de0ff' },
-        { id: 'c', x: 320, y: 200, w: 100, h: 20, ax: 320, ay: 118, col: '#ff6b81' }
+      [
+        528,
+        320,
+        265,
+        22
       ],
-      boxes: [{ x: 420, y: 422 }],
-      gems: [
-        { type: 'fire', x: 320, y: 525 }, { type: 'water', x: 640, y: 525 },
-        { type: 'fire', x: 160, y: 158 }, { type: 'water', x: 800, y: 158 },
-        { type: 'fire', x: 340, y: 274 }, { type: 'water', x: 620, y: 274 }
+      [
+        590,
+        240,
+        300,
+        22
       ],
-      doors: { fire: { x: 415, y: 61 }, water: { x: 495, y: 61 } }
-    },
-    {
-      name: 'Büyük Tapınak Finali',
-      fire: { x: 64, y: 520 }, water: { x: 118, y: 520 },
-      walls: [
-        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
-        [24, 445, 740, 24], [196, 330, 740, 24], [24, 215, 720, 24], [460, 115, 476, 24]
+      [
+        672,
+        160,
+        264,
+        22
       ],
-      pools: [
-        { type: 'lava', x: 240, y: 554, w: 130 }, { type: 'acid', x: 450, y: 554, w: 120 }, { type: 'water', x: 650, y: 554, w: 130 },
-        { type: 'water', x: 220, y: 439, w: 130 }, { type: 'lava', x: 480, y: 439, w: 130 },
-        { type: 'acid', x: 340, y: 324, w: 120 }, { type: 'lava', x: 580, y: 324, w: 120 },
-        { type: 'water', x: 240, y: 209, w: 140 }, { type: 'acid', x: 480, y: 209, w: 120 }
-      ],
-      plates: [{ id: 'a', x: 140, y: 437, col: '#ffd447' }, { id: 'b', x: 840, y: 322, col: '#3de0ff' }],
-      levers: [{ id: 'c', x: 130, y: 199, col: '#ff6b81' }],
-      movers: [
-        { id: 'a', x: 790, y: 540, w: 120, h: 20, ax: 790, ay: 445, col: '#ffd447' },
-        { id: 'b', x: 48, y: 330, w: 120, h: 20, ax: 48, ay: 215, col: '#3de0ff' },
-        { id: 'c', x: 770, y: 215, w: 130, h: 20, ax: 770, ay: 115, col: '#ff6b81' }
-      ],
-      boxes: [{ x: 380, y: 410 }, { x: 650, y: 295 }],
-      gems: [
-        { type: 'fire', x: 305, y: 525 }, { type: 'water', x: 715, y: 525 },
-        { type: 'water', x: 285, y: 408 }, { type: 'fire', x: 545, y: 408 },
-        { type: 'fire', x: 640, y: 294 }, { type: 'water', x: 310, y: 178 }
-      ],
-      doors: { fire: { x: 740, y: 61 }, water: { x: 825, y: 61 } }
+      [
+        730,
+        115,
+        206,
+        22
+      ]
+    ],
+    "pools": [],
+    "plates": [],
+    "levers": [],
+    "movers": [],
+    "boxes": [],
+    "gems": [
+      {
+        "type": "fire",
+        "x": 210,
+        "y": 445
+      },
+      {
+        "type": "water",
+        "x": 445,
+        "y": 365
+      },
+      {
+        "type": "fire",
+        "x": 615,
+        "y": 285
+      },
+      {
+        "type": "water",
+        "x": 745,
+        "y": 205
+      }
+    ],
+    "doors": {
+      "fire": {
+        "x": 760,
+        "y": 61
+      },
+      "water": {
+        "x": 836,
+        "y": 61
+      }
     }
-  ];
+  },
+  {
+    "name": "İki Element",
+    "hint": "Renkli havuzlardan uzak dur. Ateş sudan, Su lavdan zarar görür. Yüksek basamakları kullan.",
+    "fire": {
+      "x": 64,
+      "y": 520
+    },
+    "water": {
+      "x": 108,
+      "y": 520
+    },
+    "walls": [
+      [
+        0,
+        560,
+        960,
+        40
+      ],
+      [
+        0,
+        0,
+        24,
+        600
+      ],
+      [
+        936,
+        0,
+        24,
+        600
+      ],
+      [
+        0,
+        0,
+        960,
+        24
+      ],
+      [
+        104,
+        480,
+        290,
+        22
+      ],
+      [
+        318,
+        400,
+        300,
+        22
+      ],
+      [
+        510,
+        320,
+        305,
+        22
+      ],
+      [
+        575,
+        240,
+        320,
+        22
+      ],
+      [
+        670,
+        160,
+        266,
+        22
+      ],
+      [
+        730,
+        115,
+        206,
+        22
+      ]
+    ],
+    "pools": [
+      {
+        "type": "lava",
+        "x": 485,
+        "y": 554,
+        "w": 120
+      },
+      {
+        "type": "water",
+        "x": 740,
+        "y": 554,
+        "w": 115
+      }
+    ],
+    "plates": [
+      {
+        "id": "a",
+        "x": 185,
+        "y": 472,
+        "col": "#ffd447"
+      }
+    ],
+    "levers": [],
+    "movers": [
+      {
+        "id": "a",
+        "x": 685,
+        "y": 400,
+        "w": 106,
+        "h": 20,
+        "ax": 685,
+        "ay": 320,
+        "col": "#ffd447"
+      }
+    ],
+    "boxes": [],
+    "gems": [
+      {
+        "type": "fire",
+        "x": 212,
+        "y": 445
+      },
+      {
+        "type": "water",
+        "x": 410,
+        "y": 365
+      },
+      {
+        "type": "fire",
+        "x": 625,
+        "y": 285
+      },
+      {
+        "type": "water",
+        "x": 775,
+        "y": 205
+      }
+    ],
+    "doors": {
+      "fire": {
+        "x": 760,
+        "y": 61
+      },
+      "water": {
+        "x": 836,
+        "y": 61
+      }
+    }
+  },
+  {
+    "name": "Orman Köprüleri",
+    "hint": "Dar yerleri birlikte aş. Baskı plakası sarı köprüyü hareket ettirir; ana yol her zaman açık.",
+    "fire": {
+      "x": 64,
+      "y": 520
+    },
+    "water": {
+      "x": 108,
+      "y": 520
+    },
+    "walls": [
+      [
+        0,
+        560,
+        960,
+        40
+      ],
+      [
+        0,
+        0,
+        24,
+        600
+      ],
+      [
+        936,
+        0,
+        24,
+        600
+      ],
+      [
+        0,
+        0,
+        960,
+        24
+      ],
+      [
+        95,
+        480,
+        245,
+        22
+      ],
+      [
+        272,
+        400,
+        265,
+        22
+      ],
+      [
+        452,
+        320,
+        276,
+        22
+      ],
+      [
+        615,
+        240,
+        275,
+        22
+      ],
+      [
+        646,
+        160,
+        290,
+        22
+      ],
+      [
+        730,
+        115,
+        206,
+        22
+      ]
+    ],
+    "pools": [
+      {
+        "type": "acid",
+        "x": 430,
+        "y": 554,
+        "w": 116
+      },
+      {
+        "type": "lava",
+        "x": 675,
+        "y": 554,
+        "w": 112
+      }
+    ],
+    "plates": [
+      {
+        "id": "a",
+        "x": 340,
+        "y": 392,
+        "col": "#ffd447"
+      }
+    ],
+    "levers": [],
+    "movers": [
+      {
+        "id": "a",
+        "x": 660,
+        "y": 400,
+        "w": 126,
+        "h": 20,
+        "ax": 660,
+        "ay": 336,
+        "col": "#ffd447"
+      }
+    ],
+    "boxes": [],
+    "gems": [
+      {
+        "type": "water",
+        "x": 200,
+        "y": 445
+      },
+      {
+        "type": "fire",
+        "x": 370,
+        "y": 365
+      },
+      {
+        "type": "water",
+        "x": 540,
+        "y": 285
+      },
+      {
+        "type": "fire",
+        "x": 735,
+        "y": 205
+      }
+    ],
+    "doors": {
+      "fire": {
+        "x": 760,
+        "y": 61
+      },
+      "water": {
+        "x": 836,
+        "y": 61
+      }
+    }
+  },
+  {
+    "name": "Tapınak Asansörleri",
+    "hint": "Önce platformlara çık, sonra mor kolu kullanarak kısa yolu aç. İki karakteri de kapılara götür.",
+    "fire": {
+      "x": 64,
+      "y": 520
+    },
+    "water": {
+      "x": 108,
+      "y": 520
+    },
+    "walls": [
+      [
+        0,
+        560,
+        960,
+        40
+      ],
+      [
+        0,
+        0,
+        24,
+        600
+      ],
+      [
+        936,
+        0,
+        24,
+        600
+      ],
+      [
+        0,
+        0,
+        960,
+        24
+      ],
+      [
+        88,
+        480,
+        260,
+        22
+      ],
+      [
+        280,
+        400,
+        258,
+        22
+      ],
+      [
+        460,
+        320,
+        275,
+        22
+      ],
+      [
+        620,
+        240,
+        286,
+        22
+      ],
+      [
+        640,
+        160,
+        296,
+        22
+      ],
+      [
+        730,
+        115,
+        206,
+        22
+      ]
+    ],
+    "pools": [
+      {
+        "type": "water",
+        "x": 428,
+        "y": 554,
+        "w": 110
+      },
+      {
+        "type": "acid",
+        "x": 720,
+        "y": 554,
+        "w": 95
+      },
+      {
+        "type": "lava",
+        "x": 770,
+        "y": 234,
+        "w": 75
+      }
+    ],
+    "plates": [
+      {
+        "id": "b",
+        "x": 400,
+        "y": 392,
+        "col": "#3de0ff"
+      }
+    ],
+    "levers": [
+      {
+        "id": "a",
+        "x": 495,
+        "y": 304,
+        "col": "#c56cf0"
+      }
+    ],
+    "movers": [
+      {
+        "id": "a",
+        "x": 660,
+        "y": 405,
+        "w": 120,
+        "h": 20,
+        "ax": 660,
+        "ay": 325,
+        "col": "#c56cf0"
+      },
+      {
+        "id": "b",
+        "x": 205,
+        "y": 480,
+        "w": 96,
+        "h": 20,
+        "ax": 205,
+        "ay": 415,
+        "col": "#3de0ff"
+      }
+    ],
+    "boxes": [],
+    "gems": [
+      {
+        "type": "fire",
+        "x": 185,
+        "y": 445
+      },
+      {
+        "type": "water",
+        "x": 390,
+        "y": 365
+      },
+      {
+        "type": "fire",
+        "x": 580,
+        "y": 285
+      },
+      {
+        "type": "water",
+        "x": 750,
+        "y": 205
+      }
+    ],
+    "doors": {
+      "fire": {
+        "x": 760,
+        "y": 61
+      },
+      "water": {
+        "x": 836,
+        "y": 61
+      }
+    }
+  },
+  {
+    "name": "Büyük Tapınak",
+    "hint": "Son görev: basamakları takip et, zehir havuzlarına düşme. Önce sağdaki yüksek platforma ulaş, ardından iki kapıya gir.",
+    "fire": {
+      "x": 64,
+      "y": 520
+    },
+    "water": {
+      "x": 108,
+      "y": 520
+    },
+    "walls": [
+      [
+        0,
+        560,
+        960,
+        40
+      ],
+      [
+        0,
+        0,
+        24,
+        600
+      ],
+      [
+        936,
+        0,
+        24,
+        600
+      ],
+      [
+        0,
+        0,
+        960,
+        24
+      ],
+      [
+        100,
+        480,
+        255,
+        22
+      ],
+      [
+        298,
+        400,
+        268,
+        22
+      ],
+      [
+        485,
+        320,
+        275,
+        22
+      ],
+      [
+        620,
+        240,
+        286,
+        22
+      ],
+      [
+        640,
+        160,
+        296,
+        22
+      ],
+      [
+        730,
+        115,
+        206,
+        22
+      ]
+    ],
+    "pools": [
+      {
+        "type": "acid",
+        "x": 430,
+        "y": 554,
+        "w": 112
+      },
+      {
+        "type": "water",
+        "x": 590,
+        "y": 554,
+        "w": 105
+      },
+      {
+        "type": "lava",
+        "x": 774,
+        "y": 554,
+        "w": 110
+      },
+      {
+        "type": "acid",
+        "x": 560,
+        "y": 314,
+        "w": 82
+      }
+    ],
+    "plates": [
+      {
+        "id": "a",
+        "x": 190,
+        "y": 472,
+        "col": "#ffd447"
+      },
+      {
+        "id": "b",
+        "x": 545,
+        "y": 312,
+        "col": "#3de0ff"
+      }
+    ],
+    "levers": [
+      {
+        "id": "c",
+        "x": 700,
+        "y": 224,
+        "col": "#c56cf0"
+      }
+    ],
+    "movers": [
+      {
+        "id": "a",
+        "x": 380,
+        "y": 480,
+        "w": 96,
+        "h": 20,
+        "ax": 380,
+        "ay": 400,
+        "col": "#ffd447"
+      },
+      {
+        "id": "b",
+        "x": 770,
+        "y": 320,
+        "w": 100,
+        "h": 20,
+        "ax": 770,
+        "ay": 250,
+        "col": "#3de0ff"
+      },
+      {
+        "id": "c",
+        "x": 780,
+        "y": 160,
+        "w": 96,
+        "h": 20,
+        "ax": 780,
+        "ay": 115,
+        "col": "#c56cf0"
+      }
+    ],
+    "boxes": [],
+    "gems": [
+      {
+        "type": "fire",
+        "x": 200,
+        "y": 445
+      },
+      {
+        "type": "water",
+        "x": 402,
+        "y": 365
+      },
+      {
+        "type": "fire",
+        "x": 590,
+        "y": 285
+      },
+      {
+        "type": "water",
+        "x": 735,
+        "y": 205
+      },
+      {
+        "type": "fire",
+        "x": 840,
+        "y": 124
+      }
+    ],
+    "doors": {
+      "fire": {
+        "x": 760,
+        "y": 61
+      },
+      "water": {
+        "x": 836,
+        "y": 61
+      }
+    }
+  }
+];
 
   const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
   let scale = 1, offX = 0, offY = 0;
@@ -323,16 +941,16 @@
   }
   addEventListener('resize', resize);
 
-  let state = 'menu', curLvl = 0, lvlTime = 0, animT = 0, activeSolo = 'fire';
+  let state = 'menu', curLvl = 0, lvlTime = 0, animT = 0, activeSolo = 'fire', deaths = 0, hintTimer = 0;
   let fire, water, walls, pools, plates, levers, movers, boxes, gems, doors, particles = [];
   const keys = Object.create(null), touch = { left: false, right: false, jump: false };
 
   function loadLevel(idx) {
     SFX.ok();
-    curLvl = idx; lvlTime = 0; particles = [];
+    curLvl = idx; lvlTime = 0; deaths = 0; hintTimer = 0; particles = [];
     const L = LEVELS[idx];
-    fire = { type: 'fire', x: L.fire.x, y: L.fire.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false };
-    water = { type: 'water', x: L.water.x, y: L.water.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false };
+    fire = { type: 'fire', x: L.fire.x, y: L.fire.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false, safe: { ...L.fire }, invuln: 1.25, lastSafe: 0 };
+    water = { type: 'water', x: L.water.x, y: L.water.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false, safe: { ...L.water }, invuln: 1.25, lastSafe: 0 };
     walls = L.walls.map(([x, y, w, h]) => ({ x, y, w, h }));
     pools = L.pools.map(p => ({ ...p }));
     plates = L.plates.map(p => ({ ...p, pressed: false }));
@@ -343,6 +961,8 @@
     doors = { fire: { ...L.doors.fire, w: 46, h: 54 }, water: { ...L.doors.water, w: 46, h: 54 } };
 
     document.getElementById('lvlPill').textContent = `🏛️ BÖLÜM ${idx + 1} / ${LEVELS.length} · ${L.name}`;
+    document.getElementById('gameHint').textContent = '🧭 ' + L.hint;
+    document.getElementById('deathPill').textContent = '🛟 Kontrol noktası · 0 düşüş';
     document.getElementById('menuOv').classList.add('hidden');
     document.getElementById('endOv').classList.add('hidden');
     document.getElementById('hud').classList.remove('hidden');
@@ -392,7 +1012,7 @@
     const ctrl = (ch, L, R, J) => {
       ch.vx = L ? -220 : R ? 220 : 0;
       if (L) ch.facing = -1; else if (R) ch.facing = 1;
-      if (J && ch.onG) { ch.vy = -515; ch.onG = false; SFX.jump(ch.type === 'water'); }
+      if (J && ch.onG) { ch.vy = -620; ch.onG = false; SFX.jump(ch.type === 'water'); }
     };
     ctrl(fire, fL, fR, fJ);
     ctrl(water, wL, wR, wJ);
@@ -458,11 +1078,32 @@
       }
     }
 
-    // Havuz tehlikeleri
-    for (const p of pools) {
-      const pr = { x: p.x + 4, y: p.y - 2, w: p.w - 8, h: 14 };
-      if ((p.type === 'water' || p.type === 'acid') && aabb(fire, pr)) { failLevel('Ateş Çocuk suya/zehre düştü!'); return; }
-      if ((p.type === 'lava' || p.type === 'acid') && aabb(water, pr)) { failLevel('Su Kız lava/zehre düştü!'); return; }
+    // Güvenli platformlar otomatik kontrol noktasıdır; hata tüm bölüm ilerlemesini silmez.
+    const dangerous = (ch, p) => p.type === 'acid' || (ch.type === 'fire' ? p.type === 'water' : p.type === 'lava');
+    for (const ch of [fire, water]) {
+      ch.invuln = Math.max(0, ch.invuln - dt);
+      const deadly = pools.find(p => dangerous(ch, p) &&
+        aabb(ch, { x: p.x + 8, y: p.y, w: Math.max(8, p.w - 16), h: 11 }));
+      if (deadly && ch.invuln <= 0) {
+        deaths++;
+        SFX.die();
+        ch.x = ch.safe.x; ch.y = ch.safe.y;
+        ch.vx = 0; ch.vy = 0; ch.onG = false; ch.invuln = 1.5;
+        document.getElementById('deathPill').textContent = '🛟 Güvenli noktaya dönüldü · ' + deaths;
+        document.getElementById('gameHint').textContent = '💡 ' + (ch.type === 'fire' ? 'Ateş için su/zehir tehlikeli.' : 'Su için lav/zehir tehlikeli.') + ' Platforma zıpla; ilerlemen korunuyor.';
+        hintTimer = 4.5;
+        continue;
+      }
+      // Sadece tehlikelerden uzak, üst platformlarda güvenli konum kaydet.
+      if (ch.onG && ch.y < 510 && lvlTime - ch.lastSafe > 0.35 &&
+          !pools.some(p => dangerous(ch, p) && ch.x + ch.w + 35 > p.x && ch.x - 35 < p.x + p.w && ch.y + ch.h + 12 > p.y && ch.y < p.y + 12)) {
+        ch.safe = { x: ch.x, y: ch.y };
+        ch.lastSafe = lvlTime;
+      }
+    }
+    if (hintTimer > 0) {
+      hintTimer -= dt;
+      if (hintTimer <= 0) document.getElementById('gameHint').textContent = '🧭 ' + LEVELS[curLvl].hint;
     }
 
     // Kapılar
@@ -508,6 +1149,7 @@
   /* ---- Çizim ---- */
   function drawChar(ch) {
     ctx.save();
+    if (ch.invuln > 0 && Math.floor(animT * 12) % 2 === 0) ctx.globalAlpha = 0.55;
     ctx.translate(ch.x + ch.w / 2, ch.y + ch.h);
     const isF = ch.type === 'fire';
     const run = Math.abs(ch.vx) > 5 ? Math.sin(animT * 18) * 5 : 0;
@@ -617,6 +1259,14 @@
       ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
+    // Küçük bayraklar son güvenli iniş noktalarını gösterir.
+    for (const ch of [fire, water]) {
+      if (ch.safe.y >= 510) continue;
+      const x = ch.safe.x + 13, y = ch.safe.y + ch.h;
+      ctx.fillStyle = ch.type === 'fire' ? '#ff9f43' : '#38d9ff';
+      ctx.fillRect(x - 8, y - 3, 3, 16);
+      ctx.beginPath(); ctx.moveTo(x - 5, y - 3); ctx.lineTo(x + 8, y + 1); ctx.lineTo(x - 5, y + 6); ctx.fill();
+    }
     drawChar(fire); drawChar(water);
 
     for (const p of particles) {
