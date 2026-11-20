@@ -5,7 +5,7 @@ const ids = ['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-
 test('all eight imported arcade games appear in the BABA game library', async ({page}) => {
   await page.addInitScript(() => sessionStorage.setItem('baba_ok','1'));
   await page.goto(BASE + '#oyunlar');
-  await expect(page.locator('.lb-card')).toHaveCount(25);
+  await expect(page.locator('.lb-card')).toHaveCount(24);
   for (const id of ids) {
     const card=page.locator('.lb-card[data-id="'+id+'"]');
     await expect(card).toHaveCount(1);
@@ -18,7 +18,7 @@ test('all eight imported arcade games appear in the BABA game library', async ({
     });
     expect(cover,'Broken cover: '+id).toBeGreaterThan(0);
   }
-  await expect(page.locator('.lb-card[data-id="wild-ones"]')).toHaveCount(1);
+  await expect(page.locator('.lb-card[data-id="wild-ones"]')).toHaveCount(0);
   await expect(page.locator('.lb-card[data-id="ates-ve-su"]')).toHaveCount(0);
 });
 

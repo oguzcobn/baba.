@@ -10,6 +10,14 @@ test('Fire and Water is removed from BABA library and retired route redirects',a
   await expect(page).toHaveURL(/#oyunlar$/);
 });
 
+test('Wild Ones is removed and its old bookmark redirects',async({page})=>{
+  await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));
+  await page.goto(BASE+'#wild-ones');
+  await expect(page).toHaveURL(/#oyunlar$/);
+  await expect(page.locator('.lb-card[data-id="wild-ones-world"]')).toHaveCount(1);
+  await expect(page.locator('[data-game-cover="wild-ones"], .lb-card[data-id="wild-ones"], .lb-slide[data-k="wild-ones"]')).toHaveCount(0);
+});
+
 test('Slitherio initializes immediately and one click starts an arena with multiple bot types',async({page})=>{
   const errs=[];page.on('pageerror',e=>errs.push(e.message));
   await page.goto(BASE+'games/yilan-arenasi/index.html');

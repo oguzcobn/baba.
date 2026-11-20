@@ -13,7 +13,6 @@ const Scores = (() => {
     { id: 'draft', n: 'Süper Lig Draft', e: '⚽', hi: true, f: v => v + T(' puan', ' pts') },
     { id: '2048', n: '2048', e: '🔢', hi: true, f: v => v.toLocaleString(I18N.locale) },
     { id: 'kafa-topu', n: T('Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'), e: '⚽', hi: true, f: v => v.toLocaleString(I18N.locale) },
-    { id: 'wild-ones', n: T('Vahşi Dostlar', 'Wild Ones'), e: '💥', hi: true, f: v => v.toLocaleString(I18N.locale) },
     { id: 'yilan-arenasi', n: T('Yılan Arenası', 'Snake Arena'), e: '🐍', hi: true, f: v => v.toLocaleString(I18N.locale) },
     { id: 'hungry-shark', n: T('Aç Köpekbalığı', 'Hungry Shark'), e: '🦈', hi: true, f: v => v.toLocaleString(I18N.locale) },
     { id: 'blocks', n: T('Blok Yığ', 'Block Stack'), e: '🧱', hi: true, f: v => v.toLocaleString(I18N.locale) },

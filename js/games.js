@@ -154,7 +154,6 @@ const App = (() => {
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
-    { id: 'wild-ones', name: ['Vahşi Dostlar (Wild Ones)', 'Wild Ones'], tags: [['Topçu', 'Artillery'], ['Yıkılabilir', 'Destructible'], ['1v1 / 2P', '1v1 / 2P']], best: () => T('6 Karakter', '6 Pets') },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'warfare-1917', name: ["Warfare 1917: Siper Savaşı","Warfare 1917"], tags: [["Strateji","Strategy"],["Siper","Trenches"],["1917","1917"]], best: () => T('Yeni oyun', 'New game') },
@@ -231,7 +230,6 @@ const App = (() => {
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
-    'wild-ones': 'img/library/wild-ones-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
     'tekken-3': 'img/library/tekken-3-1280.webp',
@@ -244,7 +242,7 @@ const App = (() => {
   });
   function menu() {
     // Oyun kütüphanesi (js/oyunlar.js): hero video, vitrin, filtrelenebilir kütüphane, kategoriler
-    onLeave(BABALibrary.render({ root: root(), games: GAMES, T, esc, P, isOwner, covers: GAME_COVERS }));
+    onLeave(BABALibrary.render({ root: root(), games: GAMES, isExternal: id => Object.hasOwn(EXTERNAL_GAME_URLS, id), T, esc, P, isOwner, covers: GAME_COVERS }));
     if (typeof BABACovers !== 'undefined') onLeave(BABACovers.mount({
       container: root(), games: GAMES.map(g => ({ id: g.id, name: P(g.name) })),
       defaults: GAME_COVERS, isOwner: () => isOwner()
@@ -348,16 +346,6 @@ const App = (() => {
       msgType: 'baba-kafa-topu-score', scoreId: 'kafa-topu'
     });
   }
-  function wildOnes() {
-    openEmbeddedGame({
-      title: T('Vahşi Dostlar (Wild Ones)', 'Wild Ones'),
-      url: 'games/wild-ones/index.html?v=1',
-      tag: T('Arcade · Yıkılabilir Topçu Savaşı', 'Arcade · Destructible Artillery'),
-      lead: T('Yıkılabilir adalarda 6 özel karakterle bazuka, misket bombası, hava saldırısı ve nükleer düellosu.', 'Artillery battle across destructible islands with 6 hand-drawn pets and 6 weapons.'),
-      tip: T('A/D yürü, W zıpla, fareyle nişan al, Sol Tık/Boşluk basılı tutup bırakarak ateş et.', 'A/D walk, W jump, aim with mouse, hold & release Click/Space to fire.'),
-      msgType: 'baba-wild-ones-score', scoreId: 'wild-ones'
-    });
-  }
   function yilanArenasi() {
     openEmbeddedGame({
       title: T('Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'),
@@ -368,23 +356,25 @@ const App = (() => {
       msgType: 'baba-yilan-arenasi-score', scoreId: 'yilan-arenasi'
     });
   }
-  const FLASH_GAMES = {
-    'age-of-war': 'age-of-war',
-    'warfare-1917': 'warfare-1917',
-    'the-waitress': 'the-waitress',
-    'fancy-pants-3': 'fancy-pants-adventure-3',
-    'territory-war': 'territory-war',
-    'electric-man-2': 'electric-man-2'
+  const EXTERNAL_GAME_URLS = {
+    'age-of-war': 'https://flash-games.io/age-of-war',
+    'warfare-1917': 'https://flash-games.io/warfare-1917',
+    'the-waitress': 'https://flash-games.io/the-waitress',
+    'fancy-pants-3': 'https://flash-games.io/fancy-pants-adventure-3',
+    'territory-war': 'https://flash-games.io/territory-war',
+    'electric-man-2': 'https://flash-games.io/electric-man-2',
+    'gta-vice-city': 'https://www.miniplay.com/game/gta-vice-city',
+    'tekken-3': 'https://www.miniplay.com/game/tekken-3'
   };
   const ARCADE_IMPORTED = [{"id":"age-of-war","name":["Age of War: Çağlar Savaşı","Age of War"],"tip":["Strateji","Strategy"]},{"id":"gunblood","name":["Gunblood: Düello","Gunblood: Duel"],"tip":["Düello","Duel"]},{"id":"warfare-1917","name":["Warfare 1917: Siper Savaşı","Warfare 1917"],"tip":["Strateji","Strategy"]},{"id":"the-waitress","name":["The Waitress: BABA Kafe","The Waitress: Cafe"],"tip":["Simülasyon","Simulation"]},{"id":"fancy-pants-3","name":["Fancy Pants 3","Fancy Pants 3"],"tip":["Platform","Platformer"]},{"id":"territory-war","name":["Territory War: Bölge Savaşı","Territory War"],"tip":["Strateji","Strategy"]},{"id":"electric-man-2","name":["Electric Man 2","Electric Man 2"],"tip":["Dövüş","Fighting"]},{"id":"wild-ones-world","name":["Wild Ones: World Edition","Wild Ones: World Edition"],"tip":["Topçu","Artillery"]}];
   function importedArcadeGame(id) {
     const cfg = ARCADE_IMPORTED.find(g => g.id === id);
     if (!cfg) return;
-    const flashSlug = FLASH_GAMES[id];
-    if (flashSlug) {
+    const externalUrl = EXTERNAL_GAME_URLS[id];
+    if (externalUrl) {
       openEmbeddedGame({
         title: T(...cfg.name),
-        url: 'https://flash-games.io/' + flashSlug,
+        url: externalUrl,
         tag: T('BABA. ARCADE · Harici Bağlantı', 'BABA. ARCADE · External'),
         lead: T('Flash Games üzerinden oyna. Çerçeve açılmazsa “Yeni sekmede aç ↗” bağlantısını kullan.', 'Play via Flash Games. If the embed is blocked, use “Open in a new tab ↗”.'),
         tip: T("Oyun bağlantısı harici bir siteye açılır.", "The game is hosted on an external site.")
@@ -402,7 +392,7 @@ const App = (() => {
   function gtaViceCity() {
     openEmbeddedGame({
       title: 'GTA: Vice City',
-      url: 'https://www.miniplay.com/game/gta-vice-city',
+      url: EXTERNAL_GAME_URLS['gta-vice-city'],
       tag: T('Klasik Aksiyon · Harici Bağlantı', 'Classic Action · External'),
       lead: T('Miniplay üzerinden GTA: Vice City. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'GTA: Vice City via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
       tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
@@ -411,7 +401,7 @@ const App = (() => {
   function tekken3() {
     openEmbeddedGame({
       title: 'Tekken 3',
-      url: 'https://www.miniplay.com/game/tekken-3',
+      url: EXTERNAL_GAME_URLS['tekken-3'],
       tag: T('Arcade Dövüş · Harici Bağlantı', 'Arcade Fighting · External'),
       lead: T('Miniplay üzerinden Tekken 3. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'Tekken 3 via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
       tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
@@ -772,8 +762,7 @@ const App = (() => {
     else if (r === 'istiklal1919') istiklal1919();
     else if (r === 'vadi') vadi();
     else if (r === 'kafa-topu') kafaTopu();
-    else if (r === 'wild-ones') wildOnes();
-    else if (r === 'ates-ve-su') { location.replace('#oyunlar'); return; }
+    else if (r === 'ates-ve-su' || r === 'wild-ones') { location.replace('#oyunlar'); return; }
     else if (r === 'yilan-arenasi') yilanArenasi();
     else if (ARCADE_IMPORTED.some(g => g.id === r)) importedArcadeGame(r);
     else if (r === 'gta-vice-city') gtaViceCity();
