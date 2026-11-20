@@ -1,3 +1,4 @@
+import { models } from "../data/models.js";
 import { resources, buildings, branches, researchCost, focusNames, laws, families, units, eraAt, recipe } from "../data/industry.js";
 
 const round=n=>Math.round(n*1000000)/1000000;
@@ -41,7 +42,7 @@ export function capacity(s,yard){
   return sum(owned(s),p=>count(p,yard?"yard":"arms"));
 }
 export function budget(s){
-  const regions=owned(s),army=sum(regions,p=>p.army);
+  const regions=owned(s),army=sum(regions,p=>p.army)+sum((s.theatre?.fronts||[]).filter(b=>b.attacker===s.me),b=>b.group.army);
   const income=2+sum(regions,p=>.35*p.dev+.6*count(p,"civil")+.6*(p.market||0)+.25*(p.farm||0))+2*(s.treaties?.trade||[]).filter(pair=>pair.includes(s.me)&&!s.wars.some(w=>pair.every(id=>w.includes(id)))).length;
   const upkeep=.4*army/20+sum(regions,p=>.8*(p.equipment?.ship||0)+.15*(p.plants||[]).length);
   return {income,upkeep,net:income-upkeep};
@@ -67,8 +68,8 @@ export function build(s,p,key,coastal,month){
   p.construction={type:key,owner:s.me,work:0};
 }
 export function setLine(s,id,key,level,month){
-  const e=s.industry,f=families[key];
-  if(!f||!Number.isInteger(level)||level<f.first||level>e.levels[f.branch]||level>eraAt(month))return "Bu modeli önce araştır.";
+  const e=s.industry,f=models[key];
+  if(!f||!Number.isInteger(level)||level<f.first||level>=f.first+f.labels.length||level>e.levels[f.branch]||level>eraAt(month))return "Bu modeli önce araştır.";
   const model=recipe(key,level);
   let line=e.lines.find(l=>l.id===id);
   if(!line){
@@ -91,8 +92,9 @@ export function train(s,p,key,coastal){
   const reserved={};
   for(const [family,need] of Object.entries(u[3])){
     let left=need;
-    for(let lv=1;lv<=5&&left>0;lv++){
-      const id=family+"."+lv,n=Math.min(left,e.inventory[id]||0);
+    for(const id of Object.keys(e.inventory).filter(id=>models[id.split(".")[0]]?.family===family).sort((a,b)=>Number(b.split(".")[1])-Number(a.split(".")[1]))){
+      if(!left)break;
+      const n=Math.min(left,e.inventory[id]||0);
       if(n)reserved[id]=n;
       left-=n;
     }
@@ -188,7 +190,7 @@ function produce(s,plants){
 }
 function develop(s,regions,plants,report){
   const e=s.industry;
-  const jobs=regions.filter(p=>p.construction);
+  const jobs=regions.filter(p=>p.construction&&!p.occupation?.disruption);
   // All construction sites share civilian capacity. A field works crew can rebuild a lost factory.
   const civilWork=(plants.civil?4*plants.civil:1)*[1.15,1,.8][e.laws.economy]*[1,1,.85][e.laws.service]*[.96,1,1.05][e.laws.trade];
   for(const p of jobs){
@@ -202,6 +204,7 @@ function develop(s,regions,plants,report){
   e.training=e.training.filter(j=>{
     const p=regions.find(v=>v.id===j.node);
     if(!p){report("Eğitim bölgesi kaybedildi: "+units[j.key][0]+".");return false;}
+    if(p.occupation?.disruption)return true;
     const n=active.get(p.id)||0;
     if(n>=1+count(p,"depot"))return true;
     active.set(p.id,n+1);
@@ -222,7 +225,7 @@ function develop(s,regions,plants,report){
 }
 export function advance(s,month,report=()=>{}){
   const e=s.industry,regions=owned(s),plants={};
-  for(const type of Object.keys(buildings))plants[type]=sum(regions,p=>count(p,type));
+  for(const type of Object.keys(buildings))plants[type]=sum(regions.filter(p=>!p.occupation?.disruption),p=>count(p,type));
   for(const p of s.p)if(p.construction?.owner!==p.owner)delete p.construction;
   for(const p of regions){
     for(const [key,n] of Object.entries(deposits(p)))s.materials[key]=round(s.materials[key]+n*(hasFocus(e,5,1)?1.08:1));

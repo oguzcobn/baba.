@@ -1,3 +1,4 @@
+import { models, modelName } from "./models.js";
 export const resources = {
   steel:["Çelik",2], aluminium:["Alüminyum",3], oil:["Petrol",2],
   fuel:["Yakıt",3], chips:["Yarı iletken",5]
@@ -56,10 +57,10 @@ export function eraAt(month){
   const year=1919+Math.floor((4+month)/12);
   return 1+[1936,1950,1990,2015].filter(y=>year>=y).length;
 }
-export function recipe(key,level){
-  const f=families[key];
+export function recipe(key,level,owner){
+  const m=models[key],f=families[m.family];
   const factor=[0,1,1,1.15,1.25,1.45][level];
-  return {name:f.name+" "+numerals[level], work:Math.ceil(f.work*[0,1,1.15,1.35,1.6,1.9][level]),
-    yard:["ship","usv"].includes(key), inputs:{steel:Math.ceil(f.steel*factor),aluminium:Math.ceil((f.aluminium||0)*factor),
-    chips:level>=4&&!["rifle","gun"].includes(key)?level-3:0}};
+  return {name:modelName(key,level,owner),fuel:m.fuel,role:m.role, work:Math.ceil(m.scale*f.work*[0,1,1.15,1.35,1.6,1.9][level]),
+    yard:["ship","usv"].includes(m.family), inputs:{steel:Math.ceil(f.steel*m.scale*factor),aluminium:Math.ceil((f.aluminium||0)*m.scale*factor),
+    chips:level>=4&&!["rifle","gun"].includes(m.family)?level-3:0}};
 }
