@@ -16,8 +16,15 @@ on:
       - 'data/career-birthdates.json'
       - 'tests/career-birthdates.cjs'
       - 'css/football-premium.css'
+      - 'games/arcade/**'
+      - 'img/library/*.svg'
+      - 'js/oyunlar.js'
+      - 'tests/arcade-import.spec.cjs'
+      - 'tests/oyunlar-library.spec.cjs'
       - 'games/yilan-arenasi/index.html'
       - 'games/kafa-topu/index.html'
+      - 'tests/arcade-import.spec.cjs'
+      - 'tests/oyunlar-library.spec.cjs'
       - 'tests/arcade-games.spec.cjs'
       - 'tests/lab-contrast.spec.cjs'
       - 'tests/mobile.spec.cjs'
@@ -54,6 +61,7 @@ jobs:
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-http.log 2>&1 &
       - run: npx playwright test tests/mobile.spec.cjs tests/game-cover-editor.spec.cjs --reporter=line --workers=2
       - run: npx playwright test tests/arcade-games.spec.cjs tests/lab-contrast.spec.cjs --reporter=line --workers=2
+      - run: npx playwright test tests/arcade-import.spec.cjs tests/oyunlar-library.spec.cjs --reporter=line --workers=2
       - run: npx playwright test tests/match2d-browser.spec.cjs --reporter=line --workers=1 --retries=1
       - if: always()
         uses: actions/upload-artifact@v7

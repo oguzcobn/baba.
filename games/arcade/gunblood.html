@@ -1,0 +1,1862 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BABA. ARCADE · GUNBLOOD TÜRKİYE — RAGDOLL EDITION</title>
+<style>
+  :root {
+    --bg: #0e0805;
+    --panel: rgba(22, 13, 8, 0.92);
+    --border: rgba(245, 158, 11, 0.36);
+    --gold: #f59e0b;
+    --crimson: #dc2626;
+    --cream: #fef3c7;
+    --muted: #b8a38a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--bg); color: var(--cream);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  #wrap { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas#gameCanvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  /* TOP HUD */
+  #hud-top {
+    position: absolute; top: 10px; left: 14px; right: 14px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; pointer-events: none; z-index: 20;
+  }
+  .fighter-hud {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 8px 14px; min-width: 220px; max-width: 34vw;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.65); backdrop-filter: blur(10px);
+  }
+  .fighter-hud.right { text-align: right; border-color: rgba(220, 38, 38, 0.5); }
+  .fh-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .fighter-hud.right .fh-top { flex-direction: row-reverse; }
+  .fh-name { font-size: 14px; font-weight: 900; letter-spacing: 0.4px; color: #fff; }
+  .fh-state {
+    font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 6px;
+    text-transform: uppercase; letter-spacing: 0.5px; display: none;
+  }
+  .fh-state.downed { display: inline-block; background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid #f59e0b; }
+  .fh-state.dead { display: inline-block; background: rgba(239, 68, 68, 0.25); color: #fca5a5; border: 1px solid #ef4444; }
+  .fh-sub { font-size: 10px; color: var(--muted); margin: 2px 0 6px; }
+  .hp-track {
+    width: 100%; height: 11px; background: rgba(0,0,0,0.7);
+    border-radius: 99px; overflow: hidden; border: 1px solid rgba(255,255,255,0.14);
+  }
+  .hp-fill {
+    height: 100%; width: 100%; transition: width 0.2s ease;
+    background: linear-gradient(90deg, #b91c1c, #ef4444, #f97316);
+  }
+  .hp-fill.player { background: linear-gradient(90deg, #15803d, #22c55e, #84cc16); }
+
+  .hud-center {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; pointer-events: auto;
+  }
+  .round-pill {
+    background: var(--panel); border: 1px solid var(--gold);
+    border-radius: 99px; padding: 5px 18px; font-size: 13px; font-weight: 900;
+    letter-spacing: 1px; color: #fde68a; box-shadow: 0 8px 24px rgba(0,0,0,0.65);
+  }
+  .score-row { display: flex; gap: 6px; align-items: center; }
+  .mini-pill {
+    background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 8px; padding: 3px 9px; font-size: 11px; font-weight: 700; color: #e2e8f0;
+  }
+  .hud-btn {
+    background: var(--panel); border: 1px solid var(--border); color: var(--cream);
+    width: 30px; height: 26px; border-radius: 7px; cursor: pointer; font-size: 13px;
+  }
+  .hud-btn:hover { border-color: var(--gold); background: rgba(245,158,11,0.2); }
+
+  /* BOTTOM AMMO & RELOAD HUD */
+  #hud-bottom {
+    position: absolute; bottom: 12px; right: 16px;
+    display: flex; align-items: center; gap: 10px; pointer-events: auto; z-index: 20;
+  }
+  .ammo-box {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.65);
+  }
+  .bullet-dots { display: flex; gap: 5px; }
+  .bullet-dot {
+    width: 11px; height: 22px; border-radius: 5px 5px 2px 2px;
+    background: linear-gradient(180deg, #fde047, #d97706);
+    border: 1px solid #fef3c7; box-shadow: 0 0 8px rgba(245,158,11,0.45);
+    transition: all 0.15s;
+  }
+  .bullet-dot.spent {
+    background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15);
+    box-shadow: none; transform: scaleY(0.6);
+  }
+  #btn-reload {
+    background: rgba(245, 158, 11, 0.2); border: 1px solid var(--gold); color: #fde68a;
+    padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 800; cursor: pointer;
+  }
+  #btn-reload:hover { background: rgba(245, 158, 11, 0.35); }
+
+  /* OVERLAYS */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: radial-gradient(circle at 50% 25%, rgba(46, 22, 9, 0.94), rgba(9, 5, 3, 0.98));
+    backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px; overflow-y: auto;
+  }
+  .overlay.hidden { display: none; }
+
+  .menu-card {
+    width: 100%; max-width: 1000px; max-height: 94vh; overflow-y: auto;
+    background: rgba(22, 13, 8, 0.96);
+    border: 2px solid rgba(245, 158, 11, 0.45);
+    border-radius: 22px; padding: 20px 24px;
+    box-shadow: 0 28px 80px rgba(0,0,0,0.9);
+  }
+  .menu-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; padding-bottom: 12px;
+    border-bottom: 1px solid rgba(245, 158, 11, 0.22); margin-bottom: 14px;
+  }
+  .tag { font-size: 11px; letter-spacing: 2.5px; color: #f59e0b; font-weight: 800; text-transform: uppercase; }
+  .title {
+    font-size: clamp(24px, 3.6vw, 38px); font-weight: 900; letter-spacing: 1px;
+    background: linear-gradient(180deg, #fef3c7, #f59e0b, #dc2626);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .sec-title {
+    font-size: 11px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #fbbf24; margin: 10px 0 8px; display: flex; justify-content: space-between;
+  }
+
+  .char-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 9px;
+  }
+  .char-card {
+    background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 14px; padding: 9px 10px; cursor: pointer; transition: all 0.16s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .char-card:hover { background: rgba(245, 158, 11, 0.1); border-color: rgba(245,158,11,0.5); transform: translateY(-2px); }
+  .char-card.selected {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.28), rgba(245, 158, 11, 0.22));
+    border-color: #f59e0b; box-shadow: 0 0 18px rgba(245, 158, 11, 0.35);
+  }
+  .avatar-dot {
+    width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 19px;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .c-name { font-size: 13px; font-weight: 800; color: #fff; }
+  .c-role { font-size: 10px; color: #f59e0b; font-weight: 700; }
+  .c-quote { font-size: 10px; color: var(--muted); margin-top: 2px; font-style: italic; }
+
+  .controls-bar {
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(245, 158, 11, 0.22);
+  }
+  .pill-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .opt-btn {
+    padding: 7px 13px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.45); color: #d6c7b2; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
+  .opt-btn.active { background: #f59e0b; color: #120b07; border-color: #fef3c7; }
+
+  .btn-play {
+    padding: 13px 34px; border-radius: 14px; border: 1px solid #fde68a;
+    background: linear-gradient(135deg, #dc2626, #b45309);
+    color: #fff; font-size: 16px; font-weight: 900; letter-spacing: 0.8px;
+    cursor: pointer; box-shadow: 0 10px 28px rgba(220, 38, 38, 0.5);
+    transition: transform 0.14s;
+  }
+  .btn-play:hover { transform: translateY(-2px); }
+
+  .how-box {
+    background: rgba(0,0,0,0.38); border: 1px solid rgba(245,158,11,0.24);
+    border-radius: 12px; padding: 9px 13px; font-size: 12px; color: #e7d8c5; margin-top: 12px;
+  }
+  .how-box strong { color: #fbbf24; }
+
+  .result-card { max-width: 470px; text-align: center; padding: 28px; }
+  .res-title { font-size: 30px; font-weight: 900; margin-bottom: 6px; }
+  .res-quote { font-size: 14px; font-style: italic; color: #fde68a; margin-bottom: 16px; }
+  .res-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    background: rgba(0,0,0,0.38); border-radius: 14px; padding: 12px; margin-bottom: 18px;
+    font-size: 13px;
+  }
+  .res-cell { padding: 6px; border-radius: 8px; background: rgba(255,255,255,0.04); }
+  .res-cell span { display: block; font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .res-cell strong { font-size: 16px; color: #fff; }
+
+  @media (max-width: 680px) {
+    .fighter-hud { min-width: 132px; padding: 6px 9px; }
+    .fh-name { font-size: 11px; }
+    .round-pill { font-size: 11px; padding: 4px 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- TOP HUD -->
+  <div id="hud-top">
+    <div class="fighter-hud">
+      <div class="fh-top">
+        <div class="fh-name" id="p-name">POLAT ALEMDAR</div>
+        <span class="fh-state" id="p-state">YERDE ATEŞ</span>
+      </div>
+      <div class="fh-sub" id="p-role">Kurtlar Vadisi · Oyuncu</div>
+      <div class="hp-track"><div class="hp-fill player" id="p-hp"></div></div>
+    </div>
+
+    <div class="hud-center">
+      <div class="round-pill" id="hud-round">RAUNT 1 / 10</div>
+      <div class="score-row">
+        <span class="mini-pill" id="hud-score">SKOR: 0</span>
+        <span class="mini-pill" id="hud-react">REFLEKS: —</span>
+        <button class="hud-btn" id="btn-sound" title="Ses">🔊</button>
+        <button class="hud-btn" id="btn-menu" title="Menü">☰</button>
+      </div>
+    </div>
+
+    <div class="fighter-hud right">
+      <div class="fh-top">
+        <div class="fh-name" id="e-name">MEMATİ BAŞ</div>
+        <span class="fh-state" id="e-state">YERDE ATEŞ</span>
+      </div>
+      <div class="fh-sub" id="e-role">Rakip #1</div>
+      <div class="hp-track"><div class="hp-fill" id="e-hp"></div></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM AMMO HUD -->
+  <div id="hud-bottom">
+    <div class="ammo-box">
+      <span style="font-size:11px;font-weight:800;color:#fbbf24;" id="ammo-label">ALTIPATLAR</span>
+      <div class="bullet-dots" id="ammo-dots"></div>
+      <button id="btn-reload" title="Mermi Doldur (R)">🔄 R</button>
+    </div>
+  </div>
+
+  <!-- MAIN MENU OVERLAY -->
+  <div class="overlay" id="menu-overlay">
+    <div class="menu-card">
+      <div class="menu-head">
+        <div>
+          <div class="tag">BABA. ARCADE · RAGDOLL VAHŞİ BATI DÜELLOSU</div>
+          <div class="title">GUNBLOOD: TÜRKİYE</div>
+        </div>
+        <div class="mini-pill" id="high-score-badge" style="font-size:12px;padding:6px 12px;border-color:#f59e0b;color:#fde68a;">🏆 EN YÜKSEK SKOR: 0</div>
+      </div>
+
+      <div class="sec-title">
+        <span>🤠 SİLAHŞÖRÜNÜ SEÇ (11 POPÜLER KARAKTER)</span>
+        <span id="sel-quote" style="color:#fef3c7;text-transform:none;letter-spacing:0;font-style:italic;">"Sonunu düşünen kahraman olamaz!"</span>
+      </div>
+      <div class="char-grid" id="char-grid"></div>
+
+      <div class="how-box">
+        <strong>Yeni Ragdoll & Son Nefes Mekaniği:</strong>
+        1) Fareyi sol alttaki <strong>silah yuvasına</strong> koy ve <strong>3-2-1</strong> bekle.
+        2) <strong>ATEŞ!</strong> anında namlunun açısını hedefe çevirip tıkla — mermi namlu doğrultusunda gider!
+        3) Karakterler <strong>tek mermide ölmez</strong>; ağır yara alınca <strong>ragdoll fizikle yere düşer</strong> ve <strong>yerden de ateş etmeye devam edebilir!</strong> Mermi bitince otomatik veya <strong>R</strong> ile dolar.
+      </div>
+
+      <div class="controls-bar">
+        <div class="pill-row" id="diff-row">
+          <button class="opt-btn" data-diff="easy">Kolay</button>
+          <button class="opt-btn active" data-diff="normal">Klasik Gunblood</button>
+          <button class="opt-btn" data-diff="hard">Efsane Tetik</button>
+        </div>
+        <button class="btn-play" id="btn-start">🔫 DÜELLOYA BAŞLA</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND / GAME OVER OVERLAY -->
+  <div class="overlay hidden" id="result-overlay">
+    <div class="menu-card result-card">
+      <div style="font-size:52px;margin-bottom:6px;" id="res-icon">🤠</div>
+      <div class="res-title" id="res-title">RAUNT KAZANILDI!</div>
+      <div class="res-quote" id="res-quote">"Mesele ölmek değil yeğen..."</div>
+      <div class="res-grid">
+        <div class="res-cell"><span>Tepki Süresi</span><strong id="res-react">0.34s</strong></div>
+        <div class="res-cell"><span>İsabet Oranı</span><strong id="res-acc">100%</strong></div>
+        <div class="res-cell"><span>Kafa Vuruşu</span><strong id="res-hs">EVET 🎯</strong></div>
+        <div class="res-cell"><span>Toplam Skor</span><strong id="res-score">1250</strong></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn-play" id="btn-next">▶ SIRADAKİ RAKİP</button>
+        <button class="opt-btn" id="btn-back-menu" style="padding:12px 18px;">🏠 Karakter Seç</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================================================================
+   1. 11 POPULAR TURKISH CHARACTERS
+   ============================================================================ */
+const ROSTER = [
+  {
+    id: 'polat', name: 'Polat Alemdar', role: 'Kurtlar Vadisi', icon: '🕶️',
+    quote: '"Sonunu düşünen kahraman olamaz!"',
+    skin: '#e2b48d', skinDark: '#a8754e', hair: '#1c1917', hairStyle: 'slick', beard: 'none',
+    outfit: '#0f172a', outfitLight: '#334155', shirt: '#f8fafc', tie: '#dc2626', pants: '#090d16',
+    hat: 'none', glasses: 'none', iris: '#451a03'
+  },
+  {
+    id: 'memati', name: 'Memati Baş', role: 'Kurtlar Vadisi', icon: '🔫',
+    quote: '"Usta, halledelim mi?"',
+    skin: '#d9a77e', skinDark: '#9e6c45', hair: '#18181b', hairStyle: 'short', beard: 'stubble',
+    outfit: '#1e1b18', outfitLight: '#44403c', shirt: '#3f3f46', tie: 'none', pants: '#18181b',
+    hat: 'none', glasses: 'none', iris: '#1e293b'
+  },
+  {
+    id: 'behzat', name: 'Behzat Ç.', role: 'Cinayet Büro', icon: '🚔',
+    quote: '"Saçma sapan konuşma la!"',
+    skin: '#d8a682', skinDark: '#9c6b48', hair: '#27272a', hairStyle: 'messy', beard: 'scruff',
+    outfit: '#3f2e21', outfitLight: '#6b4f3a', shirt: '#64748b', tie: 'none', pants: '#1e293b',
+    hat: 'none', glasses: 'none', iris: '#451a03'
+  },
+  {
+    id: 'ramiz', name: 'Ramiz Dayı', role: 'Ezel · Karaeski', icon: '🎩',
+    quote: '"Mesele ölmek değil yeğen..."',
+    skin: '#deb896', skinDark: '#a67d5a', hair: '#d4d4d8', hairStyle: 'short', beard: 'mustache_white',
+    outfit: '#292524', outfitLight: '#57534e', shirt: '#e7e5e4', tie: '#78350f', pants: '#1c1917',
+    hat: 'fedora', glasses: 'none', iris: '#334155'
+  },
+  {
+    id: 'kuzey', name: 'Kuzey Tekinoğlu', role: 'Kuzey Güney', icon: '⚡',
+    quote: '"Kurabiye var simit var!"',
+    skin: '#f0c6a3', skinDark: '#bd8d68', hair: '#ca8a04', hairStyle: 'spiky', beard: 'stubble',
+    outfit: '#1f2937', outfitLight: '#4b5563', shirt: '#f8fafc', tie: 'none', pants: '#1e3a8a',
+    hat: 'none', glasses: 'none', iris: '#2563eb'
+  },
+  {
+    id: 'icardi', name: 'Mauro Icardi', role: 'Galatasaray · 9', icon: '⚽',
+    quote: '"Aşkın Olayım!"',
+    skin: '#e8be9c', skinDark: '#b38662', hair: '#facc15', hairStyle: 'slick', beard: 'full_neat',
+    outfit: 'gs_jersey', outfitLight: '#fdb912', shirt: '#facc15', tie: 'none', pants: '#991b1b',
+    hat: 'none', glasses: 'none', iris: '#0284c7'
+  },
+  {
+    id: 'arda', name: 'Arda Güler', role: 'Milli Yıldız · 10', icon: '🌟',
+    quote: '"Sol ayakla tam 90\'a!"',
+    skin: '#ecc4a4', skinDark: '#ba8e6c', hair: '#292524', hairStyle: 'wavy', beard: 'none',
+    outfit: 'madrid_jersey', outfitLight: '#e2e8f0', shirt: '#ffffff', tie: 'none', pants: '#f1f5f9',
+    hat: 'none', glasses: 'none', iris: '#451a03'
+  },
+  {
+    id: 'recep', name: 'Recep İvedik', role: 'Sinema Efsanesi', icon: '🧔',
+    quote: '"Böhöhöyt! Çekil önümden!"',
+    skin: '#d19a72', skinDark: '#96623e', hair: '#090d16', hairStyle: 'wild', beard: 'thick_unibrow',
+    outfit: '#ea580c', outfitLight: '#fb923c', shirt: '#f97316', tie: 'none', pants: '#1e293b',
+    hat: 'none', glasses: 'none', iris: '#1c1917'
+  },
+  {
+    id: 'arif', name: 'Arif Işık', role: 'G.O.R.A. · Halıcı', icon: '🛸',
+    quote: '"Komutan Logar, bir cisim yaklaşıyor!"',
+    skin: '#e3b590', skinDark: '#ad7c58', hair: '#1c1917', hairStyle: 'bald_sides', beard: 'goatee',
+    outfit: '#0ea5e9', outfitLight: '#38bdf8', shirt: '#fde047', tie: 'none', pants: '#78350f',
+    hat: 'none', glasses: 'shades', iris: '#3f2e21'
+  },
+  {
+    id: 'battal', name: 'Battal Gazi', role: 'Yeşilçam Kahramanı', icon: '⚔️',
+    quote: '"Savulun Battal Gazi geliyor!"',
+    skin: '#d9a47b', skinDark: '#9c6842', hair: '#18181b', hairStyle: 'long', beard: 'pala_mustache',
+    outfit: '#7f1d1d', outfitLight: '#b91c1c', shirt: '#94a3b8', tie: 'none', pants: '#451a03',
+    hat: 'headband', glasses: 'none', iris: '#1e293b'
+  },
+  {
+    id: 'nwakaeme', name: 'Anthony Nwakaeme', role: 'Trabzonspor · Büyücü', icon: '⚽',
+    quote: '"Bize her yer Trabzon!"',
+    skin: '#5c3821', skinDark: '#361e10', hair: '#090d16', hairStyle: 'buzz', beard: 'full_neat',
+    outfit: 'ts_jersey', outfitLight: '#00a8e8', shirt: '#00a8e8', tie: 'none', pants: '#800020',
+    hat: 'none', glasses: 'none', iris: '#1c1917'
+  }
+];
+
+/* ============================================================================
+   2. WEB AUDIO WESTERN SYNTHESIZER
+   ============================================================================ */
+class WesternSFX {
+  constructor() { this.ctx = null; this.muted = false; }
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  tone(f1, f2, dur, type = 'sine', vol = 0.16) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type; o.frequency.setValueAtTime(f1, t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(25, f2), t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(this.ctx.destination);
+    o.start(t); o.stop(t + dur);
+  }
+  noise(dur, vol = 0.35, lp = 1800) {
+    if (this.muted) return;
+    this.init();
+    if (!this.ctx) return;
+    const sr = this.ctx.sampleRate;
+    const buf = this.ctx.createBuffer(1, Math.floor(sr * dur), sr);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 1.7);
+    const s = this.ctx.createBufferSource(); s.buffer = buf;
+    const flt = this.ctx.createBiquadFilter(); flt.type = 'lowpass'; flt.frequency.value = lp;
+    const g = this.ctx.createGain(); g.gain.value = vol;
+    s.connect(flt); flt.connect(g); g.connect(this.ctx.destination);
+    s.start();
+  }
+  cock() { this.tone(820, 480, 0.06, 'square', 0.12); }
+  reload() {
+    for (let i = 0; i < 4; i++) setTimeout(() => this.tone(680 + i * 90, 420, 0.045, 'square', 0.1), i * 110);
+  }
+  tick(num) { this.tone(num === 0 ? 880 : 420, num === 0 ? 1120 : 380, num === 0 ? 0.22 : 0.12, 'triangle', 0.18); }
+  gunshot() {
+    this.noise(0.35, 0.45, 2100);
+    this.tone(220, 38, 0.26, 'sawtooth', 0.28);
+  }
+  emptyClick() { this.tone(1200, 900, 0.04, 'square', 0.1); }
+  headshot() { this.tone(620, 140, 0.25, 'sawtooth', 0.2); this.noise(0.18, 0.25, 3200); }
+  thud() { this.tone(110, 36, 0.18, 'sine', 0.24); this.noise(0.14, 0.16, 480); }
+  bottle() { this.noise(0.16, 0.25, 5500); this.tone(1850, 740, 0.14, 'triangle', 0.18); }
+  win() {
+    [440, 554, 659, 880].forEach((f, i) => setTimeout(() => this.tone(f, f * 1.02, 0.2, 'triangle', 0.15), i * 95));
+  }
+}
+const sfx = new WesternSFX();
+
+/* ============================================================================
+   3. VERLET MULTI-JOINT RAGDOLL PHYSICS ENGINE
+   ============================================================================ */
+function makeNode(x, y, mass = 1) {
+  return { x, y, ox: x, oy: y, mass };
+}
+
+function createRagdoll(baseX, groundY, facing, s) {
+  // 12 anatomical skeleton nodes
+  const n = {
+    pelvis: makeNode(baseX, groundY - 76 * s, 1.6),
+    chest:  makeNode(baseX, groundY - 122 * s, 1.5),
+    neck:   makeNode(baseX, groundY - 138 * s, 0.9),
+    head:   makeNode(baseX + 2 * facing * s, groundY - 160 * s, 1.1),
+    lElbow: makeNode(baseX - 18 * facing * s, groundY - 102 * s, 0.7),
+    lHand:  makeNode(baseX - 14 * facing * s, groundY - 76 * s, 0.6),
+    rElbow: makeNode(baseX + 14 * facing * s, groundY - 104 * s, 0.7),
+    rHand:  makeNode(baseX + 18 * facing * s, groundY - 78 * s, 0.6),
+    lKnee:  makeNode(baseX - 11 * facing * s, groundY - 40 * s, 0.9),
+    lFoot:  makeNode(baseX - 16 * facing * s, groundY - 4 * s, 1.0),
+    rKnee:  makeNode(baseX + 11 * facing * s, groundY - 40 * s, 0.9),
+    rFoot:  makeNode(baseX + 16 * facing * s, groundY - 4 * s, 1.0)
+  };
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const bones = [
+    ['pelvis', 'chest', dist(n.pelvis, n.chest)],
+    ['chest', 'neck', dist(n.chest, n.neck)],
+    ['neck', 'head', dist(n.neck, n.head)],
+    ['chest', 'lElbow', 26 * s],
+    ['lElbow', 'lHand', 26 * s],
+    ['chest', 'rElbow', 26 * s],
+    ['rElbow', 'rHand', 26 * s],
+    ['pelvis', 'lKnee', 38 * s],
+    ['lKnee', 'lFoot', 38 * s],
+    ['pelvis', 'rKnee', 38 * s],
+    ['rKnee', 'rFoot', 38 * s],
+    // Structural cross-braces so spine/head stay natural
+    ['pelvis', 'neck', dist(n.pelvis, n.neck)],
+    ['chest', 'head', dist(n.chest, n.head)]
+  ];
+  return {
+    baseX, groundY, facing, s, nodes: n, bones,
+    mode: 'stand', // 'stand' | 'downed' | 'dead'
+    aimAngle: facing === 1 ? 0 : Math.PI,
+    drawing: false,
+    recoil: 0,
+    hitFlash: 0,
+    hatGone: false,
+    downedTimer: 0
+  };
+}
+
+function applyRagdollImpulse(rag, part, ix, iy) {
+  const n = rag.nodes;
+  const push = (node, mult) => { node.ox -= ix * mult; node.oy -= iy * mult; };
+  if (part === 'head') {
+    push(n.head, 1.35); push(n.neck, 0.85); push(n.chest, 0.55); push(n.pelvis, 0.25);
+  } else if (part === 'torso') {
+    push(n.chest, 1.15); push(n.pelvis, 0.85); push(n.head, 0.45); push(n.lElbow, 0.5); push(n.rElbow, 0.5);
+  } else {
+    push(n.lKnee, 1.1); push(n.rKnee, 1.1); push(n.pelvis, 0.75); push(n.chest, 0.25);
+  }
+  rag.hitFlash = 0.18;
+}
+
+function updateRagdoll(rag, dt, groundY, time) {
+  const n = rag.nodes;
+  const s = rag.s;
+  const f = rag.facing;
+  if (rag.recoil > 0) rag.recoil = Math.max(0, rag.recoil - dt * 5.5);
+  if (rag.hitFlash > 0) rag.hitFlash = Math.max(0, rag.hitFlash - dt);
+  if (rag.mode === 'downed') rag.downedTimer += dt;
+
+  const grav = rag.mode === 'stand' ? 420 : 1180;
+  const damping = rag.mode === 'stand' ? 0.82 : 0.96;
+
+  // 1. Verlet integration
+  for (const key in n) {
+    const p = n[key];
+    const vx = (p.x - p.ox) * damping;
+    const vy = (p.y - p.oy) * damping;
+    p.ox = p.x; p.oy = p.y;
+    p.x += vx;
+    p.y += vy + grav * dt * dt;
+  }
+
+  // 2. Active Pose Springs (Standing OR Downed Last-Stand!)
+  const pull = (node, tx, ty, k) => {
+    node.x += (tx - node.x) * k;
+    node.y += (ty - node.y) * k;
+  };
+  const breath = Math.sin(time * 3.4 + f) * 2.2 * s;
+  const combatWeave = (f === -1 && rag.drawing) ? Math.sin(time * (3.2 + state.roundIdx * 0.35)) * (10 + state.roundIdx * 1.4) * s : 0;
+  const sway = Math.cos(time * 1.9 + f) * 2.0 * s + combatWeave;
+
+  if (rag.mode === 'stand') {
+    const bx = rag.baseX;
+    pull(n.lFoot, bx - 15 * f * s, groundY - 3 * s, 0.65);
+    pull(n.rFoot, bx + 16 * f * s, groundY - 3 * s, 0.65);
+    pull(n.lKnee, bx - 10 * f * s + sway * 0.4, groundY - 40 * s, 0.35);
+    pull(n.rKnee, bx + 11 * f * s + sway * 0.4, groundY - 40 * s, 0.35);
+    pull(n.pelvis, bx + sway * 0.6, groundY - 76 * s + breath * 0.4, 0.32);
+    pull(n.chest, bx + sway, groundY - 122 * s + breath, 0.26);
+    pull(n.neck, bx + sway, groundY - 138 * s + breath, 0.25);
+    pull(n.head, bx + 2 * f * s + sway, groundY - 160 * s + breath, 0.22);
+
+    // Off-hand balanced naturally
+    pull(n.lElbow, n.chest.x - 19 * f * s, n.chest.y + 20 * s, 0.25);
+    pull(n.lHand, n.chest.x - 15 * f * s, n.chest.y + 44 * s, 0.25);
+
+    // Gun arm: tense hover near holster OR crisp extended aim!
+    if (rag.drawing) {
+      const a = rag.aimAngle - rag.recoil * 0.32 * f;
+      const dx = Math.cos(a), dy = Math.sin(a);
+      pull(n.rElbow, n.chest.x + dx * 24 * s, n.chest.y + dy * 24 * s, 0.55);
+      pull(n.rHand, n.chest.x + dx * 48 * s, n.chest.y + dy * 48 * s, 0.68);
+    } else {
+      const twitch = Math.sin(time * 14) * 1.4 * s;
+      pull(n.rElbow, n.chest.x + 16 * f * s, n.chest.y + 18 * s, 0.35);
+      pull(n.rHand, n.pelvis.x + 15 * f * s + twitch, n.pelvis.y + 4 * s, 0.4);
+    }
+  } else if (rag.mode === 'downed') {
+    // LAST STAND! Fallen on back/hip in the dirt, propping upper body up on off-arm while aiming & shooting!
+    const anchorX = Math.max(70, Math.min(canvas.width - 70, n.pelvis.x));
+    pull(n.pelvis, anchorX, groundY - 12 * s, 0.22);
+    // Prop chest & head slightly off dirt so they can aim and shoot back!
+    pull(n.chest, anchorX - 28 * f * s, groundY - 34 * s + breath * 0.5, 0.20);
+    pull(n.neck, anchorX - 34 * f * s, groundY - 48 * s + breath * 0.5, 0.20);
+    pull(n.head, anchorX - 30 * f * s, groundY - 68 * s + breath * 0.5, 0.18);
+    // Off-arm bracing against the dirt
+    pull(n.lElbow, anchorX - 48 * f * s, groundY - 22 * s, 0.22);
+    pull(n.lHand, anchorX - 54 * f * s, groundY - 3 * s, 0.35);
+    // Shooting arm actively tracks aimAngle from the ground!
+    if (rag.drawing) {
+      const a = rag.aimAngle - rag.recoil * 0.28 * f;
+      const dx = Math.cos(a), dy = Math.sin(a);
+      pull(n.rElbow, n.chest.x + dx * 22 * s, n.chest.y + dy * 22 * s, 0.48);
+      pull(n.rHand, n.chest.x + dx * 46 * s, n.chest.y + dy * 46 * s, 0.62);
+    }
+  }
+
+  // 3. Constraint Solver (6 iterations for crisp bones) + Ground/Wall Collision
+  for (let iter = 0; iter < 6; iter++) {
+    for (const [k1, k2, len] of rag.bones) {
+      const a = n[k1], b = n[k2];
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const d = Math.hypot(dx, dy) || 0.001;
+      const diff = (d - len) / d;
+      const tot = a.mass + b.mass;
+      const r1 = b.mass / tot, r2 = a.mass / tot;
+      a.x += dx * diff * r1; a.y += dy * diff * r1;
+      b.x -= dx * diff * r2; b.y -= dy * diff * r2;
+    }
+    for (const key in n) {
+      const p = n[key];
+      const floor = groundY - 3 * s;
+      if (p.y > floor) {
+        const vx = p.x - p.ox;
+        p.y = floor;
+        p.ox = p.x - vx * 0.72; // ground friction
+      }
+      if (p.x < 28) p.x = 28;
+      if (p.x > canvas.width - 28) p.x = canvas.width - 28;
+    }
+  }
+}
+
+function getRagdollHitboxes(rag) {
+  const n = rag.nodes;
+  const s = rag.s;
+  const tx = (n.chest.x + n.pelvis.x) * 0.5;
+  const ty = (n.chest.y + n.pelvis.y) * 0.5;
+  const lx = (n.lKnee.x + n.rKnee.x) * 0.5;
+  const ly = (n.lKnee.y + n.rKnee.y) * 0.5;
+  return {
+    head:  { x: n.head.x, y: n.head.y, r: 20 * s },
+    torso: { x: tx, y: ty, r: 28 * s },
+    legs:  { x: lx, y: ly, r: 26 * s }
+  };
+}
+
+function getRagdollMuzzle(rag) {
+  const h = rag.nodes.rHand;
+  const e = rag.nodes.rElbow;
+  const ang = rag.drawing ? rag.aimAngle : Math.atan2(h.y - e.y, h.x - e.x);
+  const dx = Math.cos(ang), dy = Math.sin(ang);
+  return {
+    x: h.x + dx * 28 * rag.s,
+    y: h.y + dy * 28 * rag.s - 3 * rag.s,
+    dx, dy, ang
+  };
+}
+
+/* ============================================================================
+   4. AAA ARTICULATED RAGDOLL CHARACTER RENDERER
+   ============================================================================ */
+function drawTaperedLimb(c, x1, y1, x2, y2, w1, w2, color, highlight) {
+  const ang = Math.atan2(y2 - y1, x2 - x1);
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  c.save();
+  c.translate(x1, y1);
+  c.rotate(ang);
+  const g = c.createLinearGradient(0, -w1, 0, w1);
+  g.addColorStop(0, highlight || color);
+  g.addColorStop(0.5, color);
+  g.addColorStop(1, '#090d16');
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(0, -w1 * 0.5);
+  c.lineTo(len, -w2 * 0.5);
+  c.arc(len, 0, w2 * 0.5, -Math.PI / 2, Math.PI / 2);
+  c.lineTo(0, w1 * 0.5);
+  c.arc(0, 0, w1 * 0.5, Math.PI / 2, -Math.PI / 2);
+  c.closePath();
+  c.fill();
+  c.restore();
+}
+
+function drawEyes(c, x1, y1, x2, y2, iris, angry = 0.7, unibrow = false, shades = false) {
+  const one = (ex, ey, r) => {
+    c.fillStyle = '#f8fafc';
+    c.beginPath(); c.ellipse(ex, ey, r * 1.1, r * 1.05, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = iris;
+    c.beginPath(); c.arc(ex + r * 0.22, ey, r * 0.65, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#090d16';
+    c.beginPath(); c.arc(ex + r * 0.26, ey, r * 0.36, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.arc(ex + r * 0.05, ey - r * 0.32, r * 0.24, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = 'rgba(15,23,42,0.8)'; c.lineWidth = 1;
+    c.beginPath(); c.ellipse(ex, ey, r * 1.1, r * 1.05, 0, 0, Math.PI * 2); c.stroke();
+  };
+  one(x1, y1, 2.7);
+  one(x2, y2, 3.1);
+
+  if (unibrow) {
+    c.strokeStyle = '#090d16'; c.lineWidth = 4.2; c.lineCap = 'round';
+    c.beginPath(); c.moveTo(x2 - 4, y2 - 4.6); c.lineTo(x1 + 4, y1 - 4.6); c.stroke();
+  } else {
+    c.strokeStyle = '#1c1917'; c.lineWidth = 2.1; c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(x2 - 3, y2 - 4.5); c.lineTo(x2 + 3.2, y2 - 3.6 + angry);
+    c.moveTo(x1 - 2.6, y1 - 3.6 + angry); c.lineTo(x1 + 3, y1 - 4.5);
+    c.stroke();
+  }
+  if (shades) {
+    c.fillStyle = 'rgba(15, 23, 42, 0.45)';
+    c.strokeStyle = '#f59e0b'; c.lineWidth = 1.4;
+    c.beginPath(); c.roundRect(x2 - 4.5, y2 - 3.8, 9, 6.8, 2); c.fill(); c.stroke();
+    c.beginPath(); c.roundRect(x1 - 4.2, y1 - 3.8, 8.5, 6.8, 2); c.fill(); c.stroke();
+    c.beginPath(); c.moveTo(x2 + 4.5, y2 - 1); c.lineTo(x1 - 4.2, y1 - 1); c.stroke();
+  }
+}
+
+function drawRagdollCharacter(ch, rag) {
+  const n = rag.nodes;
+  const s = rag.s;
+  const f = rag.facing;
+  const sleeveCol = ch.outfit === 'gs_jersey' ? '#a90432'
+    : (ch.outfit === 'ts_jersey' ? '#800020'
+    : (ch.outfit === 'madrid_jersey' ? '#f8fafc' : ch.outfit));
+
+  ctx.save();
+
+  // Dynamic Ground Shadow beneath pelvis & chest
+  const shX = (n.pelvis.x + n.chest.x) * 0.5;
+  const shW = (rag.mode === 'stand' ? 38 : 68) * s;
+  const shG = ctx.createRadialGradient(shX, rag.groundY + 2, 4, shX, rag.groundY + 2, shW);
+  shG.addColorStop(0, 'rgba(0,0,0,0.58)');
+  shG.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shG;
+  ctx.beginPath(); ctx.ellipse(shX, rag.groundY + 2, shW, 10 * s, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Battal Gazi Flowing Red Cape behind torso
+  if (ch.id === 'battal') {
+    ctx.fillStyle = '#991b1b';
+    ctx.beginPath();
+    ctx.moveTo(n.chest.x, n.chest.y);
+    ctx.quadraticCurveTo(n.chest.x - 42 * f * s, n.pelvis.y + 12 * s, n.pelvis.x - 36 * f * s + Math.sin(state.time * 4) * 5, rag.groundY - 6 * s);
+    ctx.lineTo(n.pelvis.x, n.pelvis.y);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // Back Arm (Left)
+  drawTaperedLimb(ctx, n.chest.x, n.chest.y, n.lElbow.x, n.lElbow.y, 13 * s, 10.5 * s, sleeveCol, ch.outfitLight);
+  drawTaperedLimb(ctx, n.lElbow.x, n.lElbow.y, n.lHand.x, n.lHand.y, 10.5 * s, 8.5 * s, ch.outfit.includes('jersey') ? ch.skin : sleeveCol, ch.skin);
+  ctx.fillStyle = ch.skin;
+  ctx.beginPath(); ctx.arc(n.lHand.x, n.lHand.y, 5.2 * s, 0, Math.PI * 2); ctx.fill();
+
+  // Back Leg (Left) + Cowboy Boot
+  drawTaperedLimb(ctx, n.pelvis.x, n.pelvis.y, n.lKnee.x, n.lKnee.y, 15 * s, 12.5 * s, ch.pants, '#475569');
+  drawTaperedLimb(ctx, n.lKnee.x, n.lKnee.y, n.lFoot.x, n.lFoot.y, 12 * s, 9.5 * s, ch.pants, '#334155');
+  ctx.fillStyle = '#1c1917';
+  ctx.beginPath(); ctx.ellipse(n.lFoot.x + 4 * f * s, n.lFoot.y, 9.5 * s, 5.2 * s, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Front Leg (Right) + Cowboy Boot
+  drawTaperedLimb(ctx, n.pelvis.x, n.pelvis.y, n.rKnee.x, n.rKnee.y, 15.5 * s, 13 * s, ch.pants, '#475569');
+  drawTaperedLimb(ctx, n.rKnee.x, n.rKnee.y, n.rFoot.x, n.rFoot.y, 12.5 * s, 10 * s, ch.pants, '#334155');
+  ctx.fillStyle = '#1c1917';
+  ctx.beginPath(); ctx.ellipse(n.rFoot.x + 5 * f * s, n.rFoot.y, 10 * s, 5.5 * s, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Articulated Torso (rotated cleanly between pelvis and chest!)
+  const torsoAng = Math.atan2(n.chest.y - n.pelvis.y, n.chest.x - n.pelvis.x) + Math.PI / 2;
+  const torsoLen = Math.hypot(n.chest.x - n.pelvis.x, n.chest.y - n.pelvis.y);
+  ctx.save();
+  ctx.translate(n.pelvis.x, n.pelvis.y);
+  ctx.rotate(torsoAng);
+  ctx.scale(f, 1);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(-20 * s, -torsoLen - 8 * s, 40 * s, torsoLen + 16 * s, 11 * s);
+  ctx.clip();
+  if (ch.outfit === 'gs_jersey') {
+    ctx.fillStyle = '#a90432'; ctx.fillRect(-22 * s, -torsoLen - 12 * s, 22 * s, torsoLen + 24 * s);
+    ctx.fillStyle = '#fdb912'; ctx.fillRect(0, -torsoLen - 12 * s, 24 * s, torsoLen + 24 * s);
+  } else if (ch.outfit === 'ts_jersey') {
+    for (let st = -22; st < 26; st += 8) {
+      ctx.fillStyle = (Math.floor((st + 22) / 8) % 2 === 0) ? '#800020' : '#00a8e8';
+      ctx.fillRect(st * s, -torsoLen - 12 * s, 8 * s, torsoLen + 24 * s);
+    }
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath(); ctx.arc(8 * s, -torsoLen * 0.65, 4.5 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#800020'; ctx.font = `bold ${Math.round(6 * s)}px sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText('TS', 8 * s, -torsoLen * 0.65 + 2 * s);
+  } else if (ch.outfit === 'madrid_jersey') {
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(-22 * s, -torsoLen - 12 * s, 46 * s, torsoLen + 24 * s);
+    ctx.fillStyle = '#f59e0b'; ctx.fillRect(-22 * s, -torsoLen - 8 * s, 46 * s, 5 * s);
+    ctx.fillStyle = '#1e293b'; ctx.font = `bold ${Math.round(13 * s)}px sans-serif`; ctx.textAlign = 'center';
+    ctx.fillText('10', 4 * s, -torsoLen * 0.45);
+  } else {
+    ctx.fillStyle = rag.hitFlash > 0 ? '#fca5a5' : ch.outfit;
+    ctx.fillRect(-22 * s, -torsoLen - 12 * s, 46 * s, torsoLen + 24 * s);
+    // Shirt collar & tie
+    ctx.fillStyle = ch.shirt;
+    ctx.beginPath(); ctx.moveTo(-7 * s, -torsoLen - 6 * s); ctx.lineTo(10 * s, -torsoLen - 6 * s); ctx.lineTo(4 * s, -torsoLen + 22 * s); ctx.closePath(); ctx.fill();
+    if (ch.tie && ch.tie !== 'none') {
+      ctx.fillStyle = ch.tie;
+      ctx.beginPath(); ctx.moveTo(1 * s, -torsoLen - 2 * s); ctx.lineTo(5 * s, -torsoLen - 2 * s); ctx.lineTo(4 * s, -torsoLen + 28 * s); ctx.lineTo(0, -torsoLen + 28 * s); ctx.fill();
+    }
+  }
+  // Cinematic Rim + Core Shading
+  const tSh = ctx.createLinearGradient(-20 * s, 0, 20 * s, 0);
+  tSh.addColorStop(0, 'rgba(0,0,0,0.42)');
+  tSh.addColorStop(0.55, 'rgba(255,255,255,0.12)');
+  tSh.addColorStop(1, 'rgba(253, 224, 71, 0.16)');
+  ctx.fillStyle = tSh; ctx.fillRect(-22 * s, -torsoLen - 12 * s, 46 * s, torsoLen + 24 * s);
+  ctx.restore();
+
+  // Western Leather Belt & Gold Buckle
+  ctx.fillStyle = '#451a03'; ctx.fillRect(-20 * s, -3 * s, 40 * s, 8 * s);
+  ctx.fillStyle = '#facc15'; ctx.fillRect(-4 * s, -4 * s, 9 * s, 10 * s);
+  ctx.restore();
+
+  // Articulated Head (rotated cleanly along neck -> head bone!)
+  const headAng = Math.atan2(n.head.y - n.neck.y, n.head.x - n.neck.x) + Math.PI / 2;
+  ctx.save();
+  ctx.translate(n.head.x, n.head.y);
+  ctx.rotate(headAng * 0.85);
+  ctx.scale(f * s, s);
+
+  // Neck
+  ctx.fillStyle = ch.skinDark; ctx.fillRect(-6, 12, 12, 12);
+  // Shaded Head
+  const hG = ctx.createRadialGradient(-3, -6, 3, 2, 0, 21);
+  hG.addColorStop(0, rag.hitFlash > 0 ? '#fecaca' : ch.skin);
+  hG.addColorStop(1, ch.skinDark);
+  ctx.fillStyle = hG;
+  ctx.beginPath(); ctx.ellipse(1, 0, 16.5, 19, 0, 0, Math.PI * 2); ctx.fill();
+  // Ear
+  ctx.fillStyle = ch.skin;
+  ctx.beginPath(); ctx.ellipse(-14, 0, 3.5, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+
+  // Hair
+  ctx.fillStyle = ch.hair;
+  if (ch.hairStyle === 'spiky') {
+    ctx.beginPath(); ctx.moveTo(-15, -7); ctx.lineTo(-10, -26); ctx.lineTo(-2, -18);
+    ctx.lineTo(6, -28); ctx.lineTo(15, -12); ctx.lineTo(15, -6); ctx.closePath(); ctx.fill();
+  } else if (ch.hairStyle === 'wild') {
+    ctx.beginPath(); ctx.arc(0, -8, 18.5, Math.PI * 0.92, -0.05); ctx.fill();
+  } else if (ch.hairStyle === 'long') {
+    ctx.beginPath(); ctx.arc(-1, -6, 18, Math.PI * 0.85, 0.05); ctx.fill();
+    ctx.fillRect(-18, -6, 7, 26);
+  } else if (ch.hairStyle === 'buzz') {
+    ctx.beginPath(); ctx.arc(0, -7, 16.5, Math.PI * 1.02, -0.02); ctx.fill();
+  } else if (ch.hairStyle === 'bald_sides') {
+    ctx.beginPath(); ctx.arc(-9, -6, 7, Math.PI * 0.6, Math.PI * 1.5); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.arc(0, -7, 17, Math.PI * 0.98, 0.02); ctx.fill();
+  }
+
+  // Beard / Mustache
+  if (ch.beard === 'thick_unibrow') {
+    ctx.fillStyle = '#090d16'; ctx.beginPath(); ctx.arc(3, 8, 15, 0.1, Math.PI * 0.88); ctx.fill();
+  } else if (ch.beard === 'full_neat' || ch.beard === 'scruff') {
+    ctx.fillStyle = ch.beard === 'scruff' ? 'rgba(24,24,27,0.65)' : '#1c1917';
+    ctx.beginPath(); ctx.arc(3, 7, 13.5, 0.1, Math.PI * 0.82); ctx.fill();
+  } else if (ch.beard === 'stubble') {
+    ctx.fillStyle = 'rgba(24,24,27,0.35)';
+    ctx.beginPath(); ctx.arc(3, 7, 13, 0.1, Math.PI * 0.8); ctx.fill();
+  } else if (ch.beard === 'mustache_white') {
+    ctx.fillStyle = '#e5e7eb'; ctx.beginPath(); ctx.ellipse(9, 9, 8.5, 3.2, 0.08, 0, Math.PI * 2); ctx.fill();
+  } else if (ch.beard === 'pala_mustache') {
+    ctx.fillStyle = '#090d16';
+    ctx.beginPath(); ctx.moveTo(1, 8); ctx.quadraticCurveTo(10, 5, 20, 12); ctx.quadraticCurveTo(11, 12, 1, 10); ctx.fill();
+  } else if (ch.beard === 'goatee') {
+    ctx.fillStyle = '#18181b'; ctx.beginPath(); ctx.ellipse(10, 15, 4.5, 4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Two Vivid Realistic Eyes (X-eyes only when dead!)
+  if (rag.mode === 'dead') {
+    ctx.strokeStyle = '#090d16'; ctx.lineWidth = 2.2;
+    [[11, -2], [2, -2]].forEach(([ex, ey]) => {
+      ctx.beginPath(); ctx.moveTo(ex - 3, ey - 3); ctx.lineTo(ex + 3, ey + 3);
+      ctx.moveTo(ex + 3, ey - 3); ctx.lineTo(ex - 3, ey + 3); ctx.stroke();
+    });
+  } else {
+    drawEyes(ctx, 11.2, -2.5, 2.2, -2.2, ch.iris, rag.mode === 'downed' ? 1.2 : 0.8, ch.beard === 'thick_unibrow', ch.glasses === 'shades');
+  }
+
+  // Nose & Mouth
+  ctx.strokeStyle = 'rgba(120, 53, 15, 0.65)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(7.5, 0); ctx.lineTo(10.5, 4.5); ctx.lineTo(7.5, 5); ctx.stroke();
+  ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(4, 11); ctx.lineTo(11, 10.5); ctx.stroke();
+
+  // Hats
+  if (!rag.hatGone) {
+    if (ch.hat === 'fedora') {
+      ctx.fillStyle = '#1c1917';
+      ctx.beginPath(); ctx.ellipse(1, -16, 25, 5, -0.05, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(-13, -34, 28, 19, [8, 8, 2, 2]); ctx.fill();
+      ctx.fillStyle = '#b45309'; ctx.fillRect(-13, -19, 28, 3.5);
+    } else if (ch.hat === 'headband') {
+      ctx.fillStyle = '#dc2626'; ctx.fillRect(-16, -14, 33, 5);
+    }
+  }
+  ctx.restore();
+
+  // Shooting Arm (Right) + Detailed Metallic Six-Shooter Revolver
+  drawTaperedLimb(ctx, n.chest.x, n.chest.y, n.rElbow.x, n.rElbow.y, 13.5 * s, 11 * s, sleeveCol, ch.outfitLight);
+  drawTaperedLimb(ctx, n.rElbow.x, n.rElbow.y, n.rHand.x, n.rHand.y, 11 * s, 8.8 * s, ch.outfit.includes('jersey') ? ch.skin : sleeveCol, ch.skin);
+  ctx.fillStyle = ch.skin;
+  ctx.beginPath(); ctx.arc(n.rHand.x, n.rHand.y, 5.5 * s, 0, Math.PI * 2); ctx.fill();
+
+  // Revolver attached to right hand
+  const gunAng = rag.drawing ? (rag.aimAngle - rag.recoil * 0.3 * f) : Math.atan2(n.rHand.y - n.rElbow.y, n.rHand.x - n.rElbow.x);
+  ctx.save();
+  ctx.translate(n.rHand.x, n.rHand.y);
+  ctx.rotate(gunAng);
+  if (Math.cos(gunAng) < 0) ctx.scale(1, -1);
+  ctx.scale(s, s);
+  ctx.fillStyle = '#78350f'; ctx.beginPath(); ctx.roundRect(-5, 0, 8, 12, 2); ctx.fill(); // wooden grip
+  ctx.fillStyle = '#cbd5e1'; ctx.fillRect(0, -6.5, 28, 5.5); // chrome barrel
+  ctx.fillStyle = '#475569'; ctx.fillRect(2, -5.5, 9, 8.5); // cylinder
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(25, -8.5, 3, 2.5); // iron sight
+  ctx.restore();
+
+  ctx.restore();
+}
+
+/* ============================================================================
+   5. AAA CINEMATIC WESTERN FRONTIER BACKDROP
+   ============================================================================ */
+function drawBackdrop(lay) {
+  const { W, H, groundY } = lay;
+  // Dramatic Sunset Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, groundY);
+  sky.addColorStop(0, '#160b1d');
+  sky.addColorStop(0.32, '#6b2114');
+  sky.addColorStop(0.72, '#ea580c');
+  sky.addColorStop(1, '#fef08a');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, groundY);
+
+  // Volumetric Sun + God Rays
+  const sx = W * 0.5, sy = groundY - 48;
+  const sunG = ctx.createRadialGradient(sx, sy, 16, sx, sy, 280);
+  sunG.addColorStop(0, '#fffbeb');
+  sunG.addColorStop(0.22, 'rgba(253, 224, 71, 0.58)');
+  sunG.addColorStop(0.6, 'rgba(234, 88, 12, 0.16)');
+  sunG.addColorStop(1, 'rgba(234, 88, 12, 0)');
+  ctx.fillStyle = sunG; ctx.beginPath(); ctx.arc(sx, sy, 280, 0, Math.PI * 2); ctx.fill();
+
+  // Soft Drifting Sunset Clouds
+  ctx.fillStyle = 'rgba(254, 215, 170, 0.14)';
+  for (let i = 0; i < 5; i++) {
+    const cx = ((i * 310 + state.time * 10) % (W + 260)) - 130;
+    const cy = 70 + (i % 3) * 44;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 92, 20, 0, 0, Math.PI * 2);
+    ctx.ellipse(cx + 40, cy + 5, 58, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Far Canyon Mesas + Saguaro Cacti
+  ctx.fillStyle = '#3b1507';
+  ctx.beginPath(); ctx.moveTo(0, groundY);
+  ctx.lineTo(W * 0.1, groundY - 125); ctx.lineTo(W * 0.25, groundY - 125);
+  ctx.lineTo(W * 0.34, groundY - 48); ctx.lineTo(W * 0.65, groundY - 48);
+  ctx.lineTo(W * 0.74, groundY - 140); ctx.lineTo(W * 0.9, groundY - 140);
+  ctx.lineTo(W, groundY - 62); ctx.lineTo(W, groundY); ctx.fill();
+
+  // Saguaro Cactus Silhouettes
+  for (const cx of [W * 0.38, W * 0.61]) {
+    ctx.fillStyle = '#291006';
+    ctx.fillRect(cx - 4, groundY - 72, 8, 72);
+    ctx.fillRect(cx - 14, groundY - 52, 10, 6); ctx.fillRect(cx - 14, groundY - 66, 6, 16);
+    ctx.fillRect(cx + 4, groundY - 44, 10, 6); ctx.fillRect(cx + 8, groundY - 58, 6, 16);
+  }
+
+  // Detailed Weathered Wooden Saloon (Left)
+  const bW = W * 0.16;
+  ctx.fillStyle = '#2a150b'; ctx.fillRect(0, groundY - 220, bW, 220);
+  ctx.fillStyle = '#3e1f10'; ctx.fillRect(0, groundY - 246, bW + 8, 28);
+  // Warm Glowing Saloon Windows
+  ctx.fillStyle = 'rgba(253, 224, 71, 0.55)';
+  ctx.fillRect(bW * 0.18, groundY - 175, bW * 0.24, 34);
+  ctx.fillRect(bW * 0.56, groundY - 175, bW * 0.24, 34);
+  // Sign
+  ctx.fillStyle = '#451a03'; ctx.fillRect(W * 0.015, groundY - 240, W * 0.13, 30);
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.strokeRect(W * 0.015, groundY - 240, W * 0.13, 30);
+  ctx.fillStyle = '#fef3c7'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('BABA SALOON', W * 0.08, groundY - 221);
+
+  // Detailed Sheriff's Office (Right)
+  ctx.fillStyle = '#2a150b'; ctx.fillRect(W - bW, groundY - 210, bW, 210);
+  ctx.fillStyle = 'rgba(253, 224, 71, 0.45)';
+  ctx.fillRect(W - bW + bW * 0.22, groundY - 165, bW * 0.52, 32);
+  ctx.fillStyle = '#451a03'; ctx.fillRect(W * 0.855, groundY - 230, W * 0.13, 30);
+  ctx.strokeStyle = '#f59e0b'; ctx.strokeRect(W * 0.855, groundY - 230, W * 0.13, 30);
+  ctx.fillStyle = '#fef3c7'; ctx.fillText('ŞERİF OFİSİ', W * 0.92, groundY - 211);
+
+  // Dusty Frontier Street Ground with Perspective Texture
+  const gGrad = ctx.createLinearGradient(0, groundY, 0, H);
+  gGrad.addColorStop(0, '#9a4a16');
+  gGrad.addColorStop(0.28, '#78350f');
+  gGrad.addColorStop(1, '#1f0f08');
+  ctx.fillStyle = gGrad; ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, groundY); ctx.lineTo(W, groundY); ctx.stroke();
+
+  // Rolling Tumbleweed
+  ctx.save();
+  ctx.translate(state.tumbleX, groundY - 14 + Math.abs(Math.sin(state.time * 4)) * -10);
+  ctx.rotate(state.time * 3.5);
+  ctx.strokeStyle = 'rgba(120, 53, 15, 0.78)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.moveTo(-12, -6); ctx.lineTo(12, 6); ctx.moveTo(-8, 12); ctx.lineTo(8, -12); ctx.stroke();
+  ctx.restore();
+}
+
+/* ============================================================================
+   6. GAME STATE, RAY-CAST SHOOTING & LAST-STAND DUEL FLOW
+   ============================================================================ */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const state = {
+  screen: 'menu',
+  selectedId: 'polat',
+  difficulty: 'normal',
+  opponents: [],
+  roundIdx: 0,
+  score: 0,
+  highScore: 0,
+  phase: 'holster',
+  countdown: 3.0,
+  lastTickNum: 4,
+  fireStartTime: 0,
+  firstReactionMs: null,
+  shotsFired: 0,
+  shotsHit: 0,
+  gotHeadshot: false,
+  ammo: 6,
+  reloading: 0,
+  playerHp: 100,
+  enemyHp: 100,
+  playerRag: null,
+  enemyRag: null,
+  bonusRag: null,
+  enemyDrawDelay: 0.75,
+  enemyShotTimer: 0,
+  hatFly: null,
+  mx: 400, my: 300,
+  inChamber: false,
+  warnText: '',
+  warnTimer: 0,
+  time: 0,
+  shake: 0,
+  slowMo: 0,
+  flash: 0,
+  particles: [],
+  shells: [],
+  tracers: [],
+  floats: [],
+  tumbleX: -80,
+  bonusBottles: [],
+  bonusTimer: 10,
+  bonusAssistantHit: false,
+  bonusRoundDone: false
+};
+
+try { state.highScore = parseInt(localStorage.getItem('baba_gunblood_hi') || '0', 10) || 0; } catch (e) {}
+
+function getLayout() {
+  const W = canvas.width, H = canvas.height;
+  const groundY = H * 0.81;
+  const scale = Math.max(0.72, Math.min(1.25, Math.min(W / 1100, H / 680)));
+  return {
+    W, H, groundY, scale,
+    playerX: W * 0.21,
+    enemyX: W * 0.79,
+    chamberX: Math.max(82, W * 0.105),
+    chamberY: H - Math.max(82, H * 0.14),
+    chamberR: Math.max(46, 54 * scale)
+  };
+}
+
+function rayCircleHit(ox, oy, dx, dy, cx, cy, r) {
+  const fx = ox - cx, fy = oy - cy;
+  const b = 2 * (fx * dx + fy * dy);
+  const c = fx * fx + fy * fy - r * r;
+  const disc = b * b - 4 * c;
+  if (disc < 0) return null;
+  const sq = Math.sqrt(disc);
+  const t1 = (-b - sq) / 2, t2 = (-b + sq) / 2;
+  const t = t1 > 0 ? t1 : (t2 > 0 ? t2 : null);
+  return t !== null ? { t, x: ox + dx * t, y: oy + dy * t } : null;
+}
+
+function getPlayerAimRay(targetX, targetY) {
+  const rag = state.playerRag;
+  if (!rag) return { muzzleX: 200, muzzleY: 300, dx: 1, dy: 0, ang: 0 };
+  const pivot = rag.nodes.chest;
+  const rawAng = Math.atan2(targetY - pivot.y, Math.max(10, targetX - pivot.x));
+  const ang = Math.max(-1.05, Math.min(0.85, rawAng));
+  const dx = Math.cos(ang), dy = Math.sin(ang);
+  const hand = rag.nodes.rHand;
+  return {
+    muzzleX: hand.x + dx * 28 * rag.s,
+    muzzleY: hand.y + dy * 28 * rag.s - 3 * rag.s,
+    dx, dy, ang
+  };
+}
+
+function spawnParticles(x, y, count, colors, speed = 220, grav = 460) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 45 + Math.random() * speed;
+    state.particles.push({
+      x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 65,
+      r: 2.2 + Math.random() * 3.8, color: colors[i % colors.length],
+      life: 0.4 + Math.random() * 0.55, maxLife: 0.95, grav
+    });
+  }
+}
+
+function ejectShell(x, y, facing) {
+  state.shells.push({
+    x, y, vx: -facing * (55 + Math.random() * 65), vy: -(130 + Math.random() * 75),
+    rot: Math.random() * 6, vrot: (Math.random() - 0.5) * 20, life: 2.8
+  });
+}
+
+function addFloat(x, y, text, color = '#fde68a') {
+  state.floats.push({ x, y, text, color, life: 1.3, maxLife: 1.3 });
+}
+
+function updateStateBadges() {
+  const pEl = document.getElementById('p-state');
+  const eEl = document.getElementById('e-state');
+  const setBadge = (el, rag) => {
+    el.className = 'fh-state';
+    if (!rag || rag.mode === 'stand') { el.textContent = ''; return; }
+    if (rag.mode === 'downed') { el.classList.add('downed'); el.textContent = '🔥 YERDE ATEŞ'; }
+    else { el.classList.add('dead'); el.textContent = '💀 ELENDİ'; }
+  };
+  setBadge(pEl, state.playerRag);
+  setBadge(eEl, state.enemyRag);
+}
+
+function updateAmmoHUD() {
+  const el = document.getElementById('ammo-dots');
+  el.innerHTML = Array.from({ length: 6 }, (_, i) =>
+    `<div class="bullet-dot ${i >= state.ammo ? 'spent' : ''}"></div>`
+  ).join('');
+  document.getElementById('ammo-label').textContent = state.reloading > 0 ? 'DOLDURULUYOR...' : 'ALTIPATLAR';
+}
+
+function triggerReload() {
+  if (state.reloading > 0 || state.ammo >= 6) return;
+  if (state.playerRag && state.playerRag.mode === 'dead') return;
+  state.reloading = 1.05;
+  sfx.reload();
+  updateAmmoHUD();
+}
+
+function startTournament() {
+  sfx.init();
+  const others = ROSTER.filter(c => c.id !== state.selectedId);
+  for (let i = others.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  state.opponents = others;
+  state.roundIdx = 0;
+  state.score = 0;
+  state.bonusRoundDone = false;
+  document.getElementById('menu-overlay').classList.add('hidden');
+  startDuelRound();
+}
+
+function startDuelRound() {
+  const lay = getLayout();
+  const player = ROSTER.find(c => c.id === state.selectedId);
+  const enemy = state.opponents[state.roundIdx];
+  state.screen = 'duel';
+  state.phase = 'holster';
+  state.countdown = 3.0;
+  state.lastTickNum = 4;
+  state.firstReactionMs = null;
+  state.shotsFired = 0;
+  state.shotsHit = 0;
+  state.gotHeadshot = false;
+  state.ammo = 6;
+  state.reloading = 0;
+  state.playerHp = 100;
+  state.enemyHp = 100;
+  state.playerRag = createRagdoll(lay.playerX, lay.groundY, 1, lay.scale);
+  state.enemyRag = createRagdoll(lay.enemyX, lay.groundY, -1, lay.scale);
+  state.hatFly = null;
+  state.particles = [];
+  state.shells = [];
+  state.tracers = [];
+  state.floats = [];
+  state.slowMo = 0;
+
+  const diffMult = state.difficulty === 'easy' ? 1.32 : (state.difficulty === 'hard' ? 0.64 : 1.0);
+  state.enemyDrawDelay = Math.max(0.15, (0.60 - state.roundIdx * 0.042) * diffMult);
+  state.enemyShotTimer = state.enemyDrawDelay;
+
+  document.getElementById('p-name').textContent = player.name.toUpperCase();
+  document.getElementById('p-role').textContent = `${player.role} · Oyuncu`;
+  document.getElementById('e-name').textContent = enemy.name.toUpperCase();
+  document.getElementById('e-role').textContent = `${enemy.role} · Rakip #${state.roundIdx + 1}`;
+  document.getElementById('p-hp').style.width = '100%';
+  document.getElementById('e-hp').style.width = '100%';
+  document.getElementById('hud-round').textContent = `RAUNT ${state.roundIdx + 1} / ${state.opponents.length}`;
+  document.getElementById('hud-score').textContent = `SKOR: ${state.score}`;
+  document.getElementById('hud-react').textContent = 'REFLEKS: —';
+  document.getElementById('result-overlay').classList.add('hidden');
+  updateStateBadges();
+  updateAmmoHUD();
+}
+
+function startBonusRound() {
+  const lay = getLayout();
+  state.screen = 'bonus';
+  state.phase = 'fire';
+  state.ammo = 6;
+  state.reloading = 0;
+  state.bonusTimer = 9.0;
+  state.bonusAssistantHit = false;
+  state.playerRag = createRagdoll(lay.playerX, lay.groundY, 1, lay.scale);
+  state.playerRag.drawing = true;
+  state.bonusRag = createRagdoll(lay.W * 0.72, lay.groundY, -1, lay.scale);
+  state.particles = [];
+  state.shells = [];
+  state.tracers = [];
+  state.floats = [];
+  state.bonusBottles = [
+    { x: lay.W * 0.62, y: lay.groundY - 125 * lay.scale, broken: false },
+    { x: lay.W * 0.72, y: lay.groundY - 190 * lay.scale, broken: false },
+    { x: lay.W * 0.82, y: lay.groundY - 125 * lay.scale, broken: false }
+  ];
+  document.getElementById('hud-round').textContent = '🍾 BONUS TURU · ŞİŞELERİ VUR!';
+  document.getElementById('e-name').textContent = 'HEDEF ŞİŞELERİ';
+  document.getElementById('e-role').textContent = 'Asistana Vurma!';
+  document.getElementById('result-overlay').classList.add('hidden');
+  updateAmmoHUD();
+}
+
+function handlePlayerShoot(clickX, clickY) {
+  if (state.reloading > 0) return;
+  const lay = getLayout();
+  const ray = getPlayerAimRay(clickX, clickY);
+  const farX = ray.muzzleX + ray.dx * (lay.W * 1.4);
+  const farY = ray.muzzleY + ray.dy * (lay.W * 1.4);
+
+  if (state.screen === 'bonus') {
+    if (state.ammo <= 0 || state.bonusAssistantHit) return;
+    state.ammo--; updateAmmoHUD();
+    sfx.gunshot(); state.shake = 7; state.playerRag.recoil = 1;
+    ejectShell(state.playerRag.nodes.rHand.x, state.playerRag.nodes.rHand.y, 1);
+    spawnParticles(ray.muzzleX, ray.muzzleY, 6, ['#e2e8f0', '#94a3b8'], 70, -40);
+
+    let closest = null;
+    for (const b of state.bonusBottles) {
+      if (b.broken) continue;
+      const h = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, b.x, b.y, 24 * lay.scale);
+      if (h && (!closest || h.t < closest.t)) closest = { ...h, kind: 'bottle', bottle: b };
+    }
+    const hb = getRagdollHitboxes(state.bonusRag);
+    const hHead = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, hb.head.x, hb.head.y, hb.head.r);
+    if (hHead && (!closest || hHead.t < closest.t)) closest = { ...hHead, kind: 'assistant' };
+    const hTorso = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, hb.torso.x, hb.torso.y, hb.torso.r);
+    if (hTorso && (!closest || hTorso.t < closest.t)) closest = { ...hTorso, kind: 'assistant' };
+
+    state.tracers.push({ x1: ray.muzzleX, y1: ray.muzzleY, x2: closest ? closest.x : farX, y2: closest ? closest.y : farY, life: 0.16, maxLife: 0.16 });
+
+    if (closest && closest.kind === 'bottle') {
+      closest.bottle.broken = true; sfx.bottle();
+      state.score += 350;
+      document.getElementById('hud-score').textContent = `SKOR: ${state.score}`;
+      spawnParticles(closest.x, closest.y, 18, ['#22c55e', '#86efac', '#ffffff']);
+      addFloat(closest.x, closest.y - 20, '+350 🍾', '#4ade80');
+    } else if (closest && closest.kind === 'assistant') {
+      state.bonusAssistantHit = true;
+      state.bonusRag.mode = 'dead';
+      applyRagdollImpulse(state.bonusRag, 'head', ray.dx * 16, -6);
+      spawnParticles(closest.x, closest.y, 22, ['#dc2626', '#991b1b']);
+      addFloat(closest.x, closest.y - 25, 'ASİSTANA VURDUN! ❌', '#ef4444');
+      setTimeout(() => showResult(true, 'BONUS TURU BİTTİ', 'Asistana dikkat et! Sıradaki rakip bekliyor.'), 950);
+      return;
+    }
+    if (state.bonusBottles.every(b => b.broken)) {
+      sfx.win(); state.score += 500;
+      document.getElementById('hud-score').textContent = `SKOR: ${state.score}`;
+      setTimeout(() => showResult(true, 'MÜKEMMEL BONUS! +500', 'Tüm şişeleri tek tek indirdin!'), 750);
+    } else if (state.ammo === 0) {
+      setTimeout(() => showResult(true, 'MERMİ BİTTİ', 'Bonus turu tamamlandı, sıradaki düelloya geç!'), 750);
+    }
+    return;
+  }
+
+  // Player can shoot while STANDING OR DOWNED (Last Stand)! Only blocked if dead!
+  if (state.screen !== 'duel' || state.phase !== 'fire' || state.playerRag.mode === 'dead') return;
+  if (state.ammo <= 0) { sfx.emptyClick(); triggerReload(); return; }
+
+  state.ammo--;
+  state.shotsFired++;
+  updateAmmoHUD();
+  if (state.ammo === 0) setTimeout(() => triggerReload(), 220);
+
+  sfx.gunshot();
+  state.shake = 9;
+  state.flash = 0.2;
+  state.playerRag.recoil = 1;
+  ejectShell(state.playerRag.nodes.rHand.x, state.playerRag.nodes.rHand.y, 1);
+  spawnParticles(ray.muzzleX, ray.muzzleY, 8, ['#f8fafc', '#cbd5e1', '#fbbf24'], 90, -45);
+
+  if (state.firstReactionMs === null) {
+    state.firstReactionMs = Math.round(performance.now() - state.fireStartTime);
+    document.getElementById('hud-react').textContent = `REFLEKS: ${(state.firstReactionMs / 1000).toFixed(2)}s`;
+  }
+
+  // Directional Ray-Cast against LIVE Ragdoll Hitboxes (works standing, downed, OR dead ragdoll!)
+  const hb = getRagdollHitboxes(state.enemyRag);
+  const hits = [];
+  const hHead = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, hb.head.x, hb.head.y, hb.head.r * 1.15);
+  if (hHead) hits.push({ ...hHead, part: 'head' });
+  const hTorso = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, hb.torso.x, hb.torso.y, hb.torso.r);
+  if (hTorso) hits.push({ ...hTorso, part: 'torso' });
+  const hLegs = rayCircleHit(ray.muzzleX, ray.muzzleY, ray.dx, ray.dy, hb.legs.x, hb.legs.y, hb.legs.r);
+  if (hLegs) hits.push({ ...hLegs, part: 'legs' });
+  hits.sort((a, b) => a.t - b.t);
+  const hit = hits[0] || null;
+
+  let missX = farX, missY = farY;
+  if (!hit && ray.dy > 0.02) {
+    const tG = (lay.groundY - ray.muzzleY) / ray.dy;
+    if (tG > 0 && tG < lay.W * 1.4) { missX = ray.muzzleX + ray.dx * tG; missY = lay.groundY; }
+  }
+
+  state.tracers.push({
+    x1: ray.muzzleX, y1: ray.muzzleY,
+    x2: hit ? hit.x : missX, y2: hit ? hit.y : missY,
+    life: 0.18, maxLife: 0.18
+  });
+
+  if (!hit) {
+    if (missY >= lay.groundY - 2) spawnParticles(missX, missY, 10, ['#d97706', '#fef3c7', '#78350f']);
+    addFloat(state.enemyRag.nodes.head.x, state.enemyRag.nodes.head.y - 35, 'ISKA!', '#b4a18a');
+    return;
+  }
+
+  state.shotsHit++;
+  // Even if enemy is already dead, shooting ragdoll applies realistic impulse!
+  if (state.enemyRag.mode === 'dead') {
+    applyRagdollImpulse(state.enemyRag, hit.part, ray.dx * 16, ray.dy * 12 - 5);
+    spawnParticles(hit.x, hit.y, 12, ['#dc2626', '#991b1b']);
+    return;
+  }
+
+  // NO 1-SHOT KILL! Realistic damage + Ragdoll Knockdown into Last Stand!
+  const dmg = hit.part === 'head' ? 55 : (hit.part === 'torso' ? 30 : 20);
+  state.enemyHp = Math.max(0, state.enemyHp - dmg);
+  document.getElementById('e-hp').style.width = state.enemyHp + '%';
+  applyRagdollImpulse(state.enemyRag, hit.part, ray.dx * (hit.part === 'head' ? 18 : 13), ray.dy * 9 - 4);
+  state.enemyShotTimer += 0.10; // Brief stagger
+
+  if (hit.part === 'head') {
+    state.gotHeadshot = true;
+    sfx.headshot();
+    if (!state.enemyRag.hatGone) {
+      state.enemyRag.hatGone = true;
+      state.hatFly = { x: hb.head.x, y: hb.head.y - 16, vx: 115, vy: -240, rot: 0 };
+    }
+    spawnParticles(hit.x, hit.y, 28, ['#dc2626', '#991b1b', '#ef4444', '#fde047']);
+    addFloat(hit.x, hit.y - 30, `KAFA VURUŞU! -${dmg} 🎯`, '#ef4444');
+  } else {
+    spawnParticles(hit.x, hit.y, 18, ['#dc2626', '#991b1b', '#f87171']);
+    addFloat(hit.x, hit.y - 24, `-${dmg} 💥`, '#fca5a5');
+  }
+
+  if (state.enemyHp <= 0) {
+    state.enemyRag.mode = 'dead';
+    state.enemyRag.drawing = false;
+    state.phase = 'over';
+    state.slowMo = 0.85;
+    sfx.thud();
+    applyRagdollImpulse(state.enemyRag, hit.part, ray.dx * 22, -8);
+    updateStateBadges();
+    finishDuel(true);
+  } else if (state.enemyRag.mode === 'stand' && (state.enemyHp <= 48 || hit.part === 'head')) {
+    // KNOCKED DOWN! Ragdoll falls to dirt, BUT keeps shooting from the ground!
+    state.enemyRag.mode = 'downed';
+    sfx.thud();
+    spawnParticles(state.enemyRag.nodes.pelvis.x, lay.groundY - 4, 16, ['#b45309', '#fde68a', '#78350f'], 140, 200);
+    addFloat(state.enemyRag.nodes.head.x, state.enemyRag.nodes.head.y - 46, '⚠️ YERE DÜŞTÜ — ATEŞ EDİYOR!', '#fbbf24');
+    updateStateBadges();
+  }
+}
+
+function enemyFireShot() {
+  if (state.enemyRag.mode === 'dead' || state.playerRag.mode === 'dead' || state.phase !== 'fire') return;
+  sfx.gunshot();
+  state.shake = 10;
+  state.enemyRag.recoil = 1;
+  const lay = getLayout();
+  const muz = getRagdollMuzzle(state.enemyRag);
+  ejectShell(state.enemyRag.nodes.rHand.x, state.enemyRag.nodes.rHand.y, -1);
+  spawnParticles(muz.x, muz.y, 7, ['#f8fafc', '#cbd5e1', '#fbbf24'], 80, -40);
+
+  const pHb = getRagdollHitboxes(state.playerRag);
+  // Slightly less accurate when knocked down on the dirt
+  const downedPenalty = state.enemyRag.mode === 'downed' ? -0.06 : 0;
+  const hitChance = Math.max(0.55, Math.min(0.97, 0.72 + state.roundIdx * 0.03 + downedPenalty + (state.difficulty === 'hard' ? 0.14 : (state.difficulty === 'easy' ? -0.14 : 0))));
+  const hits = Math.random() < hitChance;
+
+  const headProb = state.difficulty === 'hard' ? 0.44 : (state.difficulty === 'easy' ? 0.22 : 0.34);
+  const targetNode = Math.random() < headProb ? pHb.head : pHb.torso;
+  const tx = hits ? targetNode.x : targetNode.x - 55;
+  const ty = hits ? targetNode.y : targetNode.y - 40;
+  state.tracers.push({ x1: muz.x, y1: muz.y, x2: tx, y2: ty, life: 0.16, maxLife: 0.16 });
+
+  if (hits) {
+    const isHead = targetNode === pHb.head;
+    const dmg = isHead ? 48 : 34; // Deadlier shots, still survives 1st hit for Last Stand!
+    state.playerHp = Math.max(0, state.playerHp - dmg);
+    document.getElementById('p-hp').style.width = state.playerHp + '%';
+    applyRagdollImpulse(state.playerRag, isHead ? 'head' : 'torso', -15, -5);
+    spawnParticles(tx, ty, 20, ['#dc2626', '#991b1b']);
+    addFloat(pHb.head.x, pHb.head.y - 34, isHead ? `-${dmg} AĞIR YARA!` : `-${dmg}`, '#ef4444');
+
+    if (state.playerHp <= 0) {
+      state.playerRag.mode = 'dead';
+      state.playerRag.drawing = false;
+      state.phase = 'over';
+      state.slowMo = 0.85;
+      sfx.thud();
+      applyRagdollImpulse(state.playerRag, 'torso', -22, -9);
+      updateStateBadges();
+      finishDuel(false);
+    } else if (state.playerRag.mode === 'stand' && state.playerHp <= 48) {
+      // PLAYER KNOCKED DOWN — CAN STILL SHOOT FROM THE GROUND!
+      state.playerRag.mode = 'downed';
+      sfx.thud();
+      spawnParticles(state.playerRag.nodes.pelvis.x, lay.groundY - 4, 16, ['#b45309', '#fde68a', '#78350f'], 140, 200);
+      addFloat(pHb.head.x, pHb.head.y - 54, '🔥 YERE DÜŞTÜN — YERDEN ATEŞ ET!', '#fbbf24');
+      updateStateBadges();
+    }
+  } else {
+    spawnParticles(tx, ty, 8, ['#fde68a', '#78350f']);
+  }
+}
+
+function finishDuel(won) {
+  const player = ROSTER.find(c => c.id === state.selectedId);
+  const enemy = state.opponents[state.roundIdx];
+  if (won) {
+    sfx.win();
+    const speedBonus = Math.max(100, Math.round(1200 - (state.firstReactionMs || 1000)));
+    const hsBonus = state.gotHeadshot ? 500 : 0;
+    const accBonus = Math.round((state.shotsHit / Math.max(1, state.shotsFired)) * 300);
+    state.score += speedBonus + hsBonus + accBonus;
+    if (state.score > state.highScore) {
+      state.highScore = state.score;
+      try { localStorage.setItem('baba_gunblood_hi', String(state.highScore)); } catch (e) {}
+      document.getElementById('high-score-badge').textContent = `🏆 EN YÜKSEK SKOR: ${state.highScore}`;
+    }
+    document.getElementById('hud-score').textContent = `SKOR: ${state.score}`;
+    setTimeout(() => {
+      const isChamp = state.roundIdx >= state.opponents.length - 1;
+      showResult(true, isChamp ? '🏆 TÜRKİYE ŞAMPİYONU!' : `${enemy.name} DEVİRİLDİ!`, player.quote, isChamp);
+    }, 1250);
+  } else {
+    setTimeout(() => {
+      showResult(false, '💀 DÜELLOYU KAYBETTİN!', `${enemy.name}: ${enemy.quote}`, false);
+    }, 1200);
+  }
+}
+
+function showResult(won, title, quote, isChamp = false) {
+  document.getElementById('res-icon').textContent = won ? (isChamp ? '🏆' : '🤠') : '💀';
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-title').style.color = won ? '#4ade80' : '#ef4444';
+  document.getElementById('res-quote').textContent = quote;
+  document.getElementById('res-react').textContent = state.firstReactionMs ? `${(state.firstReactionMs / 1000).toFixed(2)}s` : '—';
+  const acc = state.shotsFired ? Math.round((state.shotsHit / state.shotsFired) * 100) : 100;
+  document.getElementById('res-acc').textContent = `${acc}%`;
+  document.getElementById('res-hs').textContent = state.gotHeadshot ? 'EVET 🎯' : 'HAYIR';
+  document.getElementById('res-score').textContent = state.score;
+
+  const btnNext = document.getElementById('btn-next');
+  if (!won || isChamp) {
+    btnNext.textContent = '🔄 YENİDEN DENE';
+    btnNext.dataset.action = 'restart';
+  } else if (state.screen === 'duel' && (state.roundIdx + 1) % 2 === 0 && !state.bonusRoundDone) {
+    btnNext.textContent = '🍾 BONUS TURUNA GEÇ';
+    btnNext.dataset.action = 'bonus';
+  } else {
+    btnNext.textContent = `▶ RAUNT ${state.roundIdx + 2} / ${state.opponents.length}`;
+    btnNext.dataset.action = 'next';
+  }
+  document.getElementById('result-overlay').classList.remove('hidden');
+}
+
+/* ============================================================================
+   7. MAIN UPDATE & RENDER LOOP
+   ============================================================================ */
+function update(rawDt) {
+  const dt = state.slowMo > 0 ? rawDt * 0.25 : rawDt;
+  if (state.slowMo > 0) state.slowMo = Math.max(0, state.slowMo - rawDt);
+  state.time += dt;
+  if (state.shake > 0) state.shake = Math.max(0, state.shake - rawDt * 34);
+  if (state.flash > 0) state.flash = Math.max(0, state.flash - rawDt * 1.4);
+  if (state.warnTimer > 0) state.warnTimer = Math.max(0, state.warnTimer - rawDt);
+
+  if (state.reloading > 0) {
+    state.reloading -= rawDt;
+    if (state.reloading <= 0) {
+      state.reloading = 0; state.ammo = 6; updateAmmoHUD(); sfx.cock();
+    }
+  }
+
+  state.tumbleX += 52 * dt;
+  if (state.tumbleX > canvas.width + 60) state.tumbleX = -60;
+
+  if (state.hatFly) {
+    state.hatFly.vy += 520 * dt;
+    state.hatFly.x += state.hatFly.vx * dt;
+    state.hatFly.y += state.hatFly.vy * dt;
+    state.hatFly.rot += 8 * dt;
+  }
+
+  const lay = getLayout();
+
+  // Update Ragdolls
+  if (state.playerRag) {
+    const pRay = getPlayerAimRay(state.mx, state.my);
+    state.playerRag.drawing = (state.phase === 'fire' || state.screen === 'bonus') && state.playerRag.mode !== 'dead';
+    state.playerRag.aimAngle = pRay.ang;
+    updateRagdoll(state.playerRag, dt, lay.groundY, state.time);
+  }
+  if (state.enemyRag && state.screen === 'duel') {
+    state.enemyRag.drawing = state.phase === 'fire' && state.enemyRag.mode !== 'dead';
+    if (state.playerRag) {
+      const target = state.playerRag.nodes.chest;
+      const eChest = state.enemyRag.nodes.chest;
+      state.enemyRag.aimAngle = Math.atan2(target.y - eChest.y, target.x - eChest.x);
+    }
+    updateRagdoll(state.enemyRag, dt, lay.groundY, state.time);
+  }
+  if (state.bonusRag && state.screen === 'bonus') {
+    updateRagdoll(state.bonusRag, dt, lay.groundY, state.time);
+  }
+
+  // Duel Countdown & Enemy AI
+  if (state.screen === 'duel') {
+    if (state.phase === 'holster') {
+      if (state.inChamber) {
+        state.phase = 'countdown';
+        state.countdown = 3.0;
+        state.lastTickNum = 4;
+        sfx.cock();
+      }
+    } else if (state.phase === 'countdown') {
+      if (!state.inChamber) {
+        state.phase = 'holster';
+        state.countdown = 3.0;
+        state.warnText = '⚠️ ERKEN ÇEKTİN! SİLAH YUVASINDA BEKLE!';
+        state.warnTimer = 1.4;
+      } else {
+        state.countdown -= dt;
+        const num = Math.ceil(state.countdown);
+        if (num < state.lastTickNum && num >= 1) { state.lastTickNum = num; sfx.tick(num); }
+        if (state.countdown <= 0) {
+          state.phase = 'fire';
+          state.fireStartTime = performance.now();
+          sfx.tick(0);
+        }
+      }
+    } else if (state.phase === 'fire' && state.enemyRag.mode !== 'dead' && state.playerRag.mode !== 'dead') {
+      state.enemyShotTimer -= dt;
+      if (state.enemyShotTimer <= 0) {
+        enemyFireShot();
+        const cd = state.difficulty === 'hard' ? 0.38 : (state.difficulty === 'easy' ? 0.88 : 0.58);
+        state.enemyShotTimer = Math.max(0.20, cd - state.roundIdx * 0.028);
+      }
+    }
+  } else if (state.screen === 'bonus' && !state.bonusAssistantHit) {
+    state.bonusTimer -= dt;
+    if (state.bonusTimer <= 0 && !state.bonusBottles.every(b => b.broken)) {
+      state.bonusTimer = 0; state.bonusAssistantHit = true;
+      showResult(true, 'SÜRE DOLDU!', 'Bonus turu sona erdi, sıradaki rakip bekliyor.');
+    }
+  }
+
+  // Brass Shell Casings bouncing on dirt
+  for (let i = state.shells.length - 1; i >= 0; i--) {
+    const sh = state.shells[i];
+    sh.life -= dt;
+    if (sh.life <= 0) { state.shells.splice(i, 1); continue; }
+    sh.vy += 680 * dt; sh.x += sh.vx * dt; sh.y += sh.vy * dt; sh.rot += sh.vrot * dt;
+    if (sh.y > lay.groundY - 2) { sh.y = lay.groundY - 2; sh.vy *= -0.42; sh.vx *= 0.65; sh.vrot *= 0.6; }
+  }
+
+  // Particles, Tracers, Floats
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.life -= dt;
+    if (p.life <= 0) { state.particles.splice(i, 1); continue; }
+    p.vy += (p.grav !== undefined ? p.grav : 460) * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+  }
+  for (let i = state.tracers.length - 1; i >= 0; i--) {
+    state.tracers[i].life -= rawDt;
+    if (state.tracers[i].life <= 0) state.tracers.splice(i, 1);
+  }
+  for (let i = state.floats.length - 1; i >= 0; i--) {
+    state.floats[i].life -= rawDt;
+    state.floats[i].y -= 44 * rawDt;
+    if (state.floats[i].life <= 0) state.floats.splice(i, 1);
+  }
+}
+
+function render() {
+  const lay = getLayout();
+  ctx.save();
+  if (state.shake > 0) ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
+  drawBackdrop(lay);
+
+  const player = ROSTER.find(c => c.id === state.selectedId) || ROSTER[0];
+  const enemy = state.opponents[state.roundIdx] || ROSTER[1];
+
+  // Draw Articulated Ragdoll Characters
+  if (state.playerRag) drawRagdollCharacter(player, state.playerRag);
+
+  if (state.screen === 'bonus' && state.bonusRag) {
+    drawRagdollCharacter(ROSTER[8], state.bonusRag);
+    for (const b of state.bonusBottles) {
+      if (b.broken) continue;
+      ctx.save(); ctx.translate(b.x, b.y);
+      ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.roundRect(-8, -12, 16, 26, 4); ctx.fill();
+      ctx.fillRect(-4, -22, 8, 12);
+      ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.fillRect(-5, -8, 3, 18);
+      ctx.restore();
+    }
+    ctx.fillStyle = '#fde68a'; ctx.font = '900 26px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`⏱️ ${state.bonusTimer.toFixed(1)}s`, lay.W * 0.5, 118);
+  } else if (state.enemyRag) {
+    drawRagdollCharacter(enemy, state.enemyRag);
+  }
+
+  // Directional Barrel Aim Sight Line (even while downed on the ground!)
+  if (state.playerRag && state.playerRag.drawing && state.playerRag.mode !== 'dead' && (!state.enemyRag || state.enemyRag.mode !== 'dead')) {
+    const pRay = getPlayerAimRay(state.mx, state.my);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(253, 224, 71, 0.26)';
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([7, 7]);
+    ctx.beginPath();
+    ctx.moveTo(pRay.muzzleX, pRay.muzzleY);
+    const sightLen = state.difficulty === 'easy' ? (lay.W * 0.95) : (state.difficulty === 'normal' ? 165 * lay.scale : 0);
+    if (sightLen > 0) ctx.lineTo(pRay.muzzleX + pRay.dx * sightLen, pRay.muzzleY + pRay.dy * sightLen);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+
+  // Flying Hat
+  if (state.hatFly) {
+    ctx.save(); ctx.translate(state.hatFly.x, state.hatFly.y); ctx.rotate(state.hatFly.rot);
+    ctx.fillStyle = '#1c1917';
+    ctx.beginPath(); ctx.ellipse(0, 0, 22, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(-10, -14, 20, 14);
+    ctx.restore();
+  }
+
+  // Bouncing Brass Shell Casings
+  for (const sh of state.shells) {
+    ctx.save(); ctx.translate(sh.x, sh.y); ctx.rotate(sh.rot);
+    ctx.fillStyle = '#facc15'; ctx.fillRect(-3.5, -1.5, 7, 3);
+    ctx.restore();
+  }
+
+  // Bullet Tracers + Flying Pointed Brass Bullet + Muzzle Flash
+  for (const tr of state.tracers) {
+    const ml = tr.maxLife || 0.16;
+    const ratio = Math.max(0, tr.life / ml);
+    const prog = 1 - ratio;
+    ctx.strokeStyle = `rgba(254, 240, 138, ${ratio * 0.92})`;
+    ctx.lineWidth = 2.8;
+    ctx.beginPath(); ctx.moveTo(tr.x1, tr.y1); ctx.lineTo(tr.x2, tr.y2); ctx.stroke();
+
+    const bx = tr.x1 + (tr.x2 - tr.x1) * Math.min(1, prog * 2.2);
+    const by = tr.y1 + (tr.y2 - tr.y1) * Math.min(1, prog * 2.2);
+    const bang = Math.atan2(tr.y2 - tr.y1, tr.x2 - tr.x1);
+    ctx.save(); ctx.translate(bx, by); ctx.rotate(bang);
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath(); ctx.moveTo(-7, -2.2); ctx.lineTo(7, 0); ctx.lineTo(-7, 2.2); ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    if (ratio > 0.55) {
+      ctx.fillStyle = `rgba(254, 249, 195, ${(ratio - 0.55) * 2.2})`;
+      ctx.beginPath(); ctx.arc(tr.x1, tr.y1, 14 * ratio, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Particles
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  // Holster Chamber Circle (Bottom-Left)
+  if (state.screen === 'duel' && (state.phase === 'holster' || state.phase === 'countdown')) {
+    const pulse = Math.sin(state.time * 7) * 4;
+    ctx.save(); ctx.translate(lay.chamberX, lay.chamberY);
+    ctx.fillStyle = state.inChamber ? 'rgba(34, 197, 94, 0.25)' : 'rgba(245, 158, 11, 0.22)';
+    ctx.strokeStyle = state.inChamber ? '#4ade80' : '#f59e0b';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(0, 0, lay.chamberR + (state.inChamber ? 0 : pulse), 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    for (let k = 0; k < 6; k++) {
+      const a = (k / 6) * Math.PI * 2 + (state.phase === 'countdown' ? state.time * 4 : 0);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.beginPath(); ctx.arc(Math.cos(a) * lay.chamberR * 0.56, Math.sin(a) * lay.chamberR * 0.56, 8, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#ffffff'; ctx.font = '900 12px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(state.inChamber ? 'BEKLE!' : 'FAREYİ', 0, -4);
+    ctx.fillText(state.inChamber ? 'HAZIRLAN' : 'BURAYA KOY', 0, 12);
+    ctx.restore();
+  }
+
+  // Center Countdown / FIRE Banner
+  if (state.screen === 'duel') {
+    ctx.textAlign = 'center';
+    if (state.phase === 'countdown') {
+      const num = Math.max(1, Math.ceil(state.countdown));
+      ctx.font = '900 88px "Segoe UI", sans-serif';
+      ctx.strokeStyle = '#090d16'; ctx.lineWidth = 8;
+      ctx.strokeText(String(num), lay.W * 0.5, lay.H * 0.38);
+      ctx.fillStyle = '#fde047'; ctx.fillText(String(num), lay.W * 0.5, lay.H * 0.38);
+    } else if (state.phase === 'fire' && performance.now() - state.fireStartTime < 750) {
+      ctx.font = '900 84px "Segoe UI", sans-serif';
+      ctx.strokeStyle = '#450a0a'; ctx.lineWidth = 8;
+      ctx.strokeText('ATEŞ!', lay.W * 0.5, lay.H * 0.36);
+      ctx.fillStyle = '#ef4444'; ctx.fillText('ATEŞ!', lay.W * 0.5, lay.H * 0.36);
+    } else if (state.phase === 'holster') {
+      ctx.font = '800 20px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillText('🎯 Başlamak için fareyi sol alttaki SİLAH YUVASINA getir!', lay.W * 0.5, lay.H * 0.28);
+    }
+    if (state.warnTimer > 0) {
+      ctx.font = '900 22px "Segoe UI", sans-serif';
+      ctx.fillStyle = '#fca5a5';
+      ctx.fillText(state.warnText, lay.W * 0.5, lay.H * 0.48);
+    }
+  }
+
+  // Floating Texts
+  for (const fl of state.floats) {
+    ctx.globalAlpha = Math.max(0, fl.life / fl.maxLife);
+    ctx.font = '900 20px "Segoe UI", sans-serif'; ctx.textAlign = 'center';
+    ctx.strokeStyle = '#090d16'; ctx.lineWidth = 4;
+    ctx.strokeText(fl.text, fl.x, fl.y);
+    ctx.fillStyle = fl.color; ctx.fillText(fl.text, fl.x, fl.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // Cinematic Vignette + Muzzle Flash
+  const vig = ctx.createRadialGradient(lay.W * 0.5, lay.H * 0.5, lay.W * 0.32, lay.W * 0.5, lay.H * 0.5, lay.W * 0.72);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.42)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, lay.W, lay.H);
+
+  if (state.flash > 0) {
+    ctx.fillStyle = `rgba(254, 240, 138, ${state.flash * 0.38})`;
+    ctx.fillRect(0, 0, lay.W, lay.H);
+  }
+
+  ctx.restore();
+}
+
+/* ============================================================================
+   8. UI BINDINGS & EVENTS
+   ============================================================================ */
+function renderRoster() {
+  const grid = document.getElementById('char-grid');
+  grid.innerHTML = ROSTER.map(c => `
+    <div class="char-card ${c.id === state.selectedId ? 'selected' : ''}" data-id="${c.id}">
+      <div class="avatar-dot" style="background:${c.outfit === 'gs_jersey' ? '#a90432' : (c.outfit === 'ts_jersey' ? '#800020' : (c.outfit === 'madrid_jersey' ? '#334155' : c.outfit))};">${c.icon}</div>
+      <div>
+        <div class="c-name">${c.name}</div>
+        <div class="c-role">${c.role}</div>
+        <div class="c-quote">${c.quote}</div>
+      </div>
+    </div>
+  `).join('');
+  const cur = ROSTER.find(c => c.id === state.selectedId);
+  document.getElementById('sel-quote').textContent = cur ? cur.quote : '';
+  grid.querySelectorAll('.char-card').forEach(el => {
+    el.addEventListener('click', () => { state.selectedId = el.dataset.id; renderRoster(); });
+  });
+}
+
+function setupEvents() {
+  document.querySelectorAll('#diff-row .opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.difficulty = btn.dataset.diff;
+      document.querySelectorAll('#diff-row .opt-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  document.getElementById('btn-start').addEventListener('click', startTournament);
+  document.getElementById('btn-reload').addEventListener('click', triggerReload);
+  document.getElementById('btn-sound').addEventListener('click', () => {
+    sfx.muted = !sfx.muted;
+    document.getElementById('btn-sound').textContent = sfx.muted ? '🔇' : '🔊';
+  });
+  document.getElementById('btn-menu').addEventListener('click', () => {
+    state.screen = 'menu';
+    document.getElementById('result-overlay').classList.add('hidden');
+    document.getElementById('menu-overlay').classList.remove('hidden');
+  });
+  document.getElementById('btn-back-menu').addEventListener('click', () => {
+    state.screen = 'menu';
+    document.getElementById('result-overlay').classList.add('hidden');
+    document.getElementById('menu-overlay').classList.remove('hidden');
+  });
+  document.getElementById('btn-next').addEventListener('click', (e) => {
+    const act = e.currentTarget.dataset.action;
+    if (act === 'restart') startTournament();
+    else if (act === 'bonus') { state.bonusRoundDone = true; startBonusRound(); }
+    else { state.roundIdx++; state.bonusRoundDone = false; startDuelRound(); }
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyR') triggerReload();
+  });
+
+  const updatePointer = (clientX, clientY) => {
+    const rect = canvas.getBoundingClientRect();
+    state.mx = clientX - rect.left;
+    state.my = clientY - rect.top;
+    const lay = getLayout();
+    state.inChamber = Math.hypot(state.mx - lay.chamberX, state.my - lay.chamberY) <= lay.chamberR * 1.15;
+  };
+
+  canvas.addEventListener('pointermove', (e) => updatePointer(e.clientX, e.clientY));
+  canvas.addEventListener('pointerdown', (e) => {
+    sfx.init();
+    updatePointer(e.clientX, e.clientY);
+    if (state.phase === 'fire' || state.screen === 'bonus') handlePlayerShoot(state.mx, state.my);
+  });
+}
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+
+window.onload = () => {
+  resize();
+  document.getElementById('high-score-badge').textContent = `🏆 EN YÜKSEK SKOR: ${state.highScore}`;
+  renderRoster();
+  updateAmmoHUD();
+  setupEvents();
+
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+};
+})();
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
-const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','dsan-shipyard','2048','sudoku','mines','blocks'];
+const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','kafa-topu','wild-ones','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','2048','sudoku','mines','blocks'];
+const SVG = new Set(['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world']);
 for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
   test.use({viewport:vp});
   test('hero, kapaklar, filtre, arama, vitrin ve son oynanan', async ({page}) => {
@@ -11,7 +12,7 @@ for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe
     await expect(page.locator('body')).toHaveClass(/lib-mode/);
     await expect(page.locator('.lb-vid')).toHaveAttribute('src',/media\/oyunlar-hero-(1080|720)\.mp4/);
     await expect(page.locator('.lb-card')).toHaveCount(IDS.length);
-    for (const id of IDS) await expect(page.locator(`[data-game-cover="${id}"] img`)).toHaveAttribute('src',`img/library/${id}-1280.webp`);
+    for (const id of IDS) await expect(page.locator(`[data-game-cover="${id}"] img`)).toHaveAttribute('src',`img/library/${id}-1280.${SVG.has(id)?'svg':'webp'}`);
     const broken = await page.evaluate(async()=>{const imgs=[...document.querySelectorAll('.lb-card img')];await Promise.all(imgs.map(i=>{i.loading='eager';return i.decode().catch(()=>{});}));return imgs.filter(i=>!i.naturalWidth).map(i=>i.src);});
     expect(broken).toEqual([]);
     await page.locator('.lb-filters button[data-cat="puz"]').click();

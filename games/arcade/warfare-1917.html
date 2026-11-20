@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BABA. ARCADE · WARFARE 1917 (SİPER SAVAŞI)</title>
+<style>
+  :root { --olive: #4d5d3b; --brass: #d4a359; --mud: #1c1610; --panel: rgba(24, 22, 16, 0.93); }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--mud); color: #e7e5d8; font-family: 'Segoe UI', system-ui, sans-serif; }
+  #wrap { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  #hud-top {
+    position: absolute; top: 8px; left: 10px; right: 10px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; pointer-events: none;
+  }
+  .war-pill {
+    pointer-events: auto; background: var(--panel); border: 1px solid rgba(212, 163, 89, 0.45);
+    border-radius: 10px; padding: 6px 12px; font-size: 12px; font-weight: 800; display: flex; gap: 10px; align-items: center;
+  }
+  .morale-bar { width: 110px; height: 9px; background: #111; border-radius: 99px; overflow: hidden; border: 1px solid #555; }
+  .morale-fill { height: 100%; background: linear-gradient(90deg, #65a30d, #a3e635); transition: width 0.2s; }
+  .morale-fill.en { background: linear-gradient(90deg, #b91c1c, #ef4444); }
+
+  #hud-bot {
+    position: absolute; bottom: 10px; left: 10px; right: 10px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; flex-wrap: wrap; pointer-events: none;
+  }
+  .cmd-bar {
+    pointer-events: auto; background: var(--panel); border: 1px solid rgba(212,163,89,0.4);
+    border-radius: 14px; padding: 7px; display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .tr-btn {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(212,163,89,0.3); color: #f5f5dc;
+    border-radius: 10px; padding: 6px 9px; min-width: 74px; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; transition: all 0.14s;
+  }
+  .tr-btn:hover:not(:disabled) { background: rgba(212,163,89,0.22); transform: translateY(-2px); }
+  .tr-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .tr-btn .i { font-size: 17px; }
+  .tr-btn .n { font-size: 10px; font-weight: 800; }
+  .tr-btn .c { font-size: 9px; color: var(--brass); font-weight: 700; }
+  .tr-btn.art { background: rgba(185,28,28,0.32); border-color: #ef4444; }
+  .tr-btn.charge { background: rgba(101,163,13,0.3); border-color: #84cc16; }
+
+  /* VINTAGE WWI WAR-ROOM SEPIA MENU */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: radial-gradient(circle at 50% 30%, rgba(44, 38, 26, 0.95), rgba(14, 12, 8, 0.98));
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .dossier {
+    max-width: 640px; width: 100%; padding: 28px; text-align: center;
+    background: linear-gradient(180deg, #272318, #191610);
+    border: 2px dashed #d4a359; border-radius: 18px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.85);
+  }
+  .stamp {
+    display: inline-block; border: 2px solid #dc2626; color: #f87171;
+    padding: 2px 10px; font-size: 11px; font-weight: 900; letter-spacing: 3px; transform: rotate(-3deg); margin-bottom: 10px;
+  }
+  .w-title { font-size: clamp(28px, 4.5vw, 44px); font-weight: 900; color: #f5f5dc; letter-spacing: 2px; }
+  .btn-deploy {
+    margin-top: 18px; padding: 14px 38px; border-radius: 10px; border: 2px solid #d4a359;
+    background: linear-gradient(135deg, #4d5d3b, #2f3a23); color: #fff;
+    font-size: 16px; font-weight: 900; letter-spacing: 1px; cursor: pointer;
+  }
+  .btn-deploy:hover { filter: brightness(1.18); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+
+  <div id="hud-top">
+    <div class="war-pill">
+      <span>🎖️ CEPHANE: <strong id="req-txt" style="color:#fde047;">120</strong></span>
+      <span>SİPERLER: <strong id="trench-txt" style="color:#a3e635;">1 / 4</strong></span>
+    </div>
+    <div class="war-pill">
+      <span>SEN</span><div class="morale-bar"><div class="morale-fill" id="p-morale"></div></div>
+      <div class="morale-bar"><div class="morale-fill en" id="e-morale"></div></div><span>DÜŞMAN</span>
+      <button id="btn-sound" style="background:none;border:none;color:#fff;cursor:pointer;font-size:15px;">🔊</button>
+      <button id="btn-menu" style="background:none;border:none;color:#fff;cursor:pointer;font-size:15px;">☰</button>
+    </div>
+  </div>
+
+  <div id="hud-bot">
+    <div class="cmd-bar" id="squad-bar"></div>
+    <div class="cmd-bar">
+      <button class="tr-btn charge" id="btn-charge"><span class="i">📯</span><span class="n">HÜCUM EMRI</span><span class="c">Siperden Çık</span></button>
+      <button class="tr-btn art" id="btn-arty"><span class="i">💣</span><span class="n">Topçu Ateşi</span><span class="c" id="arty-cd">HAZIR</span></button>
+    </div>
+  </div>
+
+  <div class="overlay" id="menu-ov">
+    <div class="dossier">
+      <div class="stamp">GİZLİ CEPHE EMRİ · 1917</div>
+      <div class="w-title">WARFARE 1917</div>
+      <p style="color:#c7c1a8;font-size:13px;margin:10px 0 14px;line-height:1.5;">
+        Piyadelerini, makineli tüfekçilerini, keskin nişancılarını ve Mark IV tanklarını cepheye sür. Askerlerin çamurlu siperlere girip kum torbalarının arkasından siper alır; <strong>HÜCUM EMRİ</strong> vererek sonraki sipere atıl ve topçu bombardımanıyla düşman hattını yar!
+      </p>
+      <button class="btn-deploy" id="btn-start">🪖 CEPHEYE İN</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="end-ov">
+    <div class="dossier">
+      <div style="font-size:52px;" id="end-ico">🎖️</div>
+      <div class="w-title" id="end-title">CEPHE KAZANILDI!</div>
+      <p style="color:#d4a359;margin:10px 0 18px;" id="end-sub">Tüm düşman siperleri ele geçirildi.</p>
+      <button class="btn-deploy" id="btn-again">🔄 YENİ HAREKÂT</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const SQUADS = [
+  { id: 'rifle', name: 'Piyade (x3)', icon: '🪖', cost: 40, count: 3, hp: 55, dmg: 11, rng: 240, spd: 56, rate: 1.0, col: '#556b2f' },
+  { id: 'assault', name: 'Hücum Timi', icon: '🔥', cost: 65, count: 2, hp: 78, dmg: 17, rng: 165, spd: 72, rate: 0.7, col: '#854d0e' },
+  { id: 'mg', name: 'Makineli', icon: '🔫', cost: 90, count: 1, hp: 95, dmg: 9, rng: 310, spd: 44, rate: 0.25, col: '#3f6212' },
+  { id: 'sniper', name: 'Nişancı', icon: '🎯', cost: 110, count: 1, hp: 65, dmg: 44, rng: 410, spd: 58, rate: 1.65, col: '#334155' },
+  { id: 'tank', name: 'Mark IV Tank', icon: '🚜', cost: 210, count: 1, hp: 380, dmg: 42, rng: 300, spd: 34, rate: 1.4, col: '#475569', tank: true }
+];
+
+let actx = null, muted = false;
+function sfx(f1, f2, d, tp = 'sawtooth', v = 0.08) {
+  if (muted) return;
+  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+  if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = tp; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(25, f2), t + d);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d);
+}
+
+const st = {
+  running: false, time: 0, req: 130, pMorale: 100, eMorale: 100,
+  artyCd: 0, aiTimer: 2.2, shake: 0,
+  trenches: [0.22, 0.42, 0.62, 0.80], // normalized X positions
+  soldiers: [], tracers: [], shells: [], particles: [], craters: [], rain: []
+};
+
+function renderSquadBar() {
+  const bar = document.getElementById('squad-bar');
+  bar.innerHTML = SQUADS.map((s, i) => `
+    <button class="tr-btn" data-i="${i}" ${st.req < s.cost ? 'disabled' : ''}>
+      <span class="i">${s.icon}</span><span class="n">${s.name}</span><span class="c">${s.cost} 🎖️</span>
+    </button>
+  `).join('');
+  bar.querySelectorAll('.tr-btn').forEach(b => b.addEventListener('click', () => {
+    const sq = SQUADS[parseInt(b.dataset.i, 10)];
+    if (st.req >= sq.cost) { st.req -= sq.cost; deploySquad(1, sq); sfx(460, 680, 0.1, 'triangle', 0.1); updateHUD(); }
+  }));
+}
+
+function deploySquad(team, sq) {
+  const W = canvas.width, gY = canvas.height * 0.74;
+  for (let k = 0; k < sq.count; k++) {
+    st.soldiers.push({
+      team, ...sq, maxHp: sq.hp,
+      x: team === 1 ? 25 - k * 22 : W - 25 + k * 22,
+      y: gY + (Math.random() - 0.5) * 14,
+      inTrench: -1, advancing: true, cd: Math.random() * 0.4, anim: Math.random() * 6
+    });
+  }
+}
+
+function updateHUD() {
+  document.getElementById('req-txt').textContent = Math.floor(st.req);
+  const owned = st.trenches.filter((_, idx) => st.soldiers.some(s => s.team === 1 && s.inTrench === idx)).length;
+  document.getElementById('trench-txt').textContent = `${owned} / ${st.trenches.length}`;
+  document.getElementById('p-morale').style.width = Math.max(0, st.pMorale) + '%';
+  document.getElementById('e-morale').style.width = Math.max(0, st.eMorale) + '%';
+  document.getElementById('arty-cd').textContent = st.artyCd > 0 ? `${Math.ceil(st.artyCd)}s` : 'HAZIR!';
+  document.getElementById('btn-arty').disabled = st.artyCd > 0;
+  renderSquadBar();
+}
+
+function startWar() {
+  st.running = true; st.time = 0; st.req = 140; st.pMorale = 100; st.eMorale = 100;
+  st.artyCd = 0; st.aiTimer = 1.5; st.soldiers = []; st.tracers = []; st.shells = []; st.particles = []; st.craters = [];
+  st.rain = Array.from({ length: 80 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height }));
+  document.getElementById('menu-ov').classList.add('hidden');
+  document.getElementById('end-ov').classList.add('hidden');
+  deploySquad(1, SQUADS[0]);
+  deploySquad(-1, SQUADS[0]);
+  updateHUD();
+}
+
+function burst(x, y, cols, n = 14) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 50 + Math.random() * 190;
+    st.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, col: cols[i % cols.length], r: 2 + Math.random() * 4, life: 0.6 });
+  }
+}
+
+function update(dt) {
+  if (!st.running) return;
+  st.time += dt; st.req += 10 * dt;
+  if (st.artyCd > 0) st.artyCd = Math.max(0, st.artyCd - dt);
+  if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 28);
+
+  const W = canvas.width, gY = canvas.height * 0.74;
+  st.aiTimer -= dt;
+  if (st.aiTimer <= 0) {
+    const pick = st.time > 35 && Math.random() < 0.2 ? SQUADS[4] : SQUADS[Math.floor(Math.random() * 4)];
+    deploySquad(-1, pick);
+    st.aiTimer = 3.8 + Math.random() * 2.4;
+  }
+
+  for (let i = st.soldiers.length - 1; i >= 0; i--) {
+    const s = st.soldiers[i];
+    s.anim += dt * 7; if (s.cd > 0) s.cd -= dt;
+
+    // Check trench cover (infantry only)
+    if (!s.tank && s.advancing) {
+      for (let t = 0; t < st.trenches.length; t++) {
+        const tx = st.trenches[t] * W;
+        if (Math.abs(s.x - tx) < 14 && s.inTrench !== t) {
+          const enemyIn = st.soldiers.some(o => o.team !== s.team && Math.abs(o.x - tx) < 28);
+          if (!enemyIn && Math.random() < 0.72) { s.inTrench = t; s.advancing = false; s.x = tx + (Math.random() - 0.5) * 14; break; }
+        }
+      }
+    }
+
+    // Target enemy in range
+    let tgt = null, best = Infinity;
+    for (const o of st.soldiers) {
+      if (o.team === s.team) continue;
+      const d = (o.x - s.x) * s.team;
+      if (d > -20 && d < s.rng && d < best) { best = d; tgt = o; }
+    }
+
+    if (tgt) {
+      if (s.cd <= 0) {
+        s.cd = s.rate;
+        const coverMult = (tgt.inTrench >= 0 && !s.tank) ? 0.55 : 1.0;
+        tgt.hp -= s.dmg * coverMult;
+        st.tracers.push({ x1: s.x + s.team * 14, y1: s.y - (s.inTrench >= 0 ? 12 : 22), x2: tgt.x, y2: tgt.y - 18, life: 0.1 });
+        sfx(s.tank ? 120 : 520, 90, 0.07, 'sawtooth', 0.05);
+        burst(tgt.x, tgt.y - 18, ['#ef4444', '#fbbf24'], 4);
+      }
+    } else if (s.advancing || s.tank) {
+      s.x += s.team * s.spd * dt;
+    }
+
+    // Reached enemy edge -> drain enemy morale!
+    if (s.team === 1 && s.x > W - 15) { st.eMorale -= s.tank ? 28 : 12; st.soldiers.splice(i, 1); continue; }
+    if (s.team === -1 && s.x < 15) { st.pMorale -= s.tank ? 28 : 12; st.soldiers.splice(i, 1); continue; }
+
+    if (s.hp <= 0) {
+      if (s.team === -1) { st.req += 18; st.eMorale -= s.tank ? 12 : 3; }
+      else st.pMorale -= s.tank ? 12 : 3;
+      burst(s.x, s.y - 14, ['#dc2626', '#78350f', '#f97316'], s.tank ? 26 : 10);
+      st.soldiers.splice(i, 1);
+    }
+  }
+
+  // Artillery Shells
+  for (let i = st.shells.length - 1; i >= 0; i--) {
+    const sh = st.shells[i]; sh.vy += 480 * dt; sh.x += sh.vx * dt; sh.y += sh.vy * dt;
+    if (sh.y >= gY) {
+      st.shake = 16; sfx(95, 28, 0.35, 'sawtooth', 0.22);
+      st.craters.push({ x: sh.x, y: gY + 6, r: 22 });
+      burst(sh.x, gY, ['#f97316', '#fde047', '#451a03', '#64748b'], 24);
+      for (const s of st.soldiers) {
+        if (s.team === -1 && Math.abs(s.x - sh.x) < 75) s.hp -= 85;
+      }
+      st.shells.splice(i, 1);
+    }
+  }
+
+  for (let i = st.tracers.length - 1; i >= 0; i--) { st.tracers[i].life -= dt; if (st.tracers[i].life <= 0) st.tracers.splice(i, 1); }
+  for (let i = st.particles.length - 1; i >= 0; i--) {
+    const p = st.particles[i]; p.life -= dt; p.vy += 450 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.life <= 0) st.particles.splice(i, 1);
+  }
+  for (const r of st.rain) { r.x -= 60 * dt; r.y += 420 * dt; if (r.y > canvas.height) { r.y = -10; r.x = Math.random() * W; } }
+
+  if (st.eMorale <= 0 || st.pMorale <= 0) {
+    st.running = false;
+    const won = st.eMorale <= 0;
+    document.getElementById('end-ico').textContent = won ? '🎖️' : '💀';
+    document.getElementById('end-title').textContent = won ? 'CEPHE ZAFERİ!' : 'HAT YARILDI!';
+    document.getElementById('end-sub').textContent = won ? 'Düşman morali çöktü ve geri çekildi!' : 'Düşman birlikleri siperlerini aştı.';
+    document.getElementById('end-ov').classList.remove('hidden');
+  }
+  if (Math.floor(st.time * 4) !== Math.floor((st.time - dt) * 4)) updateHUD();
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height, gY = H * 0.74;
+  ctx.save();
+  if (st.shake > 0) ctx.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
+
+  // Smoky WWI Sky
+  const sky = ctx.createLinearGradient(0, 0, 0, gY);
+  sky.addColorStop(0, '#17191c'); sky.addColorStop(0.55, '#3b372e'); sky.addColorStop(1, '#715d44');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, gY);
+
+  // Muddy No Man's Land
+  const mud = ctx.createLinearGradient(0, gY, 0, H);
+  mud.addColorStop(0, '#443523'); mud.addColorStop(1, '#1a140d');
+  ctx.fillStyle = mud; ctx.fillRect(0, gY, W, H - gY);
+
+  // Shell Craters
+  ctx.fillStyle = 'rgba(15, 10, 6, 0.75)';
+  for (const cr of st.craters) { ctx.beginPath(); ctx.ellipse(cr.x, cr.y, cr.r, cr.r * 0.35, 0, 0, Math.PI * 2); ctx.fill(); }
+
+  // 4 Captureable Trenches with Sandbags & Barbed Wire
+  for (const tFrac of st.trenches) {
+    const tx = tFrac * W;
+    ctx.fillStyle = '#18120c'; ctx.fillRect(tx - 24, gY - 4, 48, 22);
+    // Sandbags on both rims
+    ctx.fillStyle = '#a89f81';
+    for (let sb = -26; sb <= 20; sb += 11) {
+      ctx.beginPath(); ctx.ellipse(tx + sb, gY - 5, 7, 4, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // Soldiers & Mark IV Tanks
+  for (const s of st.soldiers) {
+    const crouch = s.inTrench >= 0 ? 10 : 0;
+    ctx.save(); ctx.translate(s.x, s.y + crouch); ctx.scale(s.team, 1);
+    if (s.tank) {
+      // WWI Mark IV Diamond Tank
+      ctx.fillStyle = s.team === 1 ? '#4d5d3b' : '#475569';
+      ctx.beginPath(); ctx.moveTo(-32, -8); ctx.lineTo(-18, -32); ctx.lineTo(22, -32); ctx.lineTo(36, -12); ctx.lineTo(22, 0); ctx.lineTo(-22, 0); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 3; ctx.stroke();
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(18, -24, 22, 5); // cannon
+    } else {
+      const leg = s.inTrench >= 0 ? 0 : Math.sin(s.anim) * 5;
+      ctx.strokeStyle = '#1c1917'; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(-3, -12); ctx.lineTo(-3 + leg, 0); ctx.moveTo(3, -12); ctx.lineTo(3 - leg, 0); ctx.stroke();
+      ctx.fillStyle = s.team === 1 ? s.col : '#52525b';
+      ctx.fillRect(-6, -28, 12, 17);
+      // WWI Brodie / Pickelhaube Helmet
+      ctx.fillStyle = '#d6b894'; ctx.beginPath(); ctx.arc(0, -33, 5.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = s.team === 1 ? '#3f6212' : '#27272a';
+      ctx.beginPath(); ctx.ellipse(0, -36, 9, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#1e293b'; ctx.fillRect(4, -24, 18, 3);
+    }
+    ctx.restore();
+    // Mini HP bar
+    const p = Math.max(0, s.hp / s.maxHp);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(s.x - 14, s.y - 46 + crouch, 28, 4);
+    ctx.fillStyle = s.team === 1 ? '#a3e635' : '#f87171'; ctx.fillRect(s.x - 13, s.y - 45 + crouch, 26 * p, 2.5);
+  }
+
+  // Tracers, Artillery Shells, Particles, Rain
+  ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 2;
+  for (const tr of st.tracers) { ctx.beginPath(); ctx.moveTo(tr.x1, tr.y1); ctx.lineTo(tr.x2, tr.y2); ctx.stroke(); }
+  ctx.fillStyle = '#f97316';
+  for (const sh of st.shells) { ctx.beginPath(); ctx.arc(sh.x, sh.y, 6, 0, Math.PI * 2); ctx.fill(); }
+  for (const p of st.particles) { ctx.globalAlpha = Math.max(0, p.life / 0.6); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = 'rgba(203, 213, 225, 0.22)'; ctx.lineWidth = 1;
+  for (const r of st.rain) { ctx.beginPath(); ctx.moveTo(r.x, r.y); ctx.lineTo(r.x - 4, r.y + 14); ctx.stroke(); }
+  ctx.restore();
+}
+
+document.getElementById('btn-start').addEventListener('click', startWar);
+document.getElementById('btn-again').addEventListener('click', startWar);
+document.getElementById('btn-sound').addEventListener('click', () => { muted = !muted; document.getElementById('btn-sound').textContent = muted ? '🔇' : '🔊'; });
+document.getElementById('btn-menu').addEventListener('click', () => { st.running = false; document.getElementById('menu-ov').classList.remove('hidden'); });
+document.getElementById('btn-charge').addEventListener('click', () => {
+  sfx(520, 880, 0.25, 'triangle', 0.14);
+  for (const s of st.soldiers) if (s.team === 1) { s.advancing = true; s.x += 18; }
+});
+document.getElementById('btn-arty').addEventListener('click', () => {
+  if (st.artyCd > 0) return;
+  st.artyCd = 18; sfx(280, 80, 0.4, 'sawtooth', 0.16);
+  for (let k = 0; k < 6; k++) st.shells.push({ x: canvas.width * (0.45 + Math.random() * 0.45), y: -30 - k * 45, vx: 30, vy: 220 });
+  updateHUD();
+});
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+window.onload = () => {
+  resize(); updateHUD();
+  let last = performance.now();
+  function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+};
+})();
+</script>
+</body>
+</html>

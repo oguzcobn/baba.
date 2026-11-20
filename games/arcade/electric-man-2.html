@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BABA. ARCADE · ELECTRIC MAN 2</title>
+<style>
+  :root { --bg: #050814; --cyan: #38bdf8; --volt: #facc15; --red: #ef4444; }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; }
+  #wrap { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  #hud-top {
+    position: absolute; top: 10px; left: 14px; right: 14px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px; pointer-events: none;
+  }
+  .volt-box {
+    pointer-events: auto; background: rgba(8, 13, 30, 0.9); border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 14px; padding: 8px 14px; min-width: 210px; box-shadow: 0 0 22px rgba(56,189,248,0.22);
+  }
+  .bar-t { width: 100%; height: 9px; background: #0f172a; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+  .bar-hp { height: 100%; background: linear-gradient(90deg, #22c55e, #4ade80); transition: width 0.15s; }
+  .bar-en { height: 100%; background: linear-gradient(90deg, #0284c7, #38bdf8, #facc15); transition: width 0.1s; }
+
+  #touch-pad {
+    position: absolute; bottom: 12px; left: 12px; right: 12px; z-index: 20;
+    display: flex; justify-content: space-between; pointer-events: none;
+  }
+  .e-btn {
+    pointer-events: auto; padding: 11px 14px; border-radius: 12px; border: 1px solid #38bdf8;
+    background: rgba(8, 13, 30, 0.85); color: #fff; font-weight: 900; font-size: 13px; cursor: pointer;
+  }
+  .e-btn.super { border-color: #facc15; background: rgba(250, 204, 21, 0.22); color: #fde047; }
+
+  /* HIGH-VOLTAGE NEON CYBER ARENA MENU */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: radial-gradient(circle at 50% 25%, rgba(14, 116, 144, 0.35), rgba(5, 8, 20, 0.97));
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .neon-card {
+    max-width: 620px; width: 100%; padding: 30px; text-align: center;
+    background: rgba(9, 14, 30, 0.96); border: 2px solid #38bdf8; border-radius: 22px;
+    box-shadow: 0 0 50px rgba(56, 189, 248, 0.35);
+  }
+  .em-title {
+    font-size: clamp(28px, 5vw, 46px); font-weight: 900; letter-spacing: 2px;
+    background: linear-gradient(90deg, #38bdf8, #facc15, #38bdf8);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .btn-volt {
+    margin-top: 18px; padding: 14px 40px; border-radius: 14px; border: 2px solid #fde047;
+    background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
+    font-size: 16px; font-weight: 900; letter-spacing: 1px; cursor: pointer;
+    box-shadow: 0 0 28px rgba(56, 189, 248, 0.55);
+  }
+  .btn-volt:hover { transform: scale(1.03); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+
+  <div id="hud-top">
+    <div class="volt-box">
+      <div style="font-size:12px;font-weight:900;color:#38bdf8;display:flex;justify-content:space-between;">
+        <span>⚡ ELECTRIC MAN</span><span id="combo-txt" style="color:#facc15;">COMBO x0</span>
+      </div>
+      <div class="bar-t"><div class="bar-hp" id="hp-fill" style="width:100%;"></div></div>
+      <div class="bar-t"><div class="bar-en" id="en-fill" style="width:100%;"></div></div>
+    </div>
+    <div class="volt-box" style="min-width:160px;text-align:right;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span id="wave-txt" style="font-size:13px;font-weight:900;color:#fde047;">DALGA 1</span>
+      <div>
+        <button id="btn-sound" style="background:none;border:none;color:#fff;font-size:15px;cursor:pointer;">🔊</button>
+        <button id="btn-menu" style="background:none;border:none;color:#fff;font-size:15px;cursor:pointer;">☰</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="touch-pad">
+    <div style="display:flex;gap:6px;">
+      <button class="e-btn" id="k-l">◄</button>
+      <button class="e-btn" id="k-r">►</button>
+      <button class="e-btn" id="k-j">▲</button>
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="e-btn" id="k-p">👊 J: Yumruk</button>
+      <button class="e-btn" id="k-k">🦵 K: Tekme</button>
+      <button class="e-btn super" id="k-s">⚡ Q: Slow-Mo Süper</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="menu-ov">
+    <div class="neon-card">
+      <div style="font-size:11px;letter-spacing:3px;color:#38bdf8;font-weight:900;">BABA. ARCADE · VOLTAGEN TURNUVASI</div>
+      <div class="em-title">ELECTRIC MAN 2</div>
+      <p style="color:#cbd5e1;font-size:13px;margin:12px 0;line-height:1.5;">
+        Dövüş arenasına gir! <strong>A/D</strong> hareket, <strong>W</strong> zıpla, <strong>J</strong> hızlı yumruk, <strong>K</strong> ağır tekme, <strong>Q / E / Shift</strong> ile <strong>Ağır Çekim Elektrik Süper Saldırısı</strong> yapıp düşmanları ragdoll fizikle fırlat!
+      </p>
+      <button class="btn-volt" id="btn-start">⚡ ARENAYA GİR</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="end-ov">
+    <div class="neon-card">
+      <div style="font-size:52px;" id="end-ico">⚡</div>
+      <div class="em-title" id="end-title">NAKARAT!</div>
+      <p id="end-sub" style="margin:10px 0 18px;color:#fde047;"></p>
+      <button class="btn-volt" id="btn-again">🔄 YENİDEN DÖVÜŞ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let actx = null, muted = false;
+function sfx(f1, f2, d = 0.12, tp = 'sawtooth') {
+  if (muted) return;
+  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+  if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = tp; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + d);
+  g.gain.setValueAtTime(0.14, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t + d);
+}
+
+const st = {
+  running: false, wave: 1, combo: 0, slowMo: 0, shake: 0, time: 0,
+  keys: { l: false, r: false },
+  p: { x: 300, y: 300, vx: 0, vy: 0, hp: 100, en: 100, face: 1, atk: null, atkT: 0, anim: 0 },
+  enemies: [], sparks: [], bolts: []
+};
+
+function spawnWave(w) {
+  st.wave = w;
+  document.getElementById('wave-txt').textContent = `DALGA ${w}`;
+  st.enemies = [];
+  const count = 2 + w;
+  const cols = ['#facc15', '#ef4444', '#a855f7', '#fb923c'];
+  for (let i = 0; i < count; i++) {
+    const side = i % 2 === 0 ? 1 : -1;
+    st.enemies.push({
+      x: canvas.width * 0.5 + side * (220 + i * 70), y: canvas.height * 0.76,
+      vx: 0, vy: 0, hp: 65 + w * 18, maxHp: 65 + w * 18,
+      col: cols[i % cols.length], face: -side, cd: 0.9 + Math.random(), stun: 0, dead: false, rot: 0, anim: Math.random() * 6
+    });
+  }
+}
+
+function startArena() {
+  st.running = true; st.combo = 0; st.slowMo = 0; st.sparks = []; st.bolts = [];
+  st.p = { x: canvas.width * 0.5, y: canvas.height * 0.76, vx: 0, vy: 0, hp: 100, en: 100, face: 1, atk: null, atkT: 0, anim: 0 };
+  document.getElementById('menu-ov').classList.add('hidden');
+  document.getElementById('end-ov').classList.add('hidden');
+  spawnWave(1);
+}
+
+function addSparks(x, y, col, n = 14) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 90 + Math.random() * 260;
+    st.sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, col, life: 0.45 });
+  }
+}
+
+function doAttack(type) {
+  const p = st.p;
+  if (!st.running || p.atkT > 0) return;
+  if (type === 'super') {
+    if (p.en < 35) return;
+    p.en -= 35; st.slowMo = 0.65; st.shake = 16; p.atk = 'super'; p.atkT = 0.42;
+    sfx(920, 140, 0.35, 'sawtooth');
+  } else {
+    p.atk = type; p.atkT = type === 'punch' ? 0.22 : 0.32;
+    sfx(type === 'punch' ? 420 : 260, 110, 0.12);
+  }
+
+  const rng = type === 'super' ? 145 : (type === 'kick' ? 88 : 70);
+  const dmg = type === 'super' ? 52 : (type === 'kick' ? 28 : 18);
+  let hit = false;
+  for (const e of st.enemies) {
+    if (e.dead) continue;
+    const dx = e.x - p.x;
+    if (Math.abs(dx) < rng && (type === 'super' || Math.sign(dx) === p.face || Math.abs(dx) < 30)) {
+      e.hp -= dmg; e.stun = 0.55;
+      const dir = dx >= 0 ? 1 : -1;
+      e.vx = dir * (type === 'super' ? 520 : (type === 'kick' ? 340 : 190));
+      e.vy = type === 'super' ? -360 : -180;
+      addSparks(e.x, e.y - 34, type === 'super' ? '#38bdf8' : '#facc15', type === 'super' ? 24 : 10);
+      if (type === 'super') st.bolts.push({ x1: p.x, y1: p.y - 36, x2: e.x, y2: e.y - 36, life: 0.28 });
+      hit = true;
+      if (e.hp <= 0) { e.dead = true; e.vy = -420; st.shake = 10; }
+    }
+  }
+  if (hit) { st.combo++; document.getElementById('combo-txt').textContent = `COMBO x${st.combo}`; }
+}
+
+function update(rawDt) {
+  if (!st.running) return;
+  const dt = st.slowMo > 0 ? rawDt * 0.3 : rawDt;
+  if (st.slowMo > 0) st.slowMo = Math.max(0, st.slowMo - rawDt);
+  st.time += dt;
+  if (st.shake > 0) st.shake = Math.max(0, st.shake - rawDt * 30);
+
+  const gY = canvas.height * 0.78, p = st.p;
+  p.en = Math.min(100, p.en + 16 * dt);
+  if (p.atkT > 0) { p.atkT -= rawDt; if (p.atkT <= 0) p.atk = null; }
+
+  if (st.keys.l) { p.vx = -310; p.face = -1; }
+  else if (st.keys.r) { p.vx = 310; p.face = 1; }
+  else p.vx *= 0.75;
+
+  p.vy += 1100 * dt; p.x += p.vx * dt; p.y += p.vy * dt;
+  if (p.y > gY) { p.y = gY; p.vy = 0; }
+  p.x = Math.max(30, Math.min(canvas.width - 30, p.x));
+  p.anim += Math.abs(p.vx) * dt * 0.04;
+
+  // Enemies AI & Ragdoll Knockback
+  let aliveCount = 0;
+  for (const e of st.enemies) {
+    e.vy += 1050 * dt; e.x += e.vx * dt; e.y += e.vy * dt;
+    if (e.y > gY) { e.y = gY; e.vy = e.dead ? -e.vy * 0.35 : 0; e.vx *= 0.72; }
+    if (e.dead) { e.rot += e.vx * dt * 0.015; continue; }
+    aliveCount++;
+    if (e.stun > 0) { e.stun -= dt; continue; }
+
+    const dx = p.x - e.x; e.face = dx >= 0 ? 1 : -1;
+    if (Math.abs(dx) > 64) { e.vx = e.face * (135 + st.wave * 10); e.anim += dt * 7; }
+    else {
+      e.vx *= 0.7; e.cd -= dt;
+      if (e.cd <= 0) {
+        e.cd = Math.max(0.6, 1.35 - st.wave * 0.08);
+        p.hp -= 10; st.combo = 0; document.getElementById('combo-txt').textContent = 'COMBO x0';
+        p.vx = e.face * 210; addSparks(p.x, p.y - 34, '#ef4444', 10); sfx(160, 70, 0.14);
+      }
+    }
+  }
+
+  if (aliveCount === 0) { p.hp = Math.min(100, p.hp + 25); spawnWave(st.wave + 1); }
+  if (p.hp <= 0) {
+    st.running = false;
+    document.getElementById('end-title').textContent = 'YERE SERİLDİN!';
+    document.getElementById('end-sub').textContent = `Ulaştığın Dalga: ${st.wave} · En Yüksek Kombo: x${st.combo}`;
+    document.getElementById('end-ov').classList.remove('hidden');
+  }
+
+  for (let i = st.sparks.length - 1; i >= 0; i--) {
+    const s = st.sparks[i]; s.life -= rawDt; s.vy += 500 * dt; s.x += s.vx * dt; s.y += s.vy * dt;
+    if (s.life <= 0) st.sparks.splice(i, 1);
+  }
+  for (let i = st.bolts.length - 1; i >= 0; i--) { st.bolts[i].life -= rawDt; if (st.bolts[i].life <= 0) st.bolts.splice(i, 1); }
+
+  document.getElementById('hp-fill').style.width = Math.max(0, p.hp) + '%';
+  document.getElementById('en-fill').style.width = Math.max(0, p.en) + '%';
+}
+
+function drawStickFighter(x, y, face, col, anim, atk, dead, rot) {
+  ctx.save(); ctx.translate(x, y);
+  if (dead) { ctx.translate(0, -10); ctx.rotate(rot); }
+  ctx.scale(face, 1);
+  ctx.strokeStyle = col; ctx.lineWidth = 6; ctx.lineCap = 'round';
+  ctx.shadowColor = col; ctx.shadowBlur = atk === 'super' ? 22 : 10;
+  const sw = Math.sin(anim) * 14;
+  // Legs
+  ctx.beginPath();
+  ctx.moveTo(0, -28); ctx.lineTo(-10 + sw, 0);
+  if (atk === 'kick' || atk === 'super') { ctx.moveTo(0, -28); ctx.lineTo(36, -34); }
+  else { ctx.moveTo(0, -28); ctx.lineTo(10 - sw, 0); }
+  // Spine & Arms
+  ctx.moveTo(0, -28); ctx.lineTo(2, -56);
+  ctx.moveTo(2, -50); ctx.lineTo(atk === 'punch' || atk === 'super' ? 34 : 16, -48);
+  ctx.moveTo(2, -50); ctx.lineTo(-14, -40);
+  ctx.stroke();
+  // Glowing Head
+  ctx.fillStyle = '#050814'; ctx.beginPath(); ctx.arc(2, -66, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height, gY = H * 0.78;
+  ctx.save();
+  if (st.shake > 0) ctx.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, st.slowMo > 0 ? '#082f49' : '#050814'); bg.addColorStop(1, '#0f172a');
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+  // Cyber Arena Floor Grid
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, gY, W, H - gY);
+  ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(0, gY); ctx.lineTo(W, gY); ctx.stroke();
+
+  for (const e of st.enemies) {
+    drawStickFighter(e.x, e.y, e.face, e.col, e.anim, null, e.dead, e.rot);
+    if (!e.dead) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(e.x - 18, e.y - 88, 36, 5);
+      ctx.fillStyle = e.col; ctx.fillRect(e.x - 17, e.y - 87, 34 * Math.max(0, e.hp / e.maxHp), 3);
+    }
+  }
+  drawStickFighter(st.p.x, st.p.y, st.p.face, st.p.atk === 'super' ? '#facc15' : '#38bdf8', st.p.anim, st.p.atk, false, 0);
+
+  // Jagged Lightning Arcs
+  ctx.strokeStyle = '#fde047'; ctx.lineWidth = 3;
+  for (const b of st.bolts) {
+    ctx.beginPath(); ctx.moveTo(b.x1, b.y1);
+    ctx.lineTo((b.x1 + b.x2) * 0.5, (b.y1 + b.y2) * 0.5 + (Math.random() - 0.5) * 40);
+    ctx.lineTo(b.x2, b.y2); ctx.stroke();
+  }
+  for (const s of st.sparks) { ctx.fillStyle = s.col; ctx.beginPath(); ctx.arc(s.x, s.y, 3.2, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = true;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = true;
+  if (e.code === 'KeyW' || e.code === 'ArrowUp') { if (st.p.vy === 0) st.p.vy = -520; }
+  if (e.code === 'KeyJ') doAttack('punch');
+  if (e.code === 'KeyK') doAttack('kick');
+  if (e.code === 'KeyQ' || e.code === 'KeyE' || e.code === 'ShiftLeft') doAttack('super');
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = false;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = false;
+});
+document.getElementById('k-l').addEventListener('pointerdown', () => st.keys.l = true);
+document.getElementById('k-l').addEventListener('pointerup', () => st.keys.l = false);
+document.getElementById('k-r').addEventListener('pointerdown', () => st.keys.r = true);
+document.getElementById('k-r').addEventListener('pointerup', () => st.keys.r = false);
+document.getElementById('k-j').addEventListener('pointerdown', () => { if (st.p.vy === 0) st.p.vy = -520; });
+document.getElementById('k-p').addEventListener('pointerdown', () => doAttack('punch'));
+document.getElementById('k-k').addEventListener('pointerdown', () => doAttack('kick'));
+document.getElementById('k-s').addEventListener('pointerdown', () => doAttack('super'));
+document.getElementById('btn-start').addEventListener('click', startArena);
+document.getElementById('btn-again').addEventListener('click', startArena);
+document.getElementById('btn-sound').addEventListener('click', () => { muted = !muted; document.getElementById('btn-sound').textContent = muted ? '🔇' : '🔊'; });
+document.getElementById('btn-menu').addEventListener('click', () => { st.running = false; document.getElementById('menu-ov').classList.remove('hidden'); });
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+window.onload = () => {
+  resize();
+  let last = performance.now();
+  function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+};
+})();
+</script>
+</body>
+</html>

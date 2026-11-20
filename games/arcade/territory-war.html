@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BABA. ARCADE · TERRITORY WAR (BÖLGE SAVAŞI)</title>
+<style>
+  :root { --kraft: #1c1917; --red: #dc2626; --blue: #2563eb; --gold: #facc15; }
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--kraft); color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; }
+  #wrap { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  #hud-top {
+    position: absolute; top: 10px; left: 12px; right: 12px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: center; pointer-events: none;
+  }
+  .tw-pill {
+    pointer-events: auto; background: rgba(24, 24, 27, 0.92); border: 2px solid #facc15;
+    border-radius: 12px; padding: 6px 14px; font-weight: 900; font-size: 13px; display: flex; gap: 12px; align-items: center;
+  }
+
+  #hud-bot {
+    position: absolute; bottom: 10px; left: 12px; right: 12px; z-index: 20;
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 8px; pointer-events: none;
+  }
+  .w-bar {
+    pointer-events: auto; background: rgba(24,24,27,0.92); border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 14px; padding: 6px; display: flex; gap: 6px;
+  }
+  .w-btn {
+    padding: 8px 14px; border-radius: 10px; border: 2px solid transparent; background: rgba(255,255,255,0.08);
+    color: #fff; font-weight: 800; font-size: 12px; cursor: pointer;
+  }
+  .w-btn.active { border-color: #facc15; background: rgba(250,204,21,0.22); }
+
+  /* BOLD COMIC-INK STICKMAN MENU */
+  .overlay {
+    position: absolute; inset: 0; z-index: 40;
+    background: radial-gradient(circle at 50% 30%, rgba(127, 29, 29, 0.94), rgba(15, 15, 18, 0.98));
+    display: flex; align-items: center; justify-content: center; padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .comic-card {
+    max-width: 600px; width: 100%; padding: 28px; text-align: center;
+    background: #18181b; border: 4px solid #facc15; border-radius: 18px;
+    box-shadow: 10px 10px 0 #dc2626;
+  }
+  .tw-title { font-size: clamp(28px, 5vw, 44px); font-weight: 900; letter-spacing: 2px; color: #facc15; }
+  .btn-go {
+    margin-top: 18px; padding: 14px 38px; border-radius: 12px; border: 3px solid #fff;
+    background: #dc2626; color: #fff; font-size: 16px; font-weight: 900; cursor: pointer;
+    box-shadow: 5px 5px 0 #000;
+  }
+  .btn-go:hover { transform: translate(-2px, -2px); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+
+  <div id="hud-top">
+    <div class="tw-pill">
+      <span id="turn-txt" style="color:#38bdf8;">SIRA: MAVİ TAKIM</span>
+      <span id="wind-txt" style="color:#facc15;">RÜZGAR: 0</span>
+    </div>
+    <div class="tw-pill">
+      <span id="score-txt">🔵 4 vs 🔴 4</span>
+      <button id="btn-sound" style="background:none;border:none;color:#fff;font-size:15px;cursor:pointer;">🔊</button>
+      <button id="btn-menu" style="background:none;border:none;color:#fff;font-size:15px;cursor:pointer;">☰</button>
+    </div>
+  </div>
+
+  <div id="hud-bot">
+    <div class="w-bar">
+      <button class="w-btn" id="m-l">◄</button>
+      <button class="w-btn" id="m-r">►</button>
+      <button class="w-btn" id="m-j">▲</button>
+    </div>
+    <div class="w-bar" id="wpn-bar">
+      <button class="w-btn active" data-w="grenade">💣 El Bombası</button>
+      <button class="w-btn" data-w="rifle">🔫 Tüfek</button>
+      <button class="w-btn" data-w="boot">🥾 Tekme (Uçur!)</button>
+    </div>
+    <div class="w-bar" style="flex-direction:column;align-items:center;">
+      <div style="width:110px;height:8px;background:#000;border-radius:99px;overflow:hidden;"><div id="pwr-bar" style="width:0%;height:100%;background:#facc15;"></div></div>
+      <button class="w-btn" id="btn-fire" style="background:#dc2626;margin-top:4px;">ATEŞ (BASILI TUT)</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="menu-ov">
+    <div class="comic-card">
+      <div style="font-size:11px;letter-spacing:3px;color:#f87171;font-weight:900;">BABA. ARCADE · 4v4 ÇÖP ADAM TAKTİK</div>
+      <div class="tw-title">TERRITORY WAR</div>
+      <p style="color:#d4d4d8;font-size:13px;margin:12px 0;line-height:1.5;">
+        4v4 çöp adam takımıyla sıra tabanlı strateji! <strong>A/D</strong> ile yürü, <strong>W</strong> ile zıpla; <strong>El Bombası</strong> fırlat, <strong>Tüfek</strong> ile keskin atış yap veya dibindeki düşmana <strong>Tekme</strong> atıp suya uçur!
+      </p>
+      <button class="btn-go" id="btn-start">💥 SAVAŞA BAŞLA</button>
+    </div>
+  </div>
+
+  <div class="overlay hidden" id="end-ov">
+    <div class="comic-card">
+      <div style="font-size:52px;" id="end-ico">🏆</div>
+      <div class="tw-title" id="end-title">ZAFER!</div>
+      <p id="end-sub" style="margin:10px 0 18px;color:#e4e4e7;"></p>
+      <button class="btn-go" id="btn-again">🔄 YENİ MAÇ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+let actx = null, muted = false;
+function sfx(f1, f2, d = 0.14, t = 'sawtooth') {
+  if (muted) return;
+  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
+  if (!actx) return;
+  if (actx.state === 'suspended') actx.resume();
+  const now = actx.currentTime, o = actx.createOscillator(), g = actx.createGain();
+  o.type = t; o.frequency.setValueAtTime(f1, now); o.frequency.exponentialRampToValueAtTime(Math.max(30, f2), now + d);
+  g.gain.setValueAtTime(0.14, now); g.gain.exponentialRampToValueAtTime(0.001, now + d);
+  o.connect(g); g.connect(actx.destination); o.start(now); o.stop(now + d);
+}
+
+const st = {
+  running: false, units: [], turn: 0, phase: 'aim', wpn: 'grenade', wind: 0,
+  charging: false, power: 0, mx: 400, my: 250, keys: { l: false, r: false },
+  proj: null, particles: [], plats: [], shake: 0, time: 0
+};
+
+function startMatch() {
+  const W = canvas.width, H = canvas.height, gY = H * 0.78;
+  st.plats = [
+    { x: W * 0.08, y: gY, w: W * 0.36, h: 140 },
+    { x: W * 0.56, y: gY, w: W * 0.36, h: 140 },
+    { x: W * 0.38, y: gY - 95, w: W * 0.24, h: 24 }
+  ];
+  st.units = [];
+  for (let i = 0; i < 4; i++) {
+    st.units.push({ team: 0, x: W * (0.14 + i * 0.075), y: gY - 26, vx: 0, vy: 0, hp: 100, alive: true, face: 1, aim: -0.6 });
+    st.units.push({ team: 1, x: W * (0.62 + i * 0.075), y: gY - 26, vx: 0, vy: 0, hp: 100, alive: true, face: -1, aim: -2.5 });
+  }
+  st.turn = 0; st.phase = 'aim'; st.proj = null; st.particles = []; st.running = true;
+  document.getElementById('menu-ov').classList.add('hidden');
+  document.getElementById('end-ov').classList.add('hidden');
+  nextTurn(0);
+}
+
+function nextTurn(idx) {
+  const bAlive = st.units.filter(u => u.team === 0 && u.alive).length;
+  const rAlive = st.units.filter(u => u.team === 1 && u.alive).length;
+  document.getElementById('score-txt').textContent = `🔵 ${bAlive} vs 🔴 ${rAlive}`;
+  if (bAlive === 0 || rAlive === 0) {
+    st.running = false;
+    document.getElementById('end-title').textContent = rAlive === 0 ? 'MAVİ TAKIM KAZANDI!' : 'KIRMIZI TAKIM KAZANDI!';
+    document.getElementById('end-sub').textContent = rAlive === 0 ? 'Bölge tamamen ele geçirildi!' : 'Düşman çöp adamlar üstün geldi.';
+    document.getElementById('end-ov').classList.remove('hidden');
+    return;
+  }
+  st.turn = idx % st.units.length;
+  while (!st.units[st.turn].alive) st.turn = (st.turn + 1) % st.units.length;
+  st.phase = 'aim'; st.charging = false; st.power = 0;
+  st.wind = Math.round((Math.random() * 2 - 1) * 12);
+  document.getElementById('wind-txt').textContent = `RÜZGAR: ${st.wind > 0 ? '►' : '◄'} ${Math.abs(st.wind)}`;
+  const active = st.units[st.turn];
+  document.getElementById('turn-txt').textContent = active.team === 0 ? 'SIRA: MAVİ TAKIM (SEN)' : 'SIRA: KIRMIZI BOT';
+  document.getElementById('turn-txt').style.color = active.team === 0 ? '#38bdf8' : '#f87171';
+
+  if (active.team === 1) {
+    setTimeout(() => runAI(active), 750);
+  }
+}
+
+function runAI(ai) {
+  if (!st.running || st.units[st.turn] !== ai || !ai.alive) return;
+  const enemies = st.units.filter(u => u.team === 0 && u.alive);
+  if (!enemies.length) return;
+  const tgt = enemies[Math.floor(Math.random() * enemies.length)];
+  const dx = tgt.x - ai.x, dy = tgt.y - ai.y;
+  if (Math.abs(dx) < 55) { fireAction(ai, 'boot', dx > 0 ? 0 : Math.PI, 1); return; }
+  const useRifle = Math.abs(dy) < 50 && Math.random() < 0.45;
+  if (useRifle) {
+    fireAction(ai, 'rifle', Math.atan2(dy, dx) + (Math.random() - 0.5) * 0.08, 1);
+  } else {
+    const ang = dx > 0 ? -0.85 : (-Math.PI + 0.85);
+    const pwr = Math.max(0.3, Math.min(0.95, Math.abs(dx) / 680 + (Math.random() - 0.5) * 0.1));
+    fireAction(ai, 'grenade', ang, pwr);
+  }
+}
+
+function burst(x, y, col, n = 16) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 70 + Math.random() * 220;
+    st.particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, col, r: 3 + Math.random() * 3, life: 0.65 });
+  }
+}
+
+function fireAction(u, wpn, ang, pwr) {
+  st.phase = 'firing';
+  u.face = Math.cos(ang) >= 0 ? 1 : -1;
+  if (wpn === 'boot') {
+    sfx(180, 70, 0.18);
+    for (const o of st.units) {
+      if (o !== u && o.alive && Math.hypot(o.x - u.x, o.y - u.y) < 65) {
+        o.vx = u.face * 480; o.vy = -340; o.hp -= 22; burst(o.x, o.y, '#facc15', 14);
+      }
+    }
+    setTimeout(() => nextTurn(st.turn + 1), 950);
+  } else if (wpn === 'rifle') {
+    sfx(540, 90, 0.16);
+    st.proj = { x: u.x + Math.cos(ang) * 18, y: u.y - 12 + Math.sin(ang) * 18, vx: Math.cos(ang) * 1050, vy: Math.sin(ang) * 1050, type: 'rifle', shooter: u, life: 1.5 };
+  } else {
+    sfx(280, 110, 0.14, 'triangle');
+    const spd = 300 + pwr * 560;
+    st.proj = { x: u.x + Math.cos(ang) * 16, y: u.y - 14 + Math.sin(ang) * 16, vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd, type: 'grenade', shooter: u, fuse: 2.0 };
+  }
+}
+
+function explodeGrenade(x, y) {
+  sfx(110, 28, 0.35); st.shake = 14; burst(x, y, '#f97316', 28);
+  for (const u of st.units) {
+    if (!u.alive) continue;
+    const d = Math.hypot(u.x - x, (u.y - 12) - y);
+    if (d < 92) {
+      const ratio = 1 - d / 92;
+      u.hp -= Math.round(58 * ratio);
+      const a = Math.atan2(u.y - 20 - y, u.x - x);
+      u.vx += Math.cos(a) * 420 * ratio; u.vy += Math.sin(a) * 380 * ratio - 120;
+    }
+  }
+  st.proj = null;
+  setTimeout(() => nextTurn(st.turn + 1), 900);
+}
+
+function update(dt) {
+  if (!st.running) return;
+  st.time += dt;
+  if (st.shake > 0) st.shake = Math.max(0, st.shake - dt * 30);
+  const active = st.units[st.turn];
+  if (active && active.team === 0 && st.phase === 'aim') {
+    if (st.keys.l) { active.vx = -150; active.face = -1; }
+    else if (st.keys.r) { active.vx = 150; active.face = 1; }
+    else active.vx *= 0.72;
+    if (st.charging) {
+      st.power = Math.min(1, st.power + dt * 0.95);
+      document.getElementById('pwr-bar').style.width = Math.round(st.power * 100) + '%';
+      if (st.power >= 1) { st.charging = false; fireAction(active, st.wpn, active.aim, st.power); }
+    }
+  }
+
+  // Stickman physics
+  for (const u of st.units) {
+    if (!u.alive) continue;
+    u.vy += 820 * dt; u.x += u.vx * dt; u.y += u.vy * dt;
+    for (const pl of st.plats) {
+      if (u.x > pl.x && u.x < pl.x + pl.w && u.vy >= 0 && u.y >= pl.y && u.y - u.vy * dt <= pl.y + 18) {
+        u.y = pl.y; u.vy = 0; if (u !== active) u.vx *= 0.75;
+      }
+    }
+    if (u.y > canvas.height - 25 || u.hp <= 0) {
+      u.alive = false; burst(u.x, Math.min(u.y, canvas.height - 30), u.y > canvas.height - 25 ? '#38bdf8' : '#dc2626', 18);
+    }
+  }
+
+  // Active projectile
+  if (st.proj) {
+    const p = st.proj;
+    if (p.type === 'grenade') {
+      p.vx += st.wind * 14 * dt; p.vy += 680 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.fuse -= dt;
+      for (const pl of st.plats) {
+        if (p.x > pl.x && p.x < pl.x + pl.w && p.y > pl.y && p.y < pl.y + pl.h) {
+          p.y = pl.y; p.vy *= -0.45; p.vx *= 0.65;
+        }
+      }
+      if (p.fuse <= 0 || p.y > canvas.height) explodeGrenade(p.x, Math.min(p.y, canvas.height - 10));
+    } else {
+      p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+      let hit = false;
+      for (const u of st.units) {
+        if (u.alive && u !== p.shooter && Math.hypot(u.x - p.x, (u.y - 16) - p.y) < 20) {
+          u.hp -= 44; u.vx += Math.sign(p.vx) * 220; u.vy -= 140; burst(p.x, p.y, '#ef4444', 16); hit = true; break;
+        }
+      }
+      if (hit || p.life <= 0 || p.x < 0 || p.x > canvas.width) { st.proj = null; setTimeout(() => nextTurn(st.turn + 1), 650); }
+    }
+  }
+
+  for (let i = st.particles.length - 1; i >= 0; i--) {
+    const pt = st.particles[i]; pt.life -= dt; pt.vy += 480 * dt; pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+    if (pt.life <= 0) st.particles.splice(i, 1);
+  }
+}
+
+function render() {
+  const W = canvas.width, H = canvas.height;
+  ctx.save();
+  if (st.shake > 0) ctx.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#0f172a'); sky.addColorStop(0.65, '#334155'); sky.addColorStop(1, '#0284c7');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+
+  // Water pit
+  ctx.fillStyle = '#0369a1'; ctx.fillRect(0, H - 36, W, 36);
+
+  // Platforms
+  for (const pl of st.plats) {
+    ctx.fillStyle = '#44403c'; ctx.strokeStyle = '#1c1917'; ctx.lineWidth = 3;
+    ctx.fillRect(pl.x, pl.y, pl.w, pl.h); ctx.strokeRect(pl.x, pl.y, pl.w, pl.h);
+    ctx.fillStyle = '#4d7c0f'; ctx.fillRect(pl.x, pl.y, pl.w, 10);
+  }
+
+  // Stickman Squads
+  const active = st.units[st.turn];
+  for (const u of st.units) {
+    if (!u.alive) continue;
+    const col = u.team === 0 ? '#38bdf8' : '#ef4444';
+    ctx.save(); ctx.translate(u.x, u.y);
+    if (u === active) {
+      ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(0, -48); ctx.lineTo(-6, -58); ctx.lineTo(6, -58); ctx.fill();
+    }
+    ctx.strokeStyle = col; ctx.lineWidth = 4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, -12); ctx.lineTo(-7, 0); ctx.moveTo(0, -12); ctx.lineTo(7, 0);
+    ctx.moveTo(0, -12); ctx.lineTo(0, -28);
+    ctx.moveTo(0, -24); ctx.lineTo(u.face * 13, -18); ctx.stroke();
+    ctx.fillStyle = '#090d16'; ctx.beginPath(); ctx.arc(0, -34, 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // HP Bar
+    ctx.fillStyle = 'rgba(0,0,0,0.65)'; ctx.fillRect(-16, -46, 32, 5);
+    ctx.fillStyle = col; ctx.fillRect(-15, -45, 30 * Math.max(0, u.hp / 100), 3);
+    ctx.restore();
+  }
+
+  // Aim sight for active blue stickman
+  if (active && active.alive && active.team === 0 && st.phase === 'aim' && st.wpn !== 'boot') {
+    ctx.strokeStyle = 'rgba(250,204,21,0.55)'; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(active.x, active.y - 16);
+    ctx.lineTo(active.x + Math.cos(active.aim) * 110, active.y - 16 + Math.sin(active.aim) * 110); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (st.proj) {
+    ctx.fillStyle = st.proj.type === 'grenade' ? '#22c55e' : '#fde047';
+    ctx.beginPath(); ctx.arc(st.proj.x, st.proj.y, st.proj.type === 'grenade' ? 6 : 4, 0, Math.PI * 2); ctx.fill();
+  }
+  for (const pt of st.particles) { ctx.fillStyle = pt.col; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill(); }
+  ctx.restore();
+}
+
+document.querySelectorAll('#wpn-bar .w-btn').forEach(b => b.addEventListener('click', () => {
+  st.wpn = b.dataset.w;
+  document.querySelectorAll('#wpn-bar .w-btn').forEach(x => x.classList.toggle('active', x === b));
+}));
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect(); st.mx = e.clientX - r.left; st.my = e.clientY - r.top;
+  const a = st.units[st.turn];
+  if (a && a.team === 0 && st.phase === 'aim') { a.aim = Math.atan2(st.my - (a.y - 16), st.mx - a.x); a.face = Math.cos(a.aim) >= 0 ? 1 : -1; }
+});
+const startCharge = () => {
+  const a = st.units[st.turn];
+  if (!st.running || !a || a.team !== 0 || st.phase !== 'aim') return;
+  if (st.wpn !== 'grenade') fireAction(a, st.wpn, a.aim, 1);
+  else { st.charging = true; st.power = 0.15; }
+};
+const endCharge = () => {
+  const a = st.units[st.turn];
+  if (st.charging && a) { st.charging = false; document.getElementById('pwr-bar').style.width = '0%'; fireAction(a, st.wpn, a.aim, st.power); }
+};
+canvas.addEventListener('pointerdown', startCharge);
+window.addEventListener('pointerup', endCharge);
+document.getElementById('btn-fire').addEventListener('pointerdown', e => { e.stopPropagation(); startCharge(); });
+document.getElementById('btn-fire').addEventListener('pointerup', e => { e.stopPropagation(); endCharge(); });
+window.addEventListener('keydown', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = true;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = true;
+  if (e.code === 'KeyW' || e.code === 'ArrowUp') { const a = st.units[st.turn]; if (a && a.team === 0 && a.vy === 0) a.vy = -340; }
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'KeyA' || e.code === 'ArrowLeft') st.keys.l = false;
+  if (e.code === 'KeyD' || e.code === 'ArrowRight') st.keys.r = false;
+});
+document.getElementById('m-l').addEventListener('pointerdown', () => st.keys.l = true);
+document.getElementById('m-l').addEventListener('pointerup', () => st.keys.l = false);
+document.getElementById('m-r').addEventListener('pointerdown', () => st.keys.r = true);
+document.getElementById('m-r').addEventListener('pointerup', () => st.keys.r = false);
+document.getElementById('m-j').addEventListener('pointerdown', () => { const a = st.units[st.turn]; if (a && a.team === 0 && a.vy === 0) a.vy = -340; });
+document.getElementById('btn-start').addEventListener('click', startMatch);
+document.getElementById('btn-again').addEventListener('click', startMatch);
+document.getElementById('btn-sound').addEventListener('click', () => { muted = !muted; document.getElementById('btn-sound').textContent = muted ? '🔇' : '🔊'; });
+document.getElementById('btn-menu').addEventListener('click', () => { st.running = false; document.getElementById('menu-ov').classList.remove('hidden'); });
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+window.onload = () => {
+  resize();
+  let last = performance.now();
+  function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; update(dt); render(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+};
+})();
+</script>
+</body>
+</html>
