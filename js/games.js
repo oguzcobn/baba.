@@ -368,11 +368,29 @@ const App = (() => {
       msgType: 'baba-yilan-arenasi-score', scoreId: 'yilan-arenasi'
     });
   }
-  // ZIP'teki 8 bağımsız HTML oyunu: mevcut Wild Ones oyunu korunur.
+  const FLASH_GAMES = {
+    'age-of-war': 'age-of-war',
+    'warfare-1917': 'warfare-1917',
+    'the-waitress': 'the-waitress',
+    'fancy-pants-3': 'fancy-pants-adventure-3',
+    'territory-war': 'territory-war',
+    'electric-man-2': 'electric-man-2'
+  };
   const ARCADE_IMPORTED = [{"id":"age-of-war","name":["Age of War: Çağlar Savaşı","Age of War"],"tip":["Strateji","Strategy"]},{"id":"gunblood","name":["Gunblood: Düello","Gunblood: Duel"],"tip":["Düello","Duel"]},{"id":"warfare-1917","name":["Warfare 1917: Siper Savaşı","Warfare 1917"],"tip":["Strateji","Strategy"]},{"id":"the-waitress","name":["The Waitress: BABA Kafe","The Waitress: Cafe"],"tip":["Simülasyon","Simulation"]},{"id":"fancy-pants-3","name":["Fancy Pants 3","Fancy Pants 3"],"tip":["Platform","Platformer"]},{"id":"territory-war","name":["Territory War: Bölge Savaşı","Territory War"],"tip":["Strateji","Strategy"]},{"id":"electric-man-2","name":["Electric Man 2","Electric Man 2"],"tip":["Dövüş","Fighting"]},{"id":"wild-ones-world","name":["Wild Ones: World Edition","Wild Ones: World Edition"],"tip":["Topçu","Artillery"]}];
   function importedArcadeGame(id) {
     const cfg = ARCADE_IMPORTED.find(g => g.id === id);
     if (!cfg) return;
+    const flashSlug = FLASH_GAMES[id];
+    if (flashSlug) {
+      openEmbeddedGame({
+        title: T(...cfg.name),
+        url: 'https://flash-games.io/' + flashSlug,
+        tag: T('BABA. ARCADE · Harici Bağlantı', 'BABA. ARCADE · External'),
+        lead: T('Flash Games üzerinden oyna. Çerçeve açılmazsa “Yeni sekmede aç ↗” bağlantısını kullan.', 'Play via Flash Games. If the embed is blocked, use “Open in a new tab ↗”.'),
+        tip: T("Oyun bağlantısı harici bir siteye açılır.", "The game is hosted on an external site.")
+      });
+      return;
+    }
     openEmbeddedGame({
       title: T(...cfg.name),
       url: 'games/arcade/' + id + '.html?v=1',

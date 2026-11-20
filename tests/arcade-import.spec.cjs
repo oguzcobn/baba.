@@ -22,7 +22,27 @@ test('all eight imported arcade games appear in the BABA game library', async ({
   await expect(page.locator('.lb-card[data-id="ates-ve-su"]')).toHaveCount(0);
 });
 
-for (const id of ids) {
+const flashSlugs = {
+  'age-of-war': 'age-of-war',
+  'warfare-1917': 'warfare-1917',
+  'the-waitress': 'the-waitress',
+  'fancy-pants-3': 'fancy-pants-adventure-3',
+  'territory-war': 'territory-war',
+  'electric-man-2': 'electric-man-2'
+};
+
+for (const [id, slug] of Object.entries(flashSlugs)) {
+  test('arcade route links to Flash Games: '+id, async ({page})=>{
+    const url = 'https://flash-games.io/'+slug;
+    await page.route(url, route=>route.fulfill({body:'Flash Games'}));
+    await page.addInitScript(() => sessionStorage.setItem('baba_ok','1'));
+    await page.goto(BASE+'#'+id);
+    await expect(page.locator('iframe')).toHaveAttribute('src',url);
+    await expect(page.locator('a[target="_blank"][href="'+url+'"]')).toBeVisible();
+  });
+}
+
+for (const id of ['gunblood','wild-ones-world']) {
   test('new arcade route loads and game is executable: '+id, async ({page})=>{
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.addInitScript(()=>sessionStorage.setItem('baba_ok','1'));
