@@ -6,7 +6,9 @@ import * as anatolia from "./data/anatolia.js";
 import { playable } from "./data/playable.js";
 import { loadWorld } from "./world.js";
 import StrategyTime from "./engine/calendar.js";
-import Industry1919 from "./industry.js";
+import * as Industry from "./engine/industry.js";
+import { buildings, units } from "./data/industry.js";
+import { industryPanel, researchPanel, politicsPanel, resourceBar, wireMarket } from "./ui/industry.js";
 import { updateAtlas } from "./ui/atlas.js";
 import { bindDrawer, openDrawer } from "./ui/drawer.js";
 const W = new URLSearchParams(location.search).get("scenario")!=="1919";
@@ -58,18 +60,20 @@ function polygon(p){let poly=[[0,0],[1080,0],[1080,650],[0,650]],x=p.x*10.5,y=p.
 function color(p){if(layer==="army")return "hsl("+(125-Math.min(1,p.army/150)*95)+",44%,43%)";if(layer==="economy")return "hsl("+(30+Math.min(1,p.dev/9)*100)+",39%,42%)";if(layer==="happiness")return "hsl("+(p.happy*1.2)+",40%,43%)";return N[p.owner][2]}
 function pulseAction(type,id){const token=++fxSeq;actionFx={type,id,token};setTimeout(()=>{if(actionFx&&actionFx.token===token){actionFx=null;if(S)render()}},1500);}
 function baseRender(){if(!S)return home();if(S.win||S.loss){const regions=own();app.innerHTML=gameHeader()+'<main class="home endgame-summary"><div class="hero"><div class="eyebrow">1919–1923 · TUR '+S.turn+'</div><h1>'+(S.win?"🏆 Millî Mücadele Zaferi":"⚑ Sefer Kaybedildi")+'</h1><p>'+(S.win?"Hedef bölgeleri ele geçirdin.":"Devletin topraklarını veya istikrarını kaybetti.")+'</p><div class="stats"><div class="stat">Bölge <b>'+regions.length+'</b></div><div class="stat">Ordu <b>'+regions.reduce((n,p)=>n+p.army,0)+'</b></div><div class="stat">Hazine <b>'+S.gold+'</b></div><div class="stat">Tur <b>'+S.turn+'</b></div></div><div class="actions"><button class="gold" data-a="menu">Yeni Sefer</button><button data-a="saves">Kayıtlar</button><button data-a="world">🌍 Dünya Modu</button></div></div></main>';wire();return}
- const a=own(),army=a.reduce((n,p)=>n+p.army,0),income=incomeOf(S.me),cost=Math.ceil(army*.23),previousTab=app.querySelector(".tabs .on")?.dataset.tab,previousScroll=app.querySelector(".sidebody")?.scrollTop||0;
+ Industry.initialize(S,N[S.me][3]);
+ const a=own(),army=a.reduce((n,p)=>n+p.army,0),previousTab=app.querySelector(".tabs .on")?.dataset.tab,previousScroll=app.querySelector(".sidebody")?.scrollTop||0;
  if(!app.querySelector(".game")){
-   app.innerHTML=gameHeader()+'<div class="game"><div class="resources"></div><div class="campaign-clock" aria-live="polite"></div><div class="layout" data-drawer="half"><section class="maparea"><div class="toolbar">'+[["political","Siyasi"],["army","Ordu"],["economy","Ekonomi"],["happiness","Memnuniyet"]].map(([id,n])=>'<button data-layer="'+id+'" class="'+(layer===id?"selected":"")+'">'+ico(({political:"globe",army:"swords",economy:"coins",happiness:"people"})[id])+' '+n+'</button>').join("")+'<button data-a="center">'+ico("pin")+' Ortala</button><input id="map-search" type="search" list="map-search-options" placeholder="Ülke veya bölge ara" aria-label="Ülke veya bölge ara"><datalist id="map-search-options">'+S.p.map(p=>'<option value="'+safe(p.label)+'">').join("")+'</datalist></div><div id="viewport" class="viewport"><svg id="world" viewBox="0 0 1080 650" aria-label="Strateji haritası"></svg><canvas class="map-fx" aria-hidden="true"></canvas><div class="maptip"></div><div class="zoom"><button data-a="plus" title="Haritayı yakınlaştır" aria-label="Yakınlaştır">'+ico("plus")+'</button><button data-a="minus" title="Haritayı uzaklaştır" aria-label="Uzaklaştır">'+ico("minus")+'</button></div></div><div class="bottom"></div></section><aside class="side"><div class="drawer-controls"><button id="drawer-resize" aria-label="Karargâh boyutunu değiştir">Karargâh ▴</button><button id="drawer-close" aria-label="Karargâhı küçült">Küçült</button></div><div class="tabs">'+[["province","Eyalet"],["nation","Devlet"],["diplomacy","Diplomasi"],["events","Olaylar"]].map(([id,n])=>'<button data-tab="'+id+'" class="'+(tab===id?"on":"")+'">'+n+'</button>').join("")+'</div><div class="sidebody"></div></aside></div></div>';
+   app.innerHTML=gameHeader()+'<div class="game"><div class="resources"></div><div class="campaign-clock" aria-live="polite"></div><div class="layout" data-drawer="half"><section class="maparea"><div class="toolbar">'+[["political","Siyasi"],["army","Ordu"],["economy","Ekonomi"],["happiness","Memnuniyet"]].map(([id,n])=>'<button data-layer="'+id+'" class="'+(layer===id?"selected":"")+'">'+ico(({political:"globe",army:"swords",economy:"coins",happiness:"people"})[id])+' '+n+'</button>').join("")+'<button data-a="center">'+ico("pin")+' Ortala</button><input id="map-search" type="search" list="map-search-options" placeholder="Ülke veya bölge ara" aria-label="Ülke veya bölge ara"><datalist id="map-search-options">'+S.p.map(p=>'<option value="'+safe(p.label)+'">').join("")+'</datalist></div><div id="viewport" class="viewport"><svg id="world" viewBox="0 0 1080 650" aria-label="Strateji haritası"></svg><canvas class="map-fx" aria-hidden="true"></canvas><div class="maptip"></div><div class="zoom"><button data-a="plus" title="Haritayı yakınlaştır" aria-label="Yakınlaştır">'+ico("plus")+'</button><button data-a="minus" title="Haritayı uzaklaştır" aria-label="Uzaklaştır">'+ico("minus")+'</button></div></div><div class="bottom"></div></section><aside class="side"><div class="drawer-controls"><button id="drawer-resize" aria-label="Karargâh boyutunu değiştir">Karargâh ▴</button><button id="drawer-close" aria-label="Karargâhı küçült">Küçült</button></div><div class="tabs">'+[["province","Eyalet"],["industry","Sanayi"],["researchLab","Araştırma"],["policies","Meclis"],["nation","Devlet"],["diplomacy","Diplomasi"],["events","Olaylar"]].map(([id,n])=>'<button data-tab="'+id+'" class="'+(tab===id?"on":"")+'">'+n+'</button>').join("")+'</div><div class="sidebody"></div></aside></div></div>';
    bindDrawer(app);
  }
  function region(selector,markup){
    const node=app.querySelector(selector);
    if(node._markup!==markup){node.innerHTML=markup;node._markup=markup;}
  }
- region(".resources",'<span>'+flag(S.me)+' <b>'+safe(name(S.me))+'</b></span><span>'+ico("calendar")+' <b>'+date(S.turn)+'</b></span><span>'+ico("coins")+' Altın <b>'+S.gold+'</b></span><span>'+ico("chart")+' Net <b>'+(income-cost)+'</b></span><span>'+ico("swords")+' Ordu <b>'+army+'</b></span><span>'+ico("people")+' İnsan Gücü <b>'+S.men+'</b></span><span>'+ico("book")+' Teknoloji <b>'+S.tech+'</b></span><span>'+ico("shield")+' İstikrar <b>'+S.stability+'%</b></span>');
+ region(".resources",'<span>'+flag(S.me)+' <b>'+safe(name(S.me))+'</b></span><span>'+ico("calendar")+' <b>'+date(S.turn)+'</b></span><span>'+ico("coins")+' Altın <b>'+S.gold+'</b></span><span>'+ico("chart")+' Net/tur <b>'+Math.round(Industry.budget(S).net*StrategyTime.tempo(S))+'</b></span><span>'+ico("swords")+' Ordu <b>'+army+'</b></span><span>'+ico("people")+' İnsan Gücü <b>'+S.men+'</b></span><span>'+ico("book")+' Doktrin <b>'+S.tech+'</b></span><span>'+ico("shield")+' İstikrar <b>'+S.stability+'%</b></span>'+resourceBar(S));
  region(".bottom",'<span class="small">'+safe(prov(sel)?.label||"Eyalet")+'</span><button data-a="recruit" '+(prov(sel)?.owner!==S.me?"disabled":"")+'>'+ico("plus")+' Asker</button>'+(moving?'<button data-a="cancelmove">✕ İptal</button>':'')+'<button data-a="move" '+(prov(sel)?.owner!==S.me?"disabled":"")+'>'+ico("swords")+' Ordu Gönder</button><span class="spacer"></span><button class="gold" data-a="end">Turu Bitir '+ico("arrow")+'</button>');
  region(".sidebody",sidebar());
+ if(tab==="industry")wireMarket(S);
  app.querySelector(".maptip").textContent=(moving?"Ordu: "+prov(moving).label+": komşu hedefi seç":"Bölge seç · asker yetiştir · tur bitir");
  app.querySelector(".campaign-clock").textContent=date(S.turn)+" · "+StrategyTime.season(S)+" · "+StrategyTime.tempo(S)+" ay/tur · "+StrategyTime.caption(S);
  app.querySelectorAll("[data-layer]").forEach(b=>b.classList.toggle("selected",b.dataset.layer===layer));
@@ -79,9 +83,29 @@ function baseRender(){if(!S)return home();if(S.win||S.loss){const regions=own();
  app.querySelector(".sidebody").scrollTop=previousTab===tab?previousScroll:0;
  if(dialog)modal();
 }
-function sidebar(){return tab==="province"?provincePanel()+Industry1919.panel(S,prov(sel)):tab==="nation"?nationPanel():tab==="diplomacy"?diplomacyPanel():eventsPanel()}
-function baseProvincePanel(){const p=prov(sel);if(!p)return "";const mine=p.owner===S.me;return (mine&&p.productionQueue?.length?'<div class="panel"><h3>Üretim sırası</h3>'+p.productionQueue.map(j=>StrategyTime.orders[j.type][0]+' · '+j.left+' ay').join('<br>')+'</div>':'')+'<div class="eyebrow">EYALET YÖNETİMİ</div><h2>'+safe(p.label)+'</h2><p>'+flag(p.owner)+' '+name(p.owner)+'</p><div class="stats"><div class="stat">⚔ Asker <b>'+p.army+'</b></div><div class="stat">👥 Nüfus <b>'+p.pop+'k</b></div><div class="stat">🏛 Gelişim <b>'+p.dev+'</b></div><div class="stat">☺ Memnuniyet <b>'+p.happy+'%</b></div></div><div class="panel"><h3>'+(mine?"Eyalet Kararları":"Yabancı Eyalet")+'</h3>'+(mine?'<p class="muted">Altın harcayarak asker ve üretim kapasitesini artır.</p><div class="gridbtn"><button class="gold" data-a="recruit">20 asker eğit<br>4 ay · 60 altın</button><button data-a="move">↗ Ordu Gönder</button><button data-a="invest">📈 Yatırım<br>75 altın</button><button data-a="market">🏦 Pazar<br>95 altın</button><button data-a="farm">🌾 Çiftlik<br>85 altın</button><button data-a="fort">🛡 Tahkimat<br>65 altın</button><button data-a="festival" class="full">🎊 Halk Şenliği · 40 altın</button></div>':'<p class="muted">Düşman ülkeye saldırmak için Diplomasi sekmesinden savaş ilan et, ardından kendi komşu eyaletinden asker gönder.</p><button data-tab="diplomacy">Diplomasi</button>')+'</div><div class="panel"><h3>Komşu Bölgeler</h3>'+adj(p.id).map(id=>'<button data-j="'+id+'" class="chip">'+flag(prov(id).owner)+' '+prov(id).label+'</button>').join("")+'</div>'}
-function baseNationPanel(){const p=own(),army=p.reduce((a,q)=>a+q.army,0),income=incomeOf(S.me),net=income-Math.ceil(army*.23);return '<div class="panel"><h3>'+StrategyTime.caption(S)+'</h3><p>Çelik '+Industry1919.stock(S).steel+' · Yakıt '+Industry1919.stock(S).fuel+'</p><button data-a="tempo">Tur süresi · '+StrategyTime.tempo(S)+' ay ⇄</button></div><div class="eyebrow">ULUSAL YÖNETİM</div><h2>'+flag(S.me)+' '+name(S.me)+'</h2><div class="stats"><div class="stat">Eyalet <b>'+p.length+'</b></div><div class="stat">Ordu <b>'+army+'</b></div><div class="stat">Gelir <b>'+income+'</b></div><div class="stat">Net <b>'+net+'</b></div></div><div class="panel"><h3>Zafer Hedefi</h3><p class="muted">'+(S.me==="tr"?"İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.":"18 eyalete ulaş.")+'</p></div><div class="panel"><h3>Devlet Kararları</h3><p class="muted">Temel devlet geliri: +20 altın/tur. Giderler hazineden karşılanabiliyorsa istikrar düşmez.</p><div class="gridbtn"><button data-a="tax">Vergi Artır<br>+60 altın, −6 istikrar</button><button data-a="research">Teknoloji<br>100 altın</button><button data-a="mobilize">Seferberlik<br>50 altın, +90 insan</button><button data-a="stabilize">İdari Reform<br>70 altın, +10 istikrar</button></div></div><div class="panel"><h3>En Güçlü Eyaletler</h3>'+p.slice().sort((a,b)=>b.army-a.army).slice(0,7).map(q=>'<div class="item"><strong>'+q.label+' · '+q.army+' asker</strong><button style="float:right" data-j="'+q.id+'">Göster</button></div>').join("")+'</div>'}
+const historicalPorts=new Set(["Istanbul","Canakkale","Izmir","Antalya","Samsun","Trabzon","Inebolu","Mersin","Giresun","Izmit"]);
+function isCoastal(p){return !!p && (W?coastal:historicalPorts).has(p.id);}
+function tradePartners(){
+ const owners=new Map(S.p.map(p=>[p.id,p.owner])),ids=new Set();
+ for(const [a,b] of LINKS){
+   const left=owners.get(a),right=owners.get(b);
+   if(left===S.me)ids.add(right);
+   if(right===S.me)ids.add(left);
+ }
+ for(const pair of S.treaties?.trade||[])if(pair.includes(S.me))ids.add(pair.find(id=>id!==S.me));
+ const active=new Set(owners.values());
+ return [...ids].filter(id=>id&&id!==S.me&&id!=="ne"&&active.has(id)&&!war(S.me,id)).sort((a,b)=>name(a).localeCompare(name(b),"tr"));
+}
+function sidebar(){
+ const p=prov(sel),month=StrategyTime.month(S,S.turn);
+ if(tab==="industry")return industryPanel(S,p,isCoastal(p),month,tradePartners(),name);
+ if(tab==="researchLab")return researchPanel(S,month);
+ if(tab==="policies")return politicsPanel(S,month);
+ if(tab==="province")return baseProvincePanel()+(p?.owner===S.me?'<button data-tab="industry">Tesisler, üretim ve eğitim</button>':"");
+ return tab==="nation"?nationPanel():tab==="diplomacy"?diplomacyPanel():eventsPanel();
+}
+function baseProvincePanel(){const p=prov(sel);if(!p)return "";const mine=p.owner===S.me;return (mine&&p.productionQueue?.length?'<div class="panel"><h3>Üretim sırası</h3>'+p.productionQueue.map(j=>StrategyTime.orders[j.type][0]+' · '+j.left+' ay').join('<br>')+'</div>':'')+'<div class="eyebrow">EYALET YÖNETİMİ</div><h2>'+safe(p.label)+'</h2><p>'+flag(p.owner)+' '+name(p.owner)+'</p><div class="stats"><div class="stat">⚔ Asker <b>'+p.army+'</b></div><div class="stat">👥 Nüfus <b>'+p.pop+'k</b></div><div class="stat">🏛 Gelişim <b>'+p.dev+'</b></div><div class="stat">☺ Memnuniyet <b>'+p.happy+'%</b></div></div><div class="panel"><h3>'+(mine?"Eyalet Kararları":"Yabancı Eyalet")+'</h3>'+(mine?'<p class="muted">Altın harcayarak asker ve üretim kapasitesini artır.</p><div class="gridbtn"><button class="gold" data-a="recruit">Piyade eğit<br>4 parti teçhizat · 8 ay</button><button data-a="move">↗ Ordu Gönder</button><button data-a="invest">📈 Yatırım<br>75 altın</button><button data-a="market">🏦 Pazar<br>95 altın</button><button data-a="farm">🌾 Çiftlik<br>85 altın</button><button data-a="fort">🛡 Tahkimat<br>65 altın</button><button data-a="festival" class="full">🎊 Halk Şenliği · 40 altın</button></div>':'<p class="muted">Düşman ülkeye saldırmak için Diplomasi sekmesinden savaş ilan et, ardından kendi komşu eyaletinden asker gönder.</p><button data-tab="diplomacy">Diplomasi</button>')+'</div><div class="panel"><h3>Komşu Bölgeler</h3>'+adj(p.id).map(id=>'<button data-j="'+id+'" class="chip">'+flag(prov(id).owner)+' '+prov(id).label+'</button>').join("")+'</div>'}
+function baseNationPanel(){const p=own(),army=p.reduce((a,q)=>a+q.army,0),income=Math.round(Industry.budget(S).income*StrategyTime.tempo(S)),net=Math.round(Industry.budget(S).net*StrategyTime.tempo(S));return '<div class="panel"><h3>'+StrategyTime.caption(S)+'</h3><p>Çelik '+Math.floor(S.materials.steel)+' · Yakıt '+Math.floor(S.materials.fuel)+'</p><button data-a="tempo">Tur süresi · '+StrategyTime.tempo(S)+' ay ⇄</button></div><div class="eyebrow">ULUSAL YÖNETİM</div><h2>'+flag(S.me)+' '+name(S.me)+'</h2><div class="stats"><div class="stat">Eyalet <b>'+p.length+'</b></div><div class="stat">Ordu <b>'+army+'</b></div><div class="stat">Gelir <b>'+income+'</b></div><div class="stat">Net <b>'+net+'</b></div></div><div class="panel"><h3>Zafer Hedefi</h3><p class="muted">'+(S.me==="tr"?"İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.":"18 eyalete ulaş.")+'</p></div><div class="panel"><h3>Devlet Kararları</h3><p class="muted">Bütçeye her ay tesis gelirleri ve birlik bakım giderleri işlenir. Giderler hazineden karşılanabiliyorsa istikrar düşmez.</p><div class="gridbtn"><button data-a="tax">Vergi Artır<br>+60 altın, −6 istikrar</button><button data-tab="researchLab">Araştırma programı</button><button data-tab="policies">Askere alma yasaları</button><button data-a="stabilize">İdari Reform<br>70 altın, +10 istikrar</button></div></div><div class="panel"><h3>En Güçlü Eyaletler</h3>'+p.slice().sort((a,b)=>b.army-a.army).slice(0,7).map(q=>'<div class="item"><strong>'+q.label+' · '+q.army+' asker</strong><button style="float:right" data-j="'+q.id+'">Göster</button></div>').join("")+'</div>'}
 function diplomacyPanel(){
  const p=prov(sel),id=p?.owner;
  if(!id||id===S.me||id==="ne"||!N[id])return '<div class="eyebrow">DİPLOMASİ</div><h2>Ülke seç</h2><div class="panel"><p>Haritadan görüşmek istediğin yabancı ülkeyi seç. İşlemler yalnızca seçtiğin ülkeye uygulanır.</p><p class="muted">Seçili bölge: '+safe(p?.label||"Yok")+'</p></div>';
@@ -91,8 +115,59 @@ function diplomacyPanel(){
  return '<div class="eyebrow">SEÇİLİ ÜLKE · DİPLOMASİ</div><h2>'+flag(id)+' '+safe(name(id))+'</h2><p class="muted">Seçili bölge: '+safe(p.label)+'</p><div class="panel dip-target" data-country="'+safe(id)+'"><p class="muted">İlişki '+r+' · '+(x?"⚔ Savaş":"🕊 Barış")+(truce?" · Ateşkes "+S.truce[key]+". tura kadar":"")+(ally?" · 🛡 Müttefik":"")+(trading?" · 💰 Ticaret anlaşması":"")+'</p><div class="gridbtn"><button data-d="improve:'+id+'">İlişki Artır<br>35 altın · +13 ilişki</button><button data-d="'+(x?"peace":"war")+':'+id+'">'+(x?"Barış Teklifi<br>Ücretsiz · Ordu dengesi":"Savaş İlanı<br>Ücretsiz · Ateşkes yoksa")+'</button><button data-d="gift:'+id+'">Hediye Gönder<br>55 altın · +22 ilişki</button><button data-d="alliance:'+id+'" '+(ally?'disabled':'')+'>İttifak Kur<br>Ücretsiz · +30 ilişki</button><button data-d="pact:'+id+'" '+(x||truce?'disabled':'')+'>🕊 Saldırmazlık Paktı<br>40 altın · 12 tur</button><button data-d="trade:'+id+'" '+(x||trading?'disabled':'')+'>💰 Ticaret Anlaşması<br>35 altın · +12/tur</button></div></div><p class="muted">Anlaşmalar gerçekten ekonomiyi ve yapay zekâ kararlarını etkiler. Başka bir ülke için haritadan o ülkeye dokun.</p><button data-tab="province">← Eyalete Dön</button>';
 }
 function eventsPanel(){return '<div class="eyebrow">TELGRAF</div><h2>Olaylar ve Tarihçe</h2><div class="notices">'+S.log.map(e=>'<div class="item"><small>Tur '+e.t+' · '+date(e.t)+'</small>'+safe(e.msg)+'</div>').join("")+'</div>'}
+function economicOrder(action){
+ const [kind,key,value]=action.split(":"),p=prov(sel),month=StrategyTime.month(S,S.turn),e=S.industry;
+ const selected=id=>{const field=document.getElementById(id);return field?.value||field?.querySelector("option")?.value;};
+ const finish=error=>{
+   if(error)return toast(error);
+   save();render();
+ };
+ const id=Number(key),line=e.lines.find(l=>l.id===id);
+ if(kind==="build")return finish(Industry.build(S,p,key,isCoastal(p),month));
+ if(kind==="cancelbuild"&&p?.owner===S.me&&p.construction){
+   const job=p.construction,b=buildings[job.type];
+   return gameConfirm("İnşaat iptali",b[0]+" inşaatı durdurulsun mu?",()=>{
+     if(p.construction!==job||p.owner!==S.me)return;
+     const refund=job.legacy?0:.8*Math.max(0,1-job.work/b[1]);
+     S.gold+=Math.floor(b[2]*refund);S.materials.steel+=Math.floor(b[3]*refund);
+     delete p.construction;finish();
+   });
+ }
+ if(kind==="line"){
+   const choice=selected("econ-model-"+key);
+   if(!choice)return toast("Bir model seç.");
+   const [model,level]=choice.split(".");
+   const apply=()=>finish(Industry.setLine(S,line?id:0,model,Number(level),month));
+   if(line)return gameConfirm("Üretim modelini değiştir","Kısmi iş kaybedilir ve hat verimi düşer. Model değiştirilsin mi?",apply);
+   return apply();
+ }
+ if(kind==="assign"&&line)return finish(Industry.allocate(S,id,Number(value)));
+ if(kind==="priority"&&line){e.lines=[line,...e.lines.filter(l=>l!==line)];return finish();}
+ if(kind==="close"&&line)return gameConfirm("Üretim hattını kapat","Bu hattın kısmi üretim işi kaybedilir.",()=>{e.lines=e.lines.filter(l=>l!==line);finish();});
+ if(kind==="train"||kind==="infantry"){
+   const type=kind==="infantry"?"infantry":selected("econ-unit");
+   const error=Industry.train(S,p,type,isCoastal(p));
+   if(!error)log(p.label+" · "+units[type][0]+" eğitime alındı.");
+   return finish(error);
+ }
+ if(kind==="research")return finish(Industry.research(S,key,month));
+ if(kind==="law")return finish(Industry.changeLaw(S,key,Number(value),month));
+ if(kind==="focus")return finish(Industry.focus(S,id,Number(value),month));
+ if(kind==="team"){
+   if(e.teams!==1||e.political<20||own().reduce((n,p)=>n+Industry.count(p,"civil"),0)<2)return toast("İki sivil fabrika ve 20 politik güç gerekli.");
+   e.political-=20;e.teams=2;return finish();
+ }
+ if(kind==="crisis"&&e.crisis){
+   if(key==="deal"&&e.political>=15){e.political-=15;S.stability=Math.min(100,S.stability+6);}
+   else if(key==="budget"&&S.gold>=12){S.gold-=12;S.stability=Math.min(100,S.stability+4);}
+   else return toast("Karar için kaynak yetersiz.");
+   e.crisis=null;return finish();
+ }
+ if(kind==="buy"||kind==="sell")return finish(Industry.trade(S,selected("econ-partner"),selected("econ-resource"),kind==="buy"?5:-5,tradePartners(),month));
+}
 function baseAct(a){
-if(S&&a.startsWith("build-")){const error=Industry1919.build(S,prov(sel),a.slice(6));if(error)return toast(error);save();render();return;}
+if(S&&a.startsWith("econ:"))return economicOrder(a.slice(5));
+if(S&&a==="recruit")return economicOrder("infantry");
 if(a==="tempo"&&S){StrategyTime.setTempo(S,StrategyTime.tempo(S)===6?3:6);save();render();return;}
 if(a==="menu")return home();
 if(a==="nations")return nations();
@@ -121,13 +196,10 @@ if(p.army<2)return toast("Bu eyalette hareket edecek asker yok.");
 if(p.moved)return toast("Bu eyalette bu tur zaten ordu sevkiyatı yaptın.");
 moving=sel;render();toast("Haritada seçili eyalete komşu bir bölgeye dokun.");return;
 }
-if(["recruit","invest","market","farm","fort","festival"].includes(a)){
+if(["invest","market","farm","fort","festival"].includes(a)){
 const p=prov(sel);if(p?.owner!==S.me)return;
-const cost={recruit:60,invest:75,market:95,farm:85,fort:65,festival:40}[a];
-if(a==="recruit"&&S.men<20)return toast("İnsan gücü yetersiz.");
-if(a==="recruit"&&p.moved)return toast("Bu eyalette bu tur zaten ordu sevkiyatı yaptın.");
+const cost={invest:75,market:95,farm:85,fort:65,festival:40}[a];
 if(!pay(cost))return;
-if(a==="recruit"){S.men-=20;StrategyTime.enqueue(p,"infantry")}
 if(a==="invest"){p.dev++;p.pop+=2;p.investment=(p.investment||0)+1}
 if(a==="market")p.market++;
 if(a==="farm"){p.farm++;p.pop+=4}
@@ -137,16 +209,13 @@ const models={recruit:"barracks",invest:"investment",market:"market",farm:"farm"
 pulseAction(models[a],p.id);
 log(p.label+": "+ACTION_LABELS[a]+(a==="recruit"?".":" tamamlandı."));save();render();return;
 }
-if(["tax","research","mobilize","stabilize"].includes(a)){
+if(["tax","stabilize"].includes(a)){
 S.decisions ||= {};
 if(S.decisions[a]===S.turn)return toast("Bu devlet kararını aynı turda yalnızca bir kez uygulayabilirsin.");
 if(a==="tax"&&S.stability<6)return toast("Vergi artışı için istikrar yetersiz.");
-if(a==="mobilize"&&S.stability<3)return toast("Seferberlik için istikrar yetersiz.");
 const cost={tax:0,research:100,mobilize:50,stabilize:70}[a];if(!pay(cost))return;
 S.decisions[a]=S.turn;
 if(a==="tax"){S.gold+=60;S.stability=clamp(S.stability-6,0,100)}
-if(a==="research")S.tech++;
-if(a==="mobilize"){S.men+=90;S.stability=clamp(S.stability-3,0,100)}
 if(a==="stabilize")S.stability=clamp(S.stability+10,0,100);
 log("Devlet kararı: "+ACTION_LABELS[a]+" uygulandı.");save();render();
 }
@@ -245,13 +314,20 @@ function baseAi(){
   }
  }
 }
-function baseNext(){if(S.win||S.loss)return toast("Sefer sona erdi.");const ps=own(),army=ps.reduce((n,p)=>n+p.army,0),income=incomeOf(S.me),cost=Math.ceil(army*.23);const unpaid=Math.max(0,cost-(S.gold+income));S.gold=Math.max(0,S.gold+income-cost);S.men+=Math.ceil(ps.reduce((n,p)=>n+p.pop,0)/75);S.stability=clamp(S.stability+(unpaid>0?-2:income>=cost?1:0),0,100);for(const p of S.p){p.moved=false;p.pop=Math.min(230,p.pop+(p.farm?2:1));if(p.happy<65)p.happy++}if(!S.calendarSegments?.length)StrategyTime.setTempo(S,6);
-const before=StrategyTime.month(S,S.turn);S.turn++;ai();
-Industry1919.step(S,StrategyTime.tempo(S));
-for(const p of S.p)StrategyTime.progress(p,StrategyTime.tempo(S),log);
+function baseNext(){
+ if(S.win||S.loss)return toast("Sefer sona erdi.");
+ const ps=own();
+ if(!S.calendarSegments?.length)StrategyTime.setTempo(S,6);
+ const before=StrategyTime.month(S,S.turn),months=StrategyTime.tempo(S),opening=S.gold;
+ for(let offset=0;offset<months;offset++){
+   Industry.advance(S,before+offset,log);
+   for(const p of ps)if(p.productionQueue?.length)StrategyTime.progress(p,1,log);
+ }
+ for(const p of S.p){p.moved=false;p.pop=Math.min(230,p.pop+(p.farm?2:1));if(p.happy<65)p.happy++}
+ S.turn++;ai();
 const crossed=!W&&S.me==="tr"?EVENTS.filter(e=>e.t-1>before&&e.t-1<=StrategyTime.month(S,S.turn)):[];
 for(const e of crossed){log("📜 "+e.date+" — "+e.title);S.seen.push(e.t);}
-const ev=crossed.at(-1);log("Tur "+S.turn+": gelir "+income+", asker bakım "+cost+".");outcome();save();render();if(ev&&S.me==="tr"&&!dialog)event(ev.date+" — "+ev.title,ev.text)}
+const ev=crossed.at(-1);log("Tur "+S.turn+" · Bütçe değişimi "+(S.gold-opening)+".");outcome();save();render();if(ev&&S.me==="tr"&&!dialog)event(ev.date+" — "+ev.title,ev.text)}
 function baseOutcome(){if(S.win||S.loss)return;const a=own();if(S.me==="tr"?["Izmir","Afyon","Eskisehir","Istanbul"].every(id=>prov(id).owner==="tr"):a.length>=18){S.win=true;dialog=null;log("🏆 Sefer zaferle tamamlandı.")}else if(!a.length||S.stability<=0){S.loss=true;dialog=null;log("Sefer kaybedildi: devletin kontrolü çöktü.")}}
 function event(title,text){dialog={kind:"event",title,text};modal()}
 function help(){dialog={kind:"help"};modal()}
@@ -271,7 +347,7 @@ ov.addEventListener("keydown",e=>{
 });
 ov.addEventListener("click",()=>queueMicrotask(()=>{if(!ov.isConnected&&previousFocus?.isConnected)previousFocus.focus();}));
 ov.querySelector("button:not([disabled]),input")?.focus();const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
-function jump(id){if(!prov(id))return;openDrawer(app);sel=id;moving=null;tab=tab==="diplomacy"?"diplomacy":"province";render()}
+function jump(id){if(!prov(id))return;openDrawer(app);sel=id;moving=null;tab=["diplomacy","industry"].includes(tab)?tab:"province";render()}
 function markerScale(){return Math.max(.12,Math.min(1,Math.pow(zoom,-.72)))}
 function transform(){const el=document.getElementById("world");if(el){el.style.transform="translate("+px+"px,"+py+"px) scale("+zoom+")";el.style.transformOrigin="50% 50%";const k=markerScale().toFixed(3);const scale="scale("+k+")";el.querySelectorAll(".mk").forEach(g=>{if(g.getAttribute("transform")!==scale)g.setAttribute("transform",scale)})}}
 function zoomAt(cx,cy,factor){
@@ -339,33 +415,16 @@ function worldOutcome(){if(S.win||S.loss)return;const territories=own();if(!terr
 function worldHome(){S=null;dialog=null;moving=null;marching=null;++marchSeq;document.querySelectorAll(".modalbg").forEach(x=>x.remove());app.innerHTML=gameHeader()+'<main class="home"><section class="hero"><div class="eyebrow">DÜNYA MODU · MODERN COĞRAFYA</div><h1>Dünyanın kaderini belirle.</h1><p>'+RAW.length+' ülke bölgesi. 30 oynanabilir ülkeden birini seç, diplomasi yap, ordunu büyüt ve sınırlarını genişlet.</p><div class="actions"><button class="gold" data-a="nations">Ülke Seç</button><button data-a="continue">Kayıtlı Sefere Dön</button><button data-a="saves">▤ Kayıtlar ve Yedekler</button><button data-a="historical">📜 1919 Anadolu Senaryosu</button></div></section><p class="muted">Alternatif tarih senaryosu. Coğrafya modern Natural Earth ülke sınırlarını kullanır; 1919’un tarihsel sınırları değildir. Deniz rotaları tanımlanmış deniz koridorlarına dayanır; deniz sevkiyatı gemi gerektirir.</p><div class="cards"><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+troopArt+'</svg><b>Kara Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+tankArt+'</svg><b>Zırhlı Birlik</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+planeArt+'</svg><b>Hava Kuvvetleri</b></div><div class="card"><svg viewBox="-30 -30 60 60" width="70">'+shipArt+'</svg><b>Donanma</b></div></div></main>';wire()};
 
 const commanderPortrait='<svg viewBox="0 0 80 90" width="70"><rect width="80" height="90" rx="4" fill="#17232b" stroke="#b69d69"/><path d="M9 88 15 60 33 53H47L65 60 72 88" fill="#6e7958"/><path d="M31 52 40 69 49 52" fill="#d7c6a4"/><path d="M37 66h6l4 22H34Z" fill="#263326"/><ellipse cx="40" cy="34" rx="15" ry="20" fill="#bfa07d"/><path d="M24 28 25 15Q40 5 56 15L57 29Z" fill="#4c5b47"/><path d="M20 26h40l-8 6H27Z" fill="#243325"/><path d="M35 41q5 5 10 0M30 34h5m10 0h5" fill="none" stroke="#625743"/><path d="m40 13 2 4 4 1-3 3 1 4-4-2-4 2 1-4-3-3 4-1Z" fill="#d8bf78"/><path d="M15 65h12m26 0h12" stroke="#e1c47b" stroke-width="4"/></svg>';
-function worldNationPanel(){return '<div class="panel"><h3>Başkomutanlık</h3>'+commanderPortrait+'<p>'+(S.commander?'Kurmay heyeti göreve atandı.':'Kurmay heyeti ata: 120 altın, +1 teknoloji.')+'</p><button data-a="commander" '+(S.commander?'disabled':'')+'>Kurmay Heyetini Ata</button></div>'+baseNationPanel().replace("İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.","Dünya bölgelerinin yüzde 60’ını kontrol et.").replace("18 eyalete ulaş.","Dünya bölgelerinin yüzde 60’ını kontrol et.")};
+function worldNationPanel(){return '<div class="panel"><h3>Başkomutanlık</h3>'+commanderPortrait+'<p>'+(S.commander?'Kurmay heyeti göreve atandı.':'Kurmay heyeti ata: 120 altın, araştırma hızı +%5.')+'</p><button data-a="commander" '+(S.commander?'disabled':'')+'>Kurmay Heyetini Ata</button></div>'+baseNationPanel().replace("İzmir, Afyon, Eskişehir ve İstanbul'u ele geçir.","Dünya bölgelerinin yüzde 60’ını kontrol et.").replace("18 eyalete ulaş.","Dünya bölgelerinin yüzde 60’ını kontrol et.")};
 
-
-function worldProvincePanel(){
- const p=prov(sel);let html=baseProvincePanel();if(!p||p.owner!==S.me)return html;
- const e=equipment(p);
- return html+'<div class="panel"><h3>Birlik Üretimi</h3><p class="muted">Tank: kara saldırısında güç desteği. Uçak: havadan destek. Gemi: deniz rotasında taşıma.</p><div class="gridbtn">'+[
- ["tank","Tank",180,tankArt],["plane","Uçak",220,planeArt],["ship","Gemi",260,shipArt]
- ].map(([type,label,cost,art])=>'<button data-a="unit-'+type+'" '+(type==="ship"&&!coastal.has(p.id)?'disabled':'')+'><svg viewBox="-30 -30 60 60" width="55" height="55">'+art+'</svg><br>'+label+' · '+cost+' altın · '+StrategyTime.orders[type][1]+' ay<br>'+({tank:4,plane:3,ship:7}[type])+' çelik · '+({tank:2,plane:3,ship:4}[type])+' yakıt<br>Mevcut: '+e[type]+'</button>').join("")+'</div><p class="muted">Deniz sevkiyatı: kaynak bölgede gemi ve 10 altın gerekir. Tankların bir kısmı sevk edilen orduyla taşınır. Uçaklar üslerinde kalır.</p></div>';
-};
 
 function worldAct(action){
- if(!S)return baseAct(action);
- if(marching&&(action.startsWith("unit-")||action==="commander"))return toast("Sevkiyatın tamamlanmasını bekle.");
- if(action==="commander"){if(S.commander||!pay(120))return;S.commander=true;S.tech++;save();render();return}
- if(action.startsWith("unit-")){
-  const p=prov(sel);if(!p||p.owner!==S.me)return;
-  const type=action.slice(5),cost={tank:180,plane:220,ship:260}[type];
-  if(!cost)return;if(type==="ship"&&!coastal.has(p.id))return toast("Gemi üretimi kıyı bölgesi gerektirir.");
-  const materials=Industry1919.stock(S),steel={tank:4,plane:3,ship:7}[type],fuel={tank:2,plane:3,ship:4}[type];
-  if(materials.steel<steel||materials.fuel<fuel)return toast("Üretim için "+steel+" çelik ve "+fuel+" yakıt gerekli.");
-  if(!pay(cost))return;materials.steel-=steel;materials.fuel-=fuel;StrategyTime.enqueue(p,type);
-  log(p.label+": "+{tank:"tank",plane:"uçak",ship:"gemi"}[type]+" üretime alındı.");save();render();return;
+ if(action==="commander"&&S){
+   if(S.commander||!pay(120))return;
+   S.commander=true;save();render();return;
  }
  return baseAct(action);
-};
-
+}
 function worldOpenMove(to){
  const f=prov(moving);if(!f)return;
  if(seaRoutes.has(routeKey(f.id,to))&&!equipment(f).ship)return toast("Bu deniz rotası için kaynak bölgede gemi üret.");
@@ -645,7 +704,7 @@ function home(){
 const ai=W?worldAi:baseAi;
 const march=W?worldMarch:baseMarch;
 const openMove=W?worldOpenMove:baseOpenMove;
-const provincePanel=W?worldProvincePanel:baseProvincePanel;
+
 const outcome=W?worldOutcome:baseOutcome;
 function markerSvg(p){if(W){const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}const x=p.x*10.5,y=p.y*5.7+25;return '<g pointer-events="none" transform="translate('+x+' '+y+')"><g class="mk"><circle class="army-count-bg" r="13" fill="#162e3c" stroke="#e1c88d" stroke-width="1.5"/><text y="4" text-anchor="middle" class="number">'+p.army+'</text><text y="-19" text-anchor="middle" class="label">'+safe(p.label)+'</text></g></g>'+garrisonSvg(p);}
 if(W)ZMAX=18;

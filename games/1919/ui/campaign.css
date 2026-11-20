@@ -18,3 +18,14 @@
  #app .layout[data-drawer="closed"]{grid-template-columns:minmax(0,1fr) 100px}
  #app .layout[data-drawer="full"]{grid-template-columns:minmax(0,1fr) 48%}
 }
+#app .tabs{overflow-x:auto;scrollbar-width:thin}
+#app .tabs button{flex:1 0 auto;min-height:42px;padding-inline:8px}
+.econ-panel{display:grid;gap:7px}
+.econ-panel h3,.econ-panel p{margin:0}
+.econ-panel progress{width:100%;height:.5rem;accent-color:#dec484}
+.econ-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.econ-row strong{text-align:right;color:#f2dbac}
+.econ-field,.econ-item,.econ-panel details[open]{display:grid;gap:5px}
+.econ-field select{min-width:0;width:100%;padding:8px;background:#172b35;color:#f5e8d2;border:1px solid #677e80}
+.econ-item{padding-block:7px;border-bottom:1px solid #65716b}
+.econ-panel summary{cursor:pointer;color:#efd399;padding:6px 0}
+.econ-panel output{font-size:12px;color:#ded3be}
