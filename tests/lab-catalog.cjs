@@ -38,7 +38,7 @@ for (const lang of ['tr', 'en']) {
   }
   assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g) || []).length >= 6, true);
   assert.ok(html.includes(lang === 'tr' ? 'Ses ve konuşma' : 'Voice and transcription'));
-  assert.ok(html.includes(lang === 'tr' ? 'Uzak erişim' : 'Remote access'));
+  assert.ok(html.includes(lang === 'tr' ? 'Uzak erişim' : 'System and remote access'));
   assert.ok(html.includes('https://chatgpt.com/'), 'Existing LAB tools were removed');
 }
 console.log('LAB catalogue: six unique GitHub projects, four groups, Turkish/English and original tools OK');
