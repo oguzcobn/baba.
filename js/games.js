@@ -375,7 +375,7 @@ const App = (() => {
     if (!cfg) return;
     openEmbeddedGame({
       title: T(...cfg.name),
-      url: 'games/arcade/' + id + '.html?v=1',
+      url: 'games/arcade/' + id + '.html?v=2',
       tag: T('BABA. ARCADE · Bağımsız oyun', 'BABA. ARCADE · Standalone game'),
       lead: T('ZIP paketinden eklenen oynanabilir oyun. Oynanış için ekrandaki kontrolleri kullan.', 'Playable game imported from the provided archive. Follow the in-game controls.'),
       tip: T('Oyun açılmazsa “Yeni sekmede aç” bağlantısını kullan; mobilde yatay ekran daha rahat olabilir.', 'If the game does not start, use the Open in new tab link; landscape may work best on mobile.')
