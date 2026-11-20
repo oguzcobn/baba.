@@ -61,7 +61,7 @@ export function updateAtlas(options){
       continue;
     }
     if(!icon){icon=element(atlas.overlay,"g");atlas.icons.set(p.id,icon);}
-    const signature=[p.army,p.unitType,p.barracks,p.investment,p.market,p.farm,p.fort,p.festivals,actionFx?.id===p.id?actionFx.token:0].join("|");
+    const signature=[options.era,p.formations?.length,p.army,p.unitType,p.barracks,p.investment,p.market,p.farm,p.fort,p.festivals,actionFx?.id===p.id?actionFx.token:0].join("|");
     if(icon.dataset.signature!==signature){icon.innerHTML=markerSvg(p)+modelSvg(p);icon.dataset.signature=signature;}
   }
   for(const {line,from,to} of atlas.routes)set(line,"display",selected===from||selected===to?"inline":"none");

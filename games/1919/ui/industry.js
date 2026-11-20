@@ -1,3 +1,4 @@
+import { eraArt } from "./history.js";
 import { models } from "../data/models.js";
 import { resources, buildings, branches, families, units, focusNames, laws, numerals, eraAt, recipe, researchCost } from "../data/industry.js";
 import { capacity, count, deposits, usedSlots, slotLimit, marketStock, assigned, quote, budget } from "../engine/industry.js";
@@ -54,7 +55,7 @@ function linePanel(s){
     html+=row(title,assigned(e,yard)+" / "+slots+" tesis tahsisli");
     for(const l of lines){
       const m=recipe(l.key,l.level,s.me);
-      html+='<div class="econ-item">'+row(m.name,pct(l.efficiency)+" verim")+progress(l.work,m.work)+
+      html+='<div class="econ-item">'+eraArt(l.level,({rifle:0,gun:0,tank:1,plane:2,drone:3,ship:4,usv:5})[models[l.key].family],m.name,s.me)+row("Hat verimi",pct(l.efficiency))+progress(l.work,m.work)+
         info(number(l.work)+" / "+m.work+" iş · "+l.status)+detail("Hat ayarları",
         info("Model değişince kısmi iş kaybedilir ve verim geçici olarak düşer.")+
         row("Atanan tesis",l.factories||1)+button("assign:"+l.id+":1","Tesis ekle")+button("assign:"+l.id+":-1","Tesisi ayır")+picker(l.id,l.yard)+button("priority:"+l.id,"Kaynak önceliği ver")+button("close:"+l.id,"Hattı kapat"))+'</div>';

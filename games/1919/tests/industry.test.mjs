@@ -23,7 +23,7 @@ test("Yard and slot checks spend nothing on failure; shared civil work finishes 
   assert.ok(sim.build(s,p,"yard",false,0));assert.equal(JSON.stringify(s),before);
   p.plants.push("civil");s.materials.steel=30;
   assert.equal(sim.build(s,p,"arms",false,0),undefined);
-  advance(s,0,7);assert.equal(p.construction.work,56);
+  advance(s,0,7);assert.equal(p.construction.work,58.8);
   advance(s,7,1);assert.equal(p.construction,undefined);assert.equal(sim.count(p,"arms"),2);
   p.plants.push("civil","civil","civil");
   assert.ok(sim.build(s,p,"yard",true,8));

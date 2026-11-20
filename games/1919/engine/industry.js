@@ -1,3 +1,4 @@
+import { officer, isoOf, spirits } from "../data/history.js";
 import { models } from "../data/models.js";
 import { resources, buildings, branches, researchCost, focusNames, laws, families, units, eraAt, recipe } from "../data/industry.js";
 
@@ -167,7 +168,7 @@ function settle(s,month,owners,report){
     return false;
   });
 }
-function produce(s,plants){
+function produce(s,plants,month){
   const e=s.industry;
   const remaining={arms:plants.arms,yard:plants.yard};
   for(const line of e.lines){
@@ -177,6 +178,9 @@ function produce(s,plants){
     remaining[type]-=factories;
     const model=recipe(line.key,line.level);
     let work=factories*(line.yard?5:6)*line.efficiency*[.9,1,1.2][e.laws.economy]*(1+.04*(e.levels.industry-1))*(hasFocus(e,2,0)?1.08:1)*(hasFocus(e,5,0)?1.08:1);
+    const branch=officer(s,s.me,eraAt(month))?.[1],family=models[line.key].family;
+    if(({K:["rifle"],T:["gun"],Z:["tank"],S:["tank","rifle"],H:["plane","drone"],D:["ship","usv"],M:["gun"]}[branch]||[]).includes(family))work*=1.04;
+    if(spirits[isoOf(s.me)]?.[1]===type)work*=1.05;
     const full=work;
     for(const [key,n] of Object.entries(model.inputs))if(n>0)work=Math.min(work,s.materials[key]*model.work/n);
     if(work<=0){line.status="Hammadde bekliyor";continue;}
@@ -195,7 +199,7 @@ function develop(s,regions,plants,report){
   const civilWork=(plants.civil?4*plants.civil:1)*[1.15,1,.8][e.laws.economy]*[1,1,.85][e.laws.service]*[.96,1,1.05][e.laws.trade];
   for(const p of jobs){
     const job=p.construction,bonus=job.type==="infra"&&hasFocus(e,1,0)?1.08:1;
-    job.work+=civilWork*bonus*(hasFocus(e,4,1)?1.08:1)/jobs.length;
+    job.work+=civilWork*(spirits[isoOf(s.me)]?.[1]==="civil"?1.05:1)*bonus*(hasFocus(e,4,1)?1.08:1)/jobs.length;
     if(job.work>=buildings[job.type][1]){
       (p.plants??=[]).push(job.type);delete p.construction;report(p.label+" · "+buildings[job.type][0]+" tamamlandı.");
     }
@@ -231,7 +235,7 @@ export function advance(s,month,report=()=>{}){
     for(const [key,n] of Object.entries(deposits(p)))s.materials[key]=round(s.materials[key]+n*(hasFocus(e,5,1)?1.08:1));
   }
   for(let i=0;i<plants.refinery;i++){
-    if(s.materials.oil>=3){s.materials.oil-=3;s.materials.fuel+=hasFocus(e,3,1)?4.32:4;}
+    if(s.materials.oil>=3){s.materials.oil-=3;s.materials.fuel+=(hasFocus(e,3,1)?4.32:4)*(spirits[isoOf(s.me)]?.[1]==="fuel"?1.05:1);}
     else if(s.gold>=2){s.gold-=2;s.materials.fuel+=2;}
   }
   for(let i=0;i<plants.electronics;i++){
@@ -239,7 +243,7 @@ export function advance(s,month,report=()=>{}){
   }
   const territoryByOwner=new Map(s.p.map(p=>[p.owner,p]));
   settle(s,month,territoryByOwner,report);
-  for(const [id,stock] of Object.entries(e.market)){
+  for(const [id,stock] of Object.entries(s.aiStates?{}:e.market)){
     const territory=territoryByOwner.get(id);
     if(!territory)continue;
     const output=deposits(territory);
@@ -247,7 +251,7 @@ export function advance(s,month,report=()=>{}){
     stock.fuel=Math.min(100,stock.fuel+.25);
     if(eraAt(month)>=4)stock.chips=Math.min(100,stock.chips+.5);
   }
-  produce(s,plants);
+  produce(s,plants,month);
   develop(s,regions,plants,report);
   e.political=round(Math.min(300,e.political+1+s.stability/100));
   const flow=budget(s);
@@ -271,7 +275,7 @@ export function advance(s,month,report=()=>{}){
     const r=e.study;
     const specialization=["industry","usv","uav"].includes(r.key)&&plants.radar?1.1:1;
     const bonus=e.completed.filter(id=>id.endsWith(".2")).length*.05;
-    r.work+=(e.teams===2&&plants.civil>=2?3.2:2)*(1+bonus)*specialization*(s.commander?1.05:1)*(r.key==="air"&&hasFocus(e,3,0)?1.08:1);
+    r.work+=(e.teams===2&&plants.civil>=2?3.2:2)*(1+bonus)*(spirits[isoOf(s.me)]?.[1]==="study"?1.05:1)*specialization*(s.commander?1.05:1)*(r.key==="air"&&hasFocus(e,3,0)?1.08:1);
     if(r.work>=researchCost[r.level]){e.levels[r.key]=r.level;if(r.key==="land")s.tech=Math.max(s.tech||1,r.level);e.study=null;report(branches[r.key][r.level]+" araştırıldı.");}
   }
   if(e.focus&&--e.focus.left<=0){

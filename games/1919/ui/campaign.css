@@ -34,3 +34,13 @@
 .province.occupied{stroke:#d6c189;stroke-dasharray:2 2}
 .front-gauge{display:grid;grid-template-columns:1fr auto;gap:.18em .5em;font-size:.85rem;margin:.35em 0}
 .front-gauge progress{grid-column:span 2;width:100%;height:.45em;accent-color:#c19c5e}
+
+.era-art-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+.era-card{margin:0;background:#222b2b;border:1px solid #685e47}
+.era-frame{position:relative;overflow:hidden;aspect-ratio:1;background:#323c37;color:#cfba83;display:grid;place-items:center}
+.era-frame img{position:absolute;width:500%;height:600%;max-width:none}
+.era-card figcaption{font-size:.78rem;padding:.3rem .4rem}
+.history-portrait{width:70px;float:right;border-radius:3px;margin:0 0 .5rem .5rem}
+
+.history-initials{float:right;font:700 1.25rem Georgia;color:#ead9ab;background:#354542;border:1px solid #897f63;border-radius:50%;width:3rem;aspect-ratio:1;display:grid;place-items:center;margin-left:.5rem}
+.econ-item>.era-card{display:grid;grid-template-columns:4rem 1fr;align-items:center}

@@ -1,3 +1,8 @@
+import { atlasImage, uniformImage } from "./assets/art.js";
+import { simulate } from "./engine/world-ai.js";
+import { eraAt } from "./data/industry.js";
+import { historicalCard, uniformRegion } from "./data/history.js";
+import { historyPanel } from "./ui/history.js";
 import * as Fronts from "./engine/fronts.js";
 import { frontsPanel } from "./ui/fronts.js";
 import { CHOICES } from "./data/choices.js";
@@ -18,6 +23,10 @@ let scenario;
 try { scenario=W?await loadWorld():anatolia; }
 catch(error){document.getElementById("app").textContent="Harita yüklenemedi. Sayfayı yenileyin. "+error.message; throw error;}
 const {N,RAW,LINKS,shapeData,seaRoutes,coastal}=scenario;
+if(W){
+ const missing=RAW.filter(([id])=>[1,2,3,4,5].some(era=>!historicalCard(id,era)?.leaders));
+ if(missing.length)throw Error("Dönem kaydı eksik: "+missing.map(row=>row[0]).join(", "));
+}
 const {EVENTS}=anatolia;
 const routeKey=(a,b)=>[a,b].sort().join("|");
 const app=document.getElementById("app"),SAVE="baba_1919_age_v1",SAVEKEY=new URLSearchParams(location.search).get("scenario")==="1919"?SAVE+"_historical":SAVE;let S=null,sel="Ankara",tab="province",layer="political",moving=null,dialog=null,zoom=1,px=0,py=0,drag=null,ignoreClick=false,marching=null,actionFx=null,fxSeq=0,marchSeq=0,capturedProvince=null,ZMAX=10;
@@ -66,7 +75,7 @@ function baseRender(){if(!S)return home();if(S.win||S.loss){const regions=own();
  S.capitals??=Object.fromEntries(Object.entries(N).map(([id,data])=>[id,data[3]]));Fronts.theatre(S);
  const a=own(),army=armyOf(),previousTab=app.querySelector(".tabs .on")?.dataset.tab,previousScroll=app.querySelector(".sidebody")?.scrollTop||0;
  if(!app.querySelector(".game")){
-   app.innerHTML=gameHeader()+'<div class="game"><div class="resources"></div><div class="campaign-clock" aria-live="polite"></div><div class="layout" data-drawer="half"><section class="maparea"><div class="toolbar">'+[["political","Siyasi"],["army","Ordu"],["economy","Ekonomi"],["happiness","Memnuniyet"]].map(([id,n])=>'<button data-layer="'+id+'" class="'+(layer===id?"selected":"")+'">'+ico(({political:"globe",army:"swords",economy:"coins",happiness:"people"})[id])+' '+n+'</button>').join("")+'<button data-a="center">'+ico("pin")+' Ortala</button><input id="map-search" type="search" list="map-search-options" placeholder="Ülke veya bölge ara" aria-label="Ülke veya bölge ara"><datalist id="map-search-options">'+S.p.map(p=>'<option value="'+safe(p.label)+'">').join("")+'</datalist></div><div id="viewport" class="viewport"><svg id="world" viewBox="0 0 1080 650" aria-label="Strateji haritası"></svg><canvas class="map-fx" aria-hidden="true"></canvas><div class="maptip"></div><div class="zoom"><button data-a="plus" title="Haritayı yakınlaştır" aria-label="Yakınlaştır">'+ico("plus")+'</button><button data-a="minus" title="Haritayı uzaklaştır" aria-label="Uzaklaştır">'+ico("minus")+'</button></div></div><div class="bottom"></div></section><aside class="side"><div class="drawer-controls"><button id="drawer-resize" aria-label="Karargâh boyutunu değiştir">Karargâh ▴</button><button id="drawer-close" aria-label="Karargâhı küçült">Küçült</button></div><div class="tabs">'+[["province","Eyalet"],["industry","Sanayi"],["fronts","Cepheler"],["researchLab","Araştırma"],["policies","Meclis"],["nation","Devlet"],["diplomacy","Diplomasi"],["events","Olaylar"]].map(([id,n])=>'<button data-tab="'+id+'" class="'+(tab===id?"on":"")+'">'+n+'</button>').join("")+'</div><div class="sidebody"></div></aside></div></div>';
+   app.innerHTML=gameHeader()+'<div class="game"><div class="resources"></div><div class="campaign-clock" aria-live="polite"></div><div class="layout" data-drawer="half"><section class="maparea"><div class="toolbar">'+[["political","Siyasi"],["army","Ordu"],["economy","Ekonomi"],["happiness","Memnuniyet"]].map(([id,n])=>'<button data-layer="'+id+'" class="'+(layer===id?"selected":"")+'">'+ico(({political:"globe",army:"swords",economy:"coins",happiness:"people"})[id])+' '+n+'</button>').join("")+'<button data-a="center">'+ico("pin")+' Ortala</button><input id="map-search" type="search" list="map-search-options" placeholder="Ülke veya bölge ara" aria-label="Ülke veya bölge ara"><datalist id="map-search-options">'+S.p.map(p=>'<option value="'+safe(p.label)+'">').join("")+'</datalist></div><div id="viewport" class="viewport"><svg id="world" viewBox="0 0 1080 650" aria-label="Strateji haritası"></svg><canvas class="map-fx" aria-hidden="true"></canvas><div class="maptip"></div><div class="zoom"><button data-a="plus" title="Haritayı yakınlaştır" aria-label="Yakınlaştır">'+ico("plus")+'</button><button data-a="minus" title="Haritayı uzaklaştır" aria-label="Uzaklaştır">'+ico("minus")+'</button></div></div><div class="bottom"></div></section><aside class="side"><div class="drawer-controls"><button id="drawer-resize" aria-label="Karargâh boyutunu değiştir">Karargâh ▴</button><button id="drawer-close" aria-label="Karargâhı küçült">Küçült</button></div><div class="tabs">'+[["province","Eyalet"],["industry","Sanayi"],["fronts","Cepheler"],["history","Kadrolar"],["researchLab","Araştırma"],["policies","Meclis"],["nation","Devlet"],["diplomacy","Diplomasi"],["events","Olaylar"]].map(([id,n])=>'<button data-tab="'+id+'" class="'+(tab===id?"on":"")+'">'+n+'</button>').join("")+'</div><div class="sidebody"></div></aside></div></div>';
    bindDrawer(app);
  }
  function region(selector,markup){
@@ -81,7 +90,7 @@ function baseRender(){if(!S)return home();if(S.win||S.loss){const regions=own();
  app.querySelector(".campaign-clock").textContent=date(S.turn)+" · "+StrategyTime.season(S)+" · "+StrategyTime.tempo(S)+" ay/tur · "+StrategyTime.caption(S);
  app.querySelectorAll("[data-layer]").forEach(b=>b.classList.toggle("selected",b.dataset.layer===layer));
  app.querySelectorAll(".tabs [data-tab]").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
- updateAtlas({state:S,selected:sel,shapeData,polygon,color,links:LINKS,seaRoutes,moving,adj,modelSvg,markerSvg,marching,actionFx,capturedProvince});
+ updateAtlas({state:S,era:eraAt(StrategyTime.month(S,S.turn)),selected:sel,shapeData,polygon,color,links:LINKS,seaRoutes,moving,adj,modelSvg,markerSvg,marching,actionFx,capturedProvince});
  wire();transform();
  app.querySelector(".sidebody").scrollTop=previousTab===tab?previousScroll:0;
  if(dialog)modal();
@@ -101,6 +110,7 @@ function tradePartners(){
 }
 function sidebar(){
  const p=prov(sel),month=StrategyTime.month(S,S.turn);
+ if(tab==="history"){const id=p?.owner||S.me;return historyPanel(S,id,eraAt(month),name(id))||"<p>Tarafsız bölge</p>";}
  if(tab==="fronts")return frontsPanel(S,p,name);
  if(tab==="industry")return industryPanel(S,p,isCoastal(p),month,tradePartners(),name);
  if(tab==="researchLab")return researchPanel(S,month);
@@ -170,6 +180,13 @@ function economicOrder(action){
  if(kind==="buy"||kind==="sell")return finish(Industry.trade(S,selected("econ-partner"),selected("econ-resource"),kind==="buy"?5:-5,tradePartners(),month));
 }
 function baseAct(a){
+ if(resolving)return;
+ if(S&&a.startsWith("appoint-")){
+  const era=eraAt(StrategyTime.month(S,S.turn)),index=Number(a.slice(8));
+  if(prov(sel)?.owner!==S.me||!Number.isInteger(index)||!historicalCard(S.me,era)?.officers[index])return;
+  (S.commands??={})[S.me]={era,index};save();render();return;
+ }
+
  if(S&&a.startsWith("recall-")){Fronts.recall(S,Number(a.slice(7)),log);save();render();return;}
  if(S&&a==="garrison"){Fronts.assignGarrison(S,prov(sel));save();render();return;}
  if(S&&a==="settle"){const p=prov(sel);if(p?.owner===S.me&&p.occupation&&!S.p.some(q=>q.owner===p.occupation.sovereign)){
@@ -279,45 +296,9 @@ resolveMarch(d,n);
 setTimeout(()=>{if(!marching||marching.id!==id)return;marching=null;},1180);
 }
 function toHash(s){return [...s].reduce((n,c)=>n+c.charCodeAt(0),0)}
-function baseAi(){
- const economy=S.aiEconomy ||= {};
- const allies=(a,b)=>S.alliances?.some(pair=>pair.includes(a)&&pair.includes(b))||false;
- const truce=(a,b)=>(S.truce?.[[a,b].sort().join("-")]||0)>S.turn;
- for(const id of Object.keys(N).filter(x=>x!==S.me&&x!=="ne")){
-  const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
-  const state=economy[id] ||= {gold:80+regions.length*30,men:70+regions.length*25};
-  const income=incomeOf(id);
-  const upkeep=Math.ceil(armyOf(id)*.23);
-  state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
-  state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
-  if(!state.gold&&income<upkeep)for(const p of regions)p.army=Math.max(1,Math.floor(p.army*.97));
-  const border=regions.filter(p=>adj(p.id).some(n=>prov(n)?.owner!==id));
-  if(!border.length)continue;
-  const base=border[(S.turn+toHash(id))%border.length];
-  if(state.gold>=60&&state.men>=20&&(S.turn+toHash(id))%3===0){state.gold-=60;state.men-=20;base.army+=20}
-  if(S.turn>=10&&(S.turn+toHash(id))%17===0&&!war(id,S.me)&&!truce(id,S.me)&&!allies(id,S.me)&&border.some(p=>adj(p.id).some(n=>prov(n)?.owner===S.me))){
-   const power=regions.reduce((n,p)=>n+p.army,0),defense=own().reduce((n,p)=>n+p.army,0);
-   if(power>defense*1.3){Fronts.theatre(S).tension=Math.min(100,S.theatre.tension+5);S.wars.push([id,S.me]);log("⚠ "+name(id)+" savaş ilan etti.")}
-  }
-  for(const f of border){
-   if(f.moved)continue;
-   const target=adj(f.id).map(prov).find(p=>p&&p.owner!==id&&war(id,p.owner)&&!allies(id,p.owner)&&!truce(id,p.owner)&&f.army>p.army*1.55+15);
-   if(!target)continue;
-   if(!issueOrder(f,target,Math.floor(f.army*.6)))break;
-  }
- }
-}
-function baseNext(){
- if(S.win||S.loss)return toast("Sefer sona erdi.");
- if(!S.calendarSegments?.length)StrategyTime.setTempo(S,6);
- const before=StrategyTime.month(S,S.turn),months=StrategyTime.tempo(S),opening=S.gold;
- for(let offset=0;offset<months;offset++){
-   Industry.advance(S,before+offset,log);
-   Fronts.step(S,before+offset,LINKS,log);
-   for(const p of own())if(p.productionQueue?.length)StrategyTime.progress(p,1,log);
- }
+function finishBase(before,opening){
  for(const p of S.p){p.moved=false;p.pop=Math.min(230,p.pop+(p.farm?2:1));if(p.happy<65)p.happy++}
- S.turn++;ai();
+ S.turn++;
 const crossed=!W&&S.me==="tr"?EVENTS.filter(e=>e.t-1>before&&e.t-1<=StrategyTime.month(S,S.turn)):[];
 for(const e of crossed){log("📜 "+e.date+" — "+e.title);S.seen.push(e.t);}
 const ev=crossed.at(-1);log("Tur "+S.turn+" · Bütçe değişimi "+(S.gold-opening)+".");outcome();save();render();if(ev&&S.me==="tr"&&!dialog)event(ev.date+" — "+ev.title,ev.text)}
@@ -340,7 +321,7 @@ ov.addEventListener("keydown",e=>{
 });
 ov.addEventListener("click",()=>queueMicrotask(()=>{if(!ov.isConnected&&previousFocus?.isConnected)previousFocus.focus();}));
 ov.querySelector("button:not([disabled]),input")?.focus();const range=ov.querySelector("#amount");if(range)range.oninput=()=>{dialog.amount=+range.value;ov.querySelector("#count").textContent=range.value}}
-function jump(id){if(!prov(id))return;openDrawer(app);sel=id;moving=null;tab=["diplomacy","industry","fronts"].includes(tab)?tab:"province";render()}
+function jump(id){if(!prov(id))return;openDrawer(app);sel=id;moving=null;tab=["diplomacy","industry","fronts","history"].includes(tab)?tab:"province";render()}
 function markerScale(){return Math.max(.12,Math.min(1,Math.pow(zoom,-.72)))}
 function transform(){const el=document.getElementById("world");if(el){el.style.transform="translate("+px+"px,"+py+"px) scale("+zoom+")";el.style.transformOrigin="50% 50%";const k=markerScale().toFixed(3);const scale="scale("+k+")";el.querySelectorAll(".mk").forEach(g=>{if(g.getAttribute("transform")!==scale)g.setAttribute("transform",scale)})}}
 function zoomAt(cx,cy,factor){
@@ -433,56 +414,6 @@ function worldMarch(){
  }
  return baseMarch();
 };
-function worldAi(){
- const economy=S.aiEconomy ||= {};
- const allied=(a,b)=>S.alliances?.some(x=>x.includes(a)&&x.includes(b))||false;
- const truceActive=(a,b)=>(S.truce?.[[a,b].sort().join("-")]||0)>S.turn;
- for(const id of Object.keys(N).filter(k=>k!==S.me&&k!=="ne")){
-  const regions=S.p.filter(p=>p.owner===id);if(!regions.length)continue;
-  const state=economy[id] ||= {gold:80+regions.length*30,men:60+regions.length*30};
-  const income=incomeOf(id);
-  const army=armyOf(id),upkeep=Math.ceil(army*.23);
-  state.gold=Math.min(1800,Math.max(0,state.gold+income-upkeep));
-  state.men=Math.min(1800,state.men+Math.ceil(regions.reduce((n,p)=>n+p.pop,0)/75));
-  if(state.gold===0&&income<upkeep)for(const p of regions)p.army=Math.max(1,Math.floor(p.army*.97));
-  const border=regions.filter(p=>adj(p.id).some(n=>prov(n)&&prov(n).owner!==id));
-  if(!border.length)continue;
-  const base=border[(S.turn+toHash(id))%border.length];
-  if(state.gold>=60&&state.men>=20&&(S.turn+toHash(id))%3===0&&base.army<200+regions.length*40){
-    state.gold-=60;state.men-=20;base.army+=20;
-  }
-  // War declarations respect truce and alliances, with one active front per country.
-  // A defensive alliance joins a war declared against its partner.
-  for(const alliance of (S.alliances||[]).filter(pair=>pair.includes(id))){
-    const partner=alliance.find(k=>k!==id),attack=S.wars.find(pair=>pair[1]===partner&&!pair.includes(id));
-    if(!attack||S.wars.some(pair=>pair.includes(id)))continue;
-    const aggressor=attack[0];
-    if(!aggressor||aggressor===id||allied(id,aggressor)||truceActive(id,aggressor))continue;
-    S.wars.push([id,aggressor]);log("🛡 "+name(id)+" müttefiki "+name(partner)+" savunmak için savaşa katıldı.");
-  }
-  const alreadyFighting=S.wars.some(pair=>pair.includes(id));
-  if(!alreadyFighting&&S.turn>=10&&(S.turn+toHash(id))%17===0){
-    const opponents=[...new Set(border.flatMap(p=>adj(p.id).map(n=>prov(n)?.owner).filter(Boolean)))].filter(other=>other!==id&&other!=="ne"&&!allied(id,other)&&!truceActive(id,other));
-    const candidate=opponents.find(other=>{
-      const enemy=S.p.filter(p=>p.owner===other).reduce((n,p)=>n+p.army,0);
-      const power=regions.reduce((n,p)=>n+p.army,0);
-      const threshold=other===S.me?({easy:2.2,normal:1.55,hard:1.2}[S.difficulty]||1.55):1.35;
-      if(other===S.me&&S.turn-(S.aiLastWarAgainstPlayer||0)<9)return false;
-      return power>enemy*threshold&&relation(id,other)<30;
-    });
-    if(candidate){Fronts.theatre(S).tension=Math.min(100,S.theatre.tension+5);S.wars.push([id,candidate]);if(candidate===S.me)S.aiLastWarAgainstPlayer=S.turn;log(name(id)+" "+name(candidate)+" devletine savaş ilan etti.")}
-  }
-  // Each country moves at most one army per turn, at an actual resource cost.
-  for(const f of border){
-    if(f.moved)continue;
-    const threshold={easy:2.05,normal:1.65,hard:1.4}[S.difficulty]||1.65;
-    const target=adj(f.id).map(prov).find(p=>p&&p.owner!==id&&war(id,p.owner)&&!allied(id,p.owner)&&!truceActive(id,p.owner)&&f.army>p.army*threshold+15&&(!seaRoutes.has(routeKey(f.id,p.id))||equipment(f).ship));
-    if(!target)continue;
-    if(!issueOrder(f,target,Math.floor(f.army*.6)))break;
-  }
- }
-};
-
 function worldRender(){
  document.querySelectorAll(".modalbg").forEach(x=>x.remove());
  if(S&&(S.win||S.loss)){
@@ -596,9 +527,37 @@ function maybeChoice(){
 
 /* ---------- 5. Tur geçişi, borç ve kayıp uyarısı ---------- */
 
+let resolving=false;
 function next(){
+ if(resolving||S.win||S.loss)return;
+
  if(S?.pendingChoice){showChoice();return toast("Önce meclisin kararını ver.")}
- const b=snap();baseNext();
+ const b=snap(),campaign=S,before=StrategyTime.month(S,S.turn),opening=S.gold;
+ const config={links:LINKS,ports:[...(W?coastal:historicalPorts)],sea:W?[...seaRoutes]:[],start:before,
+   months:StrategyTime.tempo(S),majors:Object.keys(N).filter(id=>playable.has(N[id][3]?.slice(1))||!W)};
+ const payload={state:S,config};
+ const end=result=>{
+   if(S!==campaign)return;
+   S=result.state;for(const msg of result.messages)log(msg.replace(/\bc(\d{3})\b/g,(code)=>N[code]?name(code):code));
+   finishBase(before,opening);finishTurn(b);
+ };
+ // The synchronous path supports restrictive embeds and file viewers without Worker support.
+ if(typeof Worker==="undefined"){end(simulate(structuredClone(S),config));return;}
+ resolving=true;app.inert=true;
+ const button=app.querySelector('[data-a="end"]');if(button)button.textContent="Devletler karar alıyor…";
+ let worker,timer,done=false;
+ const complete=result=>{
+  if(done)return;done=true;clearTimeout(timer);worker?.terminate();resolving=false;app.inert=false;
+  try{end(result?.state?result:simulate(structuredClone(campaign),config));}
+  catch(error){render();toast("Tur tamamlanamadı. Önceki kayıt korunuyor.");console.error(error);}
+ };
+ try{
+   worker=new Worker(new URL("./engine/world-worker.js",import.meta.url),{type:"module"});
+   worker.onmessage=e=>complete(e.data);worker.onerror=()=>complete();
+   timer=setTimeout(()=>complete(),30000);worker.postMessage(payload);
+ }catch{complete();}
+}
+function finishTurn(b){
  if(!S||!b||S.turn===b.turn)return;
  if(S.debt?.left){S.gold=Math.max(0,S.gold-S.debt.pay);S.debt.left--;log("Dış borç taksiti ödendi: "+S.debt.pay+" altın.");if(!S.debt.left){S.debt=null;log("Dış borç kapandı.")}}
  const lost=b.regions.filter(id=>prov(id)?.owner!==S.me);
@@ -662,11 +621,18 @@ function home(){
  document.querySelector("#app .home")?.classList.add("atlas-menu");
 };
 
-const ai=W?worldAi:baseAi;
+
 const march=W?worldMarch:baseMarch;
 const openMove=W?worldOpenMove:baseOpenMove;
 
 const outcome=W?worldOutcome:baseOutcome;
-function markerSvg(p){if(W){const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+({tank:tankArt,plane:planeArt,ship:shipArt}[p.unitType]||troopArt)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}const x=p.x*10.5,y=p.y*5.7+25;return '<g pointer-events="none" transform="translate('+x+' '+y+')"><g class="mk"><circle class="army-count-bg" r="13" fill="#162e3c" stroke="#e1c88d" stroke-width="1.5"/><text y="4" text-anchor="middle" class="number">'+p.army+'</text><text y="-19" text-anchor="middle" class="label">'+safe(p.label)+'</text></g></g>'+garrisonSvg(p);}
+function eraMarker(p){
+ const era=eraAt(StrategyTime.month(S,S.turn)),formation=p.formations?.at(-1);
+ const kind=formation?.key||p.unitType,typed=Object.keys(formation?.equipment||{});
+ const level=typed.length?Math.max(...typed.map(id=>Number(id.split(".")[1])||1)):era;
+ const row={tank:1,motor:1,plane:2,drone:3,ship:4,usv:5}[kind]||0;
+ return '<svg x="-18" y="-22" width="36" height="36" viewBox="'+((level-1)*229)+' '+((row||uniformRegion(p.owner))*229)+' 229 229"><image width="1145" height="1374" href="'+(row?atlasImage:uniformImage)+'"/></svg>';
+}
+function markerSvg(p){if(W){const a=shapeData.get(p.id);return '<g pointer-events="none" transform="translate('+a.x+' '+a.y+')"><g class="mk"><g class="world-troop" transform="scale(.42)">'+eraMarker(p)+'</g><rect class="army-chip" x="7" y="-6" width="'+(8+String(p.army).length*5)+'" height="11" rx="5.5"/><text x="'+(11+String(p.army).length*2.5)+'" y="2.5" text-anchor="middle" class="army-chip-t">'+p.army+'</text><text y="-12" text-anchor="middle" class="label" style="font-size:8px">'+safe(p.label)+'</text>'+(p.fort?'<path d="M-14 14v-6h3v-2h4v2h3v-2h4v8Z" fill="#b1ad99" stroke="#45514a"/>':'')+'</g></g>'}const x=p.x*10.5,y=p.y*5.7+25;return '<g pointer-events="none" transform="translate('+x+' '+y+')"><g class="mk"><circle class="army-count-bg" r="13" fill="#162e3c" stroke="#e1c88d" stroke-width="1.5"/><text y="4" text-anchor="middle" class="number">'+p.army+'</text><text y="-19" text-anchor="middle" class="label">'+safe(p.label)+'</text></g></g>'+garrisonSvg(p);}
 if(W)ZMAX=18;
 home();
