@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Yılan Arenası (Slither.io) — BABA.</title>
+<style>
+  :root {
+    --bg: #070b14; --panel: rgba(9, 15, 29, 0.92); --line: rgba(120, 210, 255, 0.24);
+    --cyan: #3de0ff; --lime: #80ff72; --gold: #ffd447; --ink: #f4f7ff; --mute: #96aecf;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, -apple-system, sans-serif; touch-action: none; }
+  #wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  .hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) 14px max(12px, env(safe-area-inset-bottom)); z-index: 10; }
+  .hud.hidden { opacity: 0; pointer-events: none; }
+  .hud-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .stat-pill {
+    padding: 8px 14px; border-radius: 14px; background: rgba(7, 13, 26, 0.78);
+    border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(8px); font-size: 13px; font-weight: 800;
+  }
+  .stat-pill b { font-size: 20px; color: var(--cyan); display: block; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .lb-box {
+    width: 190px; padding: 9px 12px; border-radius: 14px; background: rgba(7, 13, 26, 0.72);
+    border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(8px); font-size: 11.5px;
+  }
+  .lb-box h4 { margin: 0 0 6px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+  .lb-box ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  .lb-box li { display: flex; justify-content: space-between; color: #cfd9f2; font-weight: 700; }
+  .lb-box li.me { color: var(--lime); font-weight: 900; }
+
+  .top-acts { display: flex; gap: 6px; pointer-events: auto; margin-top: 6px; }
+  .ibtn {
+    width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(7, 13, 26, 0.8); color: #fff; font-size: 15px; cursor: pointer; display: grid; place-items: center;
+  }
+
+  .hud-bot { display: flex; justify-content: flex-end; align-items: flex-end; }
+  .boost-btn {
+    pointer-events: auto; width: 76px; height: 76px; border-radius: 50%;
+    border: 2.5px solid rgba(61, 224, 255, 0.7); background: radial-gradient(circle at 35% 30%, rgba(61,224,255,0.42), rgba(7,14,30,0.85));
+    color: #fff; font-weight: 900; font-size: 11.5px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; box-shadow: 0 6px 24px rgba(0, 180, 255, 0.35);
+  }
+  .boost-btn.on { transform: scale(0.92); border-color: var(--gold); box-shadow: 0 0 28px rgba(255,212,71,0.8); }
+
+  .overlay {
+    position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; padding: 14px;
+    background: radial-gradient(circle at 50% 35%, rgba(15, 28, 56, 0.72), rgba(5, 9, 19, 0.94));
+    backdrop-filter: blur(8px); transition: opacity .25s;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+  .card {
+    width: min(560px, 100%); max-height: 92vh; overflow-y: auto;
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: 26px;
+    padding: clamp(18px, 3vw, 28px); box-shadow: 0 28px 80px rgba(0,0,0,0.72); text-align: center;
+  }
+  .tag { display: inline-block; padding: 5px 12px; border-radius: 999px; background: rgba(61,224,255,0.14); border: 1px solid rgba(61,224,255,0.4); color: var(--cyan); font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { margin: 2px 0 6px; font-size: clamp(28px, 5vw, 42px); font-weight: 900; letter-spacing: -.03em; background: linear-gradient(135deg, #3de0ff, #80ff72 55%, #ffd447); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .sub { margin: 0 0 14px; color: var(--mute); font-size: 13.5px; line-height: 1.45; }
+
+  .nick-in {
+    width: 100%; padding: 12px 16px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06); color: #fff; font-size: 15px; font-weight: 800; text-align: center;
+    outline: none; margin-bottom: 14px;
+  }
+  .nick-in:focus { border-color: var(--cyan); }
+
+  .skin-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .skin-btn {
+    padding: 9px 6px; border-radius: 13px; border: 1.5px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.04); color: #fff; font-size: 11px; font-weight: 800; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .skin-btn.on { border-color: var(--cyan); background: rgba(61,224,255,0.16); }
+  .skin-bar { width: 42px; height: 12px; border-radius: 999px; }
+
+  .btn-pri {
+    width: 100%; border: 0; border-radius: 16px; padding: 15px 22px; font-size: 16px; font-weight: 900;
+    background: linear-gradient(135deg, #3de0ff, #80ff72); color: #05101f; cursor: pointer;
+    box-shadow: 0 10px 28px rgba(61, 224, 255, 0.35);
+  }
+  .hints { margin-top: 12px; font-size: 12px; color: var(--mute); }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+
+  <div class="hud hidden" id="hud">
+    <div class="hud-top">
+      <div>
+        <div class="stat-pill">UZUNLUK <b id="lenVal">20</b><small id="killVal" style="color:var(--gold)">0 Av · En İyi: 0</small></div>
+        <div class="top-acts">
+          <button type="button" class="ibtn" id="sndBtn" aria-label="Ses">🔊</button>
+          <button type="button" class="ibtn" id="menuBtn" aria-label="Menü">⏸</button>
+        </div>
+      </div>
+      <div class="lb-box">
+        <h4>🏆 LİDERLİK TABLOSU</h4>
+        <ol id="lbList"></ol>
+      </div>
+    </div>
+    <div class="hud-bot">
+      <button type="button" class="boost-btn" id="boostBtn"><span style="font-size:20px">⚡</span>BOOST</button>
+    </div>
+  </div>
+
+  <!-- MENU / GAME OVER -->
+  <div class="overlay" id="menuOv">
+    <div class="card">
+      <span class="tag">🐍 BABA. ARCADE · SLITHER ARENA</span>
+      <h1 id="mTitle">YILAN ARENASI</h1>
+      <p class="sub" id="mSub">Parlayan enerji kürelerini toplayarak büyü, rakiplerinin önüne hızlanıp onları patlat ve dev neon yılanla liderlik tablosunun zirvesine çık!</p>
+
+      <input type="text" class="nick-in" id="nickIn" maxlength="16" placeholder="Oyuncu Adın (ör. Oğuzhan)" value="BABA">
+      <div class="skin-grid" id="skinGrid"></div>
+
+      <button type="button" class="btn-pri" id="playBtn">🐍 ARENAYA DAL</button>
+      <div class="hints">Fare veya dokunmatik ile yön ver · <b>Sol Tık / Boşluk / BOOST</b> ile hızlan!</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const ARENA_R = 2400;
+  const SKINS = [
+    { id: 'ts',     name: 'Bordo-Mavi', cols: ['#821b39', '#47b5ff'] },
+    { id: 'cyan',   name: 'Neon Buz',   cols: ['#00d2ff', '#3a7bd5'] },
+    { id: 'gold',   name: 'Altın',      cols: ['#ffd447', '#ff7b00'] },
+    { id: 'rain',   name: 'Gökkuşağı',  cols: ['#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#a55eea'] },
+    { id: 'fire',   name: 'Alev',       cols: ['#ff3838', '#ff9f1a'] },
+    { id: 'emerald',name: 'Zümrüt',     cols: ['#2ecc71', '#1abc9c'] },
+    { id: 'purple', name: 'Galaksi',    cols: ['#c56cf0', '#7158e2'] },
+    { id: 'royal',  name: 'Kraliyet',   cols: ['#ffed00', '#002d72'] }
+  ];
+  const BOT_NAMES = ['Kobra61', 'ViperTR', 'NeonKral', 'Ejder', 'Gölge', 'Şimşek', 'Piton', 'Zehir', 'Bozkurt', 'Fırtına', 'Atmaca', 'Mamba', 'Lazer', 'Kıvılcım', 'Karadeniz', 'Korsan', 'Titan', 'Yıldız', 'Alfa', 'Kartal'];
+
+  let bestLen = (() => { try { return Number(localStorage.getItem('bb_best_yilan_arenasi')) || 0; } catch (e) { return 0; } })();
+  let soundOn = true, selSkin = SKINS[0];
+
+  const SFX = (() => {
+    let ac = null;
+    const ok = () => {
+      if (!soundOn) return null;
+      if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) ac = new C(); }
+      if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+      return ac;
+    };
+    const tone = (f1, f2, d, v = 0.08) => {
+      const a = ok(); if (!a) return;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f1, a.currentTime); o.frequency.exponentialRampToValueAtTime(f2, a.currentTime + d);
+      g.gain.setValueAtTime(v, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + d);
+      o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + d + 0.01);
+    };
+    return {
+      orb: () => tone(620 + Math.random() * 240, 960, 0.06, 0.05),
+      kill: () => { tone(440, 880, 0.14, 0.14); setTimeout(() => tone(660, 1180, 0.18, 0.14), 80); },
+      die: () => tone(220, 48, 0.4, 0.2),
+      ok
+    };
+  })();
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  let W = innerWidth, H = innerHeight;
+  function resize() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  addEventListener('resize', resize);
+
+  let state = 'menu', time = 0, snakes = [], orbs = [], player = null, kills = 0;
+  const cam = { x: 0, y: 0, zoom: 1 };
+  const input = { mx: W / 2, my: H / 2, boost: false, touchId: null };
+
+  function mkOrb(x, y, val = 1, col = null) {
+    const pal = ['#3de0ff', '#80ff72', '#ffd447', '#ff5c7a', '#c56cf0', '#ff9f43'];
+    orbs.push({ x, y, val, r: 4.5 + Math.min(7, val * 1.4), col: col || pal[Math.floor(Math.random() * pal.length)], ph: Math.random() * 6.28 });
+  }
+
+  function mkSnake(name, skin, isBot, startLen = 22) {
+    const ang = Math.random() * Math.PI * 2;
+    const dist = Math.random() * (ARENA_R - 450);
+    const x = Math.cos(ang) * dist, y = Math.sin(ang) * dist;
+    const segs = [];
+    for (let i = 0; i < startLen; i++) segs.push({ x: x - Math.cos(ang) * i * 6, y: y - Math.sin(ang) * i * 6 });
+    return {
+      name, skin, isBot, x, y, ang, targetAng: ang,
+      segs, score: startLen * 5, boost: false, alive: true,
+      dropAcc: 0, aiT: 0, aiGoalX: 0, aiGoalY: 0
+    };
+  }
+
+  function initArena() {
+    orbs = []; snakes = []; kills = 0;
+    for (let i = 0; i < 420; i++) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (ARENA_R - 80);
+      mkOrb(Math.cos(a) * r, Math.sin(a) * r, Math.random() < 0.12 ? 3 : 1);
+    }
+    const nick = (document.getElementById('nickIn').value || 'BABA').trim().slice(0, 16);
+    player = mkSnake(nick, selSkin, false, 24);
+    player.x = 0; player.y = 0;
+    player.segs.forEach((s, i) => { s.x = -i * 6; s.y = 0; });
+    snakes.push(player);
+    for (let i = 0; i < 20; i++) {
+      snakes.push(mkSnake(BOT_NAMES[i % BOT_NAMES.length], SKINS[i % SKINS.length], true, 16 + Math.floor(Math.random() * 55)));
+    }
+    cam.x = 0; cam.y = 0; cam.zoom = 1;
+  }
+
+  function startGame() {
+    SFX.ok();
+    initArena();
+    document.getElementById('menuOv').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    state = 'play';
+  }
+
+  function killSnake(s, killer) {
+    s.alive = false;
+    // Gövdesi boyunca parlayan enerji küreleri bırakır!
+    for (let i = 0; i < s.segs.length; i += 2) {
+      const seg = s.segs[i];
+      mkOrb(seg.x + (Math.random() - 0.5) * 16, seg.y + (Math.random() - 0.5) * 16, 3.5, s.skin.cols[i % s.skin.cols.length]);
+    }
+    if (killer === player) { kills++; SFX.kill(); }
+    if (s === player) {
+      SFX.die();
+      const finalLen = Math.round(player.score);
+      if (finalLen > bestLen) {
+        bestLen = finalLen;
+        try { localStorage.setItem('bb_best_yilan_arenasi', String(bestLen)); } catch (e) {}
+      }
+      try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'baba-yilan-arenasi-score', score: finalLen }, '*'); } catch (e) {}
+      state = 'menu';
+      document.getElementById('hud').classList.add('hidden');
+      document.getElementById('mTitle').textContent = `SKORUN: ${finalLen}`;
+      document.getElementById('mSub').textContent = `Avlanan Yılan: ${kills} · En İyi Rekorun: ${bestLen}`;
+      document.getElementById('playBtn').textContent = '🐍 TEKRAR OYNA';
+      document.getElementById('menuOv').classList.remove('hidden');
+    }
+  }
+
+  function updateBot(b, dt) {
+    b.aiT -= dt;
+    // Sınırdan uzak dur
+    if (Math.hypot(b.x, b.y) > ARENA_R - 280) {
+      b.targetAng = Math.atan2(-b.y, -b.x); b.boost = false; return;
+    }
+    // Yakın tehlike kontrolü
+    for (const o of snakes) {
+      if (!o.alive || o === b) continue;
+      for (let i = 0; i < o.segs.length; i += 4) {
+        const d = Math.hypot(o.segs[i].x - b.x, o.segs[i].y - b.y);
+        if (d < 95) { b.targetAng = Math.atan2(b.y - o.segs[i].y, b.x - o.segs[i].x); b.boost = b.score > 140 && d < 65; return; }
+      }
+    }
+    if (b.aiT <= 0) {
+      b.aiT = 0.4 + Math.random() * 0.8;
+      let best = null, bestD = 380;
+      for (let i = 0; i < orbs.length; i += 2) {
+        const d = Math.hypot(orbs[i].x - b.x, orbs[i].y - b.y) - orbs[i].val * 35;
+        if (d < bestD) { bestD = d; best = orbs[i]; }
+      }
+      if (best) { b.targetAng = Math.atan2(best.y - b.y, best.x - b.x); b.boost = best.val >= 3 && b.score > 120; }
+      else { b.targetAng += (Math.random() - 0.5) * 1.4; b.boost = false; }
+    }
+  }
+
+  let lbTick = 0;
+  function update(dt) {
+    time += dt;
+    if (state !== 'play') return;
+
+    // Oyuncu yönü
+    player.targetAng = Math.atan2(input.my - H / 2, input.mx - W / 2);
+    player.boost = input.boost && player.score > 75;
+
+    for (const s of snakes) {
+      if (!s.alive) continue;
+      if (s.isBot) updateBot(s, dt);
+
+      let diff = s.targetAng - s.ang;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      s.ang += diff * Math.min(1, 7.5 * dt);
+
+      const spd = s.boost ? 340 : 185;
+      s.x += Math.cos(s.ang) * spd * dt;
+      s.y += Math.sin(s.ang) * spd * dt;
+
+      if (s.boost && s.score > 70) {
+        s.score -= 16 * dt; s.dropAcc += dt;
+        if (s.dropAcc > 0.16) {
+          s.dropAcc = 0;
+          const tail = s.segs[s.segs.length - 1];
+          mkOrb(tail.x, tail.y, 1.5, s.skin.cols[0]);
+        }
+      } else s.boost = false;
+
+      // Segment zinciri
+      const segGap = 6.5;
+      s.segs[0].x = s.x; s.segs[0].y = s.y;
+      for (let i = 1; i < s.segs.length; i++) {
+        const p = s.segs[i - 1], c = s.segs[i];
+        const dx = c.x - p.x, dy = c.y - p.y, d = Math.hypot(dx, dy);
+        if (d > segGap) { c.x = p.x + (dx / d) * segGap; c.y = p.y + (dy / d) * segGap; }
+      }
+      const wantSegs = Math.max(12, Math.min(260, Math.floor(s.score / 5)));
+      while (s.segs.length < wantSegs) { const t = s.segs[s.segs.length - 1]; s.segs.push({ x: t.x, y: t.y }); }
+      while (s.segs.length > wantSegs) s.segs.pop();
+
+      // Arena duvarı
+      if (Math.hypot(s.x, s.y) > ARENA_R - 14) { killSnake(s, null); continue; }
+
+      // Küre yeme
+      const rad = 11 + Math.min(14, Math.sqrt(s.score) * 0.45);
+      for (let i = orbs.length - 1; i >= 0; i--) {
+        const o = orbs[i];
+        const d = Math.hypot(o.x - s.x, o.y - s.y);
+        if (d < rad + o.r + 18) {
+          s.score += o.val * 3.8;
+          if (s === player) SFX.orb();
+          orbs.splice(i, 1);
+        }
+      }
+    }
+
+    // Yılan-Yılan çarpışma
+    for (const a of snakes) {
+      if (!a.alive) continue;
+      for (const b of snakes) {
+        if (!b.alive || a === b) continue;
+        const br = 10 + Math.min(13, Math.sqrt(b.score) * 0.42);
+        for (let i = 2; i < b.segs.length; i += 2) {
+          if (Math.hypot(a.x - b.segs[i].x, a.y - b.segs[i].y) < br + 7) {
+            killSnake(a, b); break;
+          }
+        }
+        if (!a.alive) break;
+      }
+    }
+
+    // Bot ve küre yenileme
+    snakes = snakes.filter(s => s.alive);
+    while (snakes.length < 21) {
+      const idx = Math.floor(Math.random() * BOT_NAMES.length);
+      snakes.push(mkSnake(BOT_NAMES[idx], SKINS[idx % SKINS.length], true, 16 + Math.floor(Math.random() * 40)));
+    }
+    while (orbs.length < 400) {
+      const a = Math.random() * Math.PI * 2, r = Math.sqrt(Math.random()) * (ARENA_R - 80);
+      mkOrb(Math.cos(a) * r, Math.sin(a) * r, Math.random() < 0.1 ? 3 : 1);
+    }
+
+    // Kamera & HUD
+    cam.x += (player.x - cam.x) * Math.min(1, 8 * dt);
+    cam.y += (player.y - cam.y) * Math.min(1, 8 * dt);
+    const tz = Math.max(0.55, Math.min(1.05, 1.05 - Math.sqrt(player.score) * 0.011));
+    cam.zoom += (tz - cam.zoom) * Math.min(1, 3 * dt);
+
+    lbTick -= dt;
+    if (lbTick <= 0) {
+      lbTick = 0.35;
+      document.getElementById('lenVal').textContent = Math.round(player.score);
+      document.getElementById('killVal').textContent = `${kills} Av · En İyi: ${Math.max(bestLen, Math.round(player.score))}`;
+      const top = snakes.slice().sort((a, b) => b.score - a.score).slice(0, 8);
+      document.getElementById('lbList').innerHTML = top.map((s, i) =>
+        `<li class="${s === player ? 'me' : ''}"><span>${i + 1}. ${s.name}</span><span>${Math.round(s.score)}</span></li>`
+      ).join('');
+    }
+  }
+
+  function render() {
+    ctx.fillStyle = '#070b14'; ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(W / 2, H / 2); ctx.scale(cam.zoom, cam.zoom); ctx.translate(-cam.x, -cam.y);
+
+    // Altıgen neon zemin ızgarası
+    const step = 64;
+    const vl = Math.floor((cam.x - W / (2 * cam.zoom)) / step) * step;
+    const vr = cam.x + W / (2 * cam.zoom) + step;
+    const vt = Math.floor((cam.y - H / (2 * cam.zoom)) / step) * step;
+    const vb = cam.y + H / (2 * cam.zoom) + step;
+    ctx.strokeStyle = 'rgba(61, 224, 255, 0.065)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let x = vl; x <= vr; x += step) { ctx.moveTo(x, vt); ctx.lineTo(x, vb); }
+    for (let y = vt; y <= vb; y += step) { ctx.moveTo(vl, y); ctx.lineTo(vr, y); }
+    ctx.stroke();
+
+    // Arena sınırı
+    ctx.strokeStyle = '#ff3838'; ctx.lineWidth = 10;
+    ctx.beginPath(); ctx.arc(0, 0, ARENA_R, 0, Math.PI * 2); ctx.stroke();
+
+    // Enerji küreleri
+    for (const o of orbs) {
+      if (o.x < vl - 20 || o.x > vr + 20 || o.y < vt - 20 || o.y > vb + 20) continue;
+      const pr = o.r + Math.sin(time * 5 + o.ph) * 1.1;
+      ctx.fillStyle = o.col;
+      ctx.beginPath(); ctx.arc(o.x, o.y, pr, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath(); ctx.arc(o.x - pr * 0.25, o.y - pr * 0.25, pr * 0.32, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Yılanlar
+    for (const s of snakes) {
+      const r = 10 + Math.min(14, Math.sqrt(s.score) * 0.44);
+      if (s.boost) { ctx.shadowColor = s.skin.cols[0]; ctx.shadowBlur = 18; }
+      for (let i = s.segs.length - 1; i >= 0; i--) {
+        const seg = s.segs[i];
+        if (seg.x < vl - 40 || seg.x > vr + 40 || seg.y < vt - 40 || seg.y > vb + 40) continue;
+        const col = s.skin.cols[Math.floor(i / 3) % s.skin.cols.length];
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(seg.x, seg.y, r * (i === 0 ? 1.08 : 1 - (i / s.segs.length) * 0.22), 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      // Gözler
+      const hx = s.segs[0].x, hy = s.segs[0].y;
+      for (const side of [-1, 1]) {
+        const ex = hx + Math.cos(s.ang + side * 0.55) * r * 0.6;
+        const ey = hy + Math.sin(s.ang + side * 0.55) * r * 0.6;
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex, ey, r * 0.34, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#070b14'; ctx.beginPath(); ctx.arc(ex + Math.cos(s.ang) * 2.2, ey + Math.sin(s.ang) * 2.2, r * 0.17, 0, Math.PI * 2); ctx.fill();
+      }
+      // İsim
+      ctx.font = '800 12px Inter, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillText(s.name, hx, hy - r - 8);
+    }
+    ctx.restore();
+
+    // Mini harita
+    if (state === 'play' && player) {
+      const mr = 46, mx = 62, my = H - 62;
+      ctx.save(); ctx.translate(mx, my);
+      ctx.fillStyle = 'rgba(7,13,26,0.72)'; ctx.beginPath(); ctx.arc(0, 0, mr, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(61,224,255,0.4)'; ctx.lineWidth = 1.6; ctx.stroke();
+      for (const s of snakes) {
+        const dx = (s.x / ARENA_R) * (mr - 4), dy = (s.y / ARENA_R) * (mr - 4);
+        ctx.fillStyle = s === player ? '#80ff72' : 'rgba(255,255,255,0.35)';
+        ctx.beginPath(); ctx.arc(dx, dy, s === player ? 3.5 : 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---- Input & Skins ---- */
+  addEventListener('mousemove', e => { input.mx = e.clientX; input.my = e.clientY; });
+  cv.addEventListener('mousedown', e => { if (e.button === 0) { input.boost = true; SFX.ok(); } });
+  addEventListener('mouseup', () => { input.boost = false; });
+  addEventListener('keydown', e => { if (e.key === ' ') { if (state === 'play') e.preventDefault(); input.boost = true; } });
+  addEventListener('keyup', e => { if (e.key === ' ') input.boost = false; });
+
+  cv.addEventListener('touchstart', e => { const t = e.changedTouches[0]; input.mx = t.clientX; input.my = t.clientY; SFX.ok(); }, { passive: true });
+  cv.addEventListener('touchmove', e => { const t = e.changedTouches[0]; input.mx = t.clientX; input.my = t.clientY; }, { passive: true });
+  const bBtn = document.getElementById('boostBtn');
+  bBtn.addEventListener('pointerdown', e => { e.preventDefault(); input.boost = true; bBtn.classList.add('on'); SFX.ok(); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => bBtn.addEventListener(ev, () => { input.boost = false; bBtn.classList.remove('on'); }));
+
+  function renderSkins() {
+    const g = document.getElementById('skinGrid');
+    g.innerHTML = SKINS.map(s => `<button type="button" class="skin-btn${s.id === selSkin.id ? ' on' : ''}" data-sk="${s.id}">
+      <span class="skin-bar" style="background:linear-gradient(90deg,${s.cols.join(',')})"></span>${s.name}
+    </button>`).join('');
+    g.querySelectorAll('.skin-btn').forEach(b => b.addEventListener('click', () => {
+      selSkin = SKINS.find(x => x.id === b.dataset.sk); renderSkins();
+    }));
+  }
+
+  document.getElementById('playBtn').addEventListener('click', startGame);
+  document.getElementById('menuBtn').addEventListener('click', () => { state = 'menu'; document.getElementById('hud').classList.add('hidden'); document.getElementById('menuOv').classList.remove('hidden'); });
+  document.getElementById('sndBtn').addEventListener('click', () => { soundOn = !soundOn; document.getElementById('sndBtn').textContent = soundOn ? '🔊' : '🔇'; });
+
+  let last = performance.now(), raf = 0;
+  function loop(t) {
+    const dt = Math.min(0.033, Math.max(0.001, (t - last) / 1000)); last = t;
+    update(dt); render();
+    raf = requestAnimationFrame(loop);
+  }
+  window.onload = () => { resize(); renderSkins(); last = performance.now(); if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+})();
+</script>
+</body>
+</html>

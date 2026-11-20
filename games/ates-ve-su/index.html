@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Ateş ve Su: Orman Tapınağı — BABA.</title>
+<style>
+  :root {
+    --bg: #121712; --panel: rgba(18, 25, 19, 0.94); --line: rgba(140, 210, 140, 0.25);
+    --fire: #ff6b2b; --water: #38d9ff; --gold: #ffd447; --ink: #f2f7f0; --mute: #a3b8a2;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, -apple-system, sans-serif; touch-action: none; }
+  #wrap { position: relative; width: 100%; height: 100%; overflow: hidden; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .hud { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom)); z-index: 10; }
+  .hud.hidden { opacity: 0; pointer-events: none; }
+  .hud-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border-radius: 13px;
+    background: rgba(14, 20, 15, 0.84); border: 1.5px solid rgba(255,255,255,0.16); font-weight: 800; font-size: 13px;
+  }
+  .acts { display: flex; gap: 6px; pointer-events: auto; }
+  .ibtn {
+    width: 38px; height: 38px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.22);
+    background: rgba(14, 20, 15, 0.84); color: #fff; font-size: 16px; cursor: pointer; display: grid; place-items: center;
+  }
+  .ibtn:hover { border-color: var(--gold); }
+
+  .touch-bar { display: flex; justify-content: space-between; align-items: flex-end; width: 100%; pointer-events: none; }
+  .tgrp { display: flex; gap: 8px; pointer-events: auto; }
+  .tbtn {
+    width: 56px; height: 54px; border-radius: 15px; border: 1.5px solid rgba(255,255,255,0.26);
+    background: rgba(14, 20, 15, 0.72); color: #fff; font-size: 20px; font-weight: 900; display: grid; place-items: center; cursor: pointer;
+  }
+  .tbtn.sw { width: auto; padding: 0 14px; font-size: 13px; border-color: var(--fire); color: var(--fire); }
+  .tbtn.sw.water { border-color: var(--water); color: var(--water); }
+  .tbtn:active { transform: scale(0.92); }
+
+  .overlay {
+    position: absolute; inset: 0; z-index: 25; display: flex; align-items: center; justify-content: center; padding: 14px;
+    background: radial-gradient(circle at 50% 30%, rgba(25, 42, 26, 0.78), rgba(10, 14, 10, 0.94));
+    backdrop-filter: blur(8px); transition: opacity .25s;
+  }
+  .overlay.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+  .card {
+    width: min(680px, 100%); max-height: 92vh; overflow-y: auto;
+    background: var(--panel); border: 1.5px solid var(--line); border-radius: 26px;
+    padding: clamp(16px, 2.8vw, 26px); box-shadow: 0 28px 80px rgba(0,0,0,0.7); text-align: center;
+  }
+  .card-sm { width: min(440px, 100%); }
+  .tag { display: inline-block; padding: 5px 12px; border-radius: 999px; background: rgba(125,255,155,0.12); border: 1px solid rgba(125,255,155,0.38); color: #8dff9e; font-size: 11px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; }
+  h1 { margin: 2px 0 6px; font-size: clamp(26px, 4.4vw, 40px); font-weight: 900; letter-spacing: -.03em; }
+  h1 .f { color: var(--fire); } h1 .w { color: var(--water); }
+  .sub { margin: 0 0 14px; color: var(--mute); font-size: 13.5px; line-height: 1.45; }
+
+  .lvl-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+  .lvl-btn {
+    padding: 12px 6px; border-radius: 14px; border: 1.5px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.05); color: #fff; font-weight: 900; font-size: 14px; cursor: pointer;
+    transition: all .15s;
+  }
+  .lvl-btn:hover { transform: translateY(-2px); border-color: var(--gold); }
+  .lvl-btn.done { border-color: #7dff9b; background: rgba(125,255,155,0.14); color: #8dff9e; }
+  .lvl-btn.on { border-color: var(--gold); background: rgba(255,212,71,0.2); color: var(--gold); }
+
+  .btn-pri {
+    width: 100%; border: 0; border-radius: 16px; padding: 14px 22px; font-size: 16px; font-weight: 900;
+    background: linear-gradient(135deg, #ff6b2b, #ffd447 50%, #38d9ff); color: #0e140f; cursor: pointer;
+    box-shadow: 0 10px 28px rgba(255, 130, 50, 0.35);
+  }
+  .btn-sec {
+    width: 100%; border: 1.5px solid rgba(255,255,255,0.22); border-radius: 14px; padding: 12px 18px;
+    background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 8px;
+  }
+  .hints { margin-top: 12px; font-size: 12px; color: var(--mute); line-height: 1.6; }
+  .hints kbd { padding: 2px 6px; border-radius: 5px; background: rgba(255,255,255,0.12); color: #fff; font-family: inherit; font-weight: 800; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+
+  <div class="hud hidden" id="hud">
+    <div class="hud-top">
+      <div class="pill" id="lvlPill">🏛️ BÖLÜM 1 / 5</div>
+      <div class="pill" id="gemPill">💎 0 / 0 · ⏱️ 0:00</div>
+      <div class="acts">
+        <button type="button" class="ibtn" id="rstBtn" title="Bölümü Yenile (R)">↻</button>
+        <button type="button" class="ibtn" id="sndBtn" title="Ses">🔊</button>
+        <button type="button" class="ibtn" id="menuBtn" title="Bölümler">☰</button>
+      </div>
+    </div>
+
+    <div class="touch-bar">
+      <div class="tgrp">
+        <button type="button" class="tbtn" data-k="left">◀</button>
+        <button type="button" class="tbtn" data-k="right">▶</button>
+      </div>
+      <div class="tgrp">
+        <button type="button" class="tbtn sw" id="swCharBtn">🔥 ATEŞ</button>
+        <button type="button" class="tbtn" data-k="jump">▲</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="overlay" id="menuOv">
+    <div class="card">
+      <span class="tag">🌿 BABA. ARCADE · ORMAN TAPINAĞI</span>
+      <h1><span class="f">ATEŞ</span> VE <span class="w">SU</span></h1>
+      <p class="sub">İki karakteri birlikte yöneterek Orman Tapınağı'nın bulmacalarını çöz! <b>Ateş</b> lavdan geçer ama suda söner; <b>Su</b> sudan geçer ama lavda buharlaşır. Yeşil zehir ikisi için de ölümcül!</p>
+
+      <div class="lvl-grid" id="lvlGrid"></div>
+
+      <button type="button" class="btn-pri" id="playBtn">🏛️ TAPINAĞA GİR</button>
+      <div class="hints">
+        🔥 Ateş: <kbd>◀</kbd><kbd>▶</kbd><kbd>▲</kbd> &nbsp;|&nbsp; 💧 Su: <kbd>A</kbd><kbd>D</kbd><kbd>W</kbd> &nbsp;|&nbsp; Tek kişiysen <kbd>Tab</kbd> veya mobil butonla karakter değiştir · <kbd>R</kbd> Yenile
+      </div>
+    </div>
+  </div>
+
+  <!-- LEVEL CLEAR / FAIL -->
+  <div class="overlay hidden" id="endOv">
+    <div class="card card-sm">
+      <h1 id="endTitle" style="font-size:32px">BÖLÜM GEÇİLDİ!</h1>
+      <p class="sub" id="endSub" style="color:#fff;font-weight:800"></p>
+      <button type="button" class="btn-pri" id="nextLvlBtn">▶ SONRAKİ BÖLÜM</button>
+      <button type="button" class="btn-sec" id="backMenuBtn">🏛️ BÖLÜM SEÇ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  const GW = 960, GH = 600;
+  const SAVE_KEY = 'baba_ates_ve_su_v1';
+  let save = (() => {
+    try { return Object.assign({ done: [], sound: true }, JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); }
+    catch (e) { return { done: [], sound: true }; }
+  })();
+  const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); localStorage.setItem('bb_best_ates_ve_su', String(save.done.length)); } catch (e) {} };
+
+  /* ---- Ses ---- */
+  const SFX = (() => {
+    let ac = null;
+    const ok = () => {
+      if (!save.sound) return null;
+      if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (C) ac = new C(); }
+      if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+      return ac;
+    };
+    const tone = (f1, f2, d, type = 'sine', v = 0.13) => {
+      const a = ok(); if (!a) return;
+      const o = a.createOscillator(), g = a.createGain();
+      o.type = type; o.frequency.setValueAtTime(f1, a.currentTime); o.frequency.exponentialRampToValueAtTime(Math.max(30, f2), a.currentTime + d);
+      g.gain.setValueAtTime(v, a.currentTime); g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + d);
+      o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + d + 0.01);
+    };
+    return {
+      jump: (w) => tone(w ? 320 : 260, w ? 580 : 480, 0.11, 'sine', 0.11),
+      gem: () => { tone(880, 1320, 0.14, 'triangle', 0.14); },
+      switch: () => tone(220, 340, 0.1, 'square', 0.08),
+      die: () => tone(240, 65, 0.3, 'sawtooth', 0.16),
+      win: () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, f * 1.02, 0.25, 'triangle', 0.16), i * 85)),
+      ok
+    };
+  })();
+
+  /* ---- 5 EL YAPIMI ORMAN TAPINAĞI BÖLÜMÜ ---- */
+  const LEVELS = [
+    {
+      name: 'İlk Adım',
+      fire: { x: 64, y: 520 }, water: { x: 112, y: 520 },
+      walls: [
+        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
+        [24, 440, 680, 24], [240, 320, 696, 24], [24, 200, 660, 24], [520, 115, 416, 24],
+        [740, 495, 110, 22], [110, 380, 110, 22], [720, 260, 110, 22]
+      ],
+      pools: [
+        { type: 'lava', x: 250, y: 554, w: 120 }, { type: 'water', x: 470, y: 554, w: 120 },
+        { type: 'acid', x: 460, y: 434, w: 100 }, { type: 'lava', x: 540, y: 314, w: 110 },
+        { type: 'water', x: 320, y: 194, w: 110 }
+      ],
+      plates: [{ id: 'a', x: 220, y: 432, col: '#ffd447' }, { id: 'a', x: 760, y: 312, col: '#ffd447' }],
+      levers: [{ id: 'b', x: 180, y: 184, col: '#c56cf0' }],
+      movers: [
+        { id: 'a', x: 704, y: 440, w: 100, h: 20, ax: 704, ay: 340, col: '#ffd447' },
+        { id: 'b', x: 684, y: 200, w: 100, h: 20, ax: 684, ay: 115, col: '#c56cf0' }
+      ],
+      boxes: [{ x: 350, y: 404 }],
+      gems: [
+        { type: 'fire', x: 310, y: 525 }, { type: 'water', x: 530, y: 525 },
+        { type: 'fire', x: 595, y: 284 }, { type: 'water', x: 375, y: 164 },
+        { type: 'fire', x: 250, y: 164 }, { type: 'water', x: 830, y: 284 }
+      ],
+      doors: { fire: { x: 760, y: 61 }, water: { x: 835, y: 61 } }
+    },
+    {
+      name: 'İkiz Köprüler',
+      fire: { x: 64, y: 520 }, water: { x: 860, y: 520 },
+      walls: [
+        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
+        [24, 445, 340, 24], [596, 445, 340, 24],
+        [180, 325, 600, 24], [24, 210, 300, 24], [636, 210, 300, 24],
+        [340, 125, 280, 24]
+      ],
+      pools: [
+        { type: 'lava', x: 240, y: 554, w: 150 }, { type: 'water', x: 560, y: 554, w: 150 },
+        { type: 'acid', x: 420, y: 319, w: 120 }, { type: 'water', x: 110, y: 204, w: 110 }, { type: 'lava', x: 740, y: 204, w: 110 }
+      ],
+      plates: [{ id: 'a', x: 120, y: 437, col: '#ffd447' }, { id: 'b', x: 820, y: 437, col: '#3de0ff' }],
+      levers: [{ id: 'c', x: 480, y: 309, col: '#ff6b81' }],
+      movers: [
+        { id: 'a', x: 410, y: 530, w: 140, h: 20, ax: 410, ay: 445, col: '#ffd447' },
+        { id: 'b', x: 48, y: 325, w: 105, h: 20, ax: 48, ay: 215, col: '#3de0ff' },
+        { id: 'c', x: 805, y: 325, w: 105, h: 20, ax: 805, ay: 215, col: '#ff6b81' }
+      ],
+      boxes: [{ x: 240, y: 410 }],
+      gems: [
+        { type: 'fire', x: 315, y: 525 }, { type: 'water', x: 635, y: 525 },
+        { type: 'water', x: 165, y: 174 }, { type: 'fire', x: 795, y: 174 },
+        { type: 'fire', x: 380, y: 290 }, { type: 'water', x: 580, y: 290 }
+      ],
+      doors: { fire: { x: 420, y: 71 }, water: { x: 495, y: 71 } }
+    },
+    {
+      name: 'Zehirli Vadi',
+      fire: { x: 64, y: 520 }, water: { x: 115, y: 520 },
+      walls: [
+        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
+        [240, 480, 120, 22], [440, 440, 130, 22], [660, 400, 140, 22],
+        [24, 330, 580, 24], [340, 210, 596, 24], [24, 125, 290, 24]
+      ],
+      pools: [
+        { type: 'acid', x: 210, y: 554, w: 560 }, { type: 'lava', x: 180, y: 324, w: 120 },
+        { type: 'water', x: 380, y: 324, w: 120 }, { type: 'acid', x: 560, y: 204, w: 110 }
+      ],
+      plates: [{ id: 'a', x: 120, y: 322, col: '#ffd447' }, { id: 'b', x: 790, y: 202, col: '#7dff9b' }],
+      levers: [{ id: 'c', x: 720, y: 384, col: '#c56cf0' }],
+      movers: [
+        { id: 'c', x: 820, y: 400, w: 100, h: 20, ax: 820, ay: 220, col: '#c56cf0' },
+        { id: 'a', x: 620, y: 330, w: 120, h: 20, ax: 620, ay: 240, col: '#ffd447' },
+        { id: 'b', x: 220, y: 210, w: 100, h: 20, ax: 220, ay: 125, col: '#7dff9b' }
+      ],
+      boxes: [{ x: 460, y: 174 }],
+      gems: [
+        { type: 'fire', x: 300, y: 445 }, { type: 'water', x: 505, y: 405 },
+        { type: 'fire', x: 240, y: 294 }, { type: 'water', x: 440, y: 294 },
+        { type: 'fire', x: 615, y: 165 }, { type: 'water', x: 710, y: 175 }
+      ],
+      doors: { fire: { x: 70, y: 71 }, water: { x: 145, y: 71 } }
+    },
+    {
+      name: 'Asansör Kulesi',
+      fire: { x: 64, y: 520 }, water: { x: 860, y: 520 },
+      walls: [
+        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
+        [24, 430, 260, 24], [676, 430, 260, 24], [360, 460, 240, 24],
+        [200, 310, 560, 24], [24, 195, 280, 24], [656, 195, 280, 24], [350, 115, 260, 24]
+      ],
+      pools: [
+        { type: 'lava', x: 240, y: 554, w: 160 }, { type: 'water', x: 560, y: 554, w: 160 },
+        { type: 'acid', x: 430, y: 304, w: 100 }, { type: 'lava', x: 100, y: 189, w: 120 }, { type: 'water', x: 740, y: 189, w: 120 }
+      ],
+      plates: [{ id: 'a', x: 480, y: 452, col: '#ffd447' }, { id: 'b', x: 260, y: 302, col: '#3de0ff' }, { id: 'c', x: 700, y: 302, col: '#ff6b81' }],
+      levers: [],
+      movers: [
+        { id: 'a', x: 290, y: 430, w: 70, h: 20, ax: 290, ay: 315, col: '#ffd447' },
+        { id: 'a', x: 600, y: 430, w: 70, h: 20, ax: 600, ay: 315, col: '#ffd447' },
+        { id: 'b', x: 540, y: 200, w: 100, h: 20, ax: 540, ay: 118, col: '#3de0ff' },
+        { id: 'c', x: 320, y: 200, w: 100, h: 20, ax: 320, ay: 118, col: '#ff6b81' }
+      ],
+      boxes: [{ x: 420, y: 422 }],
+      gems: [
+        { type: 'fire', x: 320, y: 525 }, { type: 'water', x: 640, y: 525 },
+        { type: 'fire', x: 160, y: 158 }, { type: 'water', x: 800, y: 158 },
+        { type: 'fire', x: 340, y: 274 }, { type: 'water', x: 620, y: 274 }
+      ],
+      doors: { fire: { x: 415, y: 61 }, water: { x: 495, y: 61 } }
+    },
+    {
+      name: 'Büyük Tapınak Finali',
+      fire: { x: 64, y: 520 }, water: { x: 118, y: 520 },
+      walls: [
+        [0, 560, 960, 40], [0, 0, 24, 600], [936, 0, 24, 600], [0, 0, 960, 24],
+        [24, 445, 740, 24], [196, 330, 740, 24], [24, 215, 720, 24], [460, 115, 476, 24]
+      ],
+      pools: [
+        { type: 'lava', x: 240, y: 554, w: 130 }, { type: 'acid', x: 450, y: 554, w: 120 }, { type: 'water', x: 650, y: 554, w: 130 },
+        { type: 'water', x: 220, y: 439, w: 130 }, { type: 'lava', x: 480, y: 439, w: 130 },
+        { type: 'acid', x: 340, y: 324, w: 120 }, { type: 'lava', x: 580, y: 324, w: 120 },
+        { type: 'water', x: 240, y: 209, w: 140 }, { type: 'acid', x: 480, y: 209, w: 120 }
+      ],
+      plates: [{ id: 'a', x: 140, y: 437, col: '#ffd447' }, { id: 'b', x: 840, y: 322, col: '#3de0ff' }],
+      levers: [{ id: 'c', x: 130, y: 199, col: '#ff6b81' }],
+      movers: [
+        { id: 'a', x: 790, y: 540, w: 120, h: 20, ax: 790, ay: 445, col: '#ffd447' },
+        { id: 'b', x: 48, y: 330, w: 120, h: 20, ax: 48, ay: 215, col: '#3de0ff' },
+        { id: 'c', x: 770, y: 215, w: 130, h: 20, ax: 770, ay: 115, col: '#ff6b81' }
+      ],
+      boxes: [{ x: 380, y: 410 }, { x: 650, y: 295 }],
+      gems: [
+        { type: 'fire', x: 305, y: 525 }, { type: 'water', x: 715, y: 525 },
+        { type: 'water', x: 285, y: 408 }, { type: 'fire', x: 545, y: 408 },
+        { type: 'fire', x: 640, y: 294 }, { type: 'water', x: 310, y: 178 }
+      ],
+      doors: { fire: { x: 740, y: 61 }, water: { x: 825, y: 61 } }
+    }
+  ];
+
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  let scale = 1, offX = 0, offY = 0;
+  function resize() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    scale = Math.min(innerWidth / GW, innerHeight / GH);
+    offX = (innerWidth - GW * scale) / 2; offY = (innerHeight - GH * scale) / 2;
+  }
+  addEventListener('resize', resize);
+
+  let state = 'menu', curLvl = 0, lvlTime = 0, animT = 0, activeSolo = 'fire';
+  let fire, water, walls, pools, plates, levers, movers, boxes, gems, doors, particles = [];
+  const keys = Object.create(null), touch = { left: false, right: false, jump: false };
+
+  function loadLevel(idx) {
+    SFX.ok();
+    curLvl = idx; lvlTime = 0; particles = [];
+    const L = LEVELS[idx];
+    fire = { type: 'fire', x: L.fire.x, y: L.fire.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false };
+    water = { type: 'water', x: L.water.x, y: L.water.y, w: 26, h: 38, vx: 0, vy: 0, onG: false, facing: 1, inDoor: false };
+    walls = L.walls.map(([x, y, w, h]) => ({ x, y, w, h }));
+    pools = L.pools.map(p => ({ ...p }));
+    plates = L.plates.map(p => ({ ...p, pressed: false }));
+    levers = L.levers.map(l => ({ ...l, on: false, cd: 0 }));
+    movers = L.movers.map(m => ({ ...m, sx: m.x, sy: m.y, cx: m.x, cy: m.y }));
+    boxes = L.boxes.map(b => ({ x: b.x, y: b.y, w: 32, h: 32, vx: 0, vy: 0 }));
+    gems = L.gems.map(g => ({ ...g, taken: false }));
+    doors = { fire: { ...L.doors.fire, w: 46, h: 54 }, water: { ...L.doors.water, w: 46, h: 54 } };
+
+    document.getElementById('lvlPill').textContent = `🏛️ BÖLÜM ${idx + 1} / ${LEVELS.length} · ${L.name}`;
+    document.getElementById('menuOv').classList.add('hidden');
+    document.getElementById('endOv').classList.add('hidden');
+    document.getElementById('hud').classList.remove('hidden');
+    state = 'play';
+  }
+
+  function aabb(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  function stepBody(b, solids, dt) {
+    b.vy = Math.min(720, b.vy + 1280 * dt);
+    b.x += b.vx * dt;
+    for (const s of solids) {
+      if (aabb(b, s)) {
+        if (b.vx > 0) b.x = s.x - b.w;
+        else if (b.vx < 0) b.x = s.x + s.w;
+        b.vx = 0;
+      }
+    }
+    b.y += b.vy * dt; b.onG = false;
+    for (const s of solids) {
+      if (aabb(b, s)) {
+        if (b.vy > 0) { b.y = s.y - b.h; b.vy = 0; b.onG = true; }
+        else if (b.vy < 0) { b.y = s.y + s.h; b.vy = 0; }
+      }
+    }
+  }
+
+  function update(dt) {
+    animT += dt;
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i]; p.life -= dt; if (p.life <= 0) { particles.splice(i, 1); continue; }
+      p.x += p.vx * dt; p.y += p.vy * dt;
+    }
+    if (state !== 'play') return;
+    lvlTime += dt;
+
+    // Kontroller (2 kişi aynı anda veya tek kişi Tab/mobil değiştirici ile)
+    const fL = keys['arrowleft'] || (activeSolo === 'fire' && touch.left);
+    const fR = keys['arrowright'] || (activeSolo === 'fire' && touch.right);
+    const fJ = keys['arrowup'] || (activeSolo === 'fire' && touch.jump);
+    const wL = keys['a'] || (activeSolo === 'water' && touch.left);
+    const wR = keys['d'] || (activeSolo === 'water' && touch.right);
+    const wJ = keys['w'] || (activeSolo === 'water' && touch.jump);
+
+    const ctrl = (ch, L, R, J) => {
+      ch.vx = L ? -220 : R ? 220 : 0;
+      if (L) ch.facing = -1; else if (R) ch.facing = 1;
+      if (J && ch.onG) { ch.vy = -515; ch.onG = false; SFX.jump(ch.type === 'water'); }
+    };
+    ctrl(fire, fL, fR, fJ);
+    ctrl(water, wL, wR, wJ);
+
+    // Basınç plakaları ve kollar
+    const activeIds = new Set();
+    for (const pl of plates) {
+      const rect = { x: pl.x - 18, y: pl.y - 6, w: 36, h: 14 };
+      pl.pressed = aabb(fire, rect) || aabb(water, rect) || boxes.some(bx => aabb(bx, rect));
+      if (pl.pressed) activeIds.add(pl.id);
+    }
+    for (const lv of levers) {
+      if (lv.cd > 0) lv.cd -= dt;
+      const rect = { x: lv.x - 16, y: lv.y - 12, w: 32, h: 28 };
+      if (lv.cd <= 0 && (aabb(fire, rect) || aabb(water, rect))) {
+        lv.on = !lv.on; lv.cd = 0.7; SFX.switch();
+      }
+      if (lv.on) activeIds.add(lv.id);
+    }
+
+    // Hareketli platformlar
+    for (const m of movers) {
+      const tx = activeIds.has(m.id) ? m.ax : m.sx;
+      const ty = activeIds.has(m.id) ? m.ay : m.sy;
+      const dx = (tx - m.cx) * Math.min(1, 3.6 * dt);
+      const dy = (ty - m.cy) * Math.min(1, 3.6 * dt);
+      // Üstündeki karakterleri beraber taşı
+      const topRect = { x: m.cx, y: m.cy - 6, w: m.w, h: 10 };
+      [fire, water, ...boxes].forEach(obj => { if (aabb(obj, topRect)) { obj.x += dx; obj.y += dy; } });
+      m.cx += dx; m.cy += dy;
+    }
+
+    const moverSolids = movers.map(m => ({ x: m.cx, y: m.cy, w: m.w, h: m.h }));
+    const allSolids = walls.concat(moverSolids);
+
+    // İtilebilir kutular
+    for (const bx of boxes) {
+      bx.vx *= 0.8;
+      [fire, water].forEach(ch => {
+        if (Math.abs(ch.y + ch.h - (bx.y + bx.h)) < 16) {
+          if (ch.vx > 0 && Math.abs(ch.x + ch.w - bx.x) < 6) bx.vx = 110;
+          if (ch.vx < 0 && Math.abs(ch.x - (bx.x + bx.w)) < 6) bx.vx = -110;
+        }
+      });
+      stepBody(bx, allSolids, dt);
+    }
+
+    const charSolids = allSolids.concat(boxes);
+    stepBody(fire, charSolids, dt);
+    stepBody(water, charSolids, dt);
+
+    // Parçacık izleri
+    if (Math.random() < 0.35) particles.push({ x: fire.x + 13, y: fire.y + 6, vx: (Math.random() - 0.5) * 20, vy: -35, r: 3, col: '#ff9f43', life: 0.35 });
+    if (Math.random() < 0.35) particles.push({ x: water.x + 13, y: water.y + 10, vx: (Math.random() - 0.5) * 18, vy: -25, r: 2.8, col: '#7ceeff', life: 0.35 });
+
+    // Elmas toplama
+    for (const g of gems) {
+      if (g.taken) continue;
+      const gr = { x: g.x - 12, y: g.y - 12, w: 24, h: 24 };
+      if ((g.type === 'fire' && aabb(fire, gr)) || (g.type === 'water' && aabb(water, gr))) {
+        g.taken = true; SFX.gem();
+        for (let k = 0; k < 12; k++) particles.push({ x: g.x, y: g.y, vx: (Math.random() - 0.5) * 140, vy: (Math.random() - 0.5) * 140, r: 3.5, col: g.type === 'fire' ? '#ff6b2b' : '#38d9ff', life: 0.45 });
+      }
+    }
+
+    // Havuz tehlikeleri
+    for (const p of pools) {
+      const pr = { x: p.x + 4, y: p.y - 2, w: p.w - 8, h: 14 };
+      if ((p.type === 'water' || p.type === 'acid') && aabb(fire, pr)) { failLevel('Ateş Çocuk suya/zehre düştü!'); return; }
+      if ((p.type === 'lava' || p.type === 'acid') && aabb(water, pr)) { failLevel('Su Kız lava/zehre düştü!'); return; }
+    }
+
+    // Kapılar
+    fire.inDoor = aabb(fire, doors.fire);
+    water.inDoor = aabb(water, doors.water);
+    if (fire.inDoor && water.inDoor) { winLevel(); return; }
+
+    const got = gems.filter(g => g.taken).length;
+    const mm = Math.floor(lvlTime / 60), ss = Math.floor(lvlTime % 60);
+    document.getElementById('gemPill').textContent = `💎 ${got} / ${gems.length} · ⏱️ ${mm}:${String(ss).padStart(2, '0')}`;
+  }
+
+  function failLevel(msg) {
+    state = 'fail'; SFX.die();
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('endTitle').textContent = '💥 OLMADI!';
+    document.getElementById('endSub').textContent = msg;
+    const btn = document.getElementById('nextLvlBtn');
+    btn.textContent = '↻ TEKRAR DENE';
+    btn.onclick = () => loadLevel(curLvl);
+    document.getElementById('endOv').classList.remove('hidden');
+  }
+
+  function winLevel() {
+    state = 'win'; SFX.win();
+    if (!save.done.includes(curLvl)) { save.done.push(curLvl); persist(); }
+    const got = gems.filter(g => g.taken).length;
+    try { if (window.parent && window.parent !== window) window.parent.postMessage({ type: 'baba-ates-ve-su-score', score: save.done.length * 500 + got * 50 }, '*'); } catch (e) {}
+    document.getElementById('hud').classList.add('hidden');
+    document.getElementById('endTitle').textContent = curLvl + 1 >= LEVELS.length ? '🏆 TAPINAK TAMAMLANDI!' : '✨ BÖLÜM GEÇİLDİ!';
+    document.getElementById('endSub').textContent = `Toplanan Elmas: ${got}/${gems.length} · Süre: ${Math.floor(lvlTime)}s`;
+    const btn = document.getElementById('nextLvlBtn');
+    if (curLvl + 1 < LEVELS.length) {
+      btn.textContent = `▶ BÖLÜM ${curLvl + 2}`;
+      btn.onclick = () => loadLevel(curLvl + 1);
+    } else {
+      btn.textContent = '🏛️ BÖLÜM 1’E DÖN';
+      btn.onclick = () => loadLevel(0);
+    }
+    document.getElementById('endOv').classList.remove('hidden');
+  }
+
+  /* ---- Çizim ---- */
+  function drawChar(ch) {
+    ctx.save();
+    ctx.translate(ch.x + ch.w / 2, ch.y + ch.h);
+    const isF = ch.type === 'fire';
+    const run = Math.abs(ch.vx) > 5 ? Math.sin(animT * 18) * 5 : 0;
+
+    // Aura
+    const g = ctx.createRadialGradient(0, -18, 4, 0, -18, 28);
+    g.addColorStop(0, isF ? 'rgba(255,120,40,0.45)' : 'rgba(56,217,255,0.45)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, -18, 28, 0, Math.PI * 2); ctx.fill();
+
+    // Bacaklar
+    ctx.strokeStyle = isF ? '#e84118' : '#0097e6'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(-4, -10); ctx.lineTo(-4 - run, 0); ctx.moveTo(4, -10); ctx.lineTo(4 + run, 0); ctx.stroke();
+
+    // Gövde
+    ctx.fillStyle = isF ? '#ff6b2b' : '#38d9ff';
+    ctx.beginPath(); ctx.roundRect(-9, -24, 18, 16, 6); ctx.fill();
+
+    // Kafa & Element Saçı (alev veya su damlası!)
+    if (isF) {
+      const fl = Math.sin(animT * 14) * 3;
+      ctx.fillStyle = '#ff9f43';
+      ctx.beginPath(); ctx.moveTo(-11, -24); ctx.quadraticCurveTo(-13, -42, 0 + fl, -46); ctx.quadraticCurveTo(13, -42, 11, -24); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffe066';
+      ctx.beginPath(); ctx.arc(0, -28, 9, 0, Math.PI * 2); ctx.fill();
+    } else {
+      const sw = Math.sin(animT * 10) * 2.5;
+      ctx.fillStyle = '#00a8ff';
+      ctx.beginPath(); ctx.moveTo(-11, -24); ctx.quadraticCurveTo(-12, -39, sw, -45); ctx.quadraticCurveTo(12, -39, 11, -24); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#9beeff';
+      ctx.beginPath(); ctx.arc(0, -28, 9, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Gözler
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ch.facing * 3 - 3, -29, 2.7, 0, Math.PI * 2); ctx.arc(ch.facing * 3 + 3.5, -29, 2.7, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(ch.facing * 3.8 - 3, -29, 1.3, 0, Math.PI * 2); ctx.arc(ch.facing * 3.8 + 3.5, -29, 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  function render() {
+    ctx.fillStyle = '#0c100c'; ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.save(); ctx.translate(offX, offY); ctx.scale(scale, scale);
+
+    // Tapınak taş arka plan
+    const bg = ctx.createLinearGradient(0, 0, 0, GH);
+    bg.addColorStop(0, '#1e271e'); bg.addColorStop(1, '#121812');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, GW, GH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.035)'; ctx.lineWidth = 2;
+    for (let x = 0; x < GW; x += 48) for (let y = 0; y < GH; y += 48) ctx.strokeRect(x, y, 48, 48);
+
+    if (!walls) { ctx.restore(); return; }
+
+    // Duvarlar (yosunlu tapınak taşları)
+    for (const w of walls) {
+      ctx.fillStyle = '#394537'; ctx.fillRect(w.x, w.y, w.w, w.h);
+      ctx.fillStyle = '#5c7a49'; ctx.fillRect(w.x, w.y, w.w, 5);
+      ctx.strokeStyle = '#20281f'; ctx.lineWidth = 2; ctx.strokeRect(w.x, w.y, w.w, w.h);
+    }
+
+    // Hareketli platformlar
+    for (const m of movers) {
+      ctx.fillStyle = m.col; ctx.beginPath(); ctx.roundRect(m.cx, m.cy, m.w, m.h, 5); ctx.fill();
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.stroke();
+    }
+
+    // Havuzlar (dalgalanan lav, su, yeşil asit)
+    for (const p of pools) {
+      const col = p.type === 'lava' ? '#ff5722' : p.type === 'water' ? '#00b8ff' : '#32ff7e';
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y + 12);
+      for (let x = 0; x <= p.w; x += 12) ctx.lineTo(p.x + x, p.y + Math.sin(animT * 7 + x * 0.2) * 2.5);
+      ctx.lineTo(p.x + p.w, p.y + 12); ctx.closePath(); ctx.fill();
+    }
+
+    // Basınç plakaları & Kollar
+    for (const pl of plates) {
+      ctx.fillStyle = pl.col;
+      ctx.fillRect(pl.x - 18, pl.y + (pl.pressed ? 4 : 0), 36, pl.pressed ? 4 : 8);
+    }
+    for (const lv of levers) {
+      ctx.strokeStyle = lv.col; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(lv.x, lv.y + 12); ctx.lineTo(lv.x + (lv.on ? 14 : -14), lv.y - 10); ctx.stroke();
+      ctx.fillStyle = '#222'; ctx.fillRect(lv.x - 10, lv.y + 10, 20, 6);
+    }
+
+    // Kapılar
+    for (const [k, d] of Object.entries(doors)) {
+      ctx.fillStyle = k === 'fire' ? '#5c1f0e' : '#0e3c5c';
+      ctx.beginPath(); ctx.roundRect(d.x, d.y, d.w, d.h, [18, 18, 0, 0]); ctx.fill();
+      ctx.strokeStyle = k === 'fire' ? '#ff6b2b' : '#38d9ff'; ctx.lineWidth = 3.5; ctx.stroke();
+      ctx.font = '20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(k === 'fire' ? '🔥' : '💧', d.x + d.w / 2, d.y + 34);
+    }
+
+    // İtilebilir kutular
+    for (const bx of boxes) {
+      ctx.fillStyle = '#7f6c53'; ctx.fillRect(bx.x, bx.y, bx.w, bx.h);
+      ctx.strokeStyle = '#3d3224'; ctx.lineWidth = 2.5; ctx.strokeRect(bx.x, bx.y, bx.w, bx.h);
+      ctx.beginPath(); ctx.moveTo(bx.x, bx.y); ctx.lineTo(bx.x + bx.w, bx.y + bx.h); ctx.stroke();
+    }
+
+    // Elmaslar
+    for (const g of gems) {
+      if (g.taken) continue;
+      const gy = g.y + Math.sin(animT * 5 + g.x) * 4;
+      ctx.fillStyle = g.type === 'fire' ? '#ff5722' : '#38d9ff';
+      ctx.beginPath(); ctx.moveTo(g.x, gy - 11); ctx.lineTo(g.x + 9, gy); ctx.lineTo(g.x, gy + 11); ctx.lineTo(g.x - 9, gy); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+
+    drawChar(fire); drawChar(water);
+
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life * 2);
+      ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  /* ---- Input & Menu ---- */
+  addEventListener('keydown', e => {
+    const k = e.key.toLowerCase(); keys[k] = true;
+    if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k) && state === 'play') e.preventDefault();
+    if (k === 'r' && state === 'play') loadLevel(curLvl);
+    if (k === 'tab' && state === 'play') { e.preventDefault(); toggleSolo(); }
+  });
+  addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+  function toggleSolo() {
+    activeSolo = activeSolo === 'fire' ? 'water' : 'fire';
+    const b = document.getElementById('swCharBtn');
+    b.textContent = activeSolo === 'fire' ? '🔥 ATEŞ' : '💧 SU';
+    b.classList.toggle('water', activeSolo === 'water');
+  }
+  document.getElementById('swCharBtn').addEventListener('click', toggleSolo);
+
+  document.querySelectorAll('.tbtn[data-k]').forEach(b => {
+    const k = b.dataset.k;
+    b.addEventListener('pointerdown', e => { e.preventDefault(); touch[k] = true; SFX.ok(); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, () => { touch[k] = false; }));
+  });
+
+  function renderMenu() {
+    const grid = document.getElementById('lvlGrid');
+    grid.innerHTML = LEVELS.map((l, i) => `<button type="button" class="lvl-btn${save.done.includes(i) ? ' done' : ''}${i === curLvl ? ' on' : ''}" data-li="${i}">
+      ${save.done.includes(i) ? '✓ ' : ''}${i + 1}<br><small style="font-size:10px;opacity:.75">${l.name.split(' ')[0]}</small>
+    </button>`).join('');
+    grid.querySelectorAll('.lvl-btn').forEach(b => b.addEventListener('click', () => {
+      curLvl = +b.dataset.li; renderMenu();
+    }));
+  }
+
+  document.getElementById('playBtn').addEventListener('click', () => loadLevel(curLvl));
+  document.getElementById('rstBtn').addEventListener('click', () => loadLevel(curLvl));
+  const goMenu = () => { state = 'menu'; document.getElementById('hud').classList.add('hidden'); document.getElementById('endOv').classList.add('hidden'); renderMenu(); document.getElementById('menuOv').classList.remove('hidden'); };
+  document.getElementById('menuBtn').addEventListener('click', goMenu);
+  document.getElementById('backMenuBtn').addEventListener('click', goMenu);
+  document.getElementById('sndBtn').addEventListener('click', () => { save.sound = !save.sound; persist(); document.getElementById('sndBtn').textContent = save.sound ? '🔊' : '🔇'; });
+  document.getElementById('sndBtn').textContent = save.sound ? '🔊' : '🔇';
+
+  let last = performance.now(), raf = 0;
+  function loop(t) {
+    const dt = Math.min(0.033, Math.max(0.001, (t - last) / 1000)); last = t;
+    update(dt); render();
+    raf = requestAnimationFrame(loop);
+  }
+  window.onload = () => { resize(); renderMenu(); last = performance.now(); if (raf) cancelAnimationFrame(raf); raf = requestAnimationFrame(loop); };
+})();
+</script>
+</body>
+</html>
