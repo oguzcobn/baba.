@@ -15,6 +15,9 @@ test('Slitherio initializes immediately and one click starts an arena with multi
   await page.goto(BASE+'games/yilan-arenasi/index.html');
   await expect(page.locator('html')).toHaveAttribute('data-snake-ready','true');
   await expect(page.locator('.skin-btn')).toHaveCount(8);
+  await expect(page.locator('#difficultySelector button')).toHaveCount(3);
+  await page.locator('[data-diff="easy"]').click();
+  await expect(page.locator('[data-diff="easy"]')).toHaveAttribute('aria-pressed','true');
   await page.locator('#playBtn').click();
   await expect(page.locator('#menuOv')).toHaveClass(/hidden/);
   await expect(page.locator('#hud')).not.toHaveClass(/hidden/);
