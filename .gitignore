@@ -1,0 +1,5 @@
+# Local AI companion settings and generated outputs (never commit secrets/media)
+local-ai/config.json
+local-ai/runs/
+local-ai/__pycache__/
+local-ai/**/*.pyc
