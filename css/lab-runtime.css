@@ -1,0 +1,29 @@
+/* Local model runner — independent from LAB's existing prompt builder. */
+.baba-ai-workspace{margin-top:28px;max-width:1200px;border:1px solid var(--line);border-radius:24px;padding:24px;background:var(--paper);display:grid;gap:16px}
+.baba-ai-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+.baba-ai-head h2{font-size:clamp(32px,5vw,54px);letter-spacing:-.055em;margin:8px 0}
+.baba-ai-head p:not(.eyebrow){color:var(--mute);font-size:14px;line-height:1.6;max-width:650px}
+.baba-ai-state{white-space:nowrap;color:var(--mute);font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:99px;padding:8px 12px}
+.baba-ai-state.connected{color:#15714b;border-color:#b5d8c6}
+.baba-ai-connect{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.baba-ai-connect label{font-size:12px;font-weight:700;display:grid;gap:6px;flex:1;min-width:215px}
+.baba-ai-connect input,.baba-ai-field input,.baba-ai-field textarea,.baba-ai-field select{font:inherit;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--paper);color:var(--ink);min-width:0;max-width:100%;width:100%;box-sizing:border-box}
+.baba-ai-connect a,.baba-ai-actions a{font-size:12px;font-weight:700;color:var(--ink);text-decoration:underline;padding:9px 0}
+.baba-ai-security{font-size:12px;line-height:1.65;color:var(--mute);margin:0}
+.baba-ai-tabs{display:flex;flex-wrap:wrap;gap:8px}
+.baba-ai-tabs button{cursor:pointer;border:1px solid var(--line);border-radius:99px;background:var(--paper);color:var(--ink);font:inherit;font-size:12px;font-weight:700;padding:9px 13px}
+.baba-ai-tabs button.active{background:var(--ink);color:var(--paper)}
+.baba-ai-runner{display:grid;gap:12px;background:var(--soft);padding:18px;border-radius:17px;min-width:0}
+.baba-ai-modelstatus{font-size:12px;font-weight:700}
+.baba-ai-runner>p:not(.baba-ai-feedback){color:var(--mute);font-size:14px;margin:0}
+.baba-ai-field{display:grid;gap:8px;font-size:12px;font-weight:700}
+.baba-ai-field[hidden]{display:none}
+.baba-ai-actions{display:flex;align-items:center;flex-wrap:wrap;gap:14px}
+.baba-ai-actions button:disabled{opacity:.55;cursor:not-allowed}
+.baba-ai-feedback{min-height:1.2em;font-size:13px;color:var(--ink);overflow-wrap:anywhere}
+.baba-ai-results{display:grid;gap:10px;min-width:0;font-size:13px}
+.baba-ai-results p{margin:0}
+.baba-ai-results details{border-top:1px solid var(--line);padding-top:8px}
+.baba-ai-results pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:220px;overflow-y:auto;font-size:11px}
+.baba-ai-download{border:1px solid var(--line);border-radius:12px;cursor:pointer;text-align:left;background:var(--paper);color:var(--ink);padding:11px 12px;overflow-wrap:anywhere}
+@media(max-width:700px){.baba-ai-workspace{padding:16px;margin-top:20px}.baba-ai-head{display:grid}.baba-ai-connect{align-items:stretch}.baba-ai-connect label{min-width:0;flex-basis:100%}.baba-ai-runner{padding:14px}}

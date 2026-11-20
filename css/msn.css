@@ -338,6 +338,6 @@ body:has(.ms-dock.open) .ms-toasts{right:auto;left:16px}
   }
   .ms-dock.open .ms-app.compact .ms-in{font-size:16px;min-height:44px}
   .ms-dock.open .ms-panel,.ms-dock.open .ms-mini,.ms-dock.open .ms-app.compact{flex:1 1 auto;min-height:0}
-  .ms-dock.open .ms-app.compact .ms-comp{margin-top:auto}
+  .ms-dock.open .ms-app.compact .ms-comp{margin-top:auto;bottom:3px}
   .ms-dock.open{height:100dvh;max-height:100dvh;overflow:hidden}
 }

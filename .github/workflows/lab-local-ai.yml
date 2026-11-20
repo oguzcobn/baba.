@@ -1,0 +1,34 @@
+name: BABA local AI companion checks
+on:
+  pull_request:
+    paths:
+      - 'local-ai/**'
+      - 'tests/bridge-smoke.py'
+      - 'tests/lab-models.cjs'
+      - 'js/lab-runtime.js'
+      - 'js/lab.js'
+      - '.github/workflows/lab-local-ai.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'local-ai/**'
+      - 'tests/bridge-smoke.py'
+      - 'tests/lab-models.cjs'
+      - 'js/lab-runtime.js'
+      - '.github/workflows/lab-local-ai.yml'
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m py_compile local-ai/bridge.py
+      - run: python tests/bridge-smoke.py
+      - run: node --check js/lab-runtime.js && node tests/lab-models.cjs
