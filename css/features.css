@@ -22,3 +22,18 @@
 .bb-open-tool a{font-size:13px;font-weight:750;display:inline-flex;align-items:center;gap:6px;color:var(--ink);text-decoration:none;border-bottom:1px solid currentColor;padding:3px 0;margin-top:2px}
 .bb-open-tool a:hover,.bb-open-tool a:focus-visible{color:var(--acc)}
 @media(max-width:700px){.bb-open-catalog{margin-top:24px;gap:20px}.bb-open-catalog-grid{grid-template-columns:1fr}.bb-open-tool{padding:17px}}
+
+/* LAB catalogue contrast: readable white cards against BABA's dark background. */
+.bb-open-catalog{background:transparent;color:#f8fafc}
+.bb-open-catalog-head h2{color:#fff!important;text-shadow:none!important}
+.bb-open-catalog-head .eyebrow{color:#bef264!important}
+.bb-open-catalog-head p,.bb-open-catalog-head .bb-feature-muted{color:#cbd5e1!important}
+.bb-open-catalog-section h3{color:#f8fafc!important}
+.bb-open-catalog-section h3 span{background:#253047!important;color:#f8fafc!important}
+.bb-open-tool{background:#fff!important;color:#0f172a!important;border:1px solid #dbe2ea!important;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.bb-open-tool h4{color:#0f172a!important;text-shadow:none!important}
+.bb-open-tool p:not(.bb-open-tool-tags){color:#475569!important}
+.bb-open-tool-tags{color:#c2410c!important;font-weight:800}
+.bb-open-tool a{color:#1d4ed8!important}
+.bb-open-tool a:hover{color:#1e40af!important}
+.bb-open-tool a:focus-visible{outline:3px solid #2563eb;outline-offset:3px;border-radius:3px}
