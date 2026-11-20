@@ -74,3 +74,5 @@ const Geo1919 = (() => {
   }
   return {validCountryId,featurePath,labelPoint,projectedPolygons,routeKey,nearForVisual,fragments};
 })();
+
+export default Geo1919;

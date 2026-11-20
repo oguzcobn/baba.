@@ -32,3 +32,6 @@ const Industry1919=(()=>{
  }
  return {panel,build,step,stock};
 })();
+
+
+export default Industry1919;
