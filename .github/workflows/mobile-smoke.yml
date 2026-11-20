@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'js/lab.js'
+      - 'css/features.css'
+      - 'tests/lab-catalog.cjs'
       - 'js/games.js'
       - 'js/career.js'
       - 'js/career-birthdates.js'
@@ -20,6 +23,7 @@ on:
       - 'tests/mobile.spec.cjs'
       - 'tests/match2d-browser.spec.cjs'
       - 'tests/match-rules.cjs'
+      - 'tests/lab-catalog.cjs'
       - 'js/**'
       - 'data/career-birthdates.json'
       - 'tests/career-birthdates.cjs'
@@ -37,7 +41,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - run: node tests/match-rules.cjs && node tests/career-birthdates.cjs && node --check js/career.js && node --check js/career-birthdates.js && node --check js/draft.js
+      - run: node tests/match-rules.cjs && node tests/lab-catalog.cjs && node tests/career-birthdates.cjs && node --check js/career.js && node --check js/career-birthdates.js && node --check js/draft.js
       - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
       - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/baba-http.log 2>&1 &
       - run: npx playwright test tests/mobile.spec.cjs tests/game-cover-editor.spec.cjs --reporter=line --workers=2

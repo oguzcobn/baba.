@@ -14,6 +14,104 @@ const Lab = (() => {
     {id:'code',tr:'Yazılım planı',en:'Software plan',guide:'Create an implementation-ready technical specification with architecture, milestones, security and tests.'},
     {id:'summary',tr:'Özet çıkar',en:'Summarise',guide:'Summarise the material accurately, distinguish facts from assumptions and identify action items.'}
   ];
+
+  // Curated external projects are links to source and setup documentation;
+  // BABA. does not execute or host the downloaded models.
+  const externalProjects = [
+  {
+    "group": "voice",
+    "name": "VoxCPM2 Türkçe Ses Tasarımı",
+    "tr": "Türkçe ve çok dilli sentetik ses tasarlama, metni seslendirme; yerel kurulum ve hazır ses seçenekleri.",
+    "en": "Design synthetic voices and narrate text in Turkish and other languages, locally.",
+    "tags": "Ses tasarımı · TTS · 4 GB GPU",
+    "url": "https://github.com/alexturkey/voxcpm2-turkce-ses-tasarimi"
+  },
+  {
+    "group": "voice",
+    "name": "CrisperWhisper Türkçe Kelime Zamanı",
+    "tr": "Konuşmayı kelime kelime yazıya dökme; zaman damgaları ve SRT/VTT altyazılar.",
+    "en": "Verbatim transcription with word-level timing and SRT/VTT subtitle export.",
+    "tags": "Transkripsiyon · Altyazı · 4 GB GPU",
+    "url": "https://github.com/alexturkey/crisperwhisper-turkce-kelime-zamani"
+  },
+  {
+    "group": "image",
+    "name": "Z-Image Turbo Pascal 4GB",
+    "tr": "4 GB Pascal GPU üzerinde yerel metinden görsel üretimi için kurulum ve optimizasyon paketi.",
+    "en": "Local text-to-image generation on a 4 GB Pascal GPU with reproducible setup.",
+    "tags": "Görsel · Text-to-image · GTX 1050 Ti",
+    "url": "https://github.com/alexturkey/z-image-turbo-pascal-4gb"
+  },
+  {
+    "group": "video",
+    "name": "Wan 2.2 Pascal 4GB",
+    "tr": "4 GB Pascal GPU üzerinde metinden kısa video üretimi için optimizasyon ve kurulum rehberi.",
+    "en": "A measured recipe for local text-to-video on a 4 GB Pascal GPU.",
+    "tags": "Video üretimi · Wan 2.2 · 4 GB GPU",
+    "url": "https://github.com/alexturkey/wan22-pascal-4gb"
+  },
+  {
+    "group": "video",
+    "name": "DubWorld",
+    "tr": "Videolara yerel yapay zekâ ile dublaj, çeviri ve altyazı hazırlama.",
+    "en": "Dub videos into another language with local speech, translation, voice and subtitles.",
+    "tags": "Dublaj · Çeviri · Altyazı",
+    "url": "https://github.com/alexturkey/dubworld"
+  },
+  {
+    "group": "remote",
+    "name": "Özel Uzak Masaüstü",
+    "tr": "Tailscale ve RustDesk ile kendi cihazların arasında güvenli uzak masaüstü kurulum rehberi.",
+    "en": "A private remote desktop setup guide using Tailscale and RustDesk.",
+    "tags": "Uzak erişim · Tailscale · RustDesk",
+    "url": "https://github.com/alexturkey/ozel-uzak-masaustu"
+  }
+];
+  const externalGroups = [
+  {
+    "id": "voice",
+    "tr": "Ses ve konuşma",
+    "en": "Voice and transcription",
+    "icon": "♪"
+  },
+  {
+    "id": "image",
+    "tr": "Görsel üretimi",
+    "en": "Image generation",
+    "icon": "◈"
+  },
+  {
+    "id": "video",
+    "tr": "Video ve dublaj",
+    "en": "Video and dubbing",
+    "icon": "▣"
+  },
+  {
+    "id": "remote",
+    "tr": "Sistem ve uzak erişim",
+    "en": "System and remote access",
+    "icon": "⌘"
+  }
+];
+  function catalogMarkup(){
+    return `<section class="bb-open-catalog" id="labExternalCatalog" aria-label="${tr('Açık kaynak araç kataloğu','Open-source tools catalogue')}">
+      <div class="bb-open-catalog-head">
+        <p class="eyebrow">${tr('KAYNAK KATALOĞU · 6 PROJE','SOURCE CATALOGUE · 6 PROJECTS')}</p>
+        <h2>${tr('Yapay zekâ ve üretkenlik araçları','AI and productivity tools')}</h2>
+        <p class="bb-feature-muted">${tr('Bağlantılar geliştiricilerin GitHub depolarını açar. Bunlar BABA. içinde çalışan araçlar değildir; kullanmadan önce kaynak kodunu, lisansını ve kurulum gereksinimlerini incele.','Links open the developers’ GitHub repositories. These are not hosted or running inside BABA.; check the source, licence and installation requirements before use.')}</p>
+      </div>
+      ${externalGroups.map(g=>`<div class="bb-open-catalog-section" data-catalog-group="${g.id}">
+        <h3><span aria-hidden="true">${g.icon}</span> ${esc(tr(g.tr,g.en))}</h3>
+        <div class="bb-open-catalog-grid">${externalProjects.filter(p=>p.group===g.id).map(p=>`<article class="bb-open-tool">
+          <p class="bb-open-tool-tags">${esc(p.tags)}</p>
+          <h4>${esc(p.name)}</h4>
+          <p>${esc(tr(p.tr,p.en))}</p>
+          <a href="${esc(p.url)}" target="_blank" rel="noopener noreferrer" aria-label="${esc(p.name)} — GitHub">${tr('GitHub ve kurulum rehberi ↗','GitHub and setup guide ↗')}</a>
+        </article>`).join('')}</div>
+      </div>`).join('')}
+    </section>`;
+  }
+
   let preset='email';
   function transform(s,m){
     if(m==='upper')return s.toLocaleUpperCase(I18N.locale);
@@ -34,7 +132,7 @@ const Lab = (() => {
     <label class="bb-feature-label">${tr('Metin / İstek','Text / Request')}<textarea id="labInput" rows="7" maxlength="20000" placeholder="${tr('Buraya yaz…','Write here…')}">${esc(input)}</textarea></label><div class="bb-feature-actions"><button class="pill" id="labRun">${tool==='prompt'?tr('Komut oluştur','Build prompt'):tr('Metni işle','Transform text')}</button><button class="pill ghost" id="labSave">${tr('Taslak kaydet','Save draft')}</button></div><p class="bb-feature-muted" id="labStats">${tr('Karakter','Characters')}: ${input.length} · ${tr('Kelime','Words')}: ${input.trim()?input.trim().split(/\s+/).length:0}</p><p class="bb-feature-message" aria-live="polite">${esc(status)}</p>
     <label class="bb-feature-label">${tr('Sonuç','Result')}<textarea id="labOutput" rows="8" readonly>${esc(output)}</textarea></label><button class="pill ghost" id="labCopy">${tr('Sonucu kopyala','Copy result')}</button></section>
     <section class="bb-feature-card"><p class="eyebrow">${tr('TASLAKLAR','DRAFTS')}</p><h2>${tr('Kaydettiklerim','Saved drafts')}</h2><div class="bb-feature-links">${drafts.length?drafts.map(x=>`<div class="bb-feature-saved"><button type="button" class="bb-feature-draft" data-load="${esc(x.id)}"><strong>${esc(x.title)}</strong><small>${esc(new Date(x.at).toLocaleDateString(I18N.locale))}</small></button><button type="button" data-delete="${esc(x.id)}" aria-label="${tr('Taslağı sil','Delete draft')}">×</button></div>`).join(''):`<p class="bb-feature-muted">${tr('Henüz taslak yok.','No drafts saved yet.')}</p>`}</div></section>
-    <section class="bb-feature-card"><p class="eyebrow">${tr('YAPAY ZEKÂ','AI TOOLS')}</p><h2>${tr('Komutunu kullan','Use your prompt')}</h2><p class="bb-feature-muted">${tr('LAB. yerel metin araçları sunar. Yapay zekâ yanıtı üretmez; oluşturduğun komutu kopyalayıp seçtiğin hizmette kullanabilirsin.','LAB. provides local text tools. It does not generate AI responses; copy the prompt to your preferred service.')}</p><div class="bb-feature-links"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer"><strong>ChatGPT</strong><small>↗</small></a><a href="https://claude.ai/" target="_blank" rel="noopener noreferrer"><strong>Claude</strong><small>↗</small></a></div></section></div></section>`;
+    <section class="bb-feature-card"><p class="eyebrow">${tr('YAPAY ZEKÂ','AI TOOLS')}</p><h2>${tr('Komutunu kullan','Use your prompt')}</h2><p class="bb-feature-muted">${tr('LAB. yerel metin araçları sunar. Yapay zekâ yanıtı üretmez; oluşturduğun komutu kopyalayıp seçtiğin hizmette kullanabilirsin.','LAB. provides local text tools. It does not generate AI responses; copy the prompt to your preferred service.')}</p><div class="bb-feature-links"><a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer"><strong>ChatGPT</strong><small>↗</small></a><a href="https://claude.ai/" target="_blank" rel="noopener noreferrer"><strong>Claude</strong><small>↗</small></a></div></section></div>${catalogMarkup()}</section>`;
     root.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>{tool=b.dataset.tool;output='';status='';render()});
     root.querySelector('#labMode').onchange=e=>{if(tool==='prompt')preset=e.target.value;else mode=e.target.value};
     root.querySelector('#labInput').oninput=e=>{input=e.target.value;root.querySelector('#labStats').textContent=tr('Karakter','Characters')+': '+input.length+' · '+tr('Kelime','Words')+': '+(input.trim()?input.trim().split(/\s+/).length:0)};
