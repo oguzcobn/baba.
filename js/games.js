@@ -155,7 +155,6 @@ const App = (() => {
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'wild-ones', name: ['Vahşi Dostlar (Wild Ones)', 'Wild Ones'], tags: [['Topçu', 'Artillery'], ['Yıkılabilir', 'Destructible'], ['1v1 / 2P', '1v1 / 2P']], best: () => T('6 Karakter', '6 Pets') },
-    { id: 'ates-ve-su', name: ['Ateş ve Su: Orman Tapınağı', 'Fire & Water: Forest Temple'], tags: [['Bulmaca', 'Puzzle'], ['2 Kişilik', '2 Players'], ['5 Bölüm', '5 Levels']], best: () => { const b = ls.get('bb_best_ates_ve_su', 0); return b ? `${b}/5` : '0/5'; } },
     { id: 'yilan-arenasi', name: ['Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'], tags: [['Arcade', 'Arcade'], ['Arena', 'Arena'], ['Neon', 'Neon']], best: () => { const b = ls.get('bb_best_yilan_arenasi', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
     { id: 'gta-vice-city', name: 'GTA: Vice City', tags: [['Aksiyon', 'Action'], ['Klasik', 'Classic'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'tekken-3', name: 'Tekken 3', tags: [['Dövüş', 'Fighting'], ['Arcade', 'Arcade'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
@@ -225,7 +224,6 @@ const App = (() => {
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
     'wild-ones': 'img/library/wild-ones-1280.webp',
-    'ates-ve-su': 'img/library/ates-ve-su-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
     'tekken-3': 'img/library/tekken-3-1280.webp',
@@ -335,7 +333,7 @@ const App = (() => {
   function kafaTopu() {
     openEmbeddedGame({
       title: T('Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'),
-      url: 'games/kafa-topu/index.html?v=1',
+      url: 'games/kafa-topu/index.html?v=2',
       tag: T('Futbol · Süper Lig · 1v1 / 2P', 'Football · Süper Lig · 1v1 / 2P'),
       lead: T('Süper Lig takımını seç, havadaki güçlendirmeleri kap ve kupayı kaldır.', 'Pick your Süper Lig club, grab floating power-ups and lift the trophy.'),
       tip: T('1. Oyuncu: A/D/W + Boşluk · 2. Oyuncu: Oklar + Enter. Mobilde ekran düğmelerini kullan.', 'P1: A/D/W + Space · P2: Arrows + Enter. Use on-screen buttons on mobile.'),
@@ -352,20 +350,10 @@ const App = (() => {
       msgType: 'baba-wild-ones-score', scoreId: 'wild-ones'
     });
   }
-  function atesVeSu() {
-    openEmbeddedGame({
-      title: T('Ateş ve Su: Orman Tapınağı', 'Fire & Water: Forest Temple'),
-      url: 'games/ates-ve-su/index.html?v=1',
-      tag: T('Bulmaca · 2 Kişilik · 5 Bölüm', 'Puzzle · 2 Players · 5 Levels'),
-      lead: T('Ateş Çocuk ve Su Kız’ı birlikte yöneterek 5 tapınak bölümünü tamamla.', 'Guide Fireboy and Watergirl together through 5 temple puzzle levels.'),
-      tip: T('Ateş: Oklar · Su: WASD · Tek kişide Tab veya mobil düğmeyle karakter değiştir · R yenile.', 'Fire: Arrows · Water: WASD · Tab to switch solo · R restart.'),
-      msgType: 'baba-ates-ve-su-score', scoreId: 'ates-ve-su'
-    });
-  }
   function yilanArenasi() {
     openEmbeddedGame({
       title: T('Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'),
-      url: 'games/yilan-arenasi/index.html?v=1',
+      url: 'games/yilan-arenasi/index.html?v=2',
       tag: T('Arcade · Neon Yılan Arenası', 'Arcade · Neon Snake Arena'),
       lead: T('Enerji kürelerini topla, hızlanarak rakiplerinin önünü kes ve liderlik tablosuna çık.', 'Collect glowing orbs, boost to cut off rivals and climb the leaderboard.'),
       tip: T('Fare veya dokunmatikle yön ver · Sol Tık / Boşluk / BOOST ile hızlan.', 'Steer with mouse or touch · Hold Click / Space / BOOST to speed up.'),
@@ -746,7 +734,7 @@ const App = (() => {
     else if (r === 'vadi') vadi();
     else if (r === 'kafa-topu') kafaTopu();
     else if (r === 'wild-ones') wildOnes();
-    else if (r === 'ates-ve-su') atesVeSu();
+    else if (r === 'ates-ve-su') { location.replace('#oyunlar'); return; }
     else if (r === 'yilan-arenasi') yilanArenasi();
     else if (r === 'gta-vice-city') gtaViceCity();
     else if (r === 'tekken-3') tekken3();
