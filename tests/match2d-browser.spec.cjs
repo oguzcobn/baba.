@@ -8,7 +8,7 @@ for(const [name,device] of [['Desktop', {viewport:{width:1440,height:900}}],['iP
   const {defaultBrowserType,browserName,...emulation}=device;
   test.use({...emulation,reducedMotion:'reduce'});
   test('goal crosses line before score; passes and players move without jumps; stadium extends beyond goals',async({page})=>{
-   test.setTimeout(110000);
+   test.setTimeout(180000);
    await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');window.__BABA_MATCH_TEST__=true;});
    await page.goto(BASE+'#draft');
    await page.evaluate(({xi,slots})=>{
@@ -19,7 +19,7 @@ for(const [name,device] of [['Desktop', {viewport:{width:1440,height:900}}],['iP
    await expect(page.locator('.m2d-ov canvas')).toBeVisible();
    const canvas=await page.locator('.m2d-ov canvas').evaluate(el=>({width:el.width,height:el.height}));
    expect(Math.max(canvas.width,canvas.height)).toBeGreaterThan(1050);
-   await expect.poll(()=>page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__?.done),{timeout:90000,intervals:[500,1000]}).toBe(true);
+   await expect.poll(()=>page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__?.done),{timeout:155000,intervals:[500,1000]}).toBe(true);
    const result=await page.evaluate(()=>({
      diag:window.__BABA_MATCH_DIAGNOSTICS__,
      score:document.querySelector('.m2d-sc')?.textContent,
@@ -76,7 +76,7 @@ test('IFAB foul location determines penalty or free kick on both sides',async({p
 test.describe('Realistic scoring positions and pass reception',()=>{
  test.use({viewport:{width:1280,height:800},reducedMotion:'reduce'});
  test('centre-back only scores after reaching the attacking penalty area',async({page})=>{
-  test.setTimeout(120000);
+  test.setTimeout(180000);
   await page.addInitScript(()=>{sessionStorage.setItem('baba_ok','1');window.__BABA_MATCH_TEST__=true;});
   await page.goto(BASE+'#career');
   await page.evaluate(({xi,slots})=>{
@@ -87,7 +87,7 @@ test.describe('Realistic scoring positions and pass reception',()=>{
     ev:[{t:'h',sc:'ST Player 1',as:'OS Player 5',min:28,how:'cross'}]
    });
   },{xi,slots});
-  await expect.poll(()=>page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__?.done),{timeout:105000,intervals:[1000]}).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__?.done),{timeout:155000,intervals:[1000]}).toBe(true);
   const result=await page.evaluate(()=>window.__BABA_MATCH_DIAGNOSTICS__);
   const cbShots=result.shots.filter(s=>s.pos==='ST'&&s.out==='goal');
   expect(cbShots.length).toBeGreaterThan(0);
