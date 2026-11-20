@@ -1,0 +1,25 @@
+{
+  "output_root": "./local-ai/runs",
+  "voice": {
+    "root": "C:/AI/voxcpm2-turkce-ses-tasarimi"
+  },
+  "image": {
+    "root": "C:/AI/z-image-turbo-pascal-4gb",
+    "executable": "C:/Python312/python.exe"
+  },
+  "video": {
+    "root": "C:/AI/wan22-pascal-4gb",
+    "executable": "C:/Python312/python.exe",
+    "models_dir": "C:/AI/wan22-models",
+    "sd_cli": "C:/AI/wan22-bin/sd-cli.exe"
+  },
+  "transcribe": {
+    "root": "C:/AI/crisperwhisper-turkce-kelime-zamani"
+  },
+  "dub": {
+    "root": "C:/AI/dubworld"
+  },
+  "remote": {
+    "rustdesk_executable": "C:/Program Files/RustDesk/rustdesk.exe"
+  }
+}
