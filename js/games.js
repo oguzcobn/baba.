@@ -153,6 +153,7 @@ const App = (() => {
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
+    { id: 'hungry-shark', name: ['Aç Köpekbalığı', 'Hungry Shark'], tags: [['Arcade', 'Arcade'], ['Okyanus', 'Ocean'], ['Hayatta Kalma', 'Survival']], best: () => { const b = ls.get('bb_best_hungry_shark', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
     { id: 'dsan-shipyard', name: ['Damen Tersane Tycoon', 'Damen Shipyard Tycoon'], tags: [['3D Yönetim', '3D Management'], ['Gemi İnşası', 'Shipbuilding'], ['Tersane', 'Shipyard']], best: () => T('Antalya · 3D', 'Antalya · 3D') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
     { id: 'sudoku', name: 'Sudoku', tags: [['Mantık', 'Logic'], ['3 seviye', '3 levels']], best: () => { const b = ls.get('bb_best_sudoku', null); return b ? fmtT(b) : '—'; } },
@@ -216,6 +217,7 @@ const App = (() => {
     'draft': 'img/library/draft-1280.webp',
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
+    'hungry-shark': 'img/library/hungry-shark-1280.webp',
     'dsan-shipyard': 'img/library/dsan-shipyard-1280.webp',
     '2048': 'img/library/2048-1280.webp',
     'sudoku': 'img/library/sudoku-1280.webp',
@@ -292,6 +294,34 @@ const App = (() => {
       }
       location.href = VADI_URL;
     };
+  }
+
+  /* ==================== AÇ KÖPEKBALIĞI (HUNGRY SHARK) ==================== */
+  const HUNGRY_SHARK_URL = 'games/hungry-shark/index.html?v=1';
+  function hungryShark() {
+    const b = shell(T('Aç Köpekbalığı', 'Hungry Shark'), `<div class="vd-bar"><p class="bb-tip">${T('Sürekli azalan açlığını bastırmak için okyanusu avla, yüzeye fırlayıp martıları kap, Altın Hücumu’nu doldur ve yeni köpekbalıkları aç.', 'Hunt the ocean to keep hunger at bay, breach the waves for seagulls, charge Gold Rush and unlock bigger sharks.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${HUNGRY_SHARK_URL}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
+      <div class="dsan-frame"><iframe src="${HUNGRY_SHARK_URL}" title="${T('Aç Köpekbalığı', 'Hungry Shark')}" allow="fullscreen; autoplay" allowfullscreen loading="eager"></iframe></div>
+      <p class="bb-tip">${T('Fare veya WASD/Oklarla yüz, Sol Tık/Boşluk ile hızlan. Mobilde sol ekrandaki joystick ve sağdaki BOOST butonunu kullan.', 'Steer with Mouse or WASD/Arrows, hold Left-Click/Space to boost. On mobile use the left joystick and right BOOST button.')}</p>`, T('Arcade · Okyanus Hayatta Kalma', 'Arcade · Ocean Survival'));
+    b.closest('.game-page').classList.add('dsan-page');
+    const frame = b.querySelector('.dsan-frame'), button = b.querySelector('[data-a=full]');
+    button.onclick = async () => {
+      click();
+      const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) { try { await req.call(frame); return; } catch (_) {} }
+      window.open(HUNGRY_SHARK_URL, '_blank', 'noopener');
+    };
+    const onMsg = e => {
+      const d = e && e.data;
+      if (!d || d.type !== 'baba-hungry-shark-score') return;
+      const sc = Math.round(+d.score || 0);
+      if (sc > 0) {
+        const prev = ls.get('bb_best_hungry_shark', 0);
+        if (sc > prev) ls.set('bb_best_hungry_shark', sc);
+        if (typeof Scores !== 'undefined') Scores.report('hungry-shark', sc, { gold: d.gold, eaten: d.eaten, depth: d.depth, maxCombo: d.maxCombo });
+      }
+    };
+    window.addEventListener('message', onMsg);
+    onLeave(() => window.removeEventListener('message', onMsg));
   }
 
   /* ==================== DAMEN SHIPYARD TYCOON ==================== */
@@ -619,6 +649,7 @@ const App = (() => {
     else if (r === 'skor' && typeof Scores !== 'undefined') { root().innerHTML = '<div id="scRoot"></div>'; window.scrollTo(0, 0); Scores.mount(root().querySelector('#scRoot')); }
     else if (r === 'istiklal1919') istiklal1919();
     else if (r === 'vadi') vadi();
+    else if (r === 'hungry-shark') hungryShark();
     else if (r === 'dsan-shipyard') dsanShipyard();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();

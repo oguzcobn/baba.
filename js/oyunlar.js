@@ -21,13 +21,14 @@ const BABALibrary = (() => {
     '2048': { cat: 'puz', accent: '#ffb547', time: ['5 dk', '5 min'], blurb: ['Kaydır, birleştir, 2048’e ulaş. Kısa molaların klasiği.', 'Swipe, merge, reach 2048. The short-break classic.'] },
     sudoku: { cat: 'puz', accent: '#8b9bff', time: ['3 seviye', '3 levels'], blurb: ['Kolaydan zora üç seviye; temiz bir kafa ve bir fincan kahve.', 'Three levels from easy to hard; a clear head and a cup of coffee.'] },
     mines: { cat: 'puz', accent: '#ff5c7a', time: ['Klasik', 'Classic'], blurb: ['Sayıları oku, bayrakları dik, mayına basmadan alanı temizle.', 'Read the numbers, plant the flags, clear the field without a blast.'] },
+    'hungry-shark': { cat: 'arc', accent: '#3de0ff', time: ['Arcade', 'Arcade'], isNew: true, blurb: ['Okyanusu avla, yedikçe büyü, Altın Hücumu’nu tetikle ve derinliklerin zirve yırtıcısı ol.', 'Hunt the ocean, grow as you eat, trigger Gold Rush and become the apex predator of the deep.'] },
     blocks: { cat: 'arc', accent: '#b07cff', time: ['Arcade', 'Arcade'], blurb: ['Düşen blokları yerleştir, satırları temizle, hızlandıkça dayan.', 'Drop the blocks, clear the lines, hold on as it speeds up.'] }
   };
   const CATS = [
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }
   ];
-  const FEATURED = ['dsan-shipyard', 'career', 'futbol', 'istiklal1919', 'hayat-oyunu'];
+  const FEATURED = ['hungry-shark', 'dsan-shipyard', 'career', 'futbol', 'istiklal1919', 'hayat-oyunu'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
