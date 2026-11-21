@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121c35">
+<title>SİS HATTI. — 02:17 | BABA. Stories</title>
+<style>
+:root{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;color:#e9edf5;background:#0a1020;font-synthesis:none}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
+button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible{outline:3px solid #fff0b0;outline-offset:3px}
+#app{position:fixed;inset:0;background:#0b1326;overflow:hidden;touch-action:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;object-fit:cover;touch-action:none}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 32%,#090c1e70 95%);box-shadow:inset 0 0 100px #09101d88}
+.top{position:absolute;top:max(10px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));display:flex;gap:9px;justify-content:space-between;z-index:4;align-items:flex-start;pointer-events:none}
+.hud{background:#0d172cd9;border:2px solid #6d718d55;box-shadow:3px 4px 0 #0a0e19a1;padding:9px 12px;min-width:0}
+.hud .eyebrow{font-size:10px;letter-spacing:.17em;color:#eac37a;white-space:nowrap;font-weight:800}
+.hud .loc{font-size:15px;font-weight:900;margin-top:3px;white-space:nowrap;text-shadow:1px 2px 0 #061023}
+.hud .mission{margin-top:5px;font-size:10px;max-width:min(60vw,365px);line-height:1.35;color:#c6d4df}
+.hud-right{display:flex;gap:6px;pointer-events:auto}.hud-right button{border:2px solid #8094a3;border-radius:0;background:#18243aee;color:#dfeaf1;padding:8px 10px;font-weight:900;box-shadow:3px 3px 0 #080d16;font-size:12px}
+#interactPrompt{position:absolute;z-index:4;bottom:26%;left:50%;transform:translateX(-50%);background:#0a1423dc;color:#f8e8b3;border:2px solid #e7c67b;padding:6px 11px;font-size:11px;max-width:90%;text-align:center;pointer-events:none;box-shadow:3px 3px 0 #080e1a}
+#interactPrompt[hidden]{display:none}
+.touch{position:absolute;bottom:max(17px,env(safe-area-inset-bottom));z-index:4;pointer-events:none;width:100%;display:flex;align-items:end;justify-content:space-between;padding:0 max(15px,env(safe-area-inset-right)) 0 max(15px,env(safe-area-inset-left))}
+.dpad{position:relative;width:142px;height:142px}
+.dpad button,.talk{pointer-events:auto;touch-action:none;user-select:none;border:2px solid #c0c5d6ac;color:#f4e5c2;background:#1a2944c7;box-shadow:3px 4px 0 #08101b99;min-width:46px;min-height:46px;font-size:23px;font-weight:1000}
+.dpad button:active,.dpad button.down,.talk:active{background:#c19a62;color:#14233d;transform:translateY(2px)}
+.dpad button{position:absolute;width:46px;height:46px}.dpad [data-dir=up]{top:0;left:48px}.dpad [data-dir=down]{bottom:0;left:48px}.dpad [data-dir=left]{top:48px;left:0}.dpad [data-dir=right]{top:48px;right:0}
+.talk{height:74px;min-width:90px;font-size:13px;line-height:1.35}
+@media(hover:hover) and (pointer:fine){.touch{display:none}}
+.overlay{position:absolute;z-index:10;inset:0;display:flex;align-items:center;justify-content:center;padding:16px;background:#080e1dc7;backdrop-filter:blur(3px)}
+.overlay[hidden]{display:none}
+.panel{width:min(530px,100%);max-height:94dvh;overflow-y:auto;background:linear-gradient(165deg,#1f314d,#111d34 68%,#121b2b);border:3px solid #7c92a2;padding:clamp(16px,4vw,29px);box-shadow:7px 8px 0 #070c17, inset 0 0 0 2px #0c192c}
+.kicker{color:#f3bd7a;letter-spacing:.2em;font-size:10px;font-weight:900;margin:0 0 12px}
+h1{font-size:clamp(42px,10vw,72px);line-height:.85;margin:0 0 18px;color:#f0ddaf;letter-spacing:-.085em;text-shadow:5px 5px 0 #a35c52,8px 8px 0 #0b1423}
+h1 span{color:#fff0d5}h2{font-size:20px;line-height:1.2;color:#f3d69a;margin:0 0 13px;letter-spacing:-.03em}
+p{font-size:13px;line-height:1.65;color:#cbd5dd;margin:0 0 13px}
+.choice-list{display:grid;gap:9px;margin-top:17px}
+.choice-list button,.cta{display:block;width:100%;text-align:left;border:2px solid #7595a2;background:#243a55;color:#f3ebd7;padding:11px 14px;line-height:1.45;font-size:13px;font-weight:800;box-shadow:3px 4px 0 #091221}
+.choice-list button:hover,.cta:hover{background:#b99664;color:#14253b;border-color:#eed395}
+.choice-list button:disabled{opacity:.45;cursor:not-allowed}
+.cta{background:#eac47d;color:#15263e;border-color:#ffe5a1;text-align:center}
+.keyline{color:#a2bac6;font-size:10px;line-height:1.7;letter-spacing:.04em;margin-top:17px}
+#dialog{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:9;width:min(820px,calc(100% - 22px));padding:16px 20px;background:#0f1d35f5;border:3px solid #bfa477;box-shadow:5px 6px 0 #070c17}
+#dialog[hidden]{display:none}
+#speaker{color:#f2ce8f;font-size:12px;font-weight:1000;letter-spacing:.07em;margin-bottom:7px}
+#dialogText{color:#edf0e9;line-height:1.52;font-size:13px;max-width:90ch}
+#dialogOptions{display:grid;gap:7px;margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+#dialogOptions button{font-size:11px;text-align:left;color:#f5e4c0;background:#233751;border:1px solid #65899a;padding:9px 10px}
+#dialogOptions button:hover{background:#bd9a6b;color:#162840}
+#puzzleFrequency{font-size:43px;color:#f1d38e;font-weight:1000;text-align:center;text-shadow:2px 3px #16233f;margin:7px 0}
+#freq{width:100%;accent-color:#d4aa6b;touch-action:auto;height:36px}
+#puzzleHint{font-size:11px;color:#93b6c4;line-height:1.5;text-align:center}
+#toast{position:absolute;z-index:15;left:50%;top:23%;transform:translateX(-50%);padding:10px 14px;border:2px solid #e3ba7b;background:#182e3be9;color:#fff0c9;text-align:center;font-size:11px;font-weight:900;max-width:90%;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast.visible{opacity:1}
+#journalItems{display:grid;gap:7px}
+.entry{background:#0b1729a3;border-left:3px solid #d6a56b;padding:9px 11px;font-size:12px;line-height:1.5;color:#dfe8eb}
+.entry.locked{opacity:.5;border-left-color:#5a6878}
+.badge{display:inline-block;background:#9b7851;padding:3px 6px;color:#fff4d0;font-size:10px;font-weight:900}
+#endingPanel h1{font-size:49px}
+#chapterLine{border-top:2px dashed #819e9c55;margin-top:16px;padding-top:11px;color:#ddc4a1;font-size:11px;letter-spacing:.06em}
+@media(max-width:650px){.hud{padding:7px 9px}.hud .loc{font-size:12px}.hud .mission{font-size:9px;max-width:220px}.hud-right button{font-size:10px;padding:8px 6px}.panel{padding:17px}.touch{bottom:max(11px,env(safe-area-inset-bottom))}.dpad{transform:scale(.85);transform-origin:left bottom}.talk{min-width:76px;height:60px;font-size:11px}#dialog{padding:10px 12px}#dialogText{font-size:11px}#dialogOptions button{font-size:10px}}
+@media(max-height:430px){.top{top:4px}.hud .mission{display:none}.hud .loc{font-size:12px}.hud-right button{padding:6px 8px}.panel{max-height:96dvh;padding:12px}h1{font-size:40px;margin-bottom:8px}.panel p{margin-bottom:5px;font-size:11px}.panel h2{margin-bottom:6px}.keyline{margin-top:8px}.choice-list{margin-top:9px;gap:5px}.choice-list button{padding:7px}.dpad{transform:scale(.65)}.talk{height:48px}.overlay{padding:6px}}
+</style>
+</head>
+<body>
+<div id="app">
+<canvas id="scene" width="480" height="270" aria-label="SİS HATTI piksel sanat dünyası"></canvas>
+<div id="vignette"></div>
+<div class="top">
+<div class="hud"><div class="eyebrow">BABA. STORIES · <span id="clock">02:17</span></div><div id="location" class="loc">LODOS LİMANI</div><div id="mission" class="mission">Kaybolan yolcuyla ilgili ilk ipuçlarını bul.</div></div>
+<div class="hud-right"><button id="journalButton" aria-label="Günlüğü aç">📓 GÜNLÜK</button><button id="audioButton" aria-label="Sesi aç veya kapat">♫</button><button id="menuButton" aria-label="Menü">☰</button></div>
+</div>
+<div id="interactPrompt" hidden>E · KONUŞ</div>
+<div class="touch" id="touchControls"><div class="dpad"><button data-dir="up" aria-label="Yukarı">▲</button><button data-dir="down" aria-label="Aşağı">▼</button><button data-dir="left" aria-label="Sola">◀</button><button data-dir="right" aria-label="Sağa">▶</button></div><button class="talk" id="talkButton" aria-label="Etkileşim">E<br>ETKİLEŞİM</button></div>
+<div id="toast" aria-live="polite"></div>
+<div id="dialog" hidden role="dialog" aria-label="Diyalog"><div id="speaker"></div><div id="dialogText"></div><div id="dialogOptions"></div></div>
+<div class="overlay" id="intro">
+<div class="panel">
+<div class="kicker">ÖZGÜN PIXEL-ART HİKÂYE OYUNU · BÖLÜM I</div>
+<h1>SİS<br><span>HATTI.</span></h1>
+<h2>02:17 — Son seferden önce</h2>
+<p>Antalya'nın uzağında, Lodos adında küçük bir kıyı kasabası. Son feribot kalkmadan önce kaybolan bir yolcunun telefonundan imkânsız bir mesaj alırsın.</p>
+<p>“<strong>Beni kurtarmak istiyorsan feneri dinle. Ama kime güveneceğine dikkat et.</strong>” — ADA</p>
+<p>Kasabayı keşfet, insanlarla konuş, ipuçlarını birleştir, radyo frekansını çöz ve hikâyenin sonunu seç.</p>
+<div class="choice-list"><button class="cta" id="startBtn">▶ HİKÂYEYE BAŞLA</button><button id="newBtn" hidden>↻ BAŞTAN OYNA</button></div>
+<div class="keyline">WASD / OK TUŞLARI · E: ETKİLEŞİM · J: GÜNLÜK · TELEFONDA KAYDIRMA / YÖN TUŞLARI</div>
+</div></div>
+<div class="overlay" id="journal" hidden role="dialog" aria-label="Görev günlüğü"><div class="panel">
+<div class="kicker">KANIT DOSYASI · 02:17</div><h2 id="journalTitle">BİLDİKLERİM</h2><div id="journalItems"></div>
+<div class="choice-list"><button class="cta" id="journalClose">KASABAYA DÖN ↩</button></div></div></div>
+<div class="overlay" id="radioPuzzle" hidden role="dialog" aria-label="Radyo frekansı"><div class="panel">
+<div class="kicker">ESKİ FENER · TELSİZ FREKANSI</div><h2>GÜRÜLTÜNÜN ARASINDA</h2><p>Solmuş kadranda bir istasyon yanıp sönüyor. Doğru frekansı bulmak için kahvehanedeki ipucunu hatırla.</p>
+<div id="puzzleFrequency">88.0 MHz</div><input id="freq" type="range" min="88" max="92" step=".1" value="88" aria-label="Frekans seç"><div id="puzzleHint">Sinyal zayıf. Bir rakam eksik olabilir...</div>
+<div class="choice-list"><button class="cta" id="radioConfirm">▶ SİNYALİ DİNLE</button><button id="radioExit">← GERİ DÖN</button></div></div></div>
+<div class="overlay" id="ending" hidden role="dialog" aria-label="Hikâye sonu"><div class="panel" id="endingPanel">
+<div class="kicker">BÖLÜM I · SON</div><h1 id="endingTitle">SİS DAĞILIYOR</h1><p id="endingText"></p><div id="chapterLine">Bir gece. Üç ihtimal. Tek bir gerçek.</div>
+<div class="choice-list"><button class="cta" id="playAgain">↻ BAŞKA BİR SON KEŞFET</button></div></div></div>
+</div>
+<script>
+(function(){
+"use strict";
+var $=function(id){return document.getElementById(id)};
+var canvas=$("scene"),g=canvas.getContext("2d"),CW=480,CH=270,WW=800,WH=480;
+if(!g){$("startBtn").disabled=true;$("startBtn").textContent="Canvas desteklenmiyor";return}
+g.imageSmoothingEnabled=false;
+var reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+var DEFAULT={v:1,area:"harbor",x:390,y:292,flags:{},trust:0,secret:0,clock:0,steps:0,ending:null,visited:["harbor"],choices:[]};
+var DATA={harbor:{name:"LODOS LİMANI",colors:["#152f49","#19344a","#26475b"]},cafe:{name:"KIYI KAHVESİ",colors:["#262b3e","#3a3f52","#4b4d54"]},tower:{name:"ESKİ FENER",colors:["#172a3b","#213e48","#2a4445"]}};
+var TEXT={
+ opening:"Bir zamanlar bu limandan herkes bir yerlere giderdi. Bu geceyse biri hâlâ dönmeye çalışıyor.",
+ manifest:"Yolcu çizelgesi: ADA SARAN, BİNİŞ 02:17. Ama çıkış hanesi çizilmiş. Geminin resmi kaydı aynı saatte boş görünüyor.",
+ recording:"Çantada küçük bir ses kaydı var: 'Kuleyi açmayın. Ben denizin içinde değilim. Beni yanlış gecede arıyorsunuz.'",
+ frequency:"Bardağın altındaki fişte '89.7' yazıyor. Kafenin bozuk radyosundan aynı üç nota geliyor.",
+ photo:"Eski fotoğrafta genç Ada, kaptan Mert ve fener görevlisi yan yana. Arkada aynı geminin iki farklı tarihteki kaydı var.",
+ archive:"Arşiv defteri: Fenerdeki deney zamanı ikiye böldü. Ada feribotta sıkışmadı; aynı limanın yarınki halinde mahsur kaldı.",
+ signal:"89.7 MHz: 'Duyabiliyor musun? Ben Ada. Burası limanın aynısı ama hiçbiriniz burada değilsiniz. Son sefer başlamadan karar ver.'"
+};
+var ENTITIES={
+ harbor:[
+ {id:"selin",type:"person",name:"Selin · Güvenlik",x:318,y:272,color:"#ad7862"},
+ {id:"manifest",type:"item",name:"Yolcu Manifestosu",x:529,y:173,color:"#ddb978"},
+ {id:"bag",type:"item",name:"Kayıp Çanta",x:194,y:337,color:"#a4c4b9"},
+ {id:"captain",type:"person",name:"Kaptan Mert",x:666,y:303,color:"#7a9fbf"},
+ {id:"cafeDoor",type:"portal",name:"Kıyı Kahvesi",x:116,y:169,color:"#cfa978"},
+ {id:"towerPath",type:"portal",name:"Eski Fenere Git",x:706,y:132,color:"#92b3b1"},
+ {id:"ferry",type:"item",name:"Son Feribot",x:705,y:404,color:"#f3bd7a"}
+ ],
+ cafe:[
+ {id:"barista",type:"person",name:"Derya · Barista",x:358,y:210,color:"#d1a17b"},
+ {id:"mechanic",type:"person",name:"Kemal · Tamirci",x:586,y:256,color:"#a0b58d"},
+ {id:"photo",type:"item",name:"Eski Fotoğraf",x:534,y:129,color:"#d1a974"},
+ {id:"visitor",type:"person",name:"Sessiz Yolcu",x:462,y:330,color:"#8c91b7"},
+ {id:"exitCafe",type:"portal",name:"Limana Dön",x:107,y:390,color:"#a7c2bd"}
+ ],
+ tower:[
+ {id:"keeper",type:"person",name:"Fener Bekçisi",x:296,y:219,color:"#b7a98d"},
+ {id:"generator",type:"item",name:"Jeneratör",x:426,y:323,color:"#c59c66"},
+ {id:"antenna",type:"item",name:"Radyo Vericisi",x:551,y:196,color:"#b7bcc7"},
+ {id:"archive",type:"item",name:"Kilidi Açık Arşiv",x:633,y:301,color:"#bf9f75"},
+ {id:"exitTower",type:"portal",name:"Limana Dön",x:106,y:390,color:"#a7c2bd"}
+ ]
+};
+var st=readState(),running=false,dialogOpen=false,menuOpen=true,overlayReason="intro";
+var key={},touch={},target=null,cameraX=0,cameraY=0,walkT=0,last=0,visualT=0,toastUntil=0,noise=733,timeMark=0,near=null;
+var muted=true,audio=null,clickCount=0,RAIN=Array.from({length:82},function(_,i){return {x:(i*173)%CW,y:(i*77)%CH,speed:25+(i%7)*6}});
+var sprites={};
+function readState(){try{var v=JSON.parse(localStorage.getItem("baba_sis_hatti_v1"));if(v&&v.v===1&&DATA[v.area]&&Number.isFinite(v.x)&&Number.isFinite(v.y)){return Object.assign({},DEFAULT,v,{flags:Object.assign({},v.flags||{}),choices:Array.isArray(v.choices)?v.choices:[]})}}catch(e){}return copyDefault()}
+function copyDefault(){return {v:1,area:"harbor",x:390,y:292,flags:{},trust:0,secret:0,clock:0,steps:0,ending:null,visited:["harbor"],choices:[]}}
+function save(){try{localStorage.setItem("baba_sis_hatti_v1",JSON.stringify(st))}catch(e){}}
+function flag(k){return !!st.flags[k]}
+function hasAll(){for(var i=0;i<arguments.length;i++)if(!flag(arguments[i]))return false;return true}
+function setFlag(k){if(flag(k))return false;st.flags[k]=true;save();updateHud();return true}
+function clock(){var m=17+Math.floor(st.clock);return "0"+(2+Math.floor(m/60))+":"+("0"+(m%60)).slice(-2)}
+function objective(){
+ if(!flag("manifest")||!flag("recording"))return "Limanı araştır: manifesto ve kayıp çanta.";
+ if(!flag("frequency")||!flag("fuse"))return "Kahvehanede frekansı ve yedek sigortayı bul.";
+ if(!flag("powered"))return "Eski fenerin jeneratörünü çalıştır.";
+ if(!flag("signal"))return "Radyo vericisini 89.7 MHz'e ayarla.";
+ if(!flag("archive"))return "Fenerin arşivindeki gerçeği öğren.";
+ return "Kaptan Mert'le yüzleş. Son kararı sen ver.";
+}
+function updateHud(){$("location").textContent=DATA[st.area].name;$("clock").textContent=clock();$("mission").textContent=objective();}
+function toast(text){var e=$("toast");e.textContent=text;e.classList.add("visible");toastUntil=performance.now()+2350}
+function sound(freq){if(muted)return;try{if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==="suspended")audio.resume();var osc=audio.createOscillator(),gain=audio.createGain(),t=audio.currentTime;osc.type="triangle";osc.frequency.setValueAtTime(freq||460,t);osc.frequency.exponentialRampToValueAtTime((freq||460)*.63,t+.08);gain.gain.setValueAtTime(.045,t);gain.gain.exponentialRampToValueAtTime(.0001,t+.09);osc.connect(gain);gain.connect(audio.destination);osc.start(t);osc.stop(t+.1)}catch(e){}}
+function pick(choices){return choices.map(function(c){return {text:c[0],action:c[1]}})}
+function dialog(speaker,text,opts){
+ dialogOpen=true;target=null;near=null;
+ $("speaker").textContent=speaker;$("dialogText").textContent=text;
+ var box=$("dialogOptions");box.innerHTML="";
+ (opts&&opts.length?opts:pick([["Devam et",function(){closeDialog()}]])).forEach(function(c,i){
+  var b=document.createElement("button");b.type="button";b.textContent=(i+1)+". "+c.text;
+  b.onclick=function(){sound(490);c.action();save();updateHud()};box.appendChild(b);
+ });
+ $("dialog").hidden=false;
+}
+function closeDialog(){dialogOpen=false;$("dialog").hidden=true;save();updateHud()}
+function advanceClock(n){st.clock+=n||1;save();updateHud()}
+function changeArea(a,x,y){
+ if(!DATA[a])return;closeDialog();$("radioPuzzle").hidden=true;st.area=a;st.x=x;st.y=y;st.clock+=2;target=null;
+ if(!st.visited.includes(a))st.visited.push(a);
+ updateHud();save();toast("BÖLGE: "+DATA[a].name);sound(390);
+}
+function entry(id){return ENTITIES[st.area].find(function(o){return o.id===id})}
+function doInteract(ent){
+ if(!ent||dialogOpen||!running)return;
+ advanceClock(1);sound(570);
+ switch(ent.id){
+ case "selin":
+  dialog("SELİN · Güvenlik",flag("selinTalk")?"Dalgalar geri geldiğinde bile o geceyi unutmayacağım. Dosyaları bulduysan kaptanla konuş.":"Manifesto kayıp değil. Biri onu bilerek yerinden kaldırdı. Burada ne aradığını söylersen sana yardım edebilirim.",pick([
+   ["Gerçeği anlat. Ada'yı arıyorum.",function(){if(!flag("selinTalk"))st.trust++;setFlag("selinTalk");dialog("SELİN","O halde birlikte çalışalım. Kaptanın kayıtlarını ben de sorguladım. Sinyal için fenere git.",null)}],
+   ["Sadece eski bir hikâyeyi araştırıyorum.",function(){st.secret++;setFlag("selinTalk");dialog("SELİN","Benden bir şey sakladığın belli. Yine de geçebilirsin; dikkatli ol.",null)}]
+  ]));break;
+ case "manifest":
+  if(setFlag("manifest"))dialog("YOLCU MANİFESTOSU",TEXT.manifest,null);
+  else dialog("YOLCU MANİFESTOSU","Bu satırı zaten okudun: Ada Saran, 02:17 seferi.",null);
+  break;
+ case "bag":
+  if(setFlag("recording"))dialog("ADA'NIN ÇANTASI",TEXT.recording,null);
+  else dialog("ADA'NIN ÇANTASI","Çantada başka bir şey yok. Ama kaydın son saniyesinde fener çanı çalıyor.",null);
+  break;
+ case "captain":
+  if(!hasAll("manifest","signal","archive")){
+   dialog("KAPTAN MERT","Bu sisli gecede her şey yanlış görünüyor. Eğer elinde gerçek kanıtlar varsa, beni tekrar bul.",pick([["Manifestoyu ve feneri araştır.",function(){closeDialog()}]]));
+  }else finalConversation();
+  break;
+ case "cafeDoor":changeArea("cafe",135,355);break;
+ case "towerPath":changeArea("tower",120,355);break;
+ case "exitCafe":changeArea("harbor",138,207);break;
+ case "exitTower":changeArea("harbor",673,157);break;
+ case "ferry":
+  dialog("SON FERİBOT","Motor çalışır durumda. Camdaki yazı: '03:17 — SON SEFER'. Şimdilik kaptanla konuşmadan binemezsin.",null);
+  break;
+ case "barista":
+  dialog("DERYA · Barista",flag("frequency")?"Radyo hâlâ uğulduyor mu? Benim görevim sıcak kahve, zamanın sırrı değil.":"Ada burada her akşam aynı masaya otururdu. Her defasında aynı frekansı mırıldanırdı.",pick([
+   ["Hangi frekans? Fişi görebilir miyim?",function(){setFlag("frequency");dialog("KAHVE FİŞİ",TEXT.frequency,null)}],
+   ["Ada nasıldı?",function(){if(!flag("baristaTrust"))st.trust++;setFlag("baristaTrust");dialog("DERYA","Çok cesurdu. Herkesi kurtarmayı kendine görev edinmişti; bu bazen onu tehlikeye atardı.",null)}]
+  ]));break;
+ case "photo":
+  if(setFlag("photo"))dialog("ESKİ FOTOĞRAF",TEXT.photo,null);else dialog("ESKİ FOTOĞRAF","Fotoğrafta Mert'in cebindeki saat 02:17'yi gösteriyor.",null);
+  break;
+ case "visitor":
+  dialog("SESSİZ YOLCU","Burası bir kez aynı geceyi yaşadı. İkinci kez olursa hangimizin gerçek olduğunu kim bilecek?",pick([
+   ["Ona inan.",function(){if(!flag("visitorTrust"))st.trust++;setFlag("visitorTrust");dialog("SESSİZ YOLCU","Ben de Ada'yı duydum. Kaptanı tek başına suçlama.",null)}],
+   ["Kimin için konuşuyorsun?",function(){st.secret++;dialog("SESSİZ YOLCU","Birinin yarınından buraya geldim. Daha fazlasını söylemem doğru olmaz.",null)}]
+  ]));break;
+ case "mechanic":
+  if(flag("fuse"))dialog("KEMAL · Tamirci","Sigortayı iyi kullan. Denizin üstündeki elektrik şakaya gelmez.",null);
+  else if(flag("recording")||flag("frequency")){
+   setFlag("fuse");dialog("KEMAL · Tamirci","Yedek sigorta bende. Fenerin jeneratörüne tak. Ama bir şey ters giderse ışığı kapatmayı unutma.",null);
+  }else dialog("KEMAL · Tamirci","Fenerin elektrik hattı için benden malzeme istiyorsan önce nedenini söyle. İpucunu bulup geri gel.",null);
+  break;
+ case "keeper":
+  dialog("BEKÇİ","Fener yıllardır yol gösterir. Bu gece ilk kez bir yolu ikiye ayırıyor.",pick([
+    ["Bunu nereden biliyorsun?",function(){setFlag("keeperHint");dialog("BEKÇİ","Birini geri getirmek için her şeyi kaydetmek gerekir. Vericiyi aç, sonra arşivi incele.",null)}],
+    ["Sana güvenebilir miyim?",function(){if(!flag("keeperTrust"))st.trust++;setFlag("keeperTrust");dialog("BEKÇİ","Bazen güvenmek bir insanın kendisine verebileceği en büyük hediyedir.",null)}]
+  ]));break;
+ case "generator":
+  if(flag("powered"))dialog("JENERATÖR","Motor tekdüze çalışıyor. Vericinin ışığı yandı.",null);
+  else if(!flag("fuse"))dialog("JENERATÖR","Sigorta kutusu boş. Kahvehanede yedek parça bulabilecek biri olmalı.",null);
+  else {setFlag("powered");dialog("JENERATÖR","Sigorta yerine oturdu. Işıklar birer birer yandı. Kulede eski bir frekans duyuluyor...",null)}
+  break;
+ case "antenna":
+  if(!flag("powered"))dialog("TELSİZ VERİCİSİ","Elektrik yok. Jeneratörü çalıştırmalısın.",null);
+  else if(flag("signal"))dialog("ADA'NIN SESİ",TEXT.signal,null);
+  else{closeDialog();showRadio()}
+  break;
+ case "archive":
+  if(!flag("signal"))dialog("ARŞİV KAPISI","Kapı üzerinde elektronik bir kilit var. Bir ses kaydı sistemin açılmasını sağlayabilir.",null);
+  else if(setFlag("archive"))dialog("FENER ARŞİVİ",TEXT.archive,pick([["Artık kaptanla yüzleşebilirim.",function(){closeDialog();toast("SON GÖREV: KAPTAN MERT")}] ]));
+  else dialog("FENER ARŞİVİ",TEXT.archive,null);
+  break;
+ }
+}
+function finalConversation(){
+ dialog("KAPTAN MERT","Evet, gemi kalktı. Ama Ada'yı kaybettiğimizi söylemek doğru değildi. Sinyali susturursak kasaba normale döner. Onu açığa çıkarırsak gerçek herkesin önüne düşer. Karar senin.",pick([
+ ["Sinyali tüm kasabaya yayımla.",function(){finish("truth")}],
+ ["Ada'yı geri getirmeye çalış.",function(){finish(st.trust>=2&&flag("photo")?"rescue":"alone")}],
+ ["Kayıtları mühürle; kimse öğrenmesin.",function(){finish("silence")}]
+ ]));
+}
+var ENDINGS={
+ truth:{title:"GERÇEK AÇIĞA ÇIKTI",text:"Vericiyi açık bıraktın. Lodos'un bütün radyoları Ada'nın sesini taşıdı. Kasaba artık geceyi inkâr edemiyor. Sır, onu saklayanlardan daha güçlü çıktı. Ancak ufuktaki feribot bu kez yarının kıyısına doğru gidiyor."},
+ rescue:{title:"ŞAFAKTA BULUŞMA",text:"Selin, Derya ve bekçi yanında durdu. Kayıtlardaki farkı kullanıp feribotun rotasını değiştirdiniz. Sis yarıldığında Ada karşı iskeleden el sallıyordu. Bu gece yalnızca doğru frekansı değil, doğru insanları da buldun."},
+ alone:{title:"YANLIŞ ZAMAN",text:"Tek başına fenere geri döndün. Ada'nın sesini yakaladın ama onu getirecek güveni kuramamıştın. Sahil bir anlığına aydınlandı. Ardından telefon yeniden çaldı: 02:17."},
+ silence:{title:"SESSİZ LİMAN",text:"Belgeleri mühürledin. Feribot kalktı, kıyı aydınlandı ve kasabalılar hiçbir şey olmamış gibi işlerine döndü. Bir tek sen her gece 02:17'de radyonun kendiliğinden açıldığını biliyorsun."}
+};
+function finish(which){
+ var data=ENDINGS[which];if(!data)return;
+ closeDialog();st.ending=which;st.clock+=4;save();running=false;
+ $("endingTitle").textContent=data.title;$("endingText").textContent=data.text;
+ $("ending").hidden=false;$("touchControls").style.display="none";sound(880);
+}
+function showRadio(){
+ $("radioPuzzle").hidden=false;var input=$("freq");input.value="88";
+ $("puzzleFrequency").textContent="88.0 MHz";$("puzzleHint").textContent=flag("frequency")?"Kahve fişindeki sayı aradığın istasyon olabilir.":"Kayıp istasyonun izini bir notta bulmalısın...";
+}
+function hideRadio(){$("radioPuzzle").hidden=true}
+function openJournal(){
+ if(!running||dialogOpen)return;
+ $("journal").hidden=false;
+ var entries=[
+ ["Yolcu manifestosu","manifest"],["Ada'nın ses kaydı","recording"],["Kahve fişi · 89.7 MHz","frequency"],
+ ["Eski fotoğraf","photo"],["Yedek sigorta","fuse"],["Çalışan jeneratör","powered"],["Fenerin radyo sinyali","signal"],["Arşivdeki gerçek","archive"]
+ ];
+ $("journalItems").innerHTML="";
+ entries.forEach(function(a){var div=document.createElement("div");div.className="entry"+(flag(a[1])?"":" locked");div.textContent=(flag(a[1])?"✓ ":"? ")+a[0];$("journalItems").appendChild(div)});
+ var footer=document.createElement("div");footer.className="entry";footer.textContent="GÖREV: "+objective()+" | GÜVEN: "+st.trust+" | KANIT: "+Object.keys(st.flags).filter(function(k){return st.flags[k]}).length;$("journalItems").appendChild(footer);
+}
+function newGame(){st=copyDefault();running=true;menuOpen=false;dialogOpen=false;target=null;save();$("ending").hidden=true;$("intro").hidden=true;$("touchControls").style.display="";$("dialog").hidden=true;hideRadio();updateHud();toast("BÖLÜM I · LODOS LİMANI");sound(420)}
+function launch(){running=true;menuOpen=false;$("intro").hidden=true;$("touchControls").style.display="";updateHud();sound(500)}
+function showMenu(){if(dialogOpen)return;menuOpen=true;running=false;$("intro").hidden=false;$("newBtn").hidden=false;$("startBtn").textContent="▶ DEVAM ET"}
+$("startBtn").onclick=function(){if(st.ending)newGame();else launch()};
+$("newBtn").onclick=newGame;
+$("playAgain").onclick=newGame;
+$("menuButton").onclick=showMenu;
+$("journalButton").onclick=openJournal;
+$("journalClose").onclick=function(){$("journal").hidden=true};
+$("radioExit").onclick=hideRadio;
+$("freq").addEventListener("input",function(){
+ var val=Number(this.value);$("puzzleFrequency").textContent=val.toFixed(1)+" MHz";
+ var diff=Math.abs(val-89.7);$("puzzleHint").textContent=diff<.11?"●●● Sinyal çok güçlü!":diff<.6?"●●○ Bir ses duyuluyor...":"○○○ Statik gürültü.";
+});
+$("radioConfirm").onclick=function(){
+ var value=Number($("freq").value);
+ if(!flag("frequency")){toast("ÖNCE İPUCUNU BULMALISIN");sound(180);return}
+ if(Math.abs(value-89.7)<.051){hideRadio();setFlag("signal");advanceClock(2);dialog("RADYO · 89.7 MHz",TEXT.signal,null);sound(880)}
+ else{toast("YANLIŞ FREKANS. TEKRAR DENE.");sound(180)}
+};
+$("audioButton").onclick=function(){muted=!muted;this.textContent=muted?"♫":"♪";this.setAttribute("aria-pressed",String(!muted));sound(720)};
+document.addEventListener("keydown",function(e){
+ var name=e.key.toLowerCase();if(["arrowleft","arrowright","arrowup","arrowdown"," ","e","j","escape"].includes(name))e.preventDefault();
+ key[name]=true;
+ if(e.repeat)return;
+ if(name==="escape"){if(!$("radioPuzzle").hidden)hideRadio();else if(!$("journal").hidden)$("journal").hidden=true;else if(dialogOpen)closeDialog();else if(running)showMenu();else if(menuOpen)launch()}
+ if(dialogOpen&&/^[1-3]$/.test(name)){var buttons=$("dialogOptions").querySelectorAll("button");if(buttons[+name-1])buttons[+name-1].click();return}
+ if(!running||dialogOpen||!$("journal").hidden||!$("radioPuzzle").hidden)return;
+ if(name==="e"||name===" "){interactClosest()}
+ if(name==="j")openJournal();
+});
+document.addEventListener("keyup",function(e){key[e.key.toLowerCase()]=false});
+window.addEventListener("blur",function(){key={};touch={}});
+document.querySelectorAll("[data-dir]").forEach(function(b){
+ var d=b.dataset.dir;
+ b.addEventListener("pointerdown",function(e){e.preventDefault();touch[d]=true;b.classList.add("down");try{b.setPointerCapture(e.pointerId)}catch(_){}});
+ ["pointerup","pointercancel","lostpointercapture"].forEach(function(t){b.addEventListener(t,function(){touch[d]=false;b.classList.remove("down")})});
+});
+$("talkButton").onclick=interactClosest;
+canvas.addEventListener("pointerdown",function(e){
+ if(!running||dialogOpen||!$("radioPuzzle").hidden||!$("journal").hidden)return;
+ var r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*CW+cameraX,y=(e.clientY-r.top)/r.height*CH+cameraY;
+ var objects=ENTITIES[st.area],found=null,min=34;
+ for(var i=0;i<objects.length;i++){var o=objects[i],d=Math.hypot(o.x-x,o.y-y);if(d<min){min=d;found=o}}
+ target=found?{x:found.x,y:found.y,id:found.id}:{x:x,y:y,id:null};
+ if(found&&Math.hypot(found.x-st.x,found.y-st.y)<45){target=null;doInteract(found)}
+});
+function nearest(){var a=ENTITIES[st.area],n=null,best=44;for(var i=0;i<a.length;i++){var d=Math.hypot(st.x-a[i].x,st.y-a[i].y);if(d<best){n=a[i];best=d}}return n}
+function interactClosest(){if(!running||dialogOpen)return;var a=nearest();if(a)doInteract(a);else toast("ETKİLEŞİM İÇİN YAKLAŞ")}
+function passable(x,y){return x>=27&&x<=WW-26&&y>=70&&y<=WH-30}
+function update(dt){
+ if(!running||dialogOpen||!$("journal").hidden||!$("radioPuzzle").hidden)return;
+ var dx=(key["arrowright"]||key["d"]||touch.right?1:0)-(key["arrowleft"]||key["a"]||touch.left?1:0),
+ dy=(key["arrowdown"]||key["s"]||touch.down?1:0)-(key["arrowup"]||key["w"]||touch.up?1:0);
+ if(dx||dy)target=null;
+ if(!dx&&!dy&&target){dx=target.x-st.x;dy=target.y-st.y;if(Math.hypot(dx,dy)<6){var entity=target.id?entry(target.id):null;target=null;if(entity)doInteract(entity);dx=0;dy=0}}
+ var l=Math.hypot(dx,dy);if(l){dx/=l;dy/=l;var speed=114;var nx=st.x+dx*speed*dt,ny=st.y+dy*speed*dt;if(passable(nx,st.y))st.x=nx;if(passable(st.x,ny))st.y=ny;walkT+=dt*12;st.steps++;if(target&&Math.hypot(st.x-target.x,st.y-target.y)<36&&target.id){var entity=entry(target.id);target=null;if(entity)doInteract(entity)}}else walkT=0;
+ timeMark+=dt;if(timeMark>6){timeMark=0;st.clock+=.5;save();updateHud()}
+ near=nearest();
+ $("interactPrompt").hidden=!near;$("interactPrompt").textContent=near?"E · "+near.name:"";
+}
+function rand(){noise=(Math.imul(1664525,noise)+1013904223)>>>0;return noise/4294967296}
+function R(x,y,w,h,c){g.fillStyle=c;g.fillRect(Math.round(x),Math.round(y),Math.ceil(w),Math.ceil(h))}
+function L(x1,y1,x2,y2,c,w){g.strokeStyle=c;g.lineWidth=w||1;g.beginPath();g.moveTo(Math.round(x1),Math.round(y1));g.lineTo(Math.round(x2),Math.round(y2));g.stroke()}
+function T(txt,x,y,color,size){g.fillStyle=color||"#e9e4c8";g.font="bold "+(size||10)+"px monospace";g.textAlign="center";g.fillText(txt,Math.round(x),Math.round(y))}
+function tileWorld(bg1,bg2,step){R(0,0,WW,WH,bg1);for(var yy=0;yy<WH;yy+=step)for(var xx=0;xx<WW;xx+=step){if((xx/step+yy/step)%2)R(xx,yy,step,step,bg2)}}
+function windowBlock(x,y,lit){
+ R(x,y,35,32,"#071e2e");R(x+3,y+3,29,26,lit?"#d6aa71":"#31536a");
+ R(x+16,y+3,2,26,"#15243c");R(x+3,y+15,29,2,"#15243c");
+}
+function shore(){
+ tileWorld("#294f63","#2b5267",32);
+ R(0,342,WW,138,"#173653");for(var y=347;y<475;y+=13){for(var x=0;x<WW;x+=20){R(x+Math.sin(x+y+visualT*2)*5,y,10,2,(Math.sin(x*12+y+visualT)>0?"#3a6777":"#2d576a"))}}
+ R(0,308,WW,83,"#786353");for(var r=0;r<7;r++){R(0,309+r*12,WW,2,"#4c4c4a");for(var a=0;a<WW;a+=53)R(a+r*5,312+r*12,2,9,"#8c735d")}
+ // Streetlights, wet roads, warehouse, boat and containers.
+ R(0,58,WW,108,"#394857");R(42,75,182,92,"#253850");R(46,68,171,9,"#a17f70");
+ for(var j=0;j<3;j++)windowBlock(67+j*52,88,j!==1);
+ R(73,147,115,25,"#1d2737");T("KIYI KAHVESİ",131,163,"#ebc78a",11);
+ R(361,72,146,87,"#304152");R(355,66,159,14,"#7a6665");for(var k=0;k<3;k++)windowBlock(375+k*45,91,k===1);
+ T("GÜMRÜK",432,72,"#d4c8aa",11);
+ R(550,80,140,100,"#2a3448");R(544,76,152,13,"#a37158");T("DEPO 04",620,100,"#e0bd85",13);
+ for(var q=0;q<6;q++){var tx=480+(q%3)*17,ty=195+Math.floor(q/3)*16;R(tx,ty,16,16,"#9d7956");R(tx+2,ty+2,12,12,"#6a593d");L(tx+2,ty+2,tx+14,ty+14,"#c69c68",1)}
+ R(632,366,139,44,"#516577");R(621,357,150,11,"#b7ad8b");
+ R(680,332,42,25,"#3c5268");R(689,321,20,13,"#cba981");R(717,349,2,26,"#d0c7a0");R(717,331,2,38,"#bbac82");
+ R(702,327,3,14,"#f8d08b");T("SON SEFER",700,420,"#ecd39e",9);
+ R(650,115,95,7,"#697869");for(var z=0;z<3;z++){R(655+z*33,98,5,18,"#2d414d")}
+ for(var n=0;n<8;n++){var xx=40+n*93;R(xx,267,4,45,"#2a353f");R(xx-3,260,10,8,"#bf9d67");R(xx-13,309,28,3,"#2b3e47")}
+}
+function cafe(){
+ tileWorld("#463e42","#4d4548",32);
+ R(0,44,WW,100,"#222b3c");R(0,58,WW,8,"#514953");
+ for(var i=0;i<8;i++)windowBlock(32+i*97,70,i%3===0);
+ R(258,141,354,86,"#715344");R(258,141,354,18,"#b28362");
+ for(var j=0;j<8;j++){R(267+j*42,156,4,69,"#513c38");R(277+j*42,175,26,18,"#745d50")}
+ R(246,221,395,5,"#b18a66");T("LODOS KAHVE",441,151,"#eac08b",10);
+ for(var k=0;k<4;k++){var x=126+k*138;R(x,304,70,26,"#473641");R(x+8,312,56,13,"#795c4d");R(x+28,330,10,20,"#403239")}
+ for(var q=0;q<8;q++){R(73+q*78,55,2,11,"#eac58c");R(67+q*78,64,14,5,"#f1bb79")}
+ R(508,109,47,40,"#c1a17d");R(513,114,36,29,"#332f3b");R(524,121,12,16,"#927b6e");
+ R(50,347,122,62,"#31414d");R(54,351,114,51,"#546977");T("ÇIKIŞ",107,380,"#eed6a8",12);
+}
+function tower(){
+ tileWorld("#253b46","#284349",32);
+ for(var k=0;k<WW;k+=14){var y=70+Math.sin(k*.1)*16;R(k,y,9,8,"#314d4d")}
+ R(0,340,WW,140,"#354f4d");for(var i=0;i<140;i++){var x=(i*97)%WW,y=345+(i*53)%133;R(x,y,5,2,i%2?"#63816c":"#506f60")}
+ R(445,69,149,180,"#4d5760");R(434,58,173,20,"#69717b");
+ R(472,85,97,59,"#87918f");R(482,91,78,47,"#c0ad81");R(517,62,5,187,"#334450");
+ R(462,147,120,14,"#293c49");R(468,167,104,82,"#65716e");
+ for(var n=0;n<4;n++)R(472+n*24,201,12,27,"#b29b73");
+ if(Math.sin(visualT*1.2)>0){R(579,83,110,7,"#d2bf8166");R(579,93,90,5,"#baa86d44")}
+ R(391,297,70,50,"#627579");R(395,301,62,42,"#37434a");
+ for(var q=0;q<4;q++){R(405+q*13,316,8,11,"#ad996e");R(409+q*13,306,2,7,"#a7b6a6")}
+ R(614,271,57,53,"#333d47");R(621,279,43,37,"#9d8b79");R(626,287,30,22,"#4e565c");
+ R(43,339,140,76,"#253e45");R(51,348,125,59,"#71827d");T("LİMANA DÖN",114,380,"#f0d4a5",10);
+}
+function drawItem(o){
+ var x=o.x,y=o.y;
+ if(o.id==="manifest"){R(x-16,y-11,33,21,"#8f704b");R(x-11,y-14,23,21,"#e4d4a9");for(var i=0;i<3;i++)R(x-7,y-9+i*6,14,2,"#9f8971")}
+ else if(o.id==="bag"){R(x-14,y-8,28,17,"#6c8a79");R(x-7,y-12,14,6,"#aeaa8b");R(x-11,y+6,21,3,"#425d57")}
+ else if(o.id==="photo"){R(x-17,y-13,34,27,"#c1a37b");R(x-12,y-8,24,17,"#515b65");R(x-5,y-5,8,11,"#9fa09a")}
+ else if(o.id==="generator"){R(x-24,y-18,48,32,"#303b45");R(x-18,y-12,36,20,"#8b7b68");R(x-7,y-7,15,10,flag("powered")?"#7ed2aa":"#a7675d")}
+ else if(o.id==="antenna"){R(x-15,y-19,30,38,"#66747a");R(x-11,y-13,22,14,"#1e3446");R(x-8,y+7,16,4,"#a4967a");R(x+8,y-19,3,7,flag("powered")?"#f3d28e":"#4d555e")}
+ else if(o.id==="archive"){R(x-19,y-21,38,42,"#534a4a");R(x-14,y-18,28,35,"#8e806d");R(x-2,y-1,6,7,"#b79f73")}
+ else if(o.id==="ferry"){R(x-27,y-8,54,18,"#bec4be");R(x-17,y-16,35,9,"#8da2a4");R(x+2,y-15,6,6,"#e4c78f")}
+ else if(o.type==="portal"){R(x-16,y-14,32,28,"#35495c");R(x-12,y-10,24,20,"#a0a08c");R(x-7,y-6,14,12,"#2d3e4d")}
+}
+function person(x,y,color,walk,face){
+ // Every character is custom pixel art with coat, hair, shoes and short walk cycles.
+ var step=walk?Math.round(Math.sin(walkT)*3):Math.round(Math.sin(visualT*1.5)*.7);
+ R(x-7,y+12,16,3,"#1019238c");
+ R(x-6,y-23,13,10,"#bc9177");R(x-7,y-25,15,5,face?"#403946":"#4a3940");
+ R(x-4,y-19,2,2,"#26333c");R(x+3,y-19,2,2,"#26333c");
+ R(x-9,y-12,18,21,color);R(x-2,y-11,3,18,"#d3b28c");
+ R(x-13,y-10+step,4,16,color);R(x+9,y-10-step,4,16,color);
+ R(x-8,y+9,7,8+step,"#263e52");R(x+1,y+9,7,8-step,"#263e52");
+ R(x-9,y+16+step,9,3,"#141d2a");R(x,y+16-step,9,3,"#141d2a");
+}
+function renderEntities(){
+ var arr=ENTITIES[st.area];
+ for(var i=0;i<arr.length;i++){
+  var o=arr[i];if(o.type==="person")person(o.x,o.y,o.color,false,i%2);
+  else drawItem(o);
+  var pulse=Math.round(Math.sin(visualT*3+i)*2);
+  R(o.x-2,o.y-38+pulse,5,5,o.id==="captain"&&hasAll("manifest","signal","archive")?"#f3d37a":"#99c9bc");
+  var close=Math.hypot(st.x-o.x,st.y-o.y)<58;
+  if(close||o.id==="cafeDoor"||o.id==="towerPath"||o.id==="exitTower"||o.id==="exitCafe"){
+   var label=o.name;var w=Math.min(135,Math.max(53,label.length*5.7));
+   R(o.x-w/2,o.y-56,w,13,"#0c1727c9");T(label,o.x,o.y-47,"#d7e8e5",8);
+  }
+ }
+}
+function draw(){
+ visualT+=reduceMotion?.003:.016;
+ g.save();g.clearRect(0,0,CW,CH);
+ cameraX=Math.round(Math.max(0,Math.min(WW-CW,st.x-CW*.5)));
+ cameraY=Math.round(Math.max(0,Math.min(WH-CH,st.y-CH*.54)));
+ g.translate(-cameraX,-cameraY);
+ if(st.area==="harbor")shore();else if(st.area==="cafe")cafe();else tower();
+ renderEntities();person(st.x,st.y,"#ac665d",running&&walkT>0,true);
+ g.restore();
+ // Atmospheric pixel rain and screen-space fog, without bloom or image smoothing.
+ for(var i=0;i<RAIN.length;i++){
+  var p=RAIN[i],xx=(p.x+visualT*8)%CW,yy=(p.y+visualT*p.speed)%CH;
+  R(xx,yy,1,5,st.area==="cafe"?"#9aa1b055":"#afd5db66");
+ }
+ if(st.area==="tower"){var flicker=Math.sin(visualT*3)*.2+.35;R(CW-46,30,22,4,"rgba(247,209,134,"+flicker+")")}
+ // Letterboxed cinematic pixel overlay.
+ R(0,0,CW,2,"#0a1325bb");R(0,CH-2,CW,2,"#071122cc");
+}
+function frame(t){requestAnimationFrame(frame);var dt=Math.min(.042,(t-last)/1000||.016);last=t;if(toastUntil&&t>toastUntil){toastUntil=0;$("toast").classList.remove("visible")}update(dt);draw()}
+$("newBtn").hidden=st.steps<5&&!st.ending;
+if(st.steps>5||st.ending){$("startBtn").textContent=st.ending?"↻ TEKRAR OYNA":"▶ KAYITTAN DEVAM ET"}
+updateHud();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
