@@ -342,7 +342,7 @@ canvas.addEventListener("pointerdown",function(e){
 });
 function nearest(){var a=ENTITIES[st.area],n=null,best=44;for(var i=0;i<a.length;i++){var d=Math.hypot(st.x-a[i].x,st.y-a[i].y);if(d<best){n=a[i];best=d}}return n}
 function interactClosest(){if(!running||dialogOpen)return;var a=nearest();if(a)doInteract(a);else toast("ETKİLEŞİM İÇİN YAKLAŞ")}
-function passable(x,y){return x>=27&&x<=WW-26&&y>=70&&y<=WH-30}
+function passable(x,y){if(!(x>=27&&x<=WW-26&&y>=70&&y<=WH-30))return false;if(st.area==="harbor"&&y>389&&(x<615||x>774))return false;return true}
 function update(dt){
  if(!running||dialogOpen||!$("journal").hidden||!$("radioPuzzle").hidden)return;
  var dx=(key["arrowright"]||key["d"]||touch.right?1:0)-(key["arrowleft"]||key["a"]||touch.left?1:0),
