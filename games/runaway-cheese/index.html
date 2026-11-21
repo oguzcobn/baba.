@@ -101,9 +101,9 @@ var W=window.THREE,renderer,scene,camera,sun,wheel,track=[],obstacles=[],chasers
 var mode="intro",SLOPE=.175,LIMIT=470,player={x:0,z:2,vx:0,speed:10,jump:0,vy:0,spin:0,hit:0},distance=0,elapsed=0,best=0,runSeed=52,raf=0,last=0,timer=0;
 var inp={l:false,r:false,drag:false,dragX:0},muted=false,ctx=null,camFocus=null,shake=0;
 var DIFFICULTIES={
- easy:{label:"KOLAY",desc:"Rahat kaçış · daha yavaş takip, uzun toparlanma.",speed:1.045,bonus:.8,accel:1.15,turn:3.6,catchX:.72,catchZ:1.12,grace:8.5,stumble:1.35,avoid:1},
- normal:{label:"NORMAL",desc:"Dengeli mücadele · yaklaşan koşucular hızlanır.",speed:1.14,bonus:1.25,accel:1.8,turn:5.4,catchX:1.03,catchZ:1.40,grace:5.5,stumble:1,avoid:1.35},
- hard:{label:"ZOR",desc:"Agresif takip · hızlı koşucular, kısa toparlanma.",speed:1.245,bonus:2.6,accel:2.6,turn:7.0,catchX:1.35,catchZ:1.70,grace:3.5,stumble:.72,avoid:1.75}
+ easy:{label:"KOLAY",desc:"Rahat kaçış · daha yavaş takip, uzun toparlanma.",speed:1.045,bonus:.8,accel:1.15,turn:2.65,catchX:.68,catchZ:1.12,grace:12,hold:.9,stumble:1.35,avoid:1},
+ normal:{label:"NORMAL",desc:"Dengeli mücadele · yaklaşan koşucular hızlanır.",speed:1.11,bonus:1.15,accel:1.75,turn:4.3,catchX:.92,catchZ:1.38,grace:8,hold:.58,stumble:1,avoid:1.35},
+ hard:{label:"ZOR",desc:"Agresif takip · hızlı koşucular, kısa toparlanma.",speed:1.22,bonus:2.3,accel:2.45,turn:6.2,catchX:1.18,catchZ:1.70,grace:5.2,hold:.36,stumble:.72,avoid:1.75}
 };
 var difficulty="normal",cfg=DIFFICULTIES.normal;
 try{var savedDifficulty=localStorage.getItem("baba_cheese_difficulty");if(DIFFICULTIES[savedDifficulty])difficulty=savedDifficulty}catch(e){}
@@ -251,7 +251,7 @@ function posePerson(c){
  c.head.position.copy(n[J.head]);c.head.quaternion.setFromUnitVectors(UP,headDir);
 }
 function knockRunner(c,ob){
- c.state="ragdoll";c.fall=(1.7+rand()*.75)*cfg.stumble;c.cool=3.2*cfg.stumble;c.spd=Math.max(3,c.spd*.4);c.ragAge=0;
+ c.state="ragdoll";c.capture=0;c.fall=(1.7+rand()*.75)*cfg.stumble;c.cool=3.2*cfg.stumble;c.spd=Math.max(3,c.spd*.4);c.ragAge=0;
  var side=c.x>ob.x?1:-1;
  for(var k=0;k<16;k++){
   c.nodes[k].copy(c.pose[k]);c.prev[k].copy(c.nodes[k]);
@@ -286,7 +286,7 @@ function stepRagdoll(c,dt){
  }
 }
 function resetRunner(c,i){
- c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=5.4+i*.85;c.spd=9.5+i*.3;c.phase=i;c.fall=0;c.cool=0;c.state="run";c.ragAge=0;c.recover=0;
+ c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=5.4+i*.85;c.spd=9.5+i*.3;c.phase=i;c.fall=0;c.cool=0;c.capture=0;c.state="run";c.ragAge=0;c.recover=0;
  setRunPose(c);c.nodes.forEach(function(n,k){n.copy(c.pose[k]);c.prev[k].copy(n)});c.group.rotation.set(0,0,0);posePerson(c);
 }
 function updateRunner(c,dt,index){
@@ -339,7 +339,10 @@ function updateRunner(c,dt,index){
  c.group.position.set(c.x,gy(c.z)+.065+(c.state==="run"?Math.abs(Math.sin(c.phase))*.045:0),c.z);
  c.group.rotation.set(0,Math.sin(c.phase*.2)*.05,0);
  posePerson(c);
- if(c.state==="run"&&elapsed>cfg.grace&&Math.abs(c.z-player.z)<cfg.catchZ&&Math.abs(c.x-player.x)<cfg.catchX){gameOver(false)}
+ if(c.state==="run"&&elapsed>cfg.grace&&Math.abs(c.z-player.z)<cfg.catchZ&&Math.abs(c.x-player.x)<cfg.catchX){
+    c.capture=Math.min(cfg.hold+.2,(c.capture||0)+dt);
+  }else c.capture=Math.max(0,(c.capture||0)-dt*1.6);
+  if(c.capture>=cfg.hold){gameOver(false)}
 }
 function makeChasers(){for(var i=0;i<5;i++){var a=makePerson(i);chasers.push(a);scene.add(a.group)}}
 
