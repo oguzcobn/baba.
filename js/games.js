@@ -166,6 +166,7 @@ const App = (() => {
     { id: 'gta-vice-city', name: 'GTA: Vice City', tags: [['Aksiyon', 'Action'], ['Klasik', 'Classic'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'tekken-3', name: 'Tekken 3', tags: [['Dövüş', 'Fighting'], ['Arcade', 'Arcade'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'hungry-shark', name: ['Aç Köpekbalığı', 'Hungry Shark'], tags: [['Arcade', 'Arcade'], ['Okyanus', 'Ocean'], ['Hayatta Kalma', 'Survival']], best: () => { const b = ls.get('bb_best_hungry_shark', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
+    { id: 'rota-conference', name: ['ROTA. — Denizcilik Konferansı', 'ROTA. — Maritime Conference'], tags: [['Simülasyon', 'Simulation'], ['Etkinlik Yönetimi', 'Event Management'], ['Operasyon', 'Operations']], best: () => { const r = ls.get('rota_conference_records_v2', null); return r?.bestScore ? r.bestScore + T(' puan', ' points') : T('Yeni görev', 'New mission'); } },
     { id: 'dsan-shipyard', name: ['Damen Tersane Tycoon', 'Damen Shipyard Tycoon'], tags: [['3D Yönetim', '3D Management'], ['Gemi İnşası', 'Shipbuilding'], ['Tersane', 'Shipyard']], best: () => T('Antalya · 3D', 'Antalya · 3D') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
     { id: 'sudoku', name: 'Sudoku', tags: [['Mantık', 'Logic'], ['3 seviye', '3 levels']], best: () => { const b = ls.get('bb_best_sudoku', null); return b ? fmtT(b) : '—'; } },
@@ -449,6 +450,22 @@ const App = (() => {
       const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
       if (req) { try { await req.call(frame); return; } catch (_) {} }
       window.open(DSAN_SHIPYARD_URL, '_blank', 'noopener');
+    };
+  }
+
+  /* ==================== ROTA. CONFERENCE ==================== */
+  const ROTA_CONFERENCE_URL = 'games/rota-conference/index.html';
+  function rotaConference() {
+    const b = shell(T('ROTA. — Denizcilik Konferansı', 'ROTA. — Maritime Conference'), `<div class="vd-bar"><p class="bb-tip">${T('45 katılımcılı, üç günlük konferans için teklif ver, ekibini kur, tedarikçileri seç ve dört operasyon krizini çöz.', 'Bid on a three-day conference for 45 guests, hire your team, select vendors and handle four operational crises.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${ROTA_CONFERENCE_URL}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in new tab')} ↗</a></div></div>
+      <div class="dsan-frame rota-game-frame"><iframe src="${ROTA_CONFERENCE_URL}" title="ROTA. — Denizcilik Konferansı" allow="fullscreen" allowfullscreen loading="eager"></iframe></div>
+      <p class="bb-tip">${T('Kararların kârı, dakikliği ve müşteri memnuniyetini değiştirir. Oyun otomatik kaydedilir.', 'Your choices affect profit, punctuality and satisfaction. Progress is automatically saved.')}</p>`, T('Etkinlik işletme simülasyonu · Antalya', 'Event management simulation · Antalya'));
+    b.closest('.game-page').classList.add('dsan-page','rota-game-page');
+    const frame = b.querySelector('.rota-game-frame'), button = b.querySelector('[data-a=full]');
+    button.onclick = async () => {
+      click();
+      const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) { try { await req.call(frame); return; } catch (_) {} }
+      window.open(ROTA_CONFERENCE_URL, '_blank', 'noopener');
     };
   }
 
@@ -769,6 +786,7 @@ const App = (() => {
     else if (r === 'tekken-3') tekken3();
     else if (r === 'hungry-shark') hungryShark();
     else if (r === 'dsan-shipyard') dsanShipyard();
+    else if (r === 'rota-conference') rotaConference();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();

@@ -6,7 +6,7 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world"]);
+  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference"]);
   const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
@@ -18,6 +18,7 @@ const BABALibrary = (() => {
     draft: { cat: 'foot', accent: '#c8ff3a', time: ['10 dk', '10 min'], blurb: ['Çark döner, 18 Süper Lig kulübünün son 10 yılından 11+2 kur ve 34 maçlık sezonu izle.', 'Spin the wheel, build an 11+2 from 18 Süper Lig clubs’ last decade and watch a 34-game season.'] },
     istiklal1919: { cat: 'str', accent: '#e9c46a', time: ['Sefer', 'Campaign'], blurb: ['1919–1923: cepheler, diplomasi ve kaynak yönetimiyle tarihsel strateji.', '1919–1923: fronts, diplomacy and resources in a historical strategy game.'] },
     vadi: { cat: 'str', accent: '#7fd36b', time: ['3 bölüm', '3 chapters'], blurb: ['Vadide şehrini kur, kaynakları yönet ve üç bölümlük seferi tamamla.', 'Build your city in the valley, manage resources and finish a three-chapter campaign.'] },
+    'rota-conference': { cat: 'sim', accent: '#0aa99f', time: ['15–20 dk', '15–20 min'], isNew: true, blurb: ['45 kişilik uluslararası konferansı yönet: teklif, otel, ekip, dört kriz ve gerçek kâr hesabı.', 'Run a conference for 45 guests: bidding, hotels, staff, four crises and a real profit breakdown.'] },
     'dsan-shipyard': { cat: 'sim', accent: '#3db7ff', time: ['3D yönetim', '3D management'], isNew: true, blurb: ['Antalya’da 3D tersane: sekiz tekne, deniz denemesi, İK görüşmeleri ve müşteri ziyaretleri.', 'A 3D shipyard in Antalya: eight vessels, sea trials, HR interviews and client visits.'] },
     '2048': { cat: 'puz', accent: '#ffb547', time: ['5 dk', '5 min'], blurb: ['Kaydır, birleştir, 2048’e ulaş. Kısa molaların klasiği.', 'Swipe, merge, reach 2048. The short-break classic.'] },
     sudoku: { cat: 'puz', accent: '#8b9bff', time: ['3 seviye', '3 levels'], blurb: ['Kolaydan zora üç seviye; temiz bir kafa ve bir fincan kahve.', 'Three levels from easy to hard; a clear head and a cup of coffee.'] },
@@ -41,7 +42,7 @@ const BABALibrary = (() => {
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }, { id: 'web', tr: 'Web Oyunları', en: 'Web Games' }
   ];
-  const SPOTLIGHT = ['kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
+  const SPOTLIGHT = ['rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };

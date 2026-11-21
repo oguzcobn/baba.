@@ -1,0 +1,52 @@
+const { test, expect } = require('@playwright/test');
+const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
+const ORDER = ['hotel','venue','transport','catering','staff','flight','av','weather','permit'];
+const choose = async (page,section,index) => page.locator(`[data-action="choose"][data-section="${section}"][data-index="${index}"]`).click();
+test.describe('ROTA. maritime conference', () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+  test('BABA. simulation card opens its playable game', async ({ page }) => {
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.addInitScript(() => sessionStorage.setItem('baba_ok','1'));
+    await page.goto(BASE+'#oyunlar');
+    await expect(page.locator('.lb-card[data-id="rota-conference"]')).toBeVisible();
+    await page.locator('.lb-card[data-id="rota-conference"]').click();
+    await expect(page).toHaveURL(/#rota-conference$/);
+    await expect(page.locator('.rota-game-frame iframe')).toHaveAttribute('src','games/rota-conference/index.html');
+    await expect(page.frameLocator('.rota-game-frame iframe').getByRole('button',{name:/Müşteriye teklif hazırla/})).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+  test('pricing and staffing impact profit and result; persistence works', async ({ page }) => {
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    await page.goto(BASE+'games/rota-conference/index.html');
+    await expect(page.locator('.mission-route')).toBeVisible();
+    await page.locator('[data-action="start"]').click();
+    await expect(page.locator('#price-range')).toHaveValue('385000');
+    await page.locator('[data-action="submit-bid"]').click();
+    for (const section of ORDER.slice(0,5)) await choose(page,section,1);
+    await expect(page.getByText('Uçak gecikti. On bir misafir yolda.')).toBeVisible();
+    await page.reload();
+    await expect(page.getByText('Uçak gecikti. On bir misafir yolda.')).toBeVisible();
+    for (const section of ORDER.slice(5)) await choose(page,section,0);
+    await expect(page.locator('.result-lead')).toBeVisible();
+    await expect(page.getByText('Yağmur krizi çözümü')).toBeVisible();
+    await expect(page.getByText('Operasyon ekibi',{exact:true})).toBeVisible();
+    const rec=await page.evaluate(()=>JSON.parse(localStorage.getItem('rota_conference_records_v2')));
+    expect(rec.runs).toBe(1);expect(rec.bestScore).toBeGreaterThan(0);
+    await page.reload();
+    const recAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('rota_conference_records_v2')));
+    expect(recAfter.runs).toBe(1);
+    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+    expect(errors).toEqual([]);
+  });
+  test('high-expense strategy can generate a loss; replay resets choices',async ({page})=>{
+    await page.goto(BASE+'games/rota-conference/index.html');
+    await page.locator('[data-action="start"]').click();
+    await page.locator('[data-action="submit-bid"]').click();
+    for(const section of ORDER)await choose(page,section,section==='weather'?0:2);
+    await expect(page.locator('.negative').first()).toBeVisible();
+    page.on('dialog',dialog=>dialog.accept());
+    await page.locator('[data-action="reset"]').first().click();
+    await expect(page.getByText('İlk büyük kurumsal müşterin.')).toBeVisible();
+  });
+});
