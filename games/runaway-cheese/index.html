@@ -321,10 +321,12 @@ function updateRunner(c,dt,index){
   c.spd=mix(c.spd,target,clamp(dt*cfg.accel,0,1));
   c.x+=clamp(lead-c.x,-dt*(cfg.turn+index*.22),dt*(cfg.turn+index*.22));
   c.z-=c.spd*dt;
-  if(c.z<player.z-.12&&Math.abs(c.x-player.x)>cfg.catchX){
-   // Do not let an off-lane runner sprint out of range ahead of the player.
-   c.z=Math.max(c.z,player.z-cfg.catchZ*.5);
-   c.spd=Math.min(c.spd,player.speed+.8);
+  // Never let runners sprint out in front during the grace period,
+  // or skip straight past the collision window between frames.
+  var minGap=elapsed<cfg.grace?cfg.catchZ+.6:-cfg.catchZ*.20;
+  if(c.z<player.z+minGap){
+   c.z=player.z+minGap;
+   c.spd=Math.min(c.spd,player.speed+.75);
   }
   c.nodes.forEach(function(n,k){n.copy(c.pose[k])});
   if(c.cool===0){
