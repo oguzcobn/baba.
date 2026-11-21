@@ -42,6 +42,8 @@ on:
       - 'tests/match2d-browser.spec.cjs'
       - 'tests/match-rules.cjs'
       - 'tests/arcade-games.spec.cjs'
+      - 'tests/arcade-import.spec.cjs'
+      - 'tests/oyunlar-library.spec.cjs'
       - 'tests/lab-catalog.cjs'
       - 'js/**'
       - 'data/career-birthdates.json'
