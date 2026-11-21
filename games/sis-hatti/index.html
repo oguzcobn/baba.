@@ -10,7 +10,7 @@
 *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;overscroll-behavior:none}
 button,input{font:inherit}button{cursor:pointer;-webkit-tap-highlight-color:transparent}button:focus-visible,input:focus-visible{outline:3px solid #fff0b0;outline-offset:3px}
 #app{position:fixed;inset:0;background:#0b1326;overflow:hidden;touch-action:none}
-canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;object-fit:cover;touch-action:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges;touch-action:none}
 #vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 32%,#090c1e70 95%);box-shadow:inset 0 0 100px #09101d88}
 .top{position:absolute;top:max(10px,env(safe-area-inset-top));left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));display:flex;gap:9px;justify-content:space-between;z-index:4;align-items:flex-start;pointer-events:none}
 .hud{background:#0d172cd9;border:2px solid #6d718d55;box-shadow:3px 4px 0 #0a0e19a1;padding:9px 12px;min-width:0}
@@ -103,6 +103,13 @@ var $=function(id){return document.getElementById(id)};
 var canvas=$("scene"),g=canvas.getContext("2d"),CW=480,CH=270,WW=800,WH=480;
 if(!g){$("startBtn").disabled=true;$("startBtn").textContent="Canvas desteklenmiyor";return}
 g.imageSmoothingEnabled=false;
+function resizeCanvas(){
+ var width=window.innerWidth||480,height=window.innerHeight||270;
+ if(height>width){CH=480;CW=Math.max(185,Math.round(CH*width/height))}
+ else{CW=480;CH=Math.max(215,Math.round(CW*height/width))}
+ canvas.width=CW;canvas.height=CH;g.imageSmoothingEnabled=false;
+}
+resizeCanvas();window.addEventListener("resize",resizeCanvas,{passive:true});
 var reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var DEFAULT={v:1,area:"harbor",x:390,y:292,flags:{},trust:0,secret:0,clock:0,steps:0,ending:null,visited:["harbor"],choices:[]};
 var DATA={harbor:{name:"LODOS LİMANI",colors:["#152f49","#19344a","#26475b"]},cafe:{name:"KIYI KAHVESİ",colors:["#262b3e","#3a3f52","#4b4d54"]},tower:{name:"ESKİ FENER",colors:["#172a3b","#213e48","#2a4445"]}};
@@ -136,7 +143,7 @@ var ENTITIES={
  {id:"keeper",type:"person",name:"Fener Bekçisi",x:296,y:219,color:"#b7a98d"},
  {id:"generator",type:"item",name:"Jeneratör",x:426,y:323,color:"#c59c66"},
  {id:"antenna",type:"item",name:"Radyo Vericisi",x:551,y:196,color:"#b7bcc7"},
- {id:"archive",type:"item",name:"Kilidi Açık Arşiv",x:633,y:301,color:"#bf9f75"},
+ {id:"archive",type:"item",name:"Arşiv Kapısı",x:633,y:301,color:"#bf9f75"},
  {id:"exitTower",type:"portal",name:"Limana Dön",x:106,y:390,color:"#a7c2bd"}
  ]
 };
