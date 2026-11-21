@@ -154,7 +154,7 @@ const App = (() => {
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
-    { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('3 farklı son', '3 endings'); } catch (_) { return T('3 farklı son', '3 endings'); } } },
+    { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
@@ -490,7 +490,7 @@ const App = (() => {
       title: T('SİS HATTI. — 02:17', 'FOG LINE. — 02:17'),
       url: 'games/sis-hatti/index.html',
       tag: T('BABA. STORIES · Pixel Art Hikâye', 'BABA. STORIES · Pixel Art Narrative'),
-      lead: T('Lodos Limanı’nda kayıp bir yolcunun izini sür. Keşfet, insanlarla konuş, radyo bulmacasını çöz ve üçten fazla sonun hangisine ulaşacağına karar ver.', 'Explore a haunted harbor, talk to locals, solve a radio puzzle, and decide which of the multiple endings will be yours.'),
+      lead: T('Lodos Limanı’nda kayıp bir yolcunun izini sür. Keşfet, insanlarla konuş, radyo bulmacasını çöz ve dört olası sondan hangisine ulaşacağına karar ver.', 'Explore a haunted harbor, talk to locals, solve a radio puzzle, and decide which of the multiple endings will be yours.'),
       tip: T('WASD veya ok tuşlarıyla gez, E ile etkileş, J ile günlüğü aç. Telefonda yön tuşları, dokunarak hareket ve etkileşim tuşu var. Oyun otomatik kaydedilir.', 'Move with WASD or arrows, E to interact, J for journal. Mobile controls and tap-to-move supported. Auto-save enabled.')
     });
     const page = root().querySelector('.game-page');if(page)page.classList.add('sis-page');
