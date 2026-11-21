@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b2030" />
+  <meta name="description" content="ROTA. Experiences — Uluslararası Denizcilik Konferansı. Teklif ver, tedarikçileri seç, operasyon krizlerini yönet ve projeni kârla tamamla." />
+  <title>ROTA. | Denizcilik Konferansı — BABA.</title>
+  <style>
+    :root{--navy:#0b2030;--navy2:#112c3d;--ink:#182b35;--muted:#607381;--teal:#0aa99f;--mint:#dff7ee;--gold:#ffc273;--cream:#f5f7f5;--white:#fff;--line:#e3e9e7;--red:#d55f4a;--shadow:0 18px 60px rgba(13,43,53,.07)}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--cream);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid #21b8af;outline-offset:3px}
+    .app{min-height:100vh}
+    .topbar{background:var(--navy);color:white;border-bottom:1px solid rgba(255,255,255,.11)}
+    .top-inner{max-width:1120px;margin:auto;min-height:70px;padding:0 24px;display:flex;gap:16px;align-items:center;justify-content:space-between}
+    .brand{font-weight:900;letter-spacing:-.08em;font-size:29px;line-height:1}.brand small{font-weight:700;font-size:9px;letter-spacing:.2em;display:block;color:#88c4c0;margin-top:6px}
+    .top-right{display:flex;align-items:center;gap:10px}.top-tag{padding:6px 11px;border:1px solid #35505c;border-radius:999px;font-size:10px;letter-spacing:.1em;color:#aed0d2;font-weight:750}.reset-top{background:transparent;color:#c3d9dc;border:1px solid #45626d;border-radius:9px;padding:7px 11px;font-size:12px}
+    .shell{max-width:1120px;margin:0 auto;padding:25px 24px 52px}.banner{min-height:225px;padding:29px 34px;background:radial-gradient(circle at 80% 20%,#285163 0,transparent 35%),linear-gradient(130deg,#0a2233,#153c4a);border-radius:20px;color:white;overflow:hidden;position:relative;display:flex;align-items:center;box-shadow:0 12px 40px #173b4421}
+    .banner:before{content:"";position:absolute;right:-90px;bottom:-160px;width:460px;height:310px;border:1px solid rgba(117,217,213,.13);border-radius:50%;box-shadow:0 0 0 43px rgba(117,217,213,.028),0 0 0 86px rgba(117,217,213,.026),0 0 0 126px rgba(117,217,213,.02)}
+    .ship{position:absolute;right:39px;bottom:-10px;width:280px;height:173px;opacity:.8}
+    .ship svg{width:100%;height:100%}.banner-copy{max-width:670px;position:relative;z-index:1}.eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#89dcd2}.banner h1{font-size:clamp(24px,4vw,42px);line-height:1.14;font-weight:850;letter-spacing:-.045em;max-width:620px;margin:15px 0 13px}.banner p{font-size:14px;color:#c7dbdf;max-width:535px;margin:0}
+    .dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}.metric{background:white;border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-height:87px}.metric label{display:block;color:var(--muted);font-size:11px;font-weight:650;margin-bottom:4px}.metric strong{display:block;letter-spacing:-.035em;font-size:clamp(17px,2.4vw,22px);line-height:1.2}.metric small{font-size:10px;color:var(--muted);display:block;margin-top:6px}.negative{color:var(--red)!important}.positive{color:#138a7a!important}
+    .progress-section{margin:24px 0 15px}.progress-line{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted);gap:12px;margin-bottom:9px}.progress-line strong{color:var(--ink)}.progress-track{height:5px;border-radius:50px;background:#dde7e4;overflow:hidden}.progress-fill{height:100%;background:linear-gradient(90deg,#00a697,#70d6bb);border-radius:50px;transition:width .4s}
+    .layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:18px;align-items:start}.stage{border:1px solid var(--line);border-radius:18px;background:white;padding:28px;box-shadow:var(--shadow)}
+    .stage-intro{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.stage-index{display:inline-flex;background:#e8f5ef;color:#097e79;padding:5px 9px;border-radius:8px;font-size:11px;font-weight:850;white-space:nowrap;letter-spacing:.04em}.stage h2{font-weight:850;font-size:clamp(23px,3vw,30px);letter-spacing:-.04em;line-height:1.2;margin:13px 0 9px}.stage .lead{font-size:14px;line-height:1.75;color:#5c707a;margin:0 0 24px;max-width:650px}
+    .side{display:flex;flex-direction:column;gap:14px}.side-card{border:1px solid var(--line);border-radius:16px;background:white;padding:19px}.side-card h3{font-size:13px;margin:0 0 13px;font-weight:800}.side-card p{font-size:12px;color:#687e88;margin:0;line-height:1.6}.side-card .row{margin:10px 0;display:flex;justify-content:space-between;gap:10px;font-size:12px}.row .right{text-align:right;font-weight:800}.divider{height:1px;background:var(--line);margin:14px 0}.side-title{color:#7d969b;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px}.bar{height:7px;border-radius:100px;background:#ecf1ed;overflow:hidden;margin:8px 0}.bar span{display:block;height:100%;background:var(--teal);border-radius:100px;transition:width .3s}.bar.orange span{background:#f8b65e}.mini-note{margin-top:10px!important}
+    .brief-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:19px 0 22px}.brief-tile{padding:15px 16px;border:1px solid #e6edeb;background:#fbfcfb;border-radius:12px}.brief-tile span{font-size:11px;color:var(--muted);display:block}.brief-tile strong{font-size:17px;display:block;margin-top:2px;letter-spacing:-.03em}
+    .callout{padding:17px;border-radius:13px;background:#eef8f5;border:1px solid #dbefeb;font-size:13px;line-height:1.6;color:#225e60;margin:16px 0}.callout strong{color:#174c4d}.alert{background:#fff4e5;border-color:#ffe2b7;color:#855b2e}.alert strong{color:#714922}.danger-note{background:#fff0ee;border-color:#f4d5d0;color:#9b4838}
+    .btn{border:0;background:var(--navy);color:#fff;font-weight:800;border-radius:12px;padding:13px 19px;min-height:48px;transition:transform .1s,background .2s}.btn:hover{background:#193e51;transform:translateY(-1px)}.btn.secondary{background:#e9f2ef;color:#1c625d}.btn.ghost{background:transparent;color:#5b7076;border:1px solid #d6e2df}.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}.fine{color:var(--muted);font-size:11px;line-height:1.5;margin-top:12px}
+    .price-quote{background:#102a3a;color:white;border-radius:16px;padding:24px;margin:18px 0}.quote-head{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}.quote-head strong{font-size:clamp(30px,5vw,43px);font-weight:850;line-height:1.1;letter-spacing:-.05em}.quote-head span{color:#b2cad3;font-size:12px}.range{width:100%;accent-color:#53d8bf;height:26px;margin:18px 0 0;cursor:pointer}.range-end{display:flex;justify-content:space-between;color:#9eb6bf;font-size:11px}.quote-strip{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:15px;margin-top:14px;border-top:1px solid #365365;color:#bcd1d7;font-size:12px}.quote-strip b{color:#fff}
+    .option-grid{display:grid;gap:10px}.opt{width:100%;display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left;border:1.5px solid #dfebe7;background:#fbfcfb;padding:18px 18px;border-radius:13px;color:var(--ink);transition:background .2s,border-color .2s,transform .15s;align-items:center}.opt:hover,.opt:focus-visible{background:#f1faf6;border-color:#2bb7a7;transform:translateY(-1px)}.opt-name{font-size:15px;font-weight:820;letter-spacing:-.025em;margin:0 0 4px}.opt-desc{font-size:12px;color:var(--muted);line-height:1.5;margin:0}.opt-price{font-size:16px;font-weight:850;letter-spacing:-.025em;text-align:right;white-space:nowrap}.opt-impact{font-size:11px;color:#0e9586;text-align:right;white-space:nowrap;font-weight:750;margin-top:5px}.opt-impact.bad{color:var(--red)}.section-label{font-size:11px;font-weight:800;color:#6f828a;letter-spacing:.08em;margin:0 0 11px;text-transform:uppercase}.choice-foot{margin-top:20px;padding:13px 16px;border:1px dashed #cce1d9;border-radius:12px;color:#5d767a;font-size:12px;line-height:1.6}
+    .stage-situation{background:#f7f9f8;padding:17px;border-left:3px solid #19b4a4;border-radius:0 10px 10px 0;margin:10px 0 24px;font-size:13px;color:#465b65;line-height:1.75}.situation-time{display:block;font-size:10px;font-weight:850;letter-spacing:.12em;color:#0e9387;margin-bottom:8px}.situation-time.urgent{color:#bc7440}
+    .result-lead{border-radius:15px;background:linear-gradient(120deg,#0e3541,#14564f);color:#fff;padding:24px;margin:8px 0 20px}.result-lead h3{font-size:24px;margin:5px 0 7px;letter-spacing:-.04em}.result-lead p{margin:0;font-size:13px;color:#d2eae4}.result-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.result-kpi{border-radius:12px;background:#f5f8f6;padding:14px}.result-kpi span{display:block;font-size:10px;color:var(--muted)}.result-kpi strong{display:block;margin-top:4px;font-size:19px;letter-spacing:-.04em}.cost-table{margin-top:20px}.cost-row{display:flex;gap:15px;justify-content:space-between;padding:10px 0;border-bottom:1px solid #e7eeea;font-size:12px;color:#63757d}.cost-row strong{color:var(--ink)}.cost-row.total{font-size:15px;font-weight:800;border-bottom:2px solid var(--navy);color:var(--ink)}.recap-item{padding:9px 0;font-size:12px;color:#536970;border-bottom:1px solid var(--line)}.recap-item b{display:block;color:#223942}
+    .footer{padding:25px 0 10px;text-align:center;color:#8ca0a3;font-size:11px}
+    .toast{background:#e8f4ef;border:1px solid #c6e4da;color:#236a5b;border-radius:11px;padding:11px 14px;font-size:12px;margin-top:14px}
+    @media(max-width:800px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.banner{min-height:215px}.ship{opacity:.3}.banner-copy{max-width:100%}}
+    @media(max-width:560px){.top-inner{padding:0 16px;min-height:65px}.top-tag{display:none}.shell{padding:15px 12px 35px}.banner{padding:23px 21px;border-radius:15px;min-height:214px}.banner h1{font-size:28px}.banner p{font-size:12px}.dashboard{gap:7px;grid-template-columns:repeat(2,1fr);margin-top:9px}.metric{padding:12px;min-height:80px}.metric strong{font-size:19px}.stage{padding:21px 17px;border-radius:15px}.side{grid-template-columns:1fr}.side-card{padding:17px}.brief-grid{gap:7px}.brief-tile{padding:12px}.result-kpis{grid-template-columns:1fr 1fr}.opt{padding:15px 13px;gap:6px}.opt-price{font-size:15px}.opt-name{font-size:14px}.stage h2{font-size:26px}.btn{flex-grow:1}.footer{font-size:10px}}
+    @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+  
+.to-baba{color:#d0ece7;border:1px solid #426475;padding:9px 12px;border-radius:10px;font-size:12px;text-decoration:none;font-weight:750}
+.to-baba:hover,.to-baba:focus-visible{background:#1c4250}
+.mission-route{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;padding-top:15px}
+.mission-route span{font-size:11px;text-align:center;font-weight:780;border-radius:9px;padding:9px 2px;border:1px solid #d8e7e4;background:#fff;color:#678086}
+.mission-route .passed{background:#e2f5ed;border-color:#b7e2d4;color:#08796e}
+.btn.secondary{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.opt:active{transform:scale(.991)}
+@media(max-width:560px){.top-inner{gap:9px}.to-baba{padding:6px 8px;font-size:10px}.mission-route{gap:4px}.mission-route span{font-size:9px;padding:8px 1px}.result-kpi strong{overflow-wrap:anywhere}}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+(()=>{
+  'use strict';
+  const STORAGE_KEY = 'rota_conference_v2';
+  const phases=['brief','bid','hotel','venue','transport','catering','staff','flight','av','weather','permit','final'];
+  const money=(n)=>new Intl.NumberFormat('tr-TR',{style:'currency',currency:'TRY',maximumFractionDigits:0}).format(n);
+  const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
+  const FEE=19000, BUDGET=410000;
+  const vendors={
+    hotel:{title:'Konaklama seçimi',stage:'01 / TEDARİKÇİLER',lead:'Yurt dışından gelen 32 misafir için 2 gece konaklama gerekiyor. Otel seçimi hem bütçeyi hem de konuşmacıların deneyimini etkileyecek.',hint:'Otele ulaşım, check-in hızı ve toplantı alanına mesafe gerçek operasyonlarda önemlidir.',items:[
+      {name:'Şehir oteli',desc:'3 yıldız, merkezi konum. Toplu check-in; konferans merkezine 25 dakika.',cost:112000,sat:-10,punc:-2,rep:0,tag:'Ekonomik / memnuniyet −10'},
+      {name:'İş oteli',desc:'4 yıldız, kahvaltı dahil. Grup check-in masası; salona 10 dakika.',cost:138000,sat:5,punc:4,rep:2,tag:'Dengeli / memnuniyet +5'},
+      {name:'Denize sıfır premium otel',desc:'5 yıldız, özel karşılama. Kısa transfer, yüksek konuk deneyimi.',cost:174000,sat:11,punc:4,rep:3,tag:'Premium / memnuniyet +11'}
+    ]},
+    venue:{title:'Konferans salonu',stage:'02 / TEDARİKÇİLER',lead:'Üç günlük oturumlar, simultane çeviri ihtimali ve 45 kişilik katılım için uygun salon seç. Salonun güçlü görünmesi müşteri tarafından önemseniyor.',hint:'Ses ve sunum ekipleri için 19.000 TL sabit operasyon/teknik ekip gideri ayrıca hesaplanır.',items:[
+      {name:'Standart toplantı salonu',desc:'45 kişilik, temel projektör ve yerleşik ses sistemi. Düşük esneklik.',cost:60000,sat:-7,punc:0,rep:0,tag:'Ekonomik / memnuniyet −7'},
+      {name:'Profesyonel konferans merkezi',desc:'Yedek internet, sahne, fuaye ve teknik hazırlık alanı.',cost:84000,sat:6,punc:3,rep:2,tag:'Dengeli / memnuniyet +6'},
+      {name:'Panoramik deniz manzaralı salon',desc:'Özel sahne tasarımı, marka deneyimi, yüksek kaliteli fuaye.',cost:115000,sat:13,punc:3,rep:3,tag:'Premium / memnuniyet +13'}
+    ]},
+    transport:{title:'Transfer filosu',stage:'03 / TEDARİKÇİLER',lead:'Misafirler farklı saatlerde Antalya Havalimanı’na inecek. Varış ve dönüş transferlerini, otel-konferans hattını ve operasyon esnekliğini düşün.',hint:'Konferansın ilk gününde uçuş değişikliği yaşanabilir; araç kapasitesi ve alternatif plan önemlidir.',items:[
+      {name:'Paylaşımlı otobüs planı',desc:'Sabit toplama saatleri. Uygun maliyet ancak uzun bekleme ihtimali.',cost:34000,sat:-10,punc:-7,rep:0,tag:'Ekonomik / dakiklik −7'},
+      {name:'Minibüs + VIP karşılama',desc:'Uçuş kümelerine göre araç planı ve terminalde karşılama personeli.',cost:54000,sat:6,punc:6,rep:2,tag:'Dengeli / dakiklik +6'},
+      {name:'Tam VIP filo',desc:'Özel şoförler, esnek bekleme, üst düzey konuşmacılara ayrı araç.',cost:78000,sat:12,punc:10,rep:3,tag:'Premium / memnuniyet +12'}
+    ]},
+    catering:{title:'İkram ve gala',stage:'04 / TEDARİKÇİLER',lead:'Üç günlük kahve araları, öğle yemekleri ve kapanış akşamını planla. Katılımcıların farklı beslenme ihtiyaçları var.',hint:'Daha iyi yemek ve networking ortamı yüksek müşteri memnuniyeti getirir; bütçeyi aşmamaya dikkat et.',items:[
+      {name:'Temel konferans menüsü',desc:'Kahve araları, açık büfe öğle yemeği, standart kapanış.',cost:34000,sat:-8,punc:0,rep:0,tag:'Ekonomik / memnuniyet −8'},
+      {name:'Networking paketi',desc:'Özel karşılama, çok seçenekli öğle menüleri, kokteyl alanı.',cost:50000,sat:6,punc:0,rep:2,tag:'Dengeli / memnuniyet +6'},
+      {name:'Premium gala deneyimi',desc:'Özel menüler, canlı servis, tematik masa tasarımı, gala yemeği.',cost:74000,sat:12,punc:0,rep:3,tag:'Premium / memnuniyet +12'}
+    ]},
+    staff:{title:'Etkinlik ekibini kur',stage:'05 / OPERASYON KADROSU',lead:'45 kişilik uluslararası konferansta karşılama, saha koordinasyonu ve teknik destekten kim sorumlu olacak? Ekip seçimi krizlerin sonucunu etkiler.',hint:'Kıdemli ekip, teknik sorunlar ve ziyaret belgelerinde ek hız sağlayabilir.',items:[
+      {name:'Küçük koordinasyon ekibi',desc:'1 saha sorumlusu, 2 karşılama görevlisi. Yoğun saatlerde sınırlı destek.',cost:8000,sat:-7,punc:-6,rep:0,tag:'Düşük maliyet / riskli'},
+      {name:'Dengeli operasyon ekibi',desc:'1 operasyon lideri, 3 karşılama görevlisi, 1 teknik destek.',cost:18000,sat:6,punc:4,rep:2,tag:'Dengeli / +6 memnuniyet'},
+      {name:'Kıdemli VIP etkinlik ekibi',desc:'1 proje müdürü, 5 karşılama görevlisi, 2 teknisyen, özel müşteri temsilcisi.',cost:30000,sat:11,punc:9,rep:3,tag:'Premium / +9 dakiklik'}
+    ]}
+  };
+  const incidents={
+    flight:{stage:'01. GÜN / HAVALİMANI',title:'Uçak gecikti. On bir misafir yolda.',lead:'Konferans açılışından önce 11 katılımcının uçuşu 90 dakika gecikti. Mevcut otel transferleri dolmak üzere.',time:'08.40 • UÇUŞ TK 2416 • UÇAK GECİKMESİ',situation:'Operasyon ekibin bilgi bekliyor. Misafirlerin mümkün olduğunca hızlı otele ulaşması gerekiyor. Bir çözüm seç:',items:[
+      {name:'Ek minibüs görevlendir',desc:'Yedek araç tahsis et, ekibi terminale gönder, transferi hızlandır.',cost:9000,sat:9,punc:7,rep:2,tag:'+9 memnuniyet / +7 dakiklik'},
+      {name:'Mevcut araçları yeniden planla',desc:'Grubu iki araca böl, diğer transferleri kısa süre kaydır.',cost:4500,sat:2,punc:0,rep:0,tag:'+2 memnuniyet / dengeli gider'},
+      {name:'Bir sonraki servisi beklet',desc:'Ek maliyet oluşturma; konuklar terminalde beklesin.',cost:0,sat:-15,punc:-22,rep:-3,tag:'−15 memnuniyet / −22 dakiklik'}
+    ]},
+    av:{stage:'02. GÜN / ANA SALON',title:'Açılıştan 25 dakika önce ekran arızası.',lead:'Ana konuşmacının sunumuyla açılış başlayacak ancak sahnenin görüntü sistemi devre dışı. Müşteri temsilcisi çözüm bekliyor.',time:'09.05 • TEKNİK ACİL DURUM',situation:'Konuşma saatinde başlamalı. Teknik ekip üç alternatif öneriyor:',items:[
+      {name:'Yedek profesyonel sistemi getir',desc:'Acil teknik tedarik ile ana sahneyi zamanında hazırla.',cost:12500,sat:9,punc:8,rep:3,tag:'+9 memnuniyet / +8 dakiklik'},
+      {name:'Portatif ekran ve alternatif kurulum',desc:'Salonun bir bölümünü düzenleyerek sunumu kurtar.',cost:6500,sat:2,punc:0,rep:1,tag:'+2 memnuniyet / orta maliyet'},
+      {name:'Tamir ekibini bekle',desc:'Ek masraf yok ama açılış gecikebilir.',cost:0,sat:-18,punc:-18,rep:-3,tag:'−18 memnuniyet / −18 dakiklik'}
+    ]},
+    weather:{stage:'02. GÜN / GALA',title:'Gala başlamadan sağanak yağmur!',lead:'Açık hava networking alanına kuvvetli yağmur geliyor. Misafirler birazdan mekâna ulaşacak.',time:'18.20 • GALA KRİZİ',situation:'Ekibinin üç çözüm önerisi var. Gala programını korumak için ne yapacaksın?',items:[
+      {name:'Kapalı salona hızlı geçiş',desc:'Masaları, ses sistemini ve ikramları kapalı bir alana taşı.',cost:5000,sat:7,punc:6,rep:2,tag:'+7 memnuniyet / +6 dakiklik'},
+      {name:'Programı yeniden düzenle',desc:'Kokteyli fuayeye al, konuşmaları yarım saat ötele.',cost:2000,sat:0,punc:-4,rep:0,tag:'Tasarruf / −4 dakiklik'},
+      {name:'Yağmurun dinmesini bekle',desc:'Ek masraf yok, fakat misafirler uzun süre bekler.',cost:0,sat:-13,punc:-15,rep:-2,tag:'−13 memnuniyet / −15 dakiklik'}
+    ]},
+    permit:{stage:'03. GÜN / TESİS ZİYARETİ',title:'Ziyaretçi listesindeki altı bilgi eksik.',lead:'Programdaki tersane ziyareti saat 09.00’da başlayacak. Altı yabancı katılımcının giriş formunda eksik pasaport bilgisi fark edildi.',time:'07.15 • GÜVENLİK VE ERİŞİM',situation:'Güvenlik prosedürleri atlanamaz. Belgeleri resmi onaya sunmak veya programı revize etmek gerekiyor:',items:[
+      {name:'Acil belge tamamlama ekibi kur',desc:'Misafirlerden bilgileri topla, yetkili birime ilet, resmi onay sonrasında giriş planını uygula.',cost:5500,sat:7,punc:7,rep:3,tag:'+7 memnuniyet / +7 dakiklik'},
+      {name:'Onay beklenirken programı değiştir',desc:'Otel fuayesinde kısa sunum organize et; ziyaret yalnızca resmi onayla başlasın.',cost:2500,sat:1,punc:0,rep:1,tag:'+1 memnuniyet / kontrollü süreç'},
+      {name:'Grubu kapıya planlandığı gibi gönder',desc:'Ek bütçe harcama; resmi onay gelene kadar misafirler dışarıda beklesin.',cost:0,sat:-16,punc:-14,rep:-3,tag:'−16 memnuniyet / −14 dakiklik'}
+    ]}
+  };
+  const fresh=()=>({phase:'brief',quote:385000,accepted:false,negotiating:false,choices:{hotel:null,venue:null,transport:null,catering:null,staff:null,flight:null,av:null,weather:null,permit:null},audit:[],scored:false});
+  let state=fresh();
+  try{const previous=JSON.parse(localStorage.getItem(STORAGE_KEY));if(previous&&phases.includes(previous.phase)&&previous.choices&&typeof previous.quote==='number')state={...fresh(),...previous,choices:{...fresh().choices,...previous.choices}}}catch(e){}
+  const persist=()=>{try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){}};
+  const keys=['hotel','venue','transport','catering','staff','flight','av','weather','permit'];
+  const entry=(key)=>{const idx=state.choices[key];return Number.isInteger(idx)&&idx>=0&&idx<(vendors[key]||incidents[key]).items.length?(vendors[key]||incidents[key]).items[idx]:null};
+  const selectedCost=()=>keys.reduce((sum,key)=>sum+(entry(key)?.cost||0),0);
+  const allVendors=()=>['hotel','venue','transport','catering','staff'].every(k=>entry(k));
+  const total=()=>FEE+selectedCost();
+  const synergy=()=>{
+    const effect={sat:0,punc:0,rep:0,notes:[]};
+    if(state.choices.transport===2&&entry('flight')){effect.sat+=2;effect.punc+=3;effect.notes.push('VIP transfer filosu geciken uçağı daha kolay karşıladı.')}
+    if(state.choices.venue===1&&entry('av')){effect.punc+=3;effect.notes.push('Konferans merkezinin teknik altyapısı arızayı hafifletti.')}
+    if(state.choices.staff===2&&entry('permit')){effect.punc+=4;effect.rep+=1;effect.notes.push('Kıdemli ekip izin belgelerini hızla tamamladı.')}
+    if(state.choices.catering===2&&entry('weather')){effect.sat+=2;effect.notes.push('Premium servis ekibi kapalı salon planını destekledi.')}
+    return effect;
+  };
+  const sat=()=>clamp(62+keys.reduce((s,k)=>s+(entry(k)?.sat||0),0)+synergy().sat,0,100);
+  const punc=()=>clamp(78+keys.reduce((s,k)=>s+(entry(k)?.punc||0),0)+synergy().punc,0,100);
+  const rep=()=>keys.reduce((s,k)=>s+(entry(k)?.rep||0),0)+synergy().rep;
+  const margin=()=>state.quote-total();
+  const pct=()=>state.quote>0?Math.round(margin()/state.quote*100):0;
+  const stageIndex=()=>phases.indexOf(state.phase);
+  function summary(){
+    const i=stageIndex(),completed=i===phases.length-1,estimate=allVendors();
+    const shownCost=completed||estimate;
+    return `<section class="dashboard" aria-label="Proje göstergeleri">
+      <div class="metric"><label>Sözleşme tutarı</label><strong id="metric-quote">${money(state.quote)}</strong><small>Üst müşteri bütçesi ${money(BUDGET)}</small></div>
+      <div class="metric"><label>${shownCost?'Toplam proje maliyeti':'Başlangıç tahmini'}</label><strong id="metric-cost">${money(shownCost?total():363000)}</strong><small>${shownCost?'Seçimler + sabit gider':'Dengeli tedarik paketi'}</small></div>
+      <div class="metric"><label>${shownCost?'Kâr / zarar':'Hedef brüt kâr'}</label><strong id="metric-profit" class="${shownCost&&margin()<0?'negative':''}">${money(shownCost?margin():state.quote-363000)}</strong><small>${shownCost?'Tahmini net operasyon farkı':'Kesinleşen teklif değil'}</small></div>
+      <div class="metric"><label>Müşteri memnuniyeti</label><strong>${i<2?'—':sat()+' / 100'}</strong><small>${i<2?'Operasyon başlayınca güncellenecek':'Seçimlerinle değişir'}</small></div>
+    </section>`;
+  }
+  function side(){
+    const remaining=state.quote-total(),isSelected=allVendors();
+    return `<aside class="side">
+      <div class="side-card"><div class="side-title">MÜŞTERİ BRİFİ</div><h3 style="font-size:16px;margin:0 0 12px">Blue Horizon Maritime</h3>
+        <div class="row"><span>Konuk</span><span class="right">45 kişi</span></div>
+        <div class="row"><span>Uluslararası misafir</span><span class="right">32 kişi / 7 ülke</span></div>
+        <div class="row"><span>Süre</span><span class="right">3 gün / 2 gece</span></div>
+        <div class="row"><span>Lokasyon</span><span class="right">Antalya</span></div>
+        <div class="row"><span>Müşteri üst limiti</span><span class="right">${money(BUDGET)}</span></div>
+        <div class="divider"></div>
+        <p>Öncelikler: <b>dakiklik</b>, güçlü kurumsal imaj, bütçe kontrolü ve güvenli tesis ziyareti.</p>
+      </div>
+      <div class="side-card"><div class="side-title">OPERASYON SAĞLIĞI</div>
+       <div class="row"><span>Memnuniyet</span><strong>${sat()}/100</strong></div><div class="bar"><span style="width:${sat()}%"></span></div>
+       <div class="row"><span>Dakiklik</span><strong>${punc()}/100</strong></div><div class="bar orange"><span style="width:${punc()}%"></span></div>
+       <p class="mini-note">İtibar değişimi: <b class="${rep()>=0?'positive':'negative'}">${rep()>0?'+':''}${rep()}</b> puan. Proje sonucu tüm kararlarına bağlıdır.</p>
+      </div>
+      ${isSelected?`<div class="side-card"><div class="side-title">ANLIK BÜTÇE</div>
+       <div class="row"><span>Teklif</span><span class="right">${money(state.quote)}</span></div>
+       <div class="row"><span>Öngörülen toplam gider</span><span class="right">${money(total())}</span></div>
+       <div class="divider"></div><div class="row"><strong>Kalan kâr</strong><strong class="${remaining<0?'negative':'positive'}">${money(remaining)}</strong></div>
+       <p>${remaining<0?'Proje şu anda zarar yazıyor. Sonraki kararlarında maliyeti sınırlamaya çalış.':'Beklenmedik masraflar bu kârı azaltabilir.'}</p></div>`:''}
+    </aside>`;
+  }
+  function header(){
+    const idx=stageIndex(),progress=idx===0?0:Math.round((idx/(phases.length-1))*100);
+    return `<header class="topbar"><div class="top-inner"><div class="brand">ROTA.<small>EXPERIENCES</small></div><a class="to-baba" href="../../index.html#oyunlar" target="_top">← BABA. Oyunlar</a><div class="top-right"><span class="top-tag">CASE STUDY / 001</span><button class="reset-top" data-action="reset">↺ Sıfırla</button></div></div></header>
+    <main class="shell">
+    <section class="banner"><div class="banner-copy"><div class="eyebrow">INTERACTIVE MISSION · CORPORATE EVENTS</div><h1>Uluslararası Denizcilik Konferansı</h1><p>Teklifini oluştur. Ekibini görevlendir. Üç günü yönet. Doğru operasyon kararlarıyla müşterinin güvenini ve şirketinin kârını kazan.</p></div>
+     <div class="ship" aria-hidden="true"><svg viewBox="0 0 320 190" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M22 131h288l-31 35H61L22 131Z" fill="#38B7B2" opacity=".55"/><path d="M81 100h157v31H81v-31Z" fill="#C5E5DE" opacity=".27"/><path d="M98 71h133v29H98V71Z" fill="#D7F6ED" opacity=".25"/><path d="M118 42h92v29h-92V42Z" fill="#E3F5EE" opacity=".25"/><path d="M142 15h11v27h-11V15Z" fill="#AADAD6"/><path d="M43 172c27-8 53-8 80 0s53 8 80 0 54-8 81 0" stroke="#6FD7D5" stroke-width="4" opacity=".6"/><path d="M17 181c27-8 53-8 80 0s53 8 80 0 54-8 81 0" stroke="#6FD7D5" stroke-width="2" opacity=".4"/><path d="M249 29l42 19" stroke="#86CECC" stroke-width="2" stroke-linecap="round"/><path d="M291 48h-24" stroke="#86CECC" stroke-width="2" stroke-linecap="round"/></svg></div>
+    </section><div class="mission-route"><span class="${idx>=2?'passed':''}">◉ Teklif</span><span class="${idx>=6?'passed':''}">◉ Planlama</span><span class="${idx>=7?'passed':''}">◉ Operasyon</span><span class="${idx===phases.length-1?'passed':''}">◉ Sonuç</span></div>${summary()}
+    <section class="progress-section"><div class="progress-line"><strong>GÖREV İLERLEMESİ</strong><span>${idx===0?'Brifing':idx===phases.length-1?'Tamamlandı':`Aşama ${idx} / ${phases.length-2}`} · %${progress}</span></div><div class="progress-track"><div class="progress-fill" style="width:${progress}%"></div></div></section>
+    <div class="layout"><section class="stage" id="main-stage" aria-live="polite">`;
+  }
+  function footer(){return `</section>${side()}</div><footer class="footer">ROTA. EXPERIENCES © CONFERENCE SIMULATOR · Kurgu senaryo, temsili maliyetler · Tüm ilerleme bu cihazda saklanır.</footer></main>`;}
+  function briefing(){return `<span class="stage-index">GÖREV DOSYASI / 001</span><h2>İlk büyük kurumsal müşterin.</h2>
+    <p class="lead">Blue Horizon Maritime şirketi Antalya'da 45 kişilik, üç günlük uluslararası bir konferans düzenlemek istiyor. Sen ROTA. Experiences'ın kurucusu ve operasyon yöneticisisin. <b>Kazanacağın iş, sonraki büyüme fırsatlarının kapısını açabilir.</b></p>
+    <div class="brief-grid"><div class="brief-tile"><span>Katılımcılar</span><strong>45 kişi</strong></div><div class="brief-tile"><span>Konaklama</span><strong>32 oda × 2 gece</strong></div><div class="brief-tile"><span>Etkinlik süresi</span><strong>3 gün</strong></div><div class="brief-tile"><span>Müşterinin bütçesi</span><strong>${money(BUDGET)}</strong></div></div>
+    <div class="callout"><strong>Hedef:</strong> Müşteri memnuniyetini 72+, dakikliği 65+ puanda tut ve sözleşmeyi zarar etmeden tamamla. Yüksek kâr tek başına iyi sonuç için yeterli değil.</div>
+    <p class="section-label">Oyunda seni bekleyenler</p>
+    <p class="lead">Bir fiyat teklifi, beş tedarikçi ve ekip kararı, dört canlı operasyon krizi. Kararlar geri alınabilir; sürpriz olaylar başladıktan sonra daha önce seçtiğin bütçeyle ilerlersin.</p>
+    <div class="actions"><button class="btn" data-action="start">Müşteriye teklif hazırla →</button></div>`;}
+  function bid(){return `<span class="stage-index">SATIŞ / TEKLİF</span><h2>Teklif fiyatını belirle.</h2>
+    <p class="lead">Müşteri yönetimi işi tek bir firmaya verecek. Fiyatın yükseldikçe operasyon için daha fazla alanın olur, ancak müşterinin onaylı <strong>${money(BUDGET)}</strong> bütçe sınırı var.</p>
+    <div class="price-quote"><div class="quote-head"><div><span>ROTA. / TOPLAM HİZMET TEKLİFİ</span><br><strong id="quote-value">${money(state.quote)}</strong></div><div style="text-align:right"><span>Seçenek<br>tek sözleşme / tüm kapsam</span></div></div>
+    <input class="range" type="range" id="price-range" min="350000" max="450000" step="5000" value="${state.quote}" aria-label="Teklif fiyatı" />
+    <div class="range-end"><span>₺350.000</span><span>₺450.000</span></div><div class="quote-strip"><span>Örnek dengeli paket maliyeti <b>${money(363000)}</b></span><b id="price-difference">${money(state.quote-363000)} fark</b></div></div>
+    <div class="callout ${state.negotiating?'alert':''}" id="bid-feedback">${state.negotiating?`<strong>Müşteri karşı teklifi:</strong> İstediğin fiyat bütçeyi aşıyor. Sözleşme en fazla ${money(BUDGET)} üzerinden onaylanabilir.`:`<strong>Teklif kapsamı:</strong> 32 misafir için 2 gece konaklama, 45 kişi konferans, transferler, yemekler ve son gün tesis ziyareti. Tedarikçi seçimlerini sözleşme onayından sonra yapacaksın.`}</div>
+    <div class="actions"><button class="btn" data-action="submit-bid">Teklifi müşteriye gönder →</button>${state.negotiating?'<button class="btn secondary" data-action="accept-counter">Karşı teklifi kabul et · ₺410.000</button>':''}<button class="btn ghost" data-action="back">← Brifing</button></div>
+    <p class="fine">Fiyatlar yalnızca bu simülasyon için hazırlanmıştır; gerçek hizmet teklifi veya piyasa araştırması değildir.</p>`;}
+  function choicesPage(key){
+    const data=vendors[key]||incidents[key];const crisis=!!incidents[key];
+    const intro=crisis?`<div class="stage-situation"><span class="situation-time ${key==='av'?'urgent':''}">${data.time}</span>${data.situation}</div>`:'';
+    return `<span class="stage-index">${data.stage}</span><h2>${data.title}</h2><p class="lead">${data.lead}</p>${intro}
+      <div class="section-label">${crisis?'Nasıl müdahale edeceksin?':'Bir tedarikçi seç'}</div>
+      <div class="option-grid">${data.items.map((item,index)=>{
+        let badge=item.sat<0||item.punc<0?'bad':'';
+        return `<button type="button" class="opt" data-action="choose" data-section="${key}" data-index="${index}"><span><span class="opt-name">${index===0?'01':index===1?'02':'03'} · ${item.name}</span><span class="opt-desc">${item.desc}</span></span><span><span class="opt-price">${item.cost===0?'Ücretsiz':'+'+money(item.cost)}</span><span class="opt-impact ${badge}">${item.tag}</span></span></button>`;
+      }).join('')}</div>
+      <div class="choice-foot">${crisis?'Bir seçeneğe dokunduğunda olay sonuçlanır ve sonraki operasyon aşamasına geçersin.':'Her seçim proje maliyetini ve hizmet kalitesini değiştirir. Operasyon sırasında beklenmeyen giderler oluşabilir.'}<br>${crisis?'':'Not: '+data.hint}</div>
+      <div class="actions">${!crisis?'<button class="btn ghost" data-action="back">← Önceki aşama</button>':''}</div>`;
+  }
+  function finish(){
+    const gain=margin(), satisfaction=sat(), onTime=punc(), approved=state.accepted;
+    const profitOK=gain>=0, satOK=satisfaction>=72, punctOK=onTime>=65;
+    let status,blurb,grade;
+    if(profitOK&&satisfaction>=85&&onTime>=85&&gain>=9000){status='Mükemmel operasyon';grade='A+';blurb='Müşteri çok memnun kaldı, ROTA. kâr etti. Yeni uluslararası projeler için güçlü bir referans kazandın.'}
+    else if(profitOK&&satOK&&punctOK){status='Konferans başarıyla tamamlandı';grade='A';blurb='Müşteri beklentilerini karşılayarak projeyi kârla kapattın. Bir sonraki etkinlik için güven kazandın.'}
+    else if(!profitOK&&satOK&&punctOK){status='Harika hizmet, ama zarar ettin';grade='B';blurb='Misafirler mutlu; fakat acil giderler ve seçimler bütçeni aştı. Sonraki teklifinde kâr payını daha iyi korumalısın.'}
+    else if(profitOK){status='Kâr var, müşteri ilişkisi riskte';grade='C';blurb='Bilanço olumlu olsa da memnuniyet veya dakiklik yeterli değil. Tekrar iş alma ihtimali düştü.'}
+    else{status='Görev beklenen sonucu vermedi';grade='D';blurb='Hem bütçe hem müşteri deneyimi baskı altında kaldı. Doğru tedarik ve kriz planlarıyla yeniden dene.'}
+    const breakdown=[['Otel',entry('hotel')?.cost||0],['Konferans alanı',entry('venue')?.cost||0],['Transfer',entry('transport')?.cost||0],['İkram ve gala',entry('catering')?.cost||0],['Operasyon ekibi',entry('staff')?.cost||0],['Teknik ekip / sigorta / koordinasyon',FEE],['Geciken uçuş çözümü',entry('flight')?.cost||0],['Teknik arıza çözümü',entry('av')?.cost||0],['Yağmur krizi çözümü',entry('weather')?.cost||0],['Tesis giriş izni çözümü',entry('permit')?.cost||0]];
+    const details=keys.map(k=>{const c=entry(k);return `<div class="recap-item"><b>${({hotel:'Otel',venue:'Salon',transport:'Transfer',catering:'İkram',staff:'Ekip',flight:'Uçuş gecikmesi',av:'Teknik arıza',weather:'Gala krizi',permit:'Tesis girişi'})[k]}</b>${c?c.name:'Seçim yapılmadı'}</div>`}).join('');
+    return `<span class="stage-index">GÖREV RAPORU / TAMAMLANDI</span><h2>Üç günlük konferans sona erdi.</h2><p class="lead">Müşterinin geri bildirimi ve projenin mali tablosu hazır. İşte kararlarının sonucu:</p>
+    <div class="result-lead"><div class="eyebrow" style="color:#a8eed7">PROJE DERECESİ / ${grade}</div><h3>${status}</h3><p>${blurb}</p></div>
+    <div class="result-kpis"><div class="result-kpi"><span>Kâr / zarar</span><strong class="${gain<0?'negative':'positive'}">${money(gain)}</strong></div><div class="result-kpi"><span>Kâr marjı</span><strong>${pct()}%</strong></div><div class="result-kpi"><span>Memnuniyet</span><strong>${satisfaction}/100</strong></div><div class="result-kpi"><span>Dakiklik</span><strong>${onTime}/100</strong></div><div class="result-kpi"><span>İtibar artışı</span><strong>${rep()>0?'+':''}${rep()} puan</strong></div><div class="result-kpi"><span>Sözleşme</span><strong>${approved?'Kazanıldı':'—'}</strong></div></div>
+    <div class="cost-table"><h3 style="margin:0 0 8px;font-size:18px">Finansal rapor</h3><div class="cost-row"><span>Proje geliri</span><strong>${money(state.quote)}</strong></div>${breakdown.map(([k,v])=>`<div class="cost-row"><span>${k}</span><strong>− ${money(v)}</strong></div>`).join('')}<div class="cost-row total"><span>Toplam maliyet</span><strong>${money(total())}</strong></div><div class="cost-row total"><span>Net operasyon kârı / zararı</span><strong class="${gain<0?'negative':'positive'}">${money(gain)}</strong></div></div>
+    <details style="margin-top:20px"><summary style="cursor:pointer;font-weight:800;font-size:14px">Tüm kararları incele</summary>${details}</details>
+    <div class="callout"><strong>Ekip ve tedarikçi sinerjileri:</strong> ${synergy().notes.join(' ')||'Sinerji oluşmadı. Doğru ekibi ve tedarikçileri eşleştirerek krizlerde avantaj kazanabilirsin.'}</div>
+    <div class="callout"><strong>Oyunun mesajı:</strong> Müşteri memnuniyeti, kusursuz zamanlama ve kâr aynı anda yönetilmesi gereken üç ayrı hedeftir. Yüksek fiyatla değil, doğru operasyon sistemiyle kazanırsın.</div>
+    <div class="callout"><strong>Kariyer rekorun:</strong> ${(()=>{try{return JSON.parse(localStorage.getItem('rota_conference_records_v2'))?.bestScore||0}catch(_){return 0}})()} puan.</div><div class="actions"><button class="btn" data-action="reset">Yeni bir stratejiyle tekrar oyna ↺</button><a class="btn secondary" href="../../index.html#oyunlar" target="_top">BABA. oyunlarına dön</a></div>`;
+  }
+  function render(scroll=false){
+    if(state.phase==='final'&&!state.scored){
+      let rec={};try{rec=JSON.parse(localStorage.getItem('rota_conference_records_v2'))||{}}catch(_){}
+      const score=Math.max(0,Math.round(sat()*2+punc()+margin()/1500));
+      rec.runs=(rec.runs||0)+1;rec.bestScore=Math.max(rec.bestScore||0,score);rec.bestProfit=Math.max(rec.bestProfit||-1e9,margin());
+      state.scored=true;try{localStorage.setItem('rota_conference_records_v2',JSON.stringify(rec))}catch(_){}
+    }
+    let main=state.phase==='brief'?briefing():state.phase==='bid'?bid():state.phase==='final'?finish():choicesPage(state.phase);
+    document.getElementById('app').innerHTML=header()+main+footer();
+    persist();
+    if(scroll)document.getElementById('main-stage')?.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+  }
+  document.addEventListener('click',ev=>{
+    const b=ev.target.closest('button[data-action]');if(!b)return;
+    const action=b.dataset.action;
+    if(action==='reset'){if(state.phase!=='brief'&&!confirm('İlerlemen sıfırlansın ve konferans yeniden başlasın mı?'))return;state=fresh();render(true);return;}
+    if(action==='start'){state.phase='bid';render(true);return;}
+    if(action==='submit-bid'){
+      if(state.quote>BUDGET){state.negotiating=true;render(false);document.getElementById('bid-feedback')?.scrollIntoView({behavior:'smooth',block:'nearest'});return;}
+      state.accepted=true;state.negotiating=false;state.phase='hotel';render(true);return;
+    }
+    if(action==='accept-counter'){state.quote=BUDGET;state.accepted=true;state.negotiating=false;state.phase='hotel';render(true);return;}
+    if(action==='choose'){
+      const key=b.dataset.section,idx=Number(b.dataset.index);
+      if(!keys.includes(key)||!Number.isInteger(idx)||!((vendors[key]||incidents[key])?.items[idx]))return;
+      state.choices[key]=idx;
+      keys.filter(k=>phases.indexOf(k)>phases.indexOf(key)).forEach(k=>state.choices[k]=null);
+      const next=phases.indexOf(key)+1;
+      state.phase=phases[next]||'final';render(true);return;
+    }
+    if(action==='back'){
+      const index=stageIndex();if(index>0&&index<=phases.indexOf('flight')){state.phase=phases[index-1];render(true)}return;
+    }
+    // Sonuçtan geriye dönerek sözleşmeyi değiştirmek yerine yeni oyun başlatılır.
+  });
+  document.addEventListener('input',ev=>{
+    if(ev.target.id!=='price-range')return;
+    state.quote=Number(ev.target.value);
+    const offer=document.getElementById('quote-value');if(offer)offer.textContent=money(state.quote);
+    const diff=document.getElementById('price-difference');if(diff)diff.textContent=money(state.quote-363000)+' fark';
+    const metric=document.getElementById('metric-quote');if(metric)metric.textContent=money(state.quote);
+    const profit=document.getElementById('metric-profit');if(profit)profit.textContent=money(state.quote-363000);
+    state.negotiating=false;
+    persist();
+  });
+  render();
+})();
+</script>
+</body>
+</html>
