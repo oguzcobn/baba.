@@ -44,6 +44,14 @@ p{font-size:14px;line-height:1.65;color:#e0f2e9}
 .metrics div{flex:1}.metrics strong{display:block;font-size:28px;color:#ffe681}.metrics small{font-size:10px;letter-spacing:.1em;color:#d7ece0}
 .micro{font-size:11px;opacity:.75;margin-top:18px}
 #finish{display:none}
+.difficulty-picker{display:flex;gap:7px;justify-content:center;margin:16px 0 3px}
+.difficulty-picker button{flex:1;min-width:0;border:1px solid #9bc7b266;background:#163d35a8;color:#deefe8;border-radius:12px;padding:12px 5px;font-size:12px;font-weight:1000;letter-spacing:.04em}
+.difficulty-picker button[aria-pressed="true"]{background:#f4d260;border-color:#f4d260;color:#29392c;box-shadow:0 3px 0 #b5943e}
+.difficulty-picker button:focus-visible{outline:3px solid #fff0a6;outline-offset:2px}
+.difficulty-note{min-height:17px;font-size:11px;color:#c5e0d0;margin-top:7px}
+#danger{position:absolute;z-index:5;left:50%;top:64px;transform:translateX(-50%);font-size:11px;font-weight:900;letter-spacing:.08em;border-radius:15px;padding:7px 11px;background:#143d34ab;color:#d6eadc;white-space:nowrap;pointer-events:none}
+#danger.hot{background:#ab392bc4;color:#fff1e3;animation:pulseDanger .8s alternate infinite}
+@keyframes pulseDanger{to{opacity:.65}}
 #instructions{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;margin-top:17px}
 #instructions span{background:#ffffff16;padding:7px 10px;border-radius:9px;font-size:11px;font-weight:850}
 body.playing #mobileTip,body.playing #controls{display:flex}
@@ -60,7 +68,7 @@ body:not(.playing) #mobileTip,body:not(.playing) #controls{display:none}
 <div id="speed">HIZ <span class="bar"><i id="speedFill"></i></span></div>
 <div class="hud-right"><div class="stat pill"><small>REKOR</small><strong><span id="best">0</span><em> m</em></strong></div><button id="sound" class="icon" title="Sesi aç/kapat" aria-label="Sesi aç/kapat">♪</button><button id="full" class="icon" title="Tam ekran" aria-label="Tam ekran">⛶</button><button id="pause" class="icon" title="Duraklat" aria-label="Duraklat">Ⅱ</button></div>
 </div>
-<div id="notice" aria-live="polite"></div>
+<div id="notice" aria-live="polite"></div><div id="danger" hidden>TAKİP: -- m</div>
 <div id="controls"><button class="control" id="left" aria-label="Sola dön">❮</button><button class="control" id="right" aria-label="Sağa dön">❯</button></div>
 <div id="mobileTip">KAYDIRARAK YÖNLENDİR</div>
 <div id="overlay">
@@ -69,6 +77,12 @@ body:not(.playing) #mobileTip,body:not(.playing) #controls{display:none}
 <div class="cheese">🧀</div>
 <h1 id="headline">PEYNİR<br><span>KAÇIŞI!</span></h1>
 <p id="description">Peynir tekerleğini çimenli yamaçtan aşağı yuvarla. <span class="emph">Kütüklerden, kayalardan ve peşindeki koşuculardan kaç!</span></p>
+<div class="difficulty-picker" role="group" aria-label="Zorluk seviyesi">
+  <button type="button" data-difficulty="easy">KOLAY</button>
+  <button type="button" data-difficulty="normal">NORMAL</button>
+  <button type="button" data-difficulty="hard">ZOR</button>
+</div>
+<div id="difficultyNote" class="difficulty-note" aria-live="polite"></div>
 <div id="finish" class="metrics"><div><strong id="finalDistance">0 m</strong><small>MESAFE</small></div><div><strong id="finalBest">0 m</strong><small>EN İYİ</small></div></div>
 <button id="start" class="cta">YUVARLANMAYA BAŞLA ▶</button>
 <div id="instructions"><span>← → / A D</span><span>📱 Kaydır</span><span>🪵 Engellerden kaç</span><span>🏃 Yakalanma</span></div>
@@ -86,6 +100,23 @@ var distLabel=$("distance"),bestLabel=$("best"),speedFill=$("speedFill"),notice=
 var W=window.THREE,renderer,scene,camera,sun,wheel,track=[],obstacles=[],chasers=[],dust=[];
 var mode="intro",SLOPE=.175,LIMIT=470,player={x:0,z:2,vx:0,speed:10,jump:0,vy:0,spin:0,hit:0},distance=0,elapsed=0,best=0,runSeed=52,raf=0,last=0,timer=0;
 var inp={l:false,r:false,drag:false,dragX:0},muted=false,ctx=null,camFocus=null,shake=0;
+var DIFFICULTIES={
+ easy:{label:"KOLAY",desc:"Rahat kaçış · daha yavaş takip, uzun toparlanma.",speed:1.045,bonus:.8,accel:1.15,turn:3.6,catchX:.72,catchZ:1.12,grace:8.5,stumble:1.35,avoid:1},
+ normal:{label:"NORMAL",desc:"Dengeli mücadele · yaklaşan koşucular hızlanır.",speed:1.14,bonus:1.25,accel:1.8,turn:5.4,catchX:1.03,catchZ:1.40,grace:5.5,stumble:1,avoid:1.35},
+ hard:{label:"ZOR",desc:"Agresif takip · hızlı koşucular, kısa toparlanma.",speed:1.245,bonus:2.6,accel:2.6,turn:7.0,catchX:1.35,catchZ:1.70,grace:3.5,stumble:.72,avoid:1.75}
+};
+var difficulty="normal",cfg=DIFFICULTIES.normal;
+try{var savedDifficulty=localStorage.getItem("baba_cheese_difficulty");if(DIFFICULTIES[savedDifficulty])difficulty=savedDifficulty}catch(e){}
+cfg=DIFFICULTIES[difficulty];
+function selectDifficulty(value){
+ if(!DIFFICULTIES[value])return;
+ difficulty=value;cfg=DIFFICULTIES[value];
+ try{localStorage.setItem("baba_cheese_difficulty",difficulty)}catch(e){}
+ document.querySelectorAll("[data-difficulty]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.difficulty===difficulty))});
+ $("difficultyNote").textContent=cfg.desc;
+ readBest();
+}
+
 var MOBILE=matchMedia("(pointer:coarse)").matches;
 var colors={sky:0x91bcd1,grass:0x6fa65d,yellow:0xe9bd49,log:0x784626,stone:0x7f898a};
 function gy(z){return SLOPE*z}
@@ -96,8 +127,8 @@ function mat(c,rough){return new W.MeshStandardMaterial({color:c,roughness:rough
 function mesh(g,m,sh){var o=new W.Mesh(g,m);o.castShadow=!!sh;o.receiveShadow=true;return o}
 function addTo(parent,g,m,px,py,pz,sh){var o=mesh(g,m,sh);o.position.set(px||0,py||0,pz||0);parent.add(o);return o}
 function note(s){notice.textContent=s;notice.classList.remove("show");void notice.offsetHeight;notice.classList.add("show")}
-function readBest(){try{best=Math.max(0,Number(localStorage.getItem("baba_cheese_best"))||0)}catch(e){best=0}bestLabel.textContent=best}
-function saveBest(){if(distance>best){best=Math.floor(distance);try{localStorage.setItem("baba_cheese_best",String(best))}catch(e){}}bestLabel.textContent=best}
+function readBest(){try{best=Math.max(0,Number(localStorage.getItem("baba_cheese_best_"+difficulty))||0, difficulty==="normal" ? Number(localStorage.getItem("baba_cheese_best"))||0 : 0)}catch(e){best=0}bestLabel.textContent=best}
+function saveBest(){if(distance>best){best=Math.floor(distance);try{localStorage.setItem("baba_cheese_best_"+difficulty,String(best));localStorage.setItem("baba_cheese_best",String(Math.max(best,Number(localStorage.getItem("baba_cheese_best"))||0)))}catch(e){}}bestLabel.textContent=best}
 function sound(freq,duration,type,vol){if(muted)return;try{if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();var o=ctx.createOscillator(),gain=ctx.createGain(),t=ctx.currentTime;o.type=type||"sine";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(35,freq*.44),t+duration);gain.gain.setValueAtTime(Math.max(.001,vol||.05),t);gain.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(gain);gain.connect(ctx.destination);o.start(t);o.stop(t+duration)}catch(e){}}
 function init(){
  if(!W){description.textContent="3D motoru yüklenemedi. Sayfayı yeniden aç.";start.disabled=true;return}
@@ -126,7 +157,7 @@ function init(){
  $("sound").onclick=function(){muted=!muted;this.textContent=muted?"♩":"♪";this.setAttribute("aria-pressed",String(!muted));if(!muted)sound(550,.15)};
  $("full").onclick=function(){if(document.fullscreenElement){document.exitFullscreen().catch(function(){})}else if(root.requestFullscreen){root.requestFullscreen().catch(function(){})}};
  start.onclick=function(){if(mode==="pause")resumeGame();else reset()};
- readBest();showPreview();resize();raf=requestAnimationFrame(frame);
+ document.querySelectorAll("[data-difficulty]").forEach(function(b){b.onclick=function(){selectDifficulty(b.dataset.difficulty)}});selectDifficulty(difficulty);showPreview();resize();raf=requestAnimationFrame(frame);
 }
 function updateDrag(e){var rect=renderer.domElement.getBoundingClientRect();inp.dragX=clamp(((e.clientX-rect.left)/rect.width-.5)*2.5,-1,1);e.preventDefault()}
 function bindControl(el,key){el.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();inp[key]=true;el.classList.add("on");el.setPointerCapture(e.pointerId)});["pointerup","pointercancel","lostpointercapture"].forEach(function(t){el.addEventListener(t,function(){inp[key]=false;el.classList.remove("on")})})}
@@ -220,7 +251,7 @@ function posePerson(c){
  c.head.position.copy(n[J.head]);c.head.quaternion.setFromUnitVectors(UP,headDir);
 }
 function knockRunner(c,ob){
- c.state="ragdoll";c.fall=1.7+rand()*.75;c.cool=3.2;c.spd=Math.max(3,c.spd*.4);c.ragAge=0;
+ c.state="ragdoll";c.fall=(1.7+rand()*.75)*cfg.stumble;c.cool=3.2*cfg.stumble;c.spd=Math.max(3,c.spd*.4);c.ragAge=0;
  var side=c.x>ob.x?1:-1;
  for(var k=0;k<16;k++){
   c.nodes[k].copy(c.pose[k]);c.prev[k].copy(c.nodes[k]);
@@ -255,12 +286,12 @@ function stepRagdoll(c,dt){
  }
 }
 function resetRunner(c,i){
- c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=6.5+i*1.15;c.spd=8.5+i*.3;c.phase=i;c.fall=0;c.cool=0;c.state="run";c.ragAge=0;c.recover=0;
+ c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=5.4+i*.85;c.spd=9.5+i*.3;c.phase=i;c.fall=0;c.cool=0;c.state="run";c.ragAge=0;c.recover=0;
  setRunPose(c);c.nodes.forEach(function(n,k){n.copy(c.pose[k]);c.prev[k].copy(n)});c.group.rotation.set(0,0,0);posePerson(c);
 }
 function updateRunner(c,dt,index){
- var d=c.z-player.z,desired=clamp(player.x+Math.sin(elapsed*.8+index*1.7)*(.4+index*.08),-10.3,10.3);
- c.phase+=dt*clamp(c.spd*1.3,8,28);
+ var gap=c.z-player.z,lead=clamp(player.x+player.vx*.22+Math.sin(elapsed*.86+index*1.45)*(.28+index*.085),-10.7,10.7);
+ c.phase+=dt*clamp(c.spd*1.3,8,39);
  c.cool=Math.max(0,c.cool-dt);
  setRunPose(c);
  if(c.state==="ragdoll"){
@@ -268,26 +299,45 @@ function updateRunner(c,dt,index){
   stepRagdoll(c,dt);
   if(c.fall<=0){c.state="recover";c.recover=0;c.recoverFrom=c.nodes.map(function(n){return n.clone()})}
  }else if(c.state==="recover"){
-  c.z-=Math.max(2,c.spd*.4)*dt;c.recover=Math.min(1,c.recover+dt/ .7);
+  c.z-=Math.max(2,c.spd*.4)*dt;c.recover=Math.min(1,c.recover+dt/(.72*cfg.stumble));
   var t=c.recover*c.recover*(3-2*c.recover);
   c.nodes.forEach(function(n,k){n.copy(c.recoverFrom[k]).lerp(c.pose[k],t)});
-  if(c.recover>=1){c.state="run";c.cool=Math.max(c.cool,.8)}
+  if(c.recover>=1){c.state="run";c.cool=Math.max(c.cool,.6)}
  }else{
-  c.x+=clamp(desired-c.x,-dt*(2.8+index*.15),dt*(2.8+index*.15));
-  var target=clamp(player.speed*(.94+index*.012)+.45+Math.max(0,d-7)*.075,7,21);
-  c.spd=mix(c.spd,target,dt*.85);c.z-=c.spd*dt;
+  // Leaders avoid visible hazards, preserving ragdoll impacts if they misjudge.
+  if(c.cool===0&&gap<18){
+   for(var ai=0;ai<obstacles.length;ai++){
+    var ob=obstacles[ai],front=c.z-ob.z;
+    if(front>0&&front<3.8&&Math.abs(lead-ob.x)<ob.r+.58){
+     var away=lead>=ob.x?1:-1,alternative=ob.x+away*(ob.r+1.3+cfg.avoid*.25);
+     lead=clamp(alternative,-10.7,10.7);
+     break;
+    }
+   }
+  }
+  // Guaranteed positive closing speed at every level, but not an instant catch.
+  var catchUp=clamp(Math.max(gap-2.7,0)*.11,0,4.2);
+  var target=clamp(player.speed*cfg.speed+cfg.bonus+catchUp+index*.22,10,31.5);
+  c.spd=mix(c.spd,target,clamp(dt*cfg.accel,0,1));
+  c.x+=clamp(lead-c.x,-dt*(cfg.turn+index*.22),dt*(cfg.turn+index*.22));
+  c.z-=c.spd*dt;
+  if(c.z<player.z-.12&&Math.abs(c.x-player.x)>cfg.catchX){
+   // Do not let an off-lane runner sprint out of range ahead of the player.
+   c.z=Math.max(c.z,player.z-cfg.catchZ*.5);
+   c.spd=Math.min(c.spd,player.speed+.8);
+  }
   c.nodes.forEach(function(n,k){n.copy(c.pose[k])});
   if(c.cool===0){
    for(var oi=0;oi<obstacles.length;oi++){
-    var ob=obstacles[oi];
-    if(Math.abs(c.z-ob.z)<.82&&Math.abs(c.x-ob.x)<ob.r+.27){knockRunner(c,ob);break}
+    var hit=obstacles[oi];
+    if(Math.abs(c.z-hit.z)<.74&&Math.abs(c.x-hit.x)<hit.r+.25){knockRunner(c,hit);break}
    }
   }
  }
  c.group.position.set(c.x,gy(c.z)+.065+(c.state==="run"?Math.abs(Math.sin(c.phase))*.045:0),c.z);
  c.group.rotation.set(0,Math.sin(c.phase*.2)*.05,0);
  posePerson(c);
- if(c.state==="run"&&elapsed>3&&d<1.15&&Math.abs(c.x-player.x)<.93)gameOver(false);
+ if(c.state==="run"&&elapsed>cfg.grace&&Math.abs(c.z-player.z)<cfg.catchZ&&Math.abs(c.x-player.x)<cfg.catchX){gameOver(false)}
 }
 function makeChasers(){for(var i=0;i<5;i++){var a=makePerson(i);chasers.push(a);scene.add(a.group)}}
 
@@ -339,7 +389,7 @@ function drawWorld(){
 }
 function reset(){
  player={x:0,z:2,vx:0,speed:10,jump:0,vy:0,spin:0,hit:0};
- distance=0;elapsed=0;shake=0;inp.l=false;inp.r=false;inp.drag=false;
+ distance=0;elapsed=0;shake=0;readBest();$("danger").hidden=false;inp.l=false;inp.r=false;inp.drag=false;
  chasers.forEach(function(c,i){resetRunner(c,i)});
  dust.forEach(function(p){scene.remove(p.mesh)});dust.length=0;
  mode="playing";overlay.hidden=true;document.body.classList.add("playing");$("pause").textContent="Ⅱ";timer=0;
@@ -350,7 +400,7 @@ function showPreview(){wheel.position.set(0,gy(2)+.8,2);chasers.forEach(function
 function pauseGame(){if(mode!=="playing")return;mode="pause";overlay.hidden=false;document.body.classList.remove("playing");headline.innerHTML="DURAKLAT<span>ILDI</span>";description.textContent="Peynir seni bekliyor. Hazır olduğunda tekrar devam et.";start.textContent="DEVAM ET ▶";$("finish").style.display="none";$("pause").textContent="▶"}
 function resumeGame(){if(mode!=="pause")return;mode="playing";overlay.hidden=true;document.body.classList.add("playing");$("pause").textContent="Ⅱ";last=performance.now()}
 function gameOver(win){
- if(mode!=="playing")return;mode=win?"won":"lost";document.body.classList.remove("playing");saveBest();
+ if(mode!=="playing")return;mode=win?"won":"lost";document.body.classList.remove("playing");$("danger").hidden=true;saveBest();
  overlay.hidden=false;
  headline.innerHTML=win?"MUHTEŞEM<span> KAÇIŞ!</span>":"PEYNİR<span> YAKALANDI!</span>";
  description.textContent=win?"Yokuşu geçtin, kimse peynire yetişemedi!":"Kalabalık sana yetişti. Daha uzağa gidebilmek için engellerden kaç!";
@@ -389,6 +439,8 @@ function advance(dt){
  for(var pi=dust.length-1;pi>=0;pi--){var p=dust[pi];p.life-=dt;if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();dust.splice(pi,1)}else{p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=10*dt;p.mesh.scale.setScalar(clamp(p.life/.7,0,1))}}
  distLabel.textContent=Math.floor(distance);speedFill.style.width=Math.floor(clamp(player.speed/22,0,1)*100)+"%";
  if(distance>best)bestLabel.textContent=Math.floor(distance);
+ var nearest=Infinity;for(var ci=0;ci<chasers.length;ci++){if(chasers[ci].state==="run")nearest=Math.min(nearest,Math.abs(chasers[ci].z-player.z))}
+ var dangerEl=$("danger");dangerEl.hidden=false;dangerEl.textContent="🏃 "+cfg.label+" · "+(nearest===Infinity?"--":nearest.toFixed(1))+" m";dangerEl.classList.toggle("hot",nearest<5);
  if(Math.floor(distance)%100<2&&distance>70&&Math.floor(distance)!==timer){timer=Math.floor(distance);if(timer%100===0)note(timer+" METRE!")}
  if(distance>=LIMIT){gameOver(true)}
 }
