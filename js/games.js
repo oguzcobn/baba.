@@ -153,6 +153,7 @@ const App = (() => {
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
+    { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
@@ -467,6 +468,19 @@ const App = (() => {
       if (req) { try { await req.call(frame); return; } catch (_) {} }
       window.open(ROTA_CONFERENCE_URL, '_blank', 'noopener');
     };
+  }
+
+  /* ==================== PEYNİR KAÇIŞI 3D ==================== */
+  function runawayCheese() {
+    openEmbeddedGame({
+      title: T('Peynir Kaçışı 3D', 'Cheese Escape 3D'),
+      url: 'games/runaway-cheese/index.html',
+      tag: T('BABA. ARCADE · 3D Fizik Kovalamacası', 'BABA. ARCADE · 3D Physics Chase'),
+      lead: T('Peyniri yokuş aşağı yuvarla, engellerin üzerinden sıçra ve peşindeki koşuculara yakalanma!', 'Roll a cheese wheel downhill, bounce past obstacles and escape the crowd of runners!'),
+      tip: T('Bilgisayarda ← → veya A/D; telefonda dokunarak ya da kaydırarak yönlendir. Tam ekran önerilir.', 'Use ← → or A/D on desktop; touch buttons or swipe on mobile. Full screen recommended.')
+    });
+    const page = root().querySelector('.game-page');
+    if (page) page.classList.add('cheese-page');
   }
 
   /* ==================== 2048 ==================== */
@@ -787,6 +801,7 @@ const App = (() => {
     else if (r === 'hungry-shark') hungryShark();
     else if (r === 'dsan-shipyard') dsanShipyard();
     else if (r === 'rota-conference') rotaConference();
+    else if (r === 'runaway-cheese') runawayCheese();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();
