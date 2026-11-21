@@ -28,7 +28,7 @@ test.describe('ROTA. maritime conference', () => {
     await expect(page.getByText('Uçak gecikti. On bir misafir yolda.')).toBeVisible();
     for (const section of ORDER.slice(5)) await choose(page,section,0);
     await expect(page.locator('.result-lead')).toBeVisible();
-    await expect(page.getByText('Gala yağmur planı')).toBeVisible();
+    await expect(page.getByText('Yağmur krizi çözümü')).toBeVisible();
     await expect(page.getByText('Operasyon ekibi',{exact:true})).toBeVisible();
     const rec=await page.evaluate(()=>JSON.parse(localStorage.getItem('rota_conference_records_v2')));
     expect(rec.runs).toBe(1);expect(rec.bestScore).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ test.describe('ROTA. maritime conference', () => {
     await page.locator('[data-action="submit-bid"]').click();
     for(const section of ORDER)await choose(page,section,section==='weather'?0:2);
     await expect(page.locator('.negative').first()).toBeVisible();
-    await page.on('dialog',dialog=>dialog.accept());
+    page.on('dialog',dialog=>dialog.accept());
     await page.locator('[data-action="reset"]').first().click();
     await expect(page.getByText('İlk büyük kurumsal müşterin.')).toBeVisible();
   });
