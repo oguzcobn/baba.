@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Peynir Kaçışı 3D oyun kapağı">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#4ca8fa"/><stop offset="1" stop-color="#c9f1fc"/></linearGradient>
+ <linearGradient id="hill" x2="0" y2="1"><stop stop-color="#b3e37c"/><stop offset="1" stop-color="#3f9d53"/></linearGradient>
+ <radialGradient id="che" cx=".35" cy=".28"><stop stop-color="#ffe777"/><stop offset=".7" stop-color="#ffcd42"/><stop offset="1" stop-color="#e99d24"/></radialGradient>
+ <linearGradient id="shade" x2="0" y2="0"><stop stop-color="#092d27" stop-opacity=".85"/><stop offset="1" stop-color="#092d27" stop-opacity="0"/></linearGradient>
+ <filter id="shadow"><feGaussianBlur stdDeviation="15"/></filter>
+</defs>
+<rect width="1280" height="720" fill="url(#sky)"/>
+<circle cx="1120" cy="100" r="75" fill="#fff6cc" opacity=".85"/>
+<g fill="#ffffff" opacity=".65"><ellipse cx="390" cy="110" rx="115" ry="23"/><ellipse cx="970" cy="140" rx="170" ry="26"/></g>
+<path d="M0 347Q210 275 428 378Q665 215 920 372Q1105 262 1280 380V720H0Z" fill="#81bb72"/>
+<path d="M0 445Q275 375 520 463Q810 350 1280 395V720H0Z" fill="url(#hill)"/>
+<path d="M100 720Q600 500 1130 380L1270 425Q795 580 520 720Z" fill="#b2d97d"/>
+<path d="M0 498L1278 313" stroke="#e1c497" stroke-width="11" stroke-dasharray="35 30" opacity=".55"/>
+<g opacity=".9" fill="#427b3c"><path d="M917 313l20-63 24 62Z"/><path d="M969 335l22-70 27 73Z"/><path d="M1081 339l28-83 30 90Z"/><path d="M848 402l22-54 19 53Z"/></g>
+<g transform="translate(877 412) rotate(-19)">
+ <g stroke="#745338" stroke-width="10" stroke-linecap="round"><path d="M-90 0l-25 52M-50 8l25 62M48-3l55 53M80-12l50-65"/></g>
+ <ellipse cx="-5" cy="7" rx="100" ry="30" fill="#000" opacity=".17" filter="url(#shadow)"/>
+ <rect x="-67" y="-88" width="130" height="132" rx="58" fill="#fc694c"/>
+ <circle cx="0" cy="-105" r="48" fill="#f3bd94"/><path d="M-43-119Q-4-184 38-119" fill="#392920"/><circle cx="-15" cy="-107" r="4" fill="#3c291d"/><circle cx="20" cy="-107" r="4" fill="#3c291d"/>
+</g>
+<g transform="translate(1085 330) rotate(17) scale(.7)">
+ <g stroke="#413b5c" stroke-width="13" stroke-linecap="round"><path d="M-65 10l-55 50M48 10l40 59M-55-2l45-70M46-9l62-50"/></g>
+ <rect x="-69" y="-87" width="130" height="130" rx="60" fill="#587de1"/>
+ <circle cy="-104" r="46" fill="#daab88"/><path d="M-42-115Q-4-185 40-115" fill="#533c28"/>
+</g>
+<g transform="translate(740 560) rotate(-24)">
+ <ellipse cx="10" cy="125" rx="160" ry="32" fill="#152d1a" opacity=".25" filter="url(#shadow)"/>
+ <ellipse cx="25" cy="-2" rx="93" ry="133" fill="#e9a22c"/>
+ <ellipse cx="0" cy="-4" rx="104" ry="136" fill="url(#che)" stroke="#ffe787" stroke-width="14"/>
+ <g fill="#d9a02a" opacity=".75"><ellipse cx="-38" cy="-73" rx="17" ry="24"/><ellipse cx="32" cy="-39" rx="24" ry="17"/><ellipse cx="-15" cy="46" rx="25" ry="32"/><ellipse cx="45" cy="74" rx="12" ry="15"/><ellipse cx="-56" cy="7" rx="10" ry="17"/></g>
+ <path d="M-55-96Q-23-118 20-115" fill="none" stroke="#fff9be" stroke-width="15" stroke-linecap="round" opacity=".68"/>
+</g>
+<g stroke="#ecf8d0" stroke-width="5" opacity=".75" stroke-linecap="round"><path d="M900 553l150 54M865 596l160 85M584 550l-118 40"/></g>
+<rect width="830" height="720" fill="url(#shade)"/>
+<g font-family="Arial,Helvetica,sans-serif" font-weight="900" fill="#fff">
+ <text x="70" y="105" font-size="29" letter-spacing="11" fill="#faffc9">BABA. ARCADE</text>
+ <text x="61" y="285" font-size="116" letter-spacing="-7">PEYNİR</text>
+ <text x="61" y="405" font-size="116" letter-spacing="-7" fill="#ffe05a">KAÇIŞI!</text>
+ <rect x="70" y="460" rx="22" width="236" height="57" fill="#102e23" opacity=".87"/>
+ <text x="91" y="502" font-size="35" fill="#fff" letter-spacing="4">3D  •  FİZİK</text>
+ <text x="72" y="604" font-size="30" letter-spacing="1" font-weight="700">YUVARLAN. KAÇ. HAYATTA KAL.</text>
+</g>
+</svg>
