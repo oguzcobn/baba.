@@ -7,9 +7,9 @@
 <title>Peynir Kaçışı 3D · BABA. Games</title>
 <style>
 :root{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff;font-synthesis:none}
-*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#86bfe8;overscroll-behavior:none}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#92b8c9;overscroll-behavior:none}
 button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
-#game{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#70bbfa,#c5e8fa 65%,#9cce75);touch-action:none}
+#game{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#84b9d4,#b4cfcd 65%,#93ba7e);touch-action:none}
 #game canvas{display:block;width:100%;height:100%;touch-action:none;outline:none}
 .hud{position:absolute;z-index:5;inset:env(safe-area-inset-top,0px) 0 auto;display:flex;justify-content:space-between;align-items:flex-start;padding:18px max(15px,env(safe-area-inset-right)) 0 max(15px,env(safe-area-inset-left));pointer-events:none;gap:10px}
 .pill{background:rgba(13,38,32,.7);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(12px);box-shadow:0 8px 22px #183a2b33;border-radius:18px;padding:9px 15px}
@@ -26,12 +26,12 @@ button{font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #notice.show{animation:pop .75s ease-out}
 @keyframes pop{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}20%,65%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-68%) scale(1)}}
 #controls{position:absolute;z-index:6;bottom:max(24px,env(safe-area-inset-bottom));left:0;right:0;display:flex;align-items:end;justify-content:space-between;padding:0 max(25px,env(safe-area-inset-left)) 0 max(25px,env(safe-area-inset-right));pointer-events:none}
-.control{pointer-events:auto;user-select:none;touch-action:none;width:min(21vw,84px);height:min(21vw,84px);border:2px solid #ffffff91;background:linear-gradient(150deg,#f8fffab9,#d0eee5aa);border-radius:26px;color:#0b4936;font-size:36px;font-weight:900;box-shadow:0 9px 0 #235c455c,0 12px 25px #124c4033;transition:transform .08s}
+.control{pointer-events:auto;user-select:none;touch-action:none;width:min(21vw,84px);height:min(21vw,84px);border:2px solid #c7ddd080;background:linear-gradient(150deg,#deebe0b9,#bed6ceaa);border-radius:26px;color:#0b4936;font-size:36px;font-weight:900;box-shadow:0 9px 0 #235c455c,0 12px 25px #124c4033;transition:transform .08s}
 .control:active,.control.on{transform:translateY(6px);box-shadow:0 3px 0 #235c455c}
 #mobileTip{position:absolute;z-index:4;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);font-size:12px;font-weight:800;text-align:center;background:#11382c88;border-radius:20px;padding:7px 11px;white-space:nowrap;pointer-events:none}
 #overlay{position:absolute;z-index:10;inset:0;display:grid;place-items:center;padding:20px;overflow:auto;background:linear-gradient(180deg,#102c2e33,#072b2299);backdrop-filter:blur(5px)}
 #overlay[hidden]{display:none}
-.panel{width:min(440px,100%);max-height:95%;overflow:auto;border:1px solid #ffffff85;border-radius:32px;padding:clamp(24px,5vw,38px);background:linear-gradient(140deg,#0a483acb,#08332ff2);box-shadow:0 30px 90px #092e2970;text-align:center}
+.panel{width:min(440px,100%);max-height:95%;overflow:auto;border:1px solid #b3c8bd70;border-radius:32px;padding:clamp(24px,5vw,38px);background:linear-gradient(140deg,#0a483acb,#08332ff2);box-shadow:0 30px 90px #092e2970;text-align:center}
 .sticker{font-weight:1000;font-size:10px;letter-spacing:.24em;color:#c6f6b2}
 .cheese{font-size:68px;filter:drop-shadow(0 7px 8px #020d1033);margin:6px auto}
 h1{font-size:clamp(42px,8.5vw,62px);line-height:.91;letter-spacing:-.07em;margin:4px 0 16px;font-weight:1000;text-transform:uppercase}
@@ -87,12 +87,12 @@ var W=window.THREE,renderer,scene,camera,sun,wheel,track=[],obstacles=[],chasers
 var mode="intro",SLOPE=.175,LIMIT=470,player={x:0,z:2,vx:0,speed:10,jump:0,vy:0,spin:0,hit:0},distance=0,elapsed=0,best=0,runSeed=52,raf=0,last=0,timer=0;
 var inp={l:false,r:false,drag:false,dragX:0},muted=false,ctx=null,camFocus=null,shake=0;
 var MOBILE=matchMedia("(pointer:coarse)").matches;
-var colors={sky:0x9cd8fa,grass:0x7fc05b,yellow:0xffd73e,log:0x784626,stone:0x838e8e};
+var colors={sky:0x91bcd1,grass:0x6fa65d,yellow:0xe9bd49,log:0x784626,stone:0x7f898a};
 function gy(z){return SLOPE*z}
 function rand(){runSeed=(Math.imul(1664525,runSeed)+1013904223)>>>0;return runSeed/4294967296}
 function mix(a,b,t){return a+(b-a)*t}
 function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
-function mat(c,rough){return new W.MeshStandardMaterial({color:c,roughness:rough===undefined?.85:rough,metalness:0})}
+function mat(c,rough){return new W.MeshStandardMaterial({color:c,roughness:rough===undefined?.94:rough,metalness:0})}
 function mesh(g,m,sh){var o=new W.Mesh(g,m);o.castShadow=!!sh;o.receiveShadow=true;return o}
 function addTo(parent,g,m,px,py,pz,sh){var o=mesh(g,m,sh);o.position.set(px||0,py||0,pz||0);parent.add(o);return o}
 function note(s){notice.textContent=s;notice.classList.remove("show");void notice.offsetHeight;notice.classList.add("show")}
@@ -101,17 +101,17 @@ function saveBest(){if(distance>best){best=Math.floor(distance);try{localStorage
 function sound(freq,duration,type,vol){if(muted)return;try{if(!ctx)ctx=new (window.AudioContext||window.webkitAudioContext)();if(ctx.state==="suspended")ctx.resume();var o=ctx.createOscillator(),gain=ctx.createGain(),t=ctx.currentTime;o.type=type||"sine";o.frequency.setValueAtTime(freq,t);o.frequency.exponentialRampToValueAtTime(Math.max(35,freq*.44),t+duration);gain.gain.setValueAtTime(Math.max(.001,vol||.05),t);gain.gain.exponentialRampToValueAtTime(.001,t+duration);o.connect(gain);gain.connect(ctx.destination);o.start(t);o.stop(t+duration)}catch(e){}}
 function init(){
  if(!W){description.textContent="3D motoru yüklenemedi. Sayfayı yeniden aç.";start.disabled=true;return}
- try{renderer=new W.WebGLRenderer({antialias:true,alpha:false,powerPreference:"high-performance"});renderer.setPixelRatio(Math.min(devicePixelRatio||1,MOBILE?1.55:1.9));renderer.setSize(root.clientWidth,root.clientHeight);renderer.setClearColor(colors.sky);renderer.shadowMap.enabled=!MOBILE;renderer.shadowMap.type=W.PCFSoftShadowMap;renderer.outputEncoding=W.sRGBEncoding||renderer.outputEncoding;root.insertBefore(renderer.domElement,root.firstChild)}
+ try{renderer=new W.WebGLRenderer({antialias:true,alpha:false,powerPreference:"high-performance"});renderer.toneMapping=W.ACESFilmicToneMapping;renderer.toneMappingExposure=.77;renderer.setPixelRatio(Math.min(devicePixelRatio||1,MOBILE?1.55:1.9));renderer.setSize(root.clientWidth,root.clientHeight);renderer.setClearColor(colors.sky);renderer.shadowMap.enabled=!MOBILE;renderer.shadowMap.type=W.PCFSoftShadowMap;renderer.outputEncoding=W.sRGBEncoding||renderer.outputEncoding;root.insertBefore(renderer.domElement,root.firstChild)}
  catch(e){description.textContent="Bu cihazda WebGL başlatılamadı. Başka bir tarayıcı deneyin.";start.disabled=true;return}
  scene=new W.Scene();scene.background=new W.Color(colors.sky);scene.fog=new W.Fog(colors.sky,45,126);
  camera=new W.PerspectiveCamera(57,Math.max(.1,root.clientWidth/root.clientHeight),.1,260);
- scene.add(new W.HemisphereLight(0xf7fbff,0x6d9a46,1.25));
- sun=new W.DirectionalLight(0xfff2ce,2);sun.position.set(-15,42,-42);sun.castShadow=!MOBILE;
+ scene.add(new W.HemisphereLight(0xbacfd5,0x647f58,.76));
+ sun=new W.DirectionalLight(0xf0d8b1,.98);sun.position.set(-15,42,-42);sun.castShadow=!MOBILE;
  if(sun.castShadow){sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-25;sun.shadow.camera.right=25;sun.shadow.camera.top=32;sun.shadow.camera.bottom=-32;sun.shadow.camera.near=1;sun.shadow.camera.far=130;sun.shadow.bias=-.0004}
  scene.add(sun);scene.add(sun.target);
  var floor=mesh(new W.PlaneGeometry(110,1050,1,1),mat(colors.grass),false);
  floor.rotation.x=-Math.PI/2-Math.atan(SLOPE);floor.position.set(0,gy(-225),-225);scene.add(floor);
- var path=mesh(new W.PlaneGeometry(25,1050),mat(0x8cc963),false);
+ var path=mesh(new W.PlaneGeometry(25,1050),mat(0x83b36b),false);
  path.rotation.x=floor.rotation.x;path.position.set(0,gy(-225)+.025,-225);scene.add(path);
  drawWorld();wheel=makeCheese();scene.add(wheel);makeChasers();
  window.addEventListener("resize",resize,{passive:true});document.addEventListener("visibilitychange",function(){if(document.hidden&&mode==="playing")pauseGame()});
@@ -132,32 +132,168 @@ function updateDrag(e){var rect=renderer.domElement.getBoundingClientRect();inp.
 function bindControl(el,key){el.addEventListener("pointerdown",function(e){e.preventDefault();e.stopPropagation();inp[key]=true;el.classList.add("on");el.setPointerCapture(e.pointerId)});["pointerup","pointercancel","lostpointercapture"].forEach(function(t){el.addEventListener(t,function(){inp[key]=false;el.classList.remove("on")})})}
 function onKey(e){if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"," ","a","d","A","D","Escape"].includes(e.key))e.preventDefault();var on=e.type==="keydown";if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a")inp.l=on;if(e.key==="ArrowRight"||e.key.toLowerCase()==="d")inp.r=on;if(e.key==="Escape"&&on){if(mode==="playing")pauseGame();else if(mode==="pause")resumeGame()}if(e.key===" "&&on&&mode!=="playing"){if(mode==="pause")resumeGame();else reset()}}
 function makeCheese(){
- var group=new W.Group(),m1=mat(0xffd238,.47),side=mat(0xffe879,.65),hole=mat(0xe9a328);
+ var group=new W.Group(),m1=mat(0xe5b940,.78),side=mat(0xf0cf74,.87),hole=mat(0xbd8a33,.98);
  var cheese=addTo(group,new W.CylinderGeometry(.78,.78,.48,36,1),m1,0,0,0,true);cheese.rotation.z=Math.PI/2;
  [-.245,.245].forEach(function(x){var cap=addTo(group,new W.CylinderGeometry(.725,.725,.016,36),side,x,0,0,true);cap.rotation.z=Math.PI/2;[[-.27,-.21,.092],[.22,-.13,.108],[.28,.32,.07],[-.1,.34,.09],[0,-.45,.085],[-.43,.12,.07]].forEach(function(p){var h=addTo(group,new W.SphereGeometry(p[2],9,6),hole,x+(x>0?.017:-.017),p[0],p[1],false);h.scale.set(.24,1,1)})});
  return group;
 }
+
+/* Articulated, fully clothed runners. The same clothing stays on every limb in ragdoll. */
+var J={pelvis:0,chest:1,neck:2,head:3,ls:4,le:5,lh:6,rs:7,re:8,rh:9,lhip:10,lk:11,lf:12,rhip:13,rk:14,rf:15};
+var LINKS=[[0,1],[1,2],[2,3],[1,4],[4,5],[5,6],[1,7],[7,8],[8,9],[0,10],[10,11],[11,12],[0,13],[13,14],[14,15],[4,7],[10,13],[4,10],[7,13],[1,10],[1,13],[4,2],[7,2]];
+var UP=new W.Vector3(0,1,0),TMPA=new W.Vector3(),TMPB=new W.Vector3();
+var RUNNER_COLORS=[
+ {top:0xb24f40,sleeve:0x9d4537,pants:0x394c67,accent:0xddd0b7,shoe:0x464944},
+ {top:0x547ba1,sleeve:0x41668a,pants:0x303b46,accent:0xe4b87c,shoe:0x554c43},
+ {top:0xc2a04e,sleeve:0x9f8140,pants:0x4b5546,accent:0x5b483a,shoe:0x5d6266},
+ {top:0x8c6397,sleeve:0x765180,pants:0x35455b,accent:0xd9b9a9,shoe:0x4c4749},
+ {top:0x478b78,sleeve:0x366d60,pants:0x554c4c,accent:0xd2c3a4,shoe:0x383c3b}
+];
+function setRunPose(c){
+ var p=c.pose,step=Math.sin(c.phase),rev=-step,kneeLift=Math.abs(step)*.12,armLift=.08,lean=clamp(c.spd/22,.1,1);
+ p[0].set(0,1.03,-.055);p[1].set(0,1.56,-.12-lean*.045);
+ p[2].set(0,1.76,-.13-lean*.06);p[3].set(0,2.02,-.14-lean*.07);
+ p[4].set(-.335,1.57,-.12);p[7].set(.335,1.57,-.12);
+ p[5].set(-.46,1.30+step*.08,-.22-step*.24);p[8].set(.46,1.30+rev*.08,-.22-rev*.24);
+ p[6].set(-.41,1.10+step*.17,-.32-step*.42);p[9].set(.41,1.10+rev*.17,-.32-rev*.42);
+ p[10].set(-.18,.97,-.04);p[13].set(.18,.97,-.04);
+ p[11].set(-.19,.53+kneeLift,-.09+step*.27);
+ p[14].set(.19,.53+Math.abs(rev)*.12,-.09+rev*.27);
+ p[12].set(-.19,.105+Math.max(0,step)*.19,-.17+step*.53);
+ p[15].set(.19,.105+Math.max(0,rev)*.19,-.17+rev*.53);
+}
 function makePerson(i){
- var g=new W.Group(),skin=mat(i%2?0xf1c59a:0xdba57d),shirt=mat([0xfa674c,0x5b80d9,0xffc95a,0xe577b0,0x4cbd88][i%5]),pants=mat([0x35465e,0x2b414d,0x52536b][i%3]),shoe=mat(0x292d3b),hair=mat([0x433426,0xa36b40,0x292e35][i%3]);
- addTo(g,new W.SphereGeometry(.31,12,8),skin,0,1.82,0,true);
- addTo(g,new W.SphereGeometry(.315,12,8),hair,0,1.985,.03,true).scale.set(1,.35,1);
- addTo(g,new W.CylinderGeometry(.31,.34,.69,9),shirt,0,1.23,0,true);
- addTo(g,new W.SphereGeometry(.27,10,8),pants,0,.8,0,true);
- var arms=[],legs=[];
- [-1,1].forEach(function(s){
-  var arm=new W.Group();arm.position.set(s*.35,1.52,0);g.add(arm);
-  addTo(arm,new W.CylinderGeometry(.105,.1,.58,7),shirt,0,-.26,0,true);
-  addTo(arm,new W.SphereGeometry(.105,8,6),skin,0,-.58,0,true);arms.push(arm);
-  var leg=new W.Group();leg.position.set(s*.16,.72,0);g.add(leg);
-  addTo(leg,new W.CylinderGeometry(.145,.115,.53,8),pants,0,-.25,0,true);
-  addTo(leg,new W.BoxGeometry(.23,.15,.38),shoe,0,-.55,-.085,true);legs.push(leg);
+ var outfit=RUNNER_COLORS[i%RUNNER_COLORS.length];
+ var skin=mat([0xc99270,0xb57e5b,0xd3a384,0x9d6b4e,0xd7ac8a][i],.96);
+ var cloth=mat(outfit.top),sleeves=mat(outfit.sleeve),pants=mat(outfit.pants),trim=mat(outfit.accent),sole=mat(outfit.shoe),hair=mat([0x403429,0x302f30,0x8b613f,0x4d3430,0x6b4a33][i],1);
+ var g=new W.Group(),parts=[],p=Array.from({length:16},function(){return new W.Vector3()}),nodes=Array.from({length:16},function(){return new W.Vector3()}),prev=Array.from({length:16},function(){return new W.Vector3()});
+ function link(a,b,ma,top,bottom){
+  var m=mesh(new W.CylinderGeometry(top,bottom,1,10),ma,true);g.add(m);
+  parts.push({a:a,b:b,mesh:m});return m;
+ }
+ // Fully dressed silhouette: zip hoodie/jacket, long sleeves, trousers, cuffs and shoes.
+ var torso=link(J.chest,J.pelvis,cloth,.34,.27);
+ addTo(torso,new W.BoxGeometry(.025,.70,.027),trim,0,.02,-.339,false);
+ addTo(torso,new W.BoxGeometry(.22,.17,.035),sleeves,0,-.26,-.30,false);
+ var hood=link(J.neck,J.chest,cloth,.18,.27);
+ var belt=link(J.pelvis,J.lhip,pants,.23,.15);
+ link(J.pelvis,J.rhip,pants,.23,.15);
+ link(J.ls,J.le,sleeves,.14,.12);
+ link(J.rs,J.re,sleeves,.14,.12);
+ link(J.le,J.lh,cloth,.113,.096);
+ link(J.re,J.rh,cloth,.113,.096);
+ link(J.lhip,J.lk,pants,.167,.134);
+ link(J.rhip,J.rk,pants,.167,.134);
+ link(J.lk,J.lf,pants,.137,.104);
+ link(J.rk,J.rf,pants,.137,.104);
+ // Skin only at the neck, face and hands; the limbs never become undressed.
+ var hands=[addTo(g,new W.SphereGeometry(.105,9,7),skin,0,0,0,true),addTo(g,new W.SphereGeometry(.105,9,7),skin,0,0,0,true)];
+ var shoes=[addTo(g,new W.BoxGeometry(.255,.17,.41),sole,0,0,0,true),addTo(g,new W.BoxGeometry(.255,.17,.41),sole,0,0,0,true)];
+ shoes.forEach(function(sh){addTo(sh,new W.BoxGeometry(.19,.04,.21),trim,0,.084,-.082,false)});
+ var head=new W.Group();g.add(head);
+ addTo(head,new W.SphereGeometry(.215,13,11),skin,0,0,0,true);
+ addTo(head,new W.SphereGeometry(.218,12,7),hair,0,.107,.025,true).scale.set(1,.57,1);
+ var earG=new W.SphereGeometry(.065,7,6);
+ addTo(head,earG,skin,-.211,-.014,0,false);addTo(head,earG,skin,.211,-.014,0,false);
+ var eyeMat=mat(0x3e352d,1);
+ addTo(head,new W.SphereGeometry(.022,7,6),eyeMat,-.09,.008,-.193,false);
+ addTo(head,new W.SphereGeometry(.022,7,6),eyeMat,.09,.008,-.193,false);
+ addTo(head,new W.SphereGeometry(.046,8,6),skin,0,-.066,-.21,false).scale.set(.9,.85,.95);
+ if(i===1||i===4){var cap=addTo(head,new W.CylinderGeometry(.225,.229,.11,12),mat(outfit.top),0,.17,0,false);addTo(cap,new W.BoxGeometry(.22,.024,.25),mat(outfit.top),0,-.05,-.17,false)}
+ var c={group:g,parts:parts,head:head,hands:hands,shoes:shoes,pose:p,nodes:nodes,prev:prev,constraints:[],x:[-2.6,-1.2,0,1.5,2.9][i],z:5.8+i*1.05,spd:8.5+i*.3,fall:0,state:"run",phase:i*.9,cool:0,ragAge:0,recover:0,recoverFrom:[]};
+ setRunPose(c);
+ for(var k=0;k<16;k++){nodes[k].copy(p[k]);prev[k].copy(p[k])}
+ c.constraints=LINKS.map(function(edge){return {a:edge[0],b:edge[1],length:p[edge[0]].distanceTo(p[edge[1]])}});
+ posePerson(c);
+ return c;
+}
+function posePerson(c){
+ var n=c.nodes;
+ c.parts.forEach(function(part){
+  var a=n[part.a],b=n[part.b],v=TMPA.subVectors(a,b),len=v.length();
+  part.mesh.position.copy(a).add(b).multiplyScalar(.5);
+  if(len>.001){part.mesh.quaternion.setFromUnitVectors(UP,v.multiplyScalar(1/len));part.mesh.scale.y=len}
  });
- return {group:g,arms:arms,legs:legs,x:[-2.6,-1.2,0,1.5,2.9][i],z:5.8+i*1.05,spd:0,fall:0,phase:i*.9,cool:0};
+ c.hands[0].position.copy(n[J.lh]);c.hands[1].position.copy(n[J.rh]);
+ c.shoes[0].position.copy(n[J.lf]);c.shoes[1].position.copy(n[J.rf]);
+ var headDir=TMPB.subVectors(n[J.head],n[J.neck]).normalize();
+ c.head.position.copy(n[J.head]);c.head.quaternion.setFromUnitVectors(UP,headDir);
+}
+function knockRunner(c,ob){
+ c.state="ragdoll";c.fall=1.7+rand()*.75;c.cool=3.2;c.spd=Math.max(3,c.spd*.4);c.ragAge=0;
+ var side=c.x>ob.x?1:-1;
+ for(var k=0;k<16;k++){
+  c.nodes[k].copy(c.pose[k]);c.prev[k].copy(c.nodes[k]);
+  var v=(k===J.chest||k===J.head||k===J.neck)?1.7:(k===J.pelvis?.7:1);
+  c.prev[k].x-=side*(2.7+rand()*1.8)*v*.016;
+  c.prev[k].y-=((k===J.head||k===J.chest)?2.7:1.3)*.016;
+  c.prev[k].z-=- (2.6+rand()*1.6)*v*.016;
+ }
+ // The torso and articulated limbs share a constrained mass-spring ragdoll,
+ // rather than rotating a single rigid stick figure.
+ puff(c.x,gy(c.z)+.9,c.z,7,0xbcae87);
+}
+function stepRagdoll(c,dt){
+ var nodes=c.nodes,prev=c.prev,old=TMPA,gravity=22;
+ c.ragAge+=dt;
+ for(var k=0;k<nodes.length;k++){
+  var n=nodes[k],pr=prev[k],vx=(n.x-pr.x)*.985,vy=(n.y-pr.y)*.985,vz=(n.z-pr.z)*.985;
+  pr.copy(n);n.x+=vx;n.y+=vy-gravity*dt*dt;n.z+=vz;
+ }
+ for(var iter=0;iter<6;iter++){
+  for(var q=0;q<c.constraints.length;q++){
+   var co=c.constraints[q],a=nodes[co.a],b=nodes[co.b];
+   var dx=b.x-a.x,dy=b.y-a.y,dz=b.z-a.z,dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||.00001;
+   var delta=(dist-co.length)/dist*.48;
+   a.x+=dx*delta;a.y+=dy*delta;a.z+=dz*delta;
+   b.x-=dx*delta;b.y-=dy*delta;b.z-=dz*delta;
+  }
+  for(var j=0;j<nodes.length;j++){
+   var p=nodes[j],ground=SLOPE*p.z+.085;
+   if(p.y<ground){p.y=ground;if(prev[j].y>ground)prev[j].y=ground+(prev[j].y-ground)*.14;prev[j].x=mix(prev[j].x,p.x,.22);prev[j].z=mix(prev[j].z,p.z,.20)}
+  }
+ }
+}
+function resetRunner(c,i){
+ c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=6.5+i*1.15;c.spd=8.5+i*.3;c.phase=i;c.fall=0;c.cool=0;c.state="run";c.ragAge=0;c.recover=0;
+ setRunPose(c);c.nodes.forEach(function(n,k){n.copy(c.pose[k]);c.prev[k].copy(n)});c.group.rotation.set(0,0,0);posePerson(c);
+}
+function updateRunner(c,dt,index){
+ var d=c.z-player.z,desired=clamp(player.x+Math.sin(elapsed*.8+index*1.7)*(.4+index*.08),-10.3,10.3);
+ c.phase+=dt*clamp(c.spd*1.3,8,28);
+ c.cool=Math.max(0,c.cool-dt);
+ setRunPose(c);
+ if(c.state==="ragdoll"){
+  c.fall-=dt;c.z-=Math.max(2.3,c.spd*.35)*dt;
+  stepRagdoll(c,dt);
+  if(c.fall<=0){c.state="recover";c.recover=0;c.recoverFrom=c.nodes.map(function(n){return n.clone()})}
+ }else if(c.state==="recover"){
+  c.z-=Math.max(2,c.spd*.4)*dt;c.recover=Math.min(1,c.recover+dt/ .7);
+  var t=c.recover*c.recover*(3-2*c.recover);
+  c.nodes.forEach(function(n,k){n.copy(c.recoverFrom[k]).lerp(c.pose[k],t)});
+  if(c.recover>=1){c.state="run";c.cool=Math.max(c.cool,.8)}
+ }else{
+  c.x+=clamp(desired-c.x,-dt*(2.8+index*.15),dt*(2.8+index*.15));
+  var target=clamp(player.speed*(.94+index*.012)+.45+Math.max(0,d-7)*.075,7,21);
+  c.spd=mix(c.spd,target,dt*.85);c.z-=c.spd*dt;
+  c.nodes.forEach(function(n,k){n.copy(c.pose[k])});
+  if(c.cool===0){
+   for(var oi=0;oi<obstacles.length;oi++){
+    var ob=obstacles[oi];
+    if(Math.abs(c.z-ob.z)<.82&&Math.abs(c.x-ob.x)<ob.r+.27){knockRunner(c,ob);break}
+   }
+  }
+ }
+ c.group.position.set(c.x,gy(c.z)+.065+(c.state==="run"?Math.abs(Math.sin(c.phase))*.045:0),c.z);
+ c.group.rotation.set(0,Math.sin(c.phase*.2)*.05,0);
+ posePerson(c);
+ if(c.state==="run"&&elapsed>3&&d<1.15&&Math.abs(c.x-player.x)<.93)gameOver(false);
 }
 function makeChasers(){for(var i=0;i<5;i++){var a=makePerson(i);chasers.push(a);scene.add(a.group)}}
+
 function drawWorld(){
  runSeed=47627;
- var grass=[mat(0x4ca13e),mat(0x66b54b),mat(0x9ace65)],treeMat=[mat(0x387a40),mat(0x4b9245),mat(0x6cab53)],wood=mat(0x925a32),woodEnd=mat(0xb98755),rock=mat(colors.stone),stone2=mat(0xaeb8af),straw=mat(0xd3a653),fenceMat=mat(0xe8bd82),flower=mat(0xf8eaaa);
+ var grass=[mat(0x4ca13e),mat(0x66b54b),mat(0x9ace65)],treeMat=[mat(0x387a40),mat(0x4b9245),mat(0x6cab53)],wood=mat(0x925a32),woodEnd=mat(0xb98755),rock=mat(colors.stone),stone2=mat(0x8e9c92),straw=mat(0xd3a653),fenceMat=mat(0xe8bd82),flower=mat(0xcbbf94);
  var tuftsGeo=new W.ConeGeometry(.23,.52,3),treeTop=new W.ConeGeometry(1.3,3.5,7),trunkG=new W.CylinderGeometry(.18,.25,1.4,6);
  for(var z=25;z>-530;z-=8.5){
   [-1,1].forEach(function(side){
@@ -204,13 +340,13 @@ function drawWorld(){
 function reset(){
  player={x:0,z:2,vx:0,speed:10,jump:0,vy:0,spin:0,hit:0};
  distance=0;elapsed=0;shake=0;inp.l=false;inp.r=false;inp.drag=false;
- chasers.forEach(function(c,i){c.x=[-2.6,-1.2,0,1.5,2.9][i];c.z=6.5+i*1.15;c.spd=8.5+i*.3;c.phase=i;c.fall=0;c.cool=0});
+ chasers.forEach(function(c,i){resetRunner(c,i)});
  dust.forEach(function(p){scene.remove(p.mesh)});dust.length=0;
  mode="playing";overlay.hidden=true;document.body.classList.add("playing");$("pause").textContent="Ⅱ";timer=0;
  wheel.position.set(0,gy(2)+.81,2);camera.position.set(4,gy(2)+6,15);camFocus=new W.Vector3(0,gy(-8)+1,-8);
  note("KAÇ!");sound(540,.14,"triangle",.04);
 }
-function showPreview(){wheel.position.set(0,gy(2)+.8,2);chasers.forEach(function(c){c.group.position.set(c.x,gy(c.z)+.05,c.z)}) ;camera.position.set(4,gy(2)+6,15);camFocus=new W.Vector3(0,gy(-9)+1,-9);camera.lookAt(camFocus)}
+function showPreview(){wheel.position.set(0,gy(2)+.8,2);chasers.forEach(function(c){c.group.position.set(c.x,gy(c.z)+.06,c.z);posePerson(c)}) ;camera.position.set(4,gy(2)+6,15);camFocus=new W.Vector3(0,gy(-9)+1,-9);camera.lookAt(camFocus)}
 function pauseGame(){if(mode!=="playing")return;mode="pause";overlay.hidden=false;document.body.classList.remove("playing");headline.innerHTML="DURAKLAT<span>ILDI</span>";description.textContent="Peynir seni bekliyor. Hazır olduğunda tekrar devam et.";start.textContent="DEVAM ET ▶";$("finish").style.display="none";$("pause").textContent="▶"}
 function resumeGame(){if(mode!=="pause")return;mode="playing";overlay.hidden=true;document.body.classList.add("playing");$("pause").textContent="Ⅱ";last=performance.now()}
 function gameOver(win){
@@ -237,7 +373,7 @@ function advance(dt){
    var o=obstacles[i],dz=player.z-o.z,dx=player.x-o.x,limit=o.r+.56;
    if(Math.abs(dz)<1.3&&Math.abs(dx)<limit){
     player.hit=.62;player.speed=Math.max(4.5,player.speed*.52);player.vx+=(dx<0?-1:1)*(6+rand()*3);player.vy=o.kind==="log"?5.5:3.7;shake=.55;
-    puff(player.x,gy(player.z)+.7,player.z,9,o.kind==="stone"?0xe2e7dc:0xf5dd9a);
+    puff(player.x,gy(player.z)+.7,player.z,9,o.kind==="stone"?0x9ba89b:0xd6c18c);
     note(["DİKKAT!","BAM!","SEKME!"][Math.floor(rand()*3)]);sound(130,.22,"sawtooth",.07);break;
    }
   }
@@ -247,29 +383,8 @@ function advance(dt){
  wheel.rotation.set(player.spin,0,-player.vx*.018);
  var caug=Math.sin(elapsed*8);wheel.position.y+=Math.abs(caug)*.02;
  for(var j=0;j<chasers.length;j++){
-  var c=chasers[j],d=c.z-player.z,desired=clamp(player.x+Math.sin(elapsed*.8+j*1.7)*(.4+j*.08),-10.3,10.3);
-  c.phase+=dt*clamp(c.spd*1.3,8,28);
-  c.cool=Math.max(0,c.cool-dt);
-  if(c.fall>0){c.fall-=dt;c.z-=Math.max(3,c.spd*.42)*dt;c.x+=Math.sin(c.phase*2)*dt*.7}
-  else{
-   c.x+=clamp(desired-c.x,-dt*(2.8+j*.15),dt*(2.8+j*.15));
-   var target=clamp(player.speed*(.94+j*.012)+.45+Math.max(0,d-7)*.075,7,21);
-   c.spd=mix(c.spd,target,dt*.85);
-   c.z-=c.spd*dt;
-   if(c.cool===0){
-    for(var oi=0;oi<obstacles.length;oi++){
-     var ob=obstacles[oi];
-     if(Math.abs(c.z-ob.z)<.8&&Math.abs(c.x-ob.x)<ob.r+.28){c.fall=1.15+rand()*.8;c.cool=2.5;c.spd*=.55;puff(c.x,gy(c.z)+.6,c.z,5,0xdbe8bb);break}
-    }
-   }
-  }
-  var fall=Math.max(0,c.fall),g=c.group;
-  g.position.set(c.x,gy(c.z)+.03+(fall>0?.35+Math.abs(Math.sin(c.phase*3))*.2:Math.abs(Math.sin(c.phase))*.08),c.z);
-  g.rotation.set(fall>0?Math.sin(c.phase*2)*1.8:.04,Math.sin(c.phase*.25)*.1,fall>0?1.3*Math.sin(c.phase*1.4):Math.sin(c.phase)*.065);
-  var stride=fall>0?2.4: .67;
-  c.legs[0].rotation.x=Math.sin(c.phase)*stride;c.legs[1].rotation.x=-Math.sin(c.phase)*stride;
-  c.arms[0].rotation.x=-Math.sin(c.phase)*stride;c.arms[1].rotation.x=Math.sin(c.phase)*stride;
-  if(fall<=0&&elapsed>3&&d<1.15&&Math.abs(c.x-player.x)<.93){gameOver(false);return}
+  updateRunner(chasers[j],dt,j);
+  if(mode!=="playing")return;
  }
  for(var pi=dust.length-1;pi>=0;pi--){var p=dust[pi];p.life-=dt;if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();dust.splice(pi,1)}else{p.mesh.position.x+=p.vx*dt;p.mesh.position.y+=p.vy*dt;p.mesh.position.z+=p.vz*dt;p.vy-=10*dt;p.mesh.scale.setScalar(clamp(p.life/.7,0,1))}}
  distLabel.textContent=Math.floor(distance);speedFill.style.width=Math.floor(clamp(player.speed/22,0,1)*100)+"%";
