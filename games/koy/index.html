@@ -6220,7 +6220,7 @@
         document.getElementById('val-density').textContent = '220.000 sap';
         document.getElementById('hud-blades').textContent = '220.000';
 
-        grassGeo.instanceCount = Math.min(placed, state.grassCount);
+        grassGeo.instanceCount = Math.min(placed, state.grassCount, window.__rp ? window.__rp.Q.grass : Infinity);
         grassUniforms.uYoungModulus.value = 1.2;
         grassUniforms.uDamping.value = 0.16;
         const rad = (235 * Math.PI) / 180;
@@ -7677,6 +7677,13 @@
       terrainMesh.material.userData.rpVColorScale = rp.terrainVColor;
       rp.water.far.mesh.material.userData.rpVColorScale = rp.terrainVColor;
       fireUniforms.uFireScale = rp.matUniforms.rpEmissiveScale;
+      // quality level also caps the number of grass blades (the slider can still lower it)
+      rp.onQuality = (q, Q) => {
+        grassGeo.instanceCount = Math.min(placed, state.grassCount, Q.grass);
+        const hb = document.getElementById('hud-blades');
+        if (hb) hb.textContent = grassGeo.instanceCount.toLocaleString('tr-TR');
+      };
+      rp.onQuality(rp.quality, rp.Q);
       rp.bindCustomMaterials();
       rp.patchScene();
       rp.setWeather(state.weather, true);
@@ -7690,7 +7697,7 @@
         grassUniforms.uWarmI.value.set(warmRGB[0] * Iw, warmRGB[1] * Iw, warmRGB[2] * Iw);
         const rad = (state.windDirDeg * Math.PI) / 180;
         rpWindDir.set(Math.sin(rad), Math.cos(rad));
-        rp.water.update(rp.time, state.windSpeed, rpWindDir);
+        if (rp.frame % (rp.Q.waterEvery || 1) === 0) rp.water.update(rp.time, state.windSpeed, rpWindDir);
         rp.render(dt, {
           dayOfYear: 243 + ((state.simDay - 1) % 21),   // early September: heather in bloom
           hours: (state.simMinutes / 60) % 24,

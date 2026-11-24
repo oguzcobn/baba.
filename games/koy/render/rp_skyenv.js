@@ -72,7 +72,7 @@
       }`, U);
 
     // sky cube for the PMREM (RGBE in 8-bit: PMREMGenerator decodes it as HDR)
-    this.cubeRT = new THREE.WebGLCubeRenderTarget(128, {
+    this.cubeRT = new THREE.WebGLCubeRenderTarget(64, {
       type: THREE.UnsignedByteType, format: THREE.RGBAFormat, encoding: THREE.RGBEEncoding,
       generateMipmaps: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter
     });
@@ -126,12 +126,17 @@
     U.uCloudGrey.value.set(E.x, E.y, E.z).multiplyScalar(Math.max(0.15, mu) * Td / Math.PI * 1.25);
 
     this.shPass.render(this.renderer, this.shRT);
-    const px = RP.readRT(this.renderer, this.shRT, 0, 0, 9, 1);
-    for (let i = 0; i < 9; i++) this.shCPU[i].set(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]);
+    this._readSH(!!force);
 
-    const key = [lightInfo.dir.x, lightInfo.dir.y, lightInfo.dir.z].map((v) => v.toFixed(2)).join(',') + '|' +
-      Math.log2(E.y + 1e-9).toFixed(1) + '|' + cloudCover.toFixed(2);
+    // specular IBL only needs refreshing when the sky changed visibly: > 3° of light motion,
+    // > 0.5 EV of illuminance or > 0.08 cloud cover, and never more often than every 4 s
+    const now = performance.now();
+    const L = this._envLight || { dir: lightInfo.dir.clone(), ev: Math.log2(E.y + 1e-9), cov: cloudCover };
+    const changed = lightInfo.dir.angleTo(L.dir) > 0.052 || Math.abs(Math.log2(E.y + 1e-9) - L.ev) > 0.5 || Math.abs(cloudCover - L.cov) > 0.08;
+    const key = changed && (now - (this._envTime || 0) > 4000) ? String(now) : this._lastEnvKey;
     if (force || key !== this._lastEnvKey) {
+      this._envLight = { dir: lightInfo.dir.clone(), ev: Math.log2(E.y + 1e-9), cov: cloudCover };
+      this._envTime = now;
       this._lastEnvKey = key;
       const r = this.renderer;
       const prevTarget = r.getRenderTarget();
@@ -143,6 +148,43 @@
       return true;
     }
     return false;
+  };
+
+  /**
+   * SH readback without stalling the GPU: WebGL2 pixel-pack buffer + fence, the result
+   * is picked up on a later frame. `sync` forces the old blocking read (first frames only).
+   */
+  RP.SkyEnv.prototype._readSH = function (sync) {
+    const r = this.renderer, gl = r.getContext();
+    const isGL2 = typeof WebGL2RenderingContext !== 'undefined' && gl instanceof WebGL2RenderingContext;
+    const apply = (px) => { for (let i = 0; i < 9; i++) this.shCPU[i].set(px[i * 4], px[i * 4 + 1], px[i * 4 + 2]); this.shVersion = (this.shVersion || 0) + 1; };
+    if (sync || !isGL2) { apply(RP.readRT(r, this.shRT, 0, 0, 9, 1)); return; }
+    this.pollSH();
+    if (this._pending) return;                     // one read in flight at a time
+    const props = r.properties.get(this.shRT);
+    if (!props || !props.__webglFramebuffer) { apply(RP.readRT(r, this.shRT, 0, 0, 9, 1)); return; }
+    if (!this._pbo) { this._pbo = gl.createBuffer(); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._pbo); gl.bufferData(gl.PIXEL_PACK_BUFFER, 9 * 4 * 4, gl.STREAM_READ); gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null); }
+    const prev = r.getRenderTarget();
+    r.setRenderTarget(this.shRT);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._pbo);
+    gl.readPixels(0, 0, 9, 1, gl.RGBA, gl.FLOAT, 0);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    r.setRenderTarget(prev);
+    this._pending = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+    gl.flush();
+    this._apply = apply;
+  };
+  RP.SkyEnv.prototype.pollSH = function () {
+    if (!this._pending) return;
+    const gl = this.renderer.getContext();
+    const st = gl.clientWaitSync(this._pending, 0, 0);
+    if (st === gl.TIMEOUT_EXPIRED) return;
+    gl.deleteSync(this._pending); this._pending = null;
+    const px = new Float32Array(36);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, this._pbo);
+    gl.getBufferSubData(gl.PIXEL_PACK_BUFFER, 0, px);
+    gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
+    this._apply(px);
   };
 
   RP.SkyEnv.prototype.evalIrradiance = function (n) {

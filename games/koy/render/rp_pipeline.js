@@ -38,10 +38,12 @@
   };
 
   RP.QUALITY = {
-    low:    { scale: 0.75, ao: false, aoSlices: 1, aoSteps: 4, fogSteps: 12, cloudSteps: 24, cloudLight: 3, cloudScale: 0.25, taa: true, local: false, bloomMips: 4, shadow: 1024 },
-    medium: { scale: 1.0, ao: true, aoSlices: 1, aoSteps: 5, fogSteps: 16, cloudSteps: 32, cloudLight: 4, cloudScale: 0.25, taa: true, local: true, bloomMips: 5, shadow: 2048 },
-    high:   { scale: 1.0, ao: true, aoSlices: 2, aoSteps: 6, fogSteps: 24, cloudSteps: 44, cloudLight: 5, cloudScale: 0.5, taa: true, local: true, bloomMips: 6, shadow: 2048 },
-    ultra:  { scale: 1.0, ao: true, aoSlices: 3, aoSteps: 8, fogSteps: 36, cloudSteps: 64, cloudLight: 6, cloudScale: 0.5, taa: true, local: true, bloomMips: 6, shadow: 4096 }
+    // grass: blade count cap · shadowEvery / waterEvery: update the sun shadow map / FFT every n frames
+    // pixelCap: max device-pixel ratio · minScale: lower bound for dynamic resolution
+    low:    { scale: 0.75, minScale: 0.65, pixelCap: 1.0, ao: false, aoSlices: 1, aoSteps: 4, fogSteps: 10, cloudSteps: 20, cloudLight: 3, cloudScale: 0.25, taa: true, local: false, bloomMips: 4, shadow: 1024, grass: 60000, shadowEvery: 3, waterEvery: 3, cloudEvery: 3 },
+    medium: { scale: 0.85, minScale: 0.7, pixelCap: 1.25, ao: true, aoSlices: 1, aoSteps: 4, fogSteps: 14, cloudSteps: 28, cloudLight: 3, cloudScale: 0.25, taa: true, local: true, bloomMips: 5, shadow: 1536, grass: 110000, shadowEvery: 2, waterEvery: 2, cloudEvery: 2 },
+    high:   { scale: 1.0, minScale: 0.75, pixelCap: 1.5, ao: true, aoSlices: 2, aoSteps: 6, fogSteps: 20, cloudSteps: 40, cloudLight: 4, cloudScale: 0.35, taa: true, local: true, bloomMips: 6, shadow: 2048, grass: 180000, shadowEvery: 1, waterEvery: 1 },
+    ultra:  { scale: 1.0, minScale: 0.8, pixelCap: 2.0, ao: true, aoSlices: 3, aoSteps: 8, fogSteps: 32, cloudSteps: 64, cloudLight: 6, cloudScale: 0.5, taa: true, local: true, bloomMips: 6, shadow: 4096, grass: 320000, shadowEvery: 1, waterEvery: 1 }
   };
 
   // Calibrated parameters (overwritten by rp_calibration_result.js when present)
@@ -117,10 +119,15 @@
     };
     this.terrainVColor = { value: 1.0 };
 
-    this.quality = 'high';
+    // start conservatively: phones/tablets on 'low', everything else on 'medium'; the frame-rate
+    // governor below raises or lowers quality and resolution to keep the simulation smooth
+    const touch = (navigator.maxTouchPoints || 0) > 1 || /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+    this.quality = touch ? 'low' : 'medium';
+    this.dynScale = 1.0;
+    this._ftEMA = 16.7;
     this.autoQuality = true;
     this._fpsAcc = 0; this._fpsN = 0; this._fpsT = 0;
-    this.Q = RP.QUALITY.high;
+    this.Q = RP.QUALITY[this.quality];
     this._halton = [];
     for (let i = 1; i <= 16; i++) this._halton.push([RP.halton(i, 2) - 0.5, RP.halton(i, 3) - 0.5]);
     this.prevViewProj = new THREE.Matrix4();
@@ -138,6 +145,8 @@
     if (!RP.QUALITY[q]) return;
     this.quality = q;
     this.Q = RP.QUALITY[q];
+    this.dynScale = 1.0;
+    if (this.onQuality) this.onQuality(q, this.Q);
     if (this.sunLight && this.sunLight.shadow.mapSize.width !== this.Q.shadow) {
       this.sunLight.shadow.mapSize.set(this.Q.shadow, this.Q.shadow);
       if (this.sunLight.shadow.map) { this.sunLight.shadow.map.dispose(); this.sunLight.shadow.map = null; }
@@ -147,8 +156,11 @@
 
   RP.Pipeline.prototype.resize = function (force) {
     const r = this.renderer;
+    // cap the device-pixel ratio per quality level (retina phones otherwise render 3× the pixels)
+    const pr = Math.min(window.devicePixelRatio || 1, this.Q.pixelCap || 2);
+    if (Math.abs(r.getPixelRatio() - pr) > 1e-3) r.setPixelRatio(pr);
     const size = r.getDrawingBufferSize(new THREE.Vector2());
-    const s = this.Q.scale;
+    const s = this.Q.scale * this.dynScale;
     const W = Math.max(2, Math.round(size.x * s)), H = Math.max(2, Math.round(size.y * s));
     if (!force && this.W === W && this.H === H) return;
     this.W = W; this.H = H;
@@ -180,6 +192,7 @@
     this.blurRT0 = RP.makeRT(ew, eh);
     this.blurRT1 = RP.makeRT(ew, eh);
     this._taaReset = true;
+    this._cloudStale = true;
     this.post.expUniforms.uReset.value = 1;
   };
 
@@ -450,15 +463,20 @@
     dt = Math.min(0.1, Math.max(1e-4, dt || 0.016));
     this.time += dt;
     this.frame++;
-    // adaptive quality: step down when the frame rate stays below ~28 fps for 3 s
-    if (this.autoQuality && this.frame > 60) {
-      this._fpsT += dt; this._fpsN++;
-      if (this._fpsT > 3) {
-        const fps = this._fpsN / this._fpsT;
-        this._fpsT = 0; this._fpsN = 0;
-        const order = ['low', 'medium', 'high', 'ultra'];
-        const i = order.indexOf(this.quality);
-        if (fps < 28 && i > 0) this.setQuality(order[i - 1]);
+    // frame-rate governor: dynamic resolution first (smooth), then quality steps (rare)
+    if (this.autoQuality && this.frame > 30) {
+      const nowT = performance.now(), realMs = this._lastT ? Math.min(1000, nowT - this._lastT) : 16.7;
+      this._lastT = nowT;
+      this._ftEMA += (realMs - this._ftEMA) * 0.08;
+      this._fpsT += realMs / 1000;
+      if (this._fpsT > 1.5) {
+        this._fpsT = 0;
+        const fps = 1000 / this._ftEMA, order = ['low', 'medium', 'high', 'ultra'], qi = order.indexOf(this.quality);
+        if (fps < 45 && this.dynScale > this.Q.minScale + 1e-3) this.dynScale = Math.max(this.Q.minScale, this.dynScale - 0.1);
+        else if (fps < 40 && qi > 0) { this.setQuality(order[qi - 1]); this._upCredit = 0; }
+        else if (fps > 58 && this.dynScale < 1) this.dynScale = Math.min(1, this.dynScale + 0.05);
+        else if (fps > 58 && qi < 2) { this._upCredit = (this._upCredit || 0) + 1; if (this._upCredit >= 6) { this.setQuality(order[qi + 1]); this._upCredit = 0; } }
+        else this._upCredit = 0;
       }
     }
     if (this.frame % 90 === 1) this.patchScene();
@@ -490,9 +508,11 @@
     this.atmo.update(cam.position.y);
 
     // ---- SH / IBL (throttled) ------------------------------------------------------
+    this.skyEnv.pollSH();
+    if (this.skyEnv.shVersion !== this._shSeen) { this._shSeen = this.skyEnv.shVersion; for (let i = 0; i < 9; i++) SU.rpSH.value[i].copy(this.skyEnv.shCPU[i]); }
     this._shUpdateT -= dt;
     if (this._shUpdateT <= 0 || this.frame < 3) {
-      this._shUpdateT = 0.25;
+      this._shUpdateT = 1.0;
       const ga = this.atmo.params.groundAlbedo;
       const envChanged = this.skyEnv.update(li, ga, this.weather.cover * this.weather.cover, this.frame < 3);
       for (let i = 0; i < 9; i++) SU.rpSH.value[i].copy(this.skyEnv.shCPU[i]);
@@ -543,7 +563,7 @@
 
     this._jitteredProj = (this._jitteredProj || new THREE.Matrix4()).copy(cam.projectionMatrix);
     r.shadowMap.autoUpdate = false;
-    r.shadowMap.needsUpdate = true;
+    r.shadowMap.needsUpdate = (this.frame % (Q.shadowEvery || 1)) === 0 || this.frame < 4;
     cam.layers.set(0);
     r.setRenderTarget(this.sceneRT);
     r.clear(true, true, true);
@@ -604,7 +624,9 @@
     }
     // ---- clouds ------------------------------------------------------------------------------
     const useClouds = this.clouds.ready;
-    if (useClouds) {
+    // clouds drift slowly: on Low/Medium they are re-marched every 2nd/3rd frame (TAA hides the reuse)
+    if (useClouds && (this.frame % (Q.cloudEvery || 1) === 0 || this._cloudStale)) {
+      this._cloudStale = false;
       this.clouds.uniforms.uSteps.value = Q.cloudSteps;
       this.clouds.uniforms.uLightSteps.value = Q.cloudLight;
       this.clouds.cloudPass.render(r, this.cloudRT);
