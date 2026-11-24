@@ -8,16 +8,6 @@
   <link rel="stylesheet" href="tailwind.css">
   <script src="vendor/three.min.js"></script>
   <script src="vendor/GLTFLoader.js"></script>
-  <!-- Glenmore physically based render pipeline -->
-  <script src="render/rp_core.js"></script>
-  <script src="render/rp_atmosphere.js"></script>
-  <script src="render/rp_skyenv.js"></script>
-  <script src="render/rp_post.js"></script>
-  <script src="render/rp_clouds.js"></script>
-  <script src="render/rp_water.js"></script>
-  <script src="render/rp_pipeline.js"></script>
-  <script src="render/rp_calibration_result.js"></script>
-  <script src="render/rp_calibration.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -971,11 +961,10 @@
       const scene = new THREE.Scene();
 
       const renderer = new THREE.WebGLRenderer({
-        antialias: false,
-        powerPreference: 'high-performance',
-        preserveDrawingBuffer: true
+        antialias: true,
+        powerPreference: 'high-performance'
       });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1706,7 +1695,7 @@
         }
       };
 
-      const legacyFog = new THREE.FogExp2(weatherPresets.morning.fogColor.getHex(), weatherPresets.morning.fogDensity); // superseded by the volumetric fog pass
+      scene.fog = new THREE.FogExp2(weatherPresets.morning.fogColor.getHex(), weatherPresets.morning.fogDensity);
 
       const skyUniforms = {
         uTopColor: { value: weatherPresets.morning.skyTop.clone() },
@@ -1781,9 +1770,7 @@
           }
         `
       });
-      const skyDomeMesh = new THREE.Mesh(new THREE.SphereGeometry(210, 32, 20), skyMat);
-      skyDomeMesh.visible = false; // physical atmosphere is drawn by the render pipeline
-      scene.add(skyDomeMesh);
+      scene.add(new THREE.Mesh(new THREE.SphereGeometry(210, 32, 20), skyMat));
 
       const hemiLight = new THREE.HemisphereLight(
         weatherPresets.morning.hemiSky,
@@ -1877,8 +1864,7 @@
         uTime: { value: 0 },
         uFlameHeight: { value: 0.72 }, // Driven by Heskestad L_f
         uPuffFreq: { value: 1.97 },    // Driven by Cetegen 1.5 / sqrt(D)
-        uCoreTemp: { value: 1480.0 },  // Kelvin (Planck blackbody color)
-        uFireScale: { value: 1.0 }     // bound to the pipeline's emissive calibration
+        uCoreTemp: { value: 1480.0 }   // Kelvin (Planck blackbody color)
       };
       let interiorFireLight = null;
       let interiorFillLight = null;
@@ -1905,7 +1891,6 @@
           emissiveIntensity: weatherPresets.morning.windowEmissive,
           roughness: 0.25
         });
-        winMat.userData.rpWindow = true;
         windowMaterials.push(winMat);
 
         const glassMat = new THREE.MeshPhysicalMaterial({
@@ -2226,7 +2211,6 @@
               uniform float uTime;
               uniform float uPuffFreq;
               uniform float uCoreTemp;
-              uniform float uFireScale;
               varying vec2 vUv;
               float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
               float noise(vec2 p) {
@@ -2264,7 +2248,7 @@
                 if (intensity < 0.04) discard;
                 float localTemp = 820.0 + (uCoreTemp - 820.0) * clamp(intensity * (1.28 - 0.52 * uv.y), 0.0, 1.15);
                 vec3 col = planckColor(localTemp);
-                gl_FragColor = vec4(col * (1.15 + 0.6 * intensity) * 2.6 * uFireScale, clamp(intensity * 1.35, 0.0, 0.95)); // ≈ 3–6 kcd/m² wood flame
+                gl_FragColor = vec4(col * (1.15 + 0.6 * intensity), clamp(intensity * 1.35, 0.0, 0.95));
               }
             `
           });
@@ -3162,7 +3146,7 @@
       }
 
       const mainChimneys = buildScottishCottage(COTTAGE_X, COTTAGE_Z, 1.0, 0.0, true);
-      // (the neighbouring cottage was removed — one hero cottage in the glen)
+      // (the neighbouring cottage was removed — one cottage in the glen)
       const allChimneySources = [mainChimneys[0]];
 
       // =========================================================================
@@ -3336,20 +3320,32 @@
           }
         `,
         fragmentShader: `
-          ${GlenmoreRP.GLSL_SCENE}
           uniform float uTime;
+          uniform vec3 uSkyCol;
+          uniform vec3 uSunDir;
+          uniform vec3 uSunCol;
+          uniform vec3 uFogColor;
+          uniform float uFogDensity;
           varying vec2 vUv;
           varying vec3 vWorldPos;
           void main() {
             float r = length(vUv - 0.5) * 2.0;
             if (r > 1.0) discard;
             vec3 V = normalize(cameraPosition - vWorldPos);
-            vec3 N = normalize(vec3(sin(vWorldPos.x * 5.2 + uTime * 2.2) * 0.04, 1.0, cos(vWorldPos.z * 5.8 - uTime * 1.8) * 0.04));
-            float F = rpF_Schlick(max(dot(N, V), 0.0), 0.02);
-            vec3 R = reflect(-V, N);
-            vec3 refl = rpIrradiance(R) / 3.14159265;
-            vec3 body = rpIrradiance(vec3(0.0, 1.0, 0.0)) / 3.14159265 * vec3(0.035, 0.028, 0.016);
-            gl_FragColor = vec4(mix(body, refl, F), 1.0);
+            float w1 = sin(vWorldPos.x * 5.2 + uTime * 2.2) * 0.06;
+            float w2 = cos(vWorldPos.z * 5.8 - uTime * 1.8) * 0.06;
+            vec3 N = normalize(vec3(w1, 1.0, w2));
+            float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+            vec3 deepCol = vec3(0.08, 0.18, 0.17);
+            vec3 col = mix(deepCol, uSkyCol * 0.92, clamp(0.28 + fresnel * 0.68, 0.0, 0.92));
+            vec3 H = normalize(normalize(uSunDir) + V);
+            col += uSunCol * pow(max(dot(N, H), 0.0), 64.0) * 0.75;
+            // Soft shoreline foam & pebble blend
+            float shore = smoothstep(0.84, 1.0, r);
+            col = mix(col, vec3(0.74, 0.80, 0.78), shore * 0.28);
+            float dist = length(cameraPosition - vWorldPos);
+            float fogF = 1.0 - exp(-(uFogDensity * dist) * (uFogDensity * dist));
+            gl_FragColor = vec4(mix(col, uFogColor, clamp(fogF, 0.0, 1.0)), 0.88 * (1.0 - smoothstep(0.92, 1.0, r)));
           }
         `
       });
@@ -3717,13 +3713,12 @@
       const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.24), hullMat);
       saddle.position.set(0, 0.89, -0.22); bikeLeanGroup.add(saddle);
       scene.add(bikeG);
-      // A rider: the bicycle no longer rides itself. Pelvis on the saddle, hands on the bars,
-      // feet on the pedals; legs follow the crank (gear ratio ≈ 0.45 crank turns per wheel turn).
+      // A rider: the bicycle no longer rides itself (feet follow the crank, ≈0.45 turns per wheel turn)
       const bikeRider = buildArticulatedFamilyMember({ scale: 0.8, topColor: 0x2f5d8a, botColor: 0x2b2b30, hairColor: 0x3a2a1c, isChild: true });
       scene.remove(bikeRider.root);
       bikeLeanGroup.add(bikeRider.root);
       bikeRider.root.position.set(0, 0.92 - 0.86 * 0.8, -0.2);
-      bikeRider.pelv.rotation.x = 0.32;                       // leaning toward the handlebar
+      bikeRider.pelv.rotation.x = 0.32;
       bikeRider.armL.rotation.x = bikeRider.armR.rotation.x = -1.15;
       bikeRider.armL.rotation.z = -0.12; bikeRider.armR.rotation.z = 0.12;
 
@@ -4590,18 +4585,23 @@
             }
           `,
           fragmentShader: `
-            ${GlenmoreRP.GLSL_SCENE}
             uniform sampler2D uMap;
+            uniform vec3 uSunDir;
+            uniform vec3 uSunColor;
+            uniform vec3 uFogColor;
+            uniform float uFogDensity;
             varying vec2 vUv;
             varying vec3 vNormal;
             varying vec3 vWorldPos;
             void main() {
-              vec3 rho = rpSat(rpToLinear(texture2D(uMap, vUv).rgb), 0.85) * rpAlbedoFoliage;
+              vec3 texCol = texture2D(uMap, vUv).rgb;
               vec3 N = normalize(vNormal);
-              float vis = rpSunShadow(vWorldPos, N, rpIGN(gl_FragCoord.xy)) * rpCloudShadowAt(vWorldPos);
-              vec3 direct = rpSunIllum * vis * max(dot(N, rpSunDir), 0.0) * rho / 3.14159265;
-              vec3 ambient = rpIrradiance(N) * rho / 3.14159265 * 0.75;   // crown occludes ~25 % of the sky
-              gl_FragColor = vec4(direct + ambient, 1.0);
+              vec3 L = normalize(uSunDir);
+              float ndl = max(dot(N, L), 0.0) * 0.72 + 0.28;
+              vec3 lit = texCol * (vec3(0.32, 0.36, 0.35) + uSunColor * ndl * 0.88);
+              float dist = length(cameraPosition - vWorldPos);
+              float fogF = 1.0 - exp(-(uFogDensity * dist) * (uFogDensity * dist));
+              gl_FragColor = vec4(mix(lit, uFogColor, clamp(fogF, 0.0, 1.0)), 1.0);
             }
           `
         });
@@ -4639,7 +4639,6 @@
             varying vec3 vNormal;
             varying float vColorVar;
             varying float vHeightNorm;
-            varying vec3 vCrownN;
             ${TREE_WIND_GLSL}
             void main() {
               vUv = uv;
@@ -4666,44 +4665,44 @@
 
               vec3 nLocal = normalize(vec3(sin(aCardParams.y) * 0.6, 0.72, cos(aCardParams.y) * 0.6));
               vNormal = nLocal;
-              // crown centre ≈ 62 % of tree height above the anchor (H estimated from normalised height)
-              float treeH = max((aOffset.y - aTreeAnchor.y) / max(aHier.x, 0.08), 2.0);
-              vec3 crownC = aTreeAnchor + vec3(0.0, treeH * 0.62, 0.0);
-              vCrownN = wp - crownC;
               gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
             }
           `,
           fragmentShader: `
-            ${GlenmoreRP.GLSL_SCENE}
             uniform sampler2D uMap;
             uniform vec3 uTint;
+            uniform vec3 uSunDir;
+            uniform vec3 uSunColor;
+            uniform vec3 uFogColor;
+            uniform float uFogDensity;
             varying vec2 vUv;
             varying vec3 vWorldPos;
             varying vec3 vNormal;
             varying float vColorVar;
             varying float vHeightNorm;
-            varying vec3 vCrownN;
             void main() {
               vec4 tex = texture2D(uMap, vUv);
               if (tex.a < 0.38) discard;
+
+              vec3 N = normalize(vNormal);
+              vec3 L = normalize(uSunDir);
               vec3 V = normalize(cameraPosition - vWorldPos);
-              vec3 L = rpSunDir;
-              // crown-sphere normal blended with the card normal (volumetric crown shading)
-              vec3 N = normalize(mix(normalize(vNormal), normalize(vCrownN), 0.7));
-              vec3 rho = rpSat(rpToLinear(tex.rgb * uTint), rpFoliageSat) * mix(0.84, 1.18, vColorVar) * rpAlbedoFoliage;
-              vec3 tau = rho * vec3(0.9, 1.05, 0.5);
-              float crownAO = mix(0.42, 1.0, clamp(vHeightNorm, 0.0, 1.0));
-              float vis = rpSunShadow(vWorldPos + L * 0.35, N, rpIGN(gl_FragCoord.xy)) * rpCloudShadowAt(vWorldPos);
-              float NoL = dot(N, L);
-              vec3 E = rpSunIllum * vis;
-              vec3 direct = E * (rho * max(NoL, 0.0) + tau * max(-NoL, 0.0) * 0.6) / 3.14159265;
-              direct += E * tau * pow(max(dot(V, -L), 0.0), 4.0) * 0.4;     // backlit leaves
-              vec3 H = normalize(L + V);
-              float a = 0.45;
-              direct += E * rpD_GGX(max(dot(N, H), 0.0), a) * rpV_Smith(max(dot(N, V), 1e-3), max(NoL, 0.0), a)
-                        * rpF_Schlick(max(dot(V, H), 0.0), 0.04) * max(NoL, 0.0);
-              vec3 ambient = rpIrradiance(N) * rho / 3.14159265 * crownAO;
-              gl_FragColor = vec4(direct + ambient, 1.0);
+
+              vec3 col = tex.rgb * uTint * mix(0.84, 1.18, vColorVar);
+              // Crown self-shadowing AO (darker interior/lower crown, brighter sunlit top)
+              float crownAO = mix(0.55, 1.12, clamp(vHeightNorm, 0.0, 1.0));
+              col *= crownAO;
+
+              float ndl = max(dot(N, L), 0.0) * 0.65 + 0.35;
+              vec3 lit = col * (vec3(0.32, 0.38, 0.35) + uSunColor * ndl * 0.92);
+
+              // Subsurface translucency when backlit by Scottish sun
+              float sss = pow(max(dot(V, -L), 0.0), 3.0);
+              lit += uSunColor * col * sss * 0.55;
+
+              float dist = length(cameraPosition - vWorldPos);
+              float fogF = 1.0 - exp(-(uFogDensity * dist) * (uFogDensity * dist));
+              gl_FragColor = vec4(mix(lit, uFogColor, clamp(fogF, 0.0, 1.0)), 1.0);
             }
           `
         });
@@ -4907,18 +4906,6 @@
         addFoliageTuft(batch, trunkPts[trunkSegs], anchor, treeH, 2.5, 1.4 * scale, treePhase, (isPine ? 2.1 : 1.6) * scale, isPine ? 7 : 5);
       }
 
-      // Shadow-map depth material that reproduces the wind displacement & card instancing
-      function makeTreeDepthMaterial(src, alphaTest) {
-        return new THREE.ShaderMaterial({
-          uniforms: src.uniforms,
-          vertexShader: src.vertexShader,
-          side: THREE.DoubleSide,
-          fragmentShader: alphaTest
-            ? '#include <packing>\nuniform sampler2D uMap;\nvarying vec2 vUv;\nvoid main(){ if (texture2D(uMap, vUv).a < 0.38) discard; gl_FragColor = packDepthToRGBA(gl_FragCoord.z); }'
-            : '#include <packing>\nvoid main(){ gl_FragColor = packDepthToRGBA(gl_FragCoord.z); }'
-        });
-      }
-
       function finalizeSpeciesMeshes(batch, barkTex, leafTex, leafTint) {
         // 1. Merged hierarchical wood skeleton mesh
         const woodGeo = new THREE.BufferGeometry();
@@ -4930,8 +4917,6 @@
         woodGeo.setIndex(batch.idx);
         const woodMesh = new THREE.Mesh(woodGeo, createBarkShaderMaterial(barkTex));
         woodMesh.frustumCulled = false;
-        woodMesh.castShadow = true;
-        woodMesh.customDepthMaterial = makeTreeDepthMaterial(woodMesh.material, false);
         scene.add(woodMesh);
 
         // 2. Instanced crossed-quad botanical foliage clusters (3D volumetric depth from every angle)
@@ -4956,8 +4941,6 @@
 
         const folMesh = new THREE.Mesh(cardGeo, createFoliageShaderMaterial(leafTex, leafTint));
         folMesh.frustumCulled = false;
-        folMesh.castShadow = true;
-        folMesh.customDepthMaterial = makeTreeDepthMaterial(folMesh.material, true);
         scene.add(folMesh);
       }
 
@@ -5278,8 +5261,7 @@
         uFogColor: { value: weatherPresets.morning.fogColor.clone() },
         uFogDensity: { value: weatherPresets.morning.fogDensity },
         uWarmLightPos: { value: cottageWarmLight.position.clone() },
-        uWarmLightStrength: { value: 0.7 },
-        uWarmI: { value: new THREE.Vector3() }
+        uWarmLightStrength: { value: 0.7 }
       };
 
       const grassMat = new THREE.ShaderMaterial({
@@ -5425,9 +5407,12 @@
           }
         `,
         fragmentShader: `
-          ${GlenmoreRP.GLSL_SCENE}
+          uniform vec3 uSunDir;
+          uniform vec3 uSunColor;
+          uniform vec3 uFogColor;
+          uniform float uFogDensity;
           uniform vec3 uWarmLightPos;
-          uniform vec3 uWarmI;           // window spill, luminous intensity (kcd, rgb)
+          uniform float uWarmLightStrength;
 
           varying float vHeight;
           varying float vWindBend;
@@ -5437,48 +5422,40 @@
           varying vec3 vNormal;
 
           void main() {
-            vec3 V = normalize(cameraPosition - vWorldPos);
             vec3 N = normalize(vNormal);
-            if (dot(N, V) < 0.0) N = -N;               // thin blade: two-sided
-            vec3 L = rpSunDir;
-            float noise = rpIGN(gl_FragCoord.xy);
+            vec3 L = normalize(uSunDir);
+            vec3 V = normalize(cameraPosition - vWorldPos);
 
-            // leaf optics: reflectance ρ (ColorChecker "foliage"-class albedo) ≈ transmittance τ
-            vec3 rho = rpSat(rpToLinear(vColor), rpGrassSat) * rpAlbedoGrass;
-            rho = mix(rho, rho * vec3(1.18, 1.22, 0.80), vHeight * vHeight * 0.5);   // drier, yellower tips
-            // senescent straw (measured dry-grass reflectance ≈ 0.16 / 0.12 / 0.05), per-blade random
-            float dryN = fract(sin(dot(floor(vWorldPos.xz * 7.0), vec2(12.9898, 78.233))) * 43758.5453);
-            rho = mix(rho, vec3(0.16, 0.12, 0.05) * rpAlbedoGrass, step(dryN, rpGrassDry) * (0.6 + 0.4 * vHeight));
-            vec3 tau = rho * vec3(0.95, 1.05, 0.55);
+            // Deep canopy ambient occlusion at roots (dense 220k-blade turf shadow)
+            float ao = mix(0.20, 1.10, smoothstep(0.0, 0.85, vHeight));
+            vec3 baseCol = vColor * ao;
+            baseCol = mix(baseCol, baseCol * vec3(1.24, 1.30, 0.85), vHeight * vHeight * 0.56);
 
-            // Beer–Lambert canopy (Monsi–Saeki, spherical LAD k = 0.5, LAI ≈ 3)
-            float lai = 2.2 * (1.0 - vHeight);
-            float skyView = exp(-0.5 * lai * 0.85);                                // diffuse gap fraction
-            float sunGap = exp(-0.5 * lai / max(L.y, 0.12));                        // direct beam gap fraction
+            // Diffuse wrap sunlight
+            float ndl = max(dot(N, L), 0.0) * 0.68 + 0.32;
+            vec3 lit = baseCol * (vec3(0.30, 0.36, 0.34) + uSunColor * ndl * 0.94);
 
-            float vis = rpSunShadow(vWorldPos, N, noise) * rpCloudShadowAt(vWorldPos);
-            float NoL = dot(N, L);
-            vec3 E = rpSunIllum * vis * sunGap;
-            vec3 direct = E * (rho * max(NoL, 0.0) + tau * max(-NoL, 0.0) * 0.9) / 3.14159265;
-            // cuticle specular (GGX, n = 1.5 wax → F0 0.04)
+            // Subsurface scattering translucency through thin blades
+            float backLight = pow(max(dot(V, -L), 0.0), 3.0) * vHeight;
+            lit += uSunColor * vec3(0.46, 0.72, 0.22) * backLight * 0.55;
+
+            // Honami shimmering light/shadow contrast as coherent wind sweeps bend blades flat
             vec3 H = normalize(L + V);
-            float a = 0.38;
-            float spec = rpD_GGX(max(dot(N, H), 0.0), a) * rpV_Smith(max(dot(N, V), 1e-3), max(NoL, 0.0), a)
-                       * rpF_Schlick(max(dot(V, H), 0.0), 0.04) * max(NoL, 0.0);
-            direct += E * spec * (0.5 + 0.5 * vWindBend);
-            // forward-scattered transmitted light (backlit grass glow)
-            direct += E * tau * pow(max(dot(V, -L), 0.0), 6.0) * 0.35 * vHeight;
+            float spec = pow(max(dot(N, H), 0.0), 16.0) * vHeight * (0.14 + 0.42 * vWindBend);
+            lit += uSunColor * spec * 0.42;
+            lit *= mix(0.90, 1.12, vWaveCrest * vWindBend * vHeight);
 
-            vec3 ambient = rpIrradiance(N) * rho / 3.14159265 * skyView;
-            ambient += rpIrradiance(-N) * tau / 3.14159265 * skyView * 0.5;      // light through the blade
+            // Warm cottage window glow on nearby grass
+            float dWarm = length(vWorldPos - uWarmLightPos);
+            float warmAtten = uWarmLightStrength / (1.0 + 0.09 * dWarm * dWarm);
+            lit += vec3(1.0, 0.65, 0.28) * warmAtten * (0.22 + 0.78 * vHeight);
 
-            // window spill: point source, inverse-square
-            vec3 dW = uWarmLightPos - vWorldPos;
-            float d2 = max(dot(dW, dW), 0.25);
-            vec3 warm = uWarmI / d2 * max(dot(N, normalize(dW)) * 0.6 + 0.4, 0.0) * rho / 3.14159265 * (0.3 + 0.7 * vHeight);
+            // Exponential Highland mist fog
+            float dist = length(cameraPosition - vWorldPos);
+            float fogFactor = 1.0 - exp(-(uFogDensity * dist) * (uFogDensity * dist));
+            vec3 finalCol = mix(lit, uFogColor, clamp(fogFactor, 0.0, 1.0));
 
-            vec3 col = (direct + ambient + warm) * mix(0.94, 1.06, vWaveCrest * vWindBend * vHeight);
-            gl_FragColor = vec4(col, 1.0);
+            gl_FragColor = vec4(finalCol, 1.0);
           }
         `
       });
@@ -5569,16 +5546,14 @@
           }
         `,
         fragmentShader: `
-          ${GlenmoreRP.GLSL_SCENE}
+          uniform vec3 uFogColor;
+          uniform float uFogDensity;
           varying vec3 vColor;
           varying vec3 vWorldPos;
           void main() {
-            vec3 N = vec3(0.0, 1.0, 0.0);
-            vec3 rho = rpToLinear(vColor) * rpAlbedoGrass;
-            float vis = rpSunShadow(vWorldPos, N, rpIGN(gl_FragCoord.xy)) * rpCloudShadowAt(vWorldPos);
-            vec3 direct = rpSunIllum * vis * (0.55 + 0.45 * max(rpSunDir.y, 0.0)) * rho / 3.14159265;
-            vec3 ambient = rpIrradiance(N) * rho / 3.14159265 * 0.8;
-            gl_FragColor = vec4(direct + ambient, 1.0);
+            float dist = length(cameraPosition - vWorldPos);
+            float fogFactor = 1.0 - exp(-(uFogDensity * dist) * (uFogDensity * dist));
+            gl_FragColor = vec4(mix(vColor, uFogColor, clamp(fogFactor, 0.0, 1.0)), 1.0);
           }
         `
       });
@@ -6069,19 +6044,14 @@
         const p = weatherPresets[key];
         if (!p) return;
         state.weather = key;
-        if (window.__rp) {
-          window.__rp.setWeather(key, !syncSliders);
-          const wh = GlenmoreRP.WEATHER[key] && GlenmoreRP.WEATHER[key].hour;
-          if (syncSliders && wh != null) state.simMinutes = wh * 60;
-        }
 
         skyUniforms.uTopColor.value.copy(p.skyTop);
         skyUniforms.uHorizonColor.value.copy(p.skyHorizon);
         skyUniforms.uSunDir.value.copy(p.sunPos).normalize();
         skyUniforms.uSunColor.value.copy(p.sunColor);
 
-        legacyFog.color.copy(p.fogColor);
-        legacyFog.density = p.fogDensity;
+        scene.fog.color.copy(p.fogColor);
+        scene.fog.density = p.fogDensity;
 
         sunLight.color.copy(p.sunColor);
         sunLight.intensity = p.sunIntensity;
@@ -6183,7 +6153,8 @@
 
       document.getElementById('slider-density').addEventListener('input', (e) => {
         state.grassCount = parseInt(e.target.value, 10);
-        grassGeo.instanceCount = Math.min(placed, state.grassCount, window.__rp ? window.__rp.Q.grass : Infinity);
+        fpsGov.grass = Math.min(placed, state.grassCount);
+        grassGeo.instanceCount = fpsGov.grass;
         const formatted = state.grassCount.toLocaleString('tr-TR');
         document.getElementById('val-density').textContent = `${formatted} sap`;
         document.getElementById('hud-blades').textContent = formatted;
@@ -6235,7 +6206,7 @@
         document.getElementById('val-density').textContent = '220.000 sap';
         document.getElementById('hud-blades').textContent = '220.000';
 
-        grassGeo.instanceCount = Math.min(placed, state.grassCount, window.__rp ? window.__rp.Q.grass : Infinity);
+        grassGeo.instanceCount = Math.min(placed, state.grassCount);
         grassUniforms.uYoungModulus.value = 1.2;
         grassUniforms.uDamping.value = 0.16;
         const rad = (235 * Math.PI) / 180;
@@ -6315,11 +6286,11 @@
                             + 0.10 * Math.sin(elapsed * fPuff * 13.7 + 1.2)
                             + 0.06 * Math.sin(elapsed * 23.4);
         if (interiorFireLight) {
-          interiorFireLight.intensity = GlenmoreRP.fireIntensityKcd(Q, coreTempK) * flicker; // Planck × V(λ) luminous efficacy
+          interiorFireLight.intensity = (1.6 + Q * 0.28) * flicker;
           interiorFireLight.position.x = 0.04 * Math.sin(elapsed * 7.3);
         }
         if (interiorFillLight) {
-          interiorFillLight.intensity = 0.011 * (0.94 + 0.06 * flicker); // 2300 K oil lamp ≈ 140 lm
+          interiorFillLight.intensity = (0.55 + Q * 0.065) * (0.94 + 0.06 * flicker);
         }
 
         // Advect rising glowing hearth sparks
@@ -7399,7 +7370,7 @@
             skyUniforms.uTopColor.value.copy(skyTopC);
             skyUniforms.uHorizonColor.value.copy(skyHorC);
             skyUniforms.uSunDir.value.set(sx, sy, sz).normalize();
-            legacyFog.color.copy(skyHorC);
+            scene.fog.color.copy(skyHorC);
             grassUniforms.uFogColor.value.copy(skyHorC);
             grassUniforms.uSunDir.value.set(sx, sy, sz).normalize();
             treeUniforms.uFogColor.value.copy(skyHorC);
@@ -7481,7 +7452,7 @@
         });
       });
       document.getElementById('btn-snap-png').addEventListener('click', () => {
-        rpRenderFrame(0.016);
+        renderer.render(scene, camera);
         const url = renderer.domElement.toDataURL('image/png');
         const a = document.createElement('a');
         a.href = url;
@@ -7647,7 +7618,8 @@
         updateAstronomicalClock(dt);
         updateCameraTransform(dt);
         updateWindAudio(instWindRef);
-        rpRenderFrame(dt);
+        renderer.render(scene, camera);
+        updateFpsGovernor(performance.now());
 
         fpsFrames++;
         fpsTimer += dt;
@@ -7660,64 +7632,35 @@
 
 
       // =========================================================================
-      // 16. GLENMORE PHYSICALLY BASED RENDER PIPELINE — integration
+      // 60 FPS GOVERNOR — keeps the frame rate at 60 without visible flicker.
+      // Below 57 fps: remove 15 % of the grass blades (down to 40k), then lower the pixel ratio
+      // one step. Holding 60 fps: give blades back slowly (back-off doubles after a failed raise).
       // =========================================================================
-      const rp = window.__rp = new GlenmoreRP.Pipeline(renderer, scene, camera, { sunLight, hemiLight });
-      sunLight.target.position.set(0, 0, -4);
-      scene.add(sunLight.target);
-      sunLight.shadow.bias = -0.0004;
-      sunLight.shadow.normalBias = 0.02;
-      // interior of the hero cottage: daylight factor applies to the IBL
-      rp.setInteriorBox(0, COTTAGE_X, COTTAGE_Z, 6.05, 3.35, 0.0,
-        getTerrainHeight(COTTAGE_X, COTTAGE_Z) - 0.6, getTerrainHeight(COTTAGE_X, COTTAGE_Z) - 0.12 + 3.36);
-      // photometric lights (intensity in kcd, colour from Planck's law)
-      const setKelvin = (light, T) => { const c = GlenmoreRP.kelvinToLinearRGB(T); light.color.setRGB(c[0], c[1], c[2]); };
-      if (interiorFireLight) { setKelvin(interiorFireLight, 1850); interiorFireLight.decay = 2; interiorFireLight.distance = 0; }
-      if (interiorFillLight) { setKelvin(interiorFillLight, 2300); interiorFillLight.decay = 2; interiorFillLight.distance = 0; }
-      setKelvin(cottageWarmLight, 2300); cottageWarmLight.decay = 2; cottageWarmLight.distance = 22;
-      const warmRGB = GlenmoreRP.kelvinToLinearRGB(2300);
-      const rpWindDir = new THREE.Vector2(1, 0);
-      rp.water = new GlenmoreRP.Water(renderer, scene, rp, {
-        pond: { mesh: pondMesh, x: POND_X, z: POND_Z, r: POND_R, y: pondWaterY, uniforms: pondUniforms },
-        terrainHeight: getTerrainHeight
-      });
-      window.__glen = { state, camCtrl, camPresets, applyWeather, camera, getTerrainHeight, COTTAGE_X, COTTAGE_Z, POND_X, POND_Z };
-      window.__glen.setView = function (tx, ty, tz, yaw, pitch, dist) {
-        camCtrl.mode = 'orbit';
-        camCtrl.target.set(tx, ty, tz); camCtrl.desiredTarget.set(tx, ty, tz);
-        camCtrl.yaw = camCtrl.desiredYaw = yaw; camCtrl.pitch = camCtrl.desiredPitch = pitch;
-        camCtrl.dist = camCtrl.desiredDist = dist;
-        rp._taaReset = true;
-      };
-      terrainMesh.material.userData.rpVColorScale = rp.terrainVColor;
-      rp.water.far.mesh.material.userData.rpVColorScale = rp.terrainVColor;
-      fireUniforms.uFireScale = rp.matUniforms.rpEmissiveScale;
-      // quality level also caps the number of grass blades (the slider can still lower it)
-      rp.onQuality = (q, Q) => {
-        grassGeo.instanceCount = Math.min(placed, state.grassCount, Q.grass);
+      const fpsGov = { grass: Math.min(placed, state.grassCount), ema: 16.7, last: 0, t: 0, good: 0, wait: 3, lastRaise: 0,
+        prSteps: [Math.min(window.devicePixelRatio || 1, 1.5), 1.25, 1.0, 0.85].filter((v, i, a) => i === 0 || v < a[0]) };
+      fpsGov.pr = 0;
+      function updateFpsGovernor(now) {
+        if (fpsGov.last) {
+          const ms = Math.min(250, now - fpsGov.last);
+          fpsGov.ema += (ms - fpsGov.ema) * 0.1;
+          fpsGov.t += ms; fpsGov.good = ms < 17.6 ? fpsGov.good + ms : 0;
+        }
+        fpsGov.last = now;
+        if (fpsGov.t < 700) return;
+        fpsGov.t = 0;
+        const fps = 1000 / fpsGov.ema;
+        const cap = Math.min(placed, state.grassCount);
+        if (fps < 57) {
+          if (fpsGov.lastRaise && now - fpsGov.lastRaise < 4000) fpsGov.wait = Math.min(60, fpsGov.wait * 2);
+          fpsGov.lastRaise = 0;
+          if (grassGeo.instanceCount > 40000) grassGeo.instanceCount = Math.max(40000, Math.round(grassGeo.instanceCount * (fps < 45 ? 0.75 : 0.85)));
+          else if (fpsGov.pr < fpsGov.prSteps.length - 1) { fpsGov.pr++; renderer.setPixelRatio(fpsGov.prSteps[fpsGov.pr]); renderer.setSize(window.innerWidth, window.innerHeight); }
+        } else if (fpsGov.good > fpsGov.wait * 1000) {
+          fpsGov.good = 0;
+          if (grassGeo.instanceCount < cap) { grassGeo.instanceCount = Math.min(cap, Math.round(grassGeo.instanceCount * 1.08) + 1000); fpsGov.lastRaise = now; }
+        }
         const hb = document.getElementById('hud-blades');
         if (hb) hb.textContent = grassGeo.instanceCount.toLocaleString('tr-TR');
-      };
-      rp.onQuality(rp.quality, rp.Q);
-      rp.bindCustomMaterials();
-      rp.patchScene();
-      rp.setWeather(state.weather, true);
-      if (window.GlenmoreCalib) window.GlenmoreCalib.attach(rp, { state, camera, camCtrl, camPresets, applyWeather });
-
-      function rpRenderFrame(dt) {
-        // window light spill ∝ the interior illuminance (fire + lamp), ≈ 30 cd for 4 lit windows
-        const fireK = THREE.MathUtils.clamp(state.firePowerKW / 9.5, 0.2, 2.0);
-        const Iw = 0.03 * (0.5 + 0.5 * fireK);
-        cottageWarmLight.intensity = Iw;
-        grassUniforms.uWarmI.value.set(warmRGB[0] * Iw, warmRGB[1] * Iw, warmRGB[2] * Iw);
-        const rad = (state.windDirDeg * Math.PI) / 180;
-        rpWindDir.set(Math.sin(rad), Math.cos(rad));
-        if (rp.frame % (rp.Q.waterEvery || 1) === 0) rp.water.update(rp.time, state.windSpeed, rpWindDir);
-        rp.render(dt, {
-          dayOfYear: 243 + ((state.simDay - 1) % 21),   // early September: heather in bloom
-          hours: (state.simMinutes / 60) % 24,
-          wind: { x: Math.sin(rad), z: Math.cos(rad), speed: state.windSpeed }
-        });
       }
 
       updateCameraTransform(1.0);
