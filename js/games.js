@@ -155,6 +155,7 @@ const App = (() => {
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
+    { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
@@ -235,6 +236,7 @@ const App = (() => {
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
+    'living-island': 'img/library/living-island-1280.svg',
     'koy': 'img/library/koy-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
@@ -489,6 +491,9 @@ const App = (() => {
   }
 
   /* ==================== KÖY. / GLENMORE SCOTTISH HIGHLAND GARDEN ==================== */
+  function livingIsland() {
+    openEmbeddedGame({title:'Ergün’ün Çiftliği — Living Island',url:'games/living-island/index.html?v=1',tag:'BABA. · 2.5D',lead:T('Tropikal adada çiftçilik, ticaret ve yaşayan köy.','Farming, trade and village life on a tropical island.'),tip:T('Tarlaya dokun, görevleri sıraya al. Huzur ve fotoğraf modlarını dene.','Tap crops to queue tasks. Try zen and photo modes.')});
+  }
   function koy() {
     openEmbeddedGame({
       title: T('KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'),
@@ -844,6 +849,7 @@ const App = (() => {
     else if (r === 'rota-conference') rotaConference();
     else if (r === 'runaway-cheese') runawayCheese();
     else if (r === 'sis-hatti') sisHatti();
+    else if (r === 'living-island') livingIsland();
     else if (r === 'koy') koy();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === '2048') g2048();
