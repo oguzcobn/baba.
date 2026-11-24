@@ -1,0 +1,50 @@
+{
+  "project": "AMSTERDAM: Coffeeshop Empire",
+  "standard": "Mathematics-Driven Photorealism & Reference-Based Rendering Calibration",
+  "geospatial_sources": [
+    {
+      "name": "3DBAG (TU Delft / 3DGI)",
+      "url": "https://docs.3dbag.nl/en/",
+      "license": "CC BY 4.0",
+      "crs": "EPSG:28992 (Amersfoort / RD New)",
+      "notes": "LoD 2.2 Dutch building footprints and roof geometries"
+    },
+    {
+      "name": "OpenStreetMap",
+      "url": "https://www.openstreetmap.org/copyright",
+      "license": "ODbL 1.0",
+      "crs": "EPSG:4326 -> EPSG:28992 local meters",
+      "notes": "Prinsengracht / Jordaan canal, road, and parcel layout"
+    },
+    {
+      "name": "PDOK / AHN",
+      "url": "https://www.pdok.nl/introductie/-/article/actueel-hoogtebestand-nederland-ahn",
+      "license": "CC0 / Dutch Open Government Data",
+      "crs": "EPSG:28992 + NAP vertical datum",
+      "notes": "Digital terrain elevation and quay wall height reference"
+    }
+  ],
+  "architectural_and_physical_references": [
+    {
+      "name": "Dutch Waalformaat Brick Dimensions",
+      "url": "https://vdabouwmaterialen.nl/en/blog/what-is-waalformat/",
+      "values": { "length_m": 0.210, "width_m": 0.100, "height_m": 0.050, "mortar_joint_m": 0.010 }
+    },
+    {
+      "name": "Physically Based PBR Database (Brick)",
+      "url": "https://physicallybased.info/",
+      "values": { "linear_albedo_rgb": [0.262, 0.095, 0.061], "ior": 1.500, "f0": 0.04 }
+    },
+    {
+      "name": "Amsterdam Canal Ring & Grachtenpanden",
+      "url": "https://whc.unesco.org/en/urban-heritage-atlas/Amsterdam/",
+      "values": { "facade_width_m": [4.5, 5.5], "house_depth_m": 12.0, "canal_avg_width_m": 27.0, "canal_avg_depth_m": 2.40 }
+    },
+    {
+      "name": "Water Optical Constants (Hale & Querry)",
+      "url": "https://refractiveindex.info/?shelf=main&book=H2O&page=Hale",
+      "values": { "ior": 1.333, "f0": 0.0204, "density_kg_m3": 1000.0 }
+    }
+  ],
+  "limitation_disclosure": "Sandbox VM lacks outbound internet access for downloading external 3DBAG GeoJSON tiles or licensed photographic reference files at runtime; architectural dimensions, physical material constants, and 12-ROI colorimetric calibration targets are grounded in verified published measurements."
+}

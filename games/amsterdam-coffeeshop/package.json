@@ -1,0 +1,16 @@
+{
+  "name": "amsterdam-coffeeshop-empire",
+  "version": "0.1.0-vertical-slice",
+  "description": "AMSTERDAM: Coffeeshop Empire — Mathematics-Driven Photorealism 3D Open-World Business Simulation",
+  "type": "module",
+  "scripts": {
+    "test": "node src/tests/run_tests.mjs",
+    "calibrate": "python3 src/calibration/calibrate.py"
+  },
+  "dependencies": {
+    "three": "0.128.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

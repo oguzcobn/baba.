@@ -158,6 +158,7 @@ const App = (() => {
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
+    { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['İşletme', 'Business'], ['3D açık dünya', '3D open world'], ['25 karakter', '25 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
@@ -239,6 +240,7 @@ const App = (() => {
     'living-island': 'img/library/living-island-1280.svg',
     'koy': 'img/library/koy-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
+    'amsterdam-coffeeshop': 'img/library/amsterdam-coffeeshop-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
     'tekken-3': 'img/library/tekken-3-1280.webp',
@@ -514,6 +516,17 @@ const App = (() => {
       tag: T('BABA. STRATEJİ · 3D Kule Savunma', 'BABA. STRATEGY · 3D Tower Defense'),
       lead: T('Yaylayı 10 dalga boyunca savun: taş platformlara Serender Okçu, Kaçkar Topçu, Fırtına Kulesi kur; Kemençe, Meşale ve Zigana Buzulu güçlerini doğru anda kullan.', 'Defend the highland for 10 waves: build towers on the stone pads and time your Kemençe, Torch and Glacier powers.'),
       tip: T('Platforma dokun → kule seç. Sürükleyerek döndür, iki parmakla yakınlaş. “PBR Kalibrasyon” panelinde ışığı gerçek yayla fotoğraflarına göre ölçüp ayarlayabilirsin.', 'Tap a pad → pick a tower. Drag to orbit, pinch to zoom. The “PBR Calibration” panel measures the lighting against real highland photos.')
+    });
+  }
+
+  /* ==================== AMSTERDAM. / COFFEESHOP EMPIRE (3D) ==================== */
+  function amsterdamCoffeeshop() {
+    openEmbeddedGame({
+      title: T('AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'),
+      url: 'games/amsterdam-coffeeshop/index.html?v=2',
+      tag: T('BABA. SİMÜLASYON · 3D Açık Dünya İşletme · +18', 'BABA. SIMULATION · 3D Open-World Business · 18+'),
+      lead: T('Prinsengracht kıyısında kendi dükkânını işlet: kasa, stok, personel, kanal turları. Müşterilerin 25 özgün karakter; hepsi süperkuadrik geometri, ters kinematik ve fizik tabanlı animasyonla matematikle modellendi.', 'Run your own shop on the Prinsengracht: till, stock, staff and canal tours. Your customers are 25 original characters, all modeled with superquadric geometry, inverse kinematics and physics-based animation.'),
+      tip: T('WASD ile gez, E ile etkileş, 1/2/3 kamera. “Karakterler” butonu (K) 25 karakteri koşu bandında, matematik notlarıyla gösterir.', 'WASD to move, E to interact, 1/2/3 for cameras. The “Characters” button (K) shows all 25 on a treadmill with their math notes.')
     });
   }
 
@@ -852,6 +865,7 @@ const App = (() => {
     else if (r === 'living-island') livingIsland();
     else if (r === 'koy') koy();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
+    else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();
