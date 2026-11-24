@@ -53,13 +53,14 @@
       return res; // ≈ [-0.9, 0.9]
     };
   }
-  RP.buildCloudNoise = function () {
+  RP.buildCloudNoise = function () { const it = RP.buildCloudNoiseIter(); let r; while (!(r = it.next()).done); return r.value; };
+  RP.buildCloudNoiseIter = function* () {
     const rnd = mulberry(1337);
     const N = 64, M = 32;
     const base = new Uint8Array(N * N * N * 4);
     const p1 = makePerlin(4, rnd), p2 = makePerlin(8, rnd), p3 = makePerlin(16, rnd);
     const w1 = makeWorley(4, rnd), w2 = makeWorley(8, rnd), w3 = makeWorley(16, rnd), w4 = makeWorley(32, rnd);
-    for (let z = 0; z < N; z++) for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    for (let z = 0; z < N; z++) { if (z % 2 === 1) yield; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
       const u = (x + 0.5) / N, v = (y + 0.5) / N, w = (z + 0.5) / N;
       const perlin = 0.5 + 0.5 * (p1(u, v, w) * 0.625 + p2(u, v, w) * 0.25 + p3(u, v, w) * 0.125) * 1.4;
       const wa = w1(u, v, w), wb = w2(u, v, w), wc = w3(u, v, w), wd = w4(u, v, w);
@@ -71,7 +72,7 @@
       base[i + 1] = Math.round((wb * 0.625 + wc * 0.25 + wd * 0.125) * 255);
       base[i + 2] = Math.round((wc * 0.625 + wd * 0.25 + wb * 0.125) * 255);
       base[i + 3] = Math.round((wd * 0.75 + wc * 0.25) * 255);
-    }
+    } }
     const detail = new Uint8Array(M * M * M * 4);
     const d1 = makeWorley(4, rnd), d2 = makeWorley(8, rnd), d3 = makeWorley(16, rnd);
     for (let z = 0; z < M; z++) for (let y = 0; y < M; y++) for (let x = 0; x < M; x++) {
@@ -286,11 +287,17 @@
 
     const self = this;
     // build the noise without blocking the first frames
-    setTimeout(function () {
-      const n = RP.buildCloudNoise();
+    // build the noise a slice at a time (≈ 4 ms per step) so the first seconds stay smooth
+    const it = RP.buildCloudNoiseIter();
+    (function step() {
+      const t0 = performance.now();
+      let r;
+      do { r = it.next(); } while (!r.done && performance.now() - t0 < 4);
+      if (!r.done) { setTimeout(step, 16); return; }
+      const n = r.value;
       U.uBase.value = n.base; U.uDetail.value = n.detail; U.uWeather.value = n.weather;
       self.ready = true;
-    }, 30);
+    })();
   };
 
   RP.Clouds.prototype.renderShadow = function (camPos) {
