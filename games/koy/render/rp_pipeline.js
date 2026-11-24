@@ -40,10 +40,10 @@
   RP.QUALITY = {
     // grass: blade count cap · shadowEvery / waterEvery: update the sun shadow map / FFT every n frames
     // pixelCap: max device-pixel ratio · minScale: lower bound for dynamic resolution
-    low:    { scale: 0.75, minScale: 0.65, pixelCap: 1.0, ao: false, aoSlices: 1, aoSteps: 4, fogSteps: 10, cloudSteps: 20, cloudLight: 3, cloudScale: 0.25, taa: true, local: false, bloomMips: 4, shadow: 1024, grass: 60000, shadowEvery: 3, waterEvery: 3, cloudEvery: 3 },
-    medium: { scale: 0.85, minScale: 0.7, pixelCap: 1.25, ao: true, aoSlices: 1, aoSteps: 4, fogSteps: 14, cloudSteps: 28, cloudLight: 3, cloudScale: 0.25, taa: true, local: true, bloomMips: 5, shadow: 1536, grass: 110000, shadowEvery: 2, waterEvery: 2, cloudEvery: 2 },
-    high:   { scale: 1.0, minScale: 0.75, pixelCap: 1.5, ao: true, aoSlices: 2, aoSteps: 6, fogSteps: 20, cloudSteps: 40, cloudLight: 4, cloudScale: 0.35, taa: true, local: true, bloomMips: 6, shadow: 2048, grass: 180000, shadowEvery: 1, waterEvery: 1 },
-    ultra:  { scale: 1.0, minScale: 0.8, pixelCap: 2.0, ao: true, aoSlices: 3, aoSteps: 8, fogSteps: 32, cloudSteps: 64, cloudLight: 6, cloudScale: 0.5, taa: true, local: true, bloomMips: 6, shadow: 4096, grass: 320000, shadowEvery: 1, waterEvery: 1 }
+    low:    { scale: 0.7, minScale: 0.5, pixelCap: 1.0, ao: false, aoSlices: 1, aoSteps: 4, fogSteps: 10, cloudSteps: 20, cloudLight: 3, cloudScale: 0.25, taa: true, local: false, bloomMips: 4, shadow: 1024, grass: 60000, shadowEvery: 3, waterEvery: 3, cloudEvery: 3, shadowTaps: 4 },
+    medium: { scale: 0.8, minScale: 0.55, pixelCap: 1.25, ao: true, aoSlices: 1, aoSteps: 4, fogSteps: 14, cloudSteps: 28, cloudLight: 3, cloudScale: 0.25, taa: true, local: true, bloomMips: 5, shadow: 1536, grass: 110000, shadowEvery: 2, waterEvery: 2, cloudEvery: 2, shadowTaps: 6 },
+    high:   { scale: 0.9, minScale: 0.6, pixelCap: 1.5, ao: true, aoSlices: 2, aoSteps: 6, fogSteps: 20, cloudSteps: 40, cloudLight: 4, cloudScale: 0.35, taa: true, local: true, bloomMips: 6, shadow: 2048, grass: 180000, shadowEvery: 1, waterEvery: 2, cloudEvery: 2, shadowTaps: 8 },
+    ultra:  { scale: 1.0, minScale: 0.7, pixelCap: 2.0, ao: true, aoSlices: 3, aoSteps: 8, fogSteps: 32, cloudSteps: 64, cloudLight: 6, cloudScale: 0.5, taa: true, local: true, bloomMips: 6, shadow: 4096, grass: 320000, shadowEvery: 1, waterEvery: 1, cloudEvery: 1, shadowTaps: 12 }
   };
 
   // Calibrated parameters (overwritten by rp_calibration_result.js when present)
@@ -145,7 +145,6 @@
     if (!RP.QUALITY[q]) return;
     this.quality = q;
     this.Q = RP.QUALITY[q];
-    this.dynScale = 1.0;
     if (this.onQuality) this.onQuality(q, this.Q);
     if (this.sunLight && this.sunLight.shadow.mapSize.width !== this.Q.shadow) {
       this.sunLight.shadow.mapSize.set(this.Q.shadow, this.Q.shadow);
@@ -154,21 +153,43 @@
     this.resize(true);
   };
 
+  /**
+   * Two resolutions: the scene and its volumetric passes render at an internal resolution
+   * (quality scale × dynamic-resolution factor); TAA reconstructs the full output resolution
+   * from the jittered internal frames (temporal upsampling, as in TAAU/FSR2), and bloom,
+   * exposure and grading run at output resolution. Changing the dynamic factor only
+   * reallocates the internal targets, so the TAA history survives and nothing flickers.
+   */
   RP.Pipeline.prototype.resize = function (force) {
     const r = this.renderer;
-    // cap the device-pixel ratio per quality level (retina phones otherwise render 3× the pixels)
     const pr = Math.min(window.devicePixelRatio || 1, this.Q.pixelCap || 2);
     if (Math.abs(r.getPixelRatio() - pr) > 1e-3) r.setPixelRatio(pr);
     const size = r.getDrawingBufferSize(new THREE.Vector2());
-    const s = this.Q.scale * this.dynScale;
-    const W = Math.max(2, Math.round(size.x * s)), H = Math.max(2, Math.round(size.y * s));
+    const OW = Math.max(2, size.x | 0), OH = Math.max(2, size.y | 0);
+    const s = Math.min(1, this.Q.scale * this.dynScale);
+    const W = Math.max(2, Math.round(OW * s)), H = Math.max(2, Math.round(OH * s));
+    const dispose = (rt) => { if (rt) rt.dispose(); };
+    if (force || this.OW !== OW || this.OH !== OH) {
+      this.OW = OW; this.OH = OH;
+      [this.lumRT, this.bilatRT, this.blurRT0, this.blurRT1].forEach(dispose);
+      (this.taaRT || []).forEach(dispose);
+      (this.bloomRT || []).forEach(dispose);
+      this.taaRT = [RP.makeRT(OW, OH), RP.makeRT(OW, OH)];
+      this.taaIdx = 0;
+      this.bloomRT = [];
+      let bw = OW, bh = OH;
+      for (let i = 0; i < 7; i++) { bw = Math.max(1, Math.ceil(bw / 2)); bh = Math.max(1, Math.ceil(bh / 2)); this.bloomRT.push(RP.makeRT(bw, bh)); }
+      this.lumRT = RP.makeRT(Math.ceil(OW / 4), Math.ceil(OH / 4));
+      this.bilatRT = RP.makeRT(Math.ceil(OW / 4), Math.ceil(OH / 4));
+      this.blurRT0 = RP.makeRT(Math.ceil(OW / 16), Math.ceil(OH / 16));
+      this.blurRT1 = RP.makeRT(Math.ceil(OW / 16), Math.ceil(OH / 16));
+      this._taaReset = true;
+      this.post.expUniforms.uReset.value = 1;
+      force = true;
+    }
     if (!force && this.W === W && this.H === H) return;
     this.W = W; this.H = H;
-    const dispose = (rt) => { if (rt) rt.dispose(); };
-    [this.sceneRT, this.aoRT, this.aoBlurRT, this.fogRT, this.cloudRT, this.compRT, this.lumRT, this.bilatRT, this.blurRT0, this.blurRT1]
-      .forEach(dispose);
-    (this.taaRT || []).forEach(dispose);
-    (this.bloomRT || []).forEach(dispose);
+    [this.sceneRT, this.aoRT, this.aoBlurRT, this.fogRT, this.cloudRT, this.compRT, this.transRT].forEach(dispose);
     this.sceneRT = RP.makeRT(W, H, { depth: true, depthTexture: true });
     const hw = Math.ceil(W / 2), hh = Math.ceil(H / 2);
     this.aoRT = RP.makeRT(hw, hh, { filter: THREE.LinearFilter });
@@ -177,23 +198,9 @@
     const cs = this.Q.cloudScale;
     this.cloudRT = RP.makeRT(Math.ceil(W * cs), Math.ceil(H * cs));
     this.compRT = RP.makeRT(W, H);
-    if (this.transRT) this.transRT.dispose();
     this.transRT = RP.makeRT(W, H, { depth: true });
     this.transRT.depthTexture = this.sceneRT.depthTexture;  // transparents depth-test against the opaque pass
-    this.taaRT = [RP.makeRT(W, H), RP.makeRT(W, H)];
-    this.taaIdx = 0;
-    this.bloomRT = [];
-    let bw = W, bh = H;
-    for (let i = 0; i < 7; i++) { bw = Math.max(1, Math.ceil(bw / 2)); bh = Math.max(1, Math.ceil(bh / 2)); this.bloomRT.push(RP.makeRT(bw, bh)); }
-    const qw = Math.ceil(W / 4), qh = Math.ceil(H / 4);
-    this.lumRT = RP.makeRT(qw, qh);
-    this.bilatRT = RP.makeRT(qw, qh);
-    const ew = Math.ceil(W / 16), eh = Math.ceil(H / 16);
-    this.blurRT0 = RP.makeRT(ew, eh);
-    this.blurRT1 = RP.makeRT(ew, eh);
-    this._taaReset = true;
     this._cloudStale = true;
-    this.post.expUniforms.uReset.value = 1;
   };
 
   // ---------------------------------------------------------------------------
@@ -463,20 +470,30 @@
     dt = Math.min(0.1, Math.max(1e-4, dt || 0.016));
     this.time += dt;
     this.frame++;
-    // frame-rate governor: dynamic resolution first (smooth), then quality steps (rare)
-    if (this.autoQuality && this.frame > 30) {
-      const nowT = performance.now(), realMs = this._lastT ? Math.min(1000, nowT - this._lastT) : 16.7;
+    // frame-rate governor, target: a locked 60 fps.
+    // Falling below → shed internal resolution at once (temporal upsampling keeps the image
+    // sharp), then a quality level. Holding 60 → regain resolution slowly; a raise that causes
+    // a drop doubles the waiting time (exponential back-off) so it never oscillates.
+    if (this.frame > 20) {
+      const nowT = performance.now(), realMs = this._lastT ? Math.min(250, nowT - this._lastT) : 16.7;
       this._lastT = nowT;
-      this._ftEMA += (realMs - this._ftEMA) * 0.08;
+      this._ftEMA += (realMs - this._ftEMA) * 0.1;
       this._fpsT += realMs / 1000;
-      if (this._fpsT > 1.5) {
+      this._goodT = (this._goodT || 0) + (realMs < 17.6 ? realMs / 1000 : -this._goodT);
+      if (this._fpsT > 0.75) {
         this._fpsT = 0;
         const fps = 1000 / this._ftEMA, order = ['low', 'medium', 'high', 'ultra'], qi = order.indexOf(this.quality);
-        if (fps < 45 && this.dynScale > this.Q.minScale + 1e-3) this.dynScale = Math.max(this.Q.minScale, this.dynScale - 0.1);
-        else if (fps < 40 && qi > 0) { this.setQuality(order[qi - 1]); this._upCredit = 0; }
-        else if (fps > 58 && this.dynScale < 1) this.dynScale = Math.min(1, this.dynScale + 0.05);
-        else if (fps > 58 && qi < 2) { this._upCredit = (this._upCredit || 0) + 1; if (this._upCredit >= 6) { this.setQuality(order[qi + 1]); this._upCredit = 0; } }
-        else this._upCredit = 0;
+        const wait = this._upWait || 4;
+        if (fps < 56.5) {
+          if (this._lastRaise && nowT - this._lastRaise < 4000) this._upWait = Math.min(64, wait * 2);
+          this._lastRaise = 0;
+          if (this.dynScale > this.Q.minScale / this.Q.scale + 1e-3) this.dynScale = Math.max(this.Q.minScale / this.Q.scale, this.dynScale - (fps < 45 ? 0.15 : 0.07));
+          else if (this.autoQuality && qi > 0) { this.setQuality(order[qi - 1]); this.dynScale = 1; }
+        } else if (this._goodT > wait) {
+          this._goodT = 0;
+          if (this.dynScale < 1) { this.dynScale = Math.min(1, this.dynScale + 0.05); this._lastRaise = nowT; }
+          else if (this.autoQuality && qi < 2) { this.setQuality(order[qi + 1]); this.dynScale = 0.85; this._lastRaise = nowT; }
+        }
       }
     }
     if (this.frame % 90 === 1) this.patchScene();
@@ -503,6 +520,7 @@
     SU.rpSunDir.value.copy(li.dir);
     SU.rpSunIllum.value.copy(li.illumGround);
     SU.rpTime.value = this.time;
+    SU.rpShadowTaps.value = Q.shadowTaps || 8;
     SU.rpCameraPos.value.copy(cam.position);
 
     this.atmo.update(cam.position.y);
@@ -670,7 +688,8 @@
       TU.uPrevViewProj.value.copy(this.prevViewProj);
       TU.uCurViewProjInv.value.copy(vp).invert();
       TU.uJitter.value.set(jx, jy);
-      TU.uRes.value.set(this.W, this.H);
+      TU.uRes.value.set(this.OW, this.OH);
+      TU.uCurRes.value.set(this.W, this.H);
       TU.uReset.value = this._taaReset ? 1 : 0;
       Object.assign(TU, { uDepth: C.uDepth, uInvProj: C.uInvProj, uCamWorld: C.uCamWorld });
       P.taaPass.render(r, out);
@@ -735,7 +754,7 @@
     FU.uLocalBase.value = this.bilatRT.texture;
     FU.uLocalBlur.value = this.blurRT1.texture;
     FU.uUseLocal.value = Q.local ? 1 : 0;
-    FU.uRes.value.set(this.W, this.H);
+    FU.uRes.value.set(this.OW, this.OH);
     P.finalPass.render(r, this.outputTarget || null);
 
     // swap exposure for next frame
