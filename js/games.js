@@ -494,7 +494,7 @@ const App = (() => {
 
   /* ==================== KÖY. / GLENMORE SCOTTISH HIGHLAND GARDEN ==================== */
   function livingIsland() {
-    openEmbeddedGame({title:'Ergün’ün Çiftliği — Living Island',url:'games/living-island/index.html?v=1',tag:'BABA. · 2.5D',lead:T('Tropikal adada çiftçilik, ticaret ve yaşayan köy.','Farming, trade and village life on a tropical island.'),tip:T('Tarlaya dokun, görevleri sıraya al. Huzur ve fotoğraf modlarını dene.','Tap crops to queue tasks. Try zen and photo modes.')});
+    openEmbeddedGame({title:'Ergün’ün Çiftliği — Living Island',url:'games/living-island/index.html?v=2',tag:'BABA. · 2.5D',lead:T('Tropikal adada çiftçilik, ticaret ve yaşayan köy.','Farming, trade and village life on a tropical island.'),tip:T('Tarlaya dokun, görevleri sıraya al. Huzur ve fotoğraf modlarını dene.','Tap crops to queue tasks. Try zen and photo modes.')});
   }
   function koy() {
     openEmbeddedGame({
