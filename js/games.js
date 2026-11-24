@@ -155,6 +155,7 @@ const App = (() => {
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
+    { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Fiziksel render', 'Physically based'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
@@ -234,6 +235,7 @@ const App = (() => {
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
+    'koy': 'img/library/koy-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
@@ -484,6 +486,19 @@ const App = (() => {
     });
     const page = root().querySelector('.game-page');
     if (page) page.classList.add('cheese-page');
+  }
+
+  /* ==================== KÖY. / GLENMORE SCOTTISH HIGHLAND GARDEN ==================== */
+  function koy() {
+    openEmbeddedGame({
+      title: T('KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'),
+      url: 'games/koy/index.html?v=1',
+      tag: T('BABA. KÖY. · Glenmore, İskoçya · 3D', 'BABA. VILLAGE. · Glenmore, Scotland · 3D'),
+      lead: T('Glencoe’nun altında taş dağ evi, bahçe, gölet ve aile: gerçek güneş yolu, fiziksel atmosfer, hacimsel bulut ve sis, FFT su; ışık referans karelere göre ölçülüp ayarlandı.', 'A stone cottage, garden, pond and family below Glencoe: real sun path, physical atmosphere, volumetric clouds and fog, FFT water; lighting measured and fitted to reference frames.'),
+      tip: T('Sürükleyerek döndür, WASD ile gez, F ile kapıyı aç, H ile huzur modu. Sol alttaki “⚙ Render & Kalibrasyon” ile kaliteyi seçebilirsin; telefonda “Orta” ya da “Düşük” önerilir.', 'Drag to orbit, WASD to walk, F opens the door, H for zen mode. Pick the quality from “⚙ Render & Kalibrasyon” at the bottom left; Medium or Low is recommended on phones.')
+    });
+    const page = root().querySelector('.game-page');
+    if (page) page.classList.add('koy-page');
   }
 
   /* ==================== TRABZON YAYLA SAVUNMASI / 3D TOWER DEFENSE ==================== */
@@ -829,6 +844,7 @@ const App = (() => {
     else if (r === 'rota-conference') rotaConference();
     else if (r === 'runaway-cheese') runawayCheese();
     else if (r === 'sis-hatti') sisHatti();
+    else if (r === 'koy') koy();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();

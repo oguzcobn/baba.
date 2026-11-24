@@ -64,3 +64,9 @@ Sohbet botu kaldırıldı; Dost artık bir psikoloji okuma alanı: 12 yazı (kay
 - **Müşteri yolculuğu (`js/dsan-customers.js`):** transfer (VIP Vito / standart / yok), Konyaaltı oteli, saha turu (brifing, KKD, 5S, uzman eşliği, üretim ilerlemesi), dallı görüşme, deneme seyri ve 11 bileşenli açıklanabilir memnuniyet; 40 altı iptal, 40–55 indirim, memnun müşteri liste üstü fiyat.
 - **Zaman ve görünüm:** 1x hızda 1 oyun saati = 5 sn (1 gün ≈ 2 dk; 2x/4x/8x ile hızlanır). Su fiziksel dalga hızında ve gerçek zamanda canlanır; ayrıntı kayan normal dokusundan gelir. 3D alan ekran yüksekliğine göre boyutlanır; tam ekran, "Arayüzü gizle" ve katlanabilir hol paneli vardır.
 - **Kayıt:** `dsan_3d_tycoon_save_v2` korunur, `saveVersion: 3` alanlarıyla genişler; ilk geçişte `dsan_3d_tycoon_save_v2_backup_pre_v3` yedeği alınır. Test: `tests/dsan-shipyard.spec.cjs`.
+
+### KÖY. — İskoç Yayla Bahçesi (`#koy`, `games/koy/`, önbellek v120)
+Üst menüde **KÖY.** ve Oyunlar kütüphanesinde (Simülasyon) yer alır. Glenmore köyü: Glencoe eteklerinde taş dağ evi, bahçe, gölet, aile ve hayvanlar.
+- **Fiziksel render:** astronomik güneş yolu (Glencoe, Eylül), Hillaire 2020 atmosferi, SH9 gök ışığı + PMREM IBL, GTAO, hacimsel sis ve tanrı ışıkları, hacimsel bulutlar ve bulut gölgeleri, TAA, bloom, histogram otomatik pozlama, yerel ton eşleme, Unreal Filmic; FFT su (JONSWAP loch + kapiler dalgalı gölet), ufuk haritalı uzak dağlar.
+- **Kalibrasyon:** Referans karelerde OKLab L/C/h ölçümü + Levenberg–Marquardt; sonuç `games/koy/render/rp_calibration_result.js`. Sol alttaki “⚙ Render & Kalibrasyon” panelinden kalite (Düşük/Orta/Yüksek/Ultra) seçilir, kare hızı düşerse kalite kendiliğinden iner.
+- **Çevrimdışı:** three.js r128 + GLTFLoader (`games/koy/vendor/`, MIT) ve önceden derlenmiş Tailwind yerel. Yalnızca Google Fonts dışarıdan gelir (yoksa sistem yazı tipi).
