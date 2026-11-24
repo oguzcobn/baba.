@@ -158,7 +158,7 @@ const App = (() => {
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
-    { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['İşletme', 'Business'], ['3D açık dünya', '3D open world'], ['25 karakter', '25 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
+    { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['Market simülasyonu', 'Store sim'], ['3D birinci şahıs', '3D first person'], ['28 karakter', '28 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
@@ -523,10 +523,10 @@ const App = (() => {
   function amsterdamCoffeeshop() {
     openEmbeddedGame({
       title: T('AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'),
-      url: 'games/amsterdam-coffeeshop/index.html?v=2',
+      url: 'games/amsterdam-coffeeshop/index.html?v=3',
       tag: T('BABA. SİMÜLASYON · 3D Açık Dünya İşletme · +18', 'BABA. SIMULATION · 3D Open-World Business · 18+'),
-      lead: T('Prinsengracht kıyısında kendi dükkânını işlet: kasa, stok, personel, kanal turları. Müşterilerin 25 özgün karakter; hepsi süperkuadrik geometri, ters kinematik ve fizik tabanlı animasyonla matematikle modellendi.', 'Run your own shop on the Prinsengracht: till, stock, staff and canal tours. Your customers are 25 original characters, all modeled with superquadric geometry, inverse kinematics and physics-based animation.'),
-      tip: T('WASD ile gez, E ile etkileş, 1/2/3 kamera. “Karakterler” butonu (K) 25 karakteri koşu bandında, matematik notlarıyla gösterir.', 'WASD to move, E to interact, 1/2/3 for cameras. The “Characters” button (K) shows all 25 on a treadmill with their math notes.')
+      lead: T('Market simülasyonu: tabletten toptan sipariş ver, kutuları vitrine diz, fiyatları belirle, tabelayı çevirip dükkânı aç; kasada ürün okut, kimlik kontrol et, para üstü ver. Seviye atla, lisans ve personel aç.', 'Store simulator: order stock on the tablet, shelve the boxes, set prices, flip the sign to open; scan items at the till, check IDs, give change. Level up to unlock licenses and staff.'),
+      tip: T('WASD yürü, fareyle bak (ekrana tıkla), Tık/E etkileşim, Tab tablet, G kutuyu bırak, Esc menü. Telefonda sağ alttaki Etkileşim düğmesini kullan.', 'WASD to walk, mouse to look (click the screen), Click/E to interact, Tab for the tablet, G to drop a box, Esc for the menu. On phones use the Interact button.')
     });
   }
 

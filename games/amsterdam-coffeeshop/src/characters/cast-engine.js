@@ -1412,6 +1412,7 @@
   // ===========================================================================
   function build(defOrId) {
     const def = typeof defOrId === 'string' ? CAST.find(d => d.id === defOrId) : defOrId;
+    if (def.factory) return def.factory();   // dış model (GLB) karakterleri
     const ctx = new BuildCtx(def);
     def.build(ctx);
     if (def.noHeadTurn || ctx.data.noHeadTurn) def.noHeadTurn = true;
@@ -1477,16 +1478,23 @@
       #cast-gallery .cg-info{grid-template-columns:1fr;max-height:40%}}`;
     document.head.appendChild(css);
     const el = document.createElement('div'); el.id = 'cast-gallery';
-    el.innerHTML = `<div class="cg-card"><div class="cg-list"><div class="cg-head"><b>KARAKTERLER · 25</b><span class="cg-t">hepsi özgün</span></div></div>
+    el.innerHTML = `<div class="cg-card"><div class="cg-list"><div class="cg-head"><b>KARAKTERLER · 25</b><span class="cg-t">özgün + model</span></div></div>
       <div class="cg-main"><div class="cg-view"><div class="cg-ctrl"><button class="btn" data-s="0">Dur</button><button class="btn btn-active" data-s="1">Yürü</button><button class="btn" data-s="1.7">Hızlı</button></div><button class="btn cg-close">Kapat</button></div>
       <div class="cg-info"></div></div></div>`;
     document.body.appendChild(el);
     const list = el.querySelector('.cg-list'), view = el.querySelector('.cg-view'), info = el.querySelector('.cg-info');
+    let listed = 0;
+    function renderList() {
+    if (listed === CAST.length) return; listed = CAST.length;
+    list.querySelectorAll('.cg-item').forEach(x => x.remove());
+    list.querySelector('.cg-head b').textContent = 'KARAKTERLER · ' + CAST.length;
     CAST.forEach((d, i) => {
       const b = document.createElement('button'); b.className = 'cg-item'; b.dataset.id = d.id;
       b.innerHTML = `<span class="cg-dot" style="background:#${new THREE.Color(d.color).getHexString()}"></span><span><div class="cg-n">${d.name}</div><div class="cg-t">${d.title}</div></span><span class="cg-num">${String(i + 1).padStart(2, '0')}</span>`;
       b.onclick = () => select(d.id); list.appendChild(b);
     });
+    }
+    renderList();
     let renderer, scene, cam, rig, raf = 0, last = 0, speedMul = 1, rotY = 0.6, drag = false, lx = 0, groundTex, clockT = 0;
     function initGL() {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -1539,6 +1547,7 @@
       renderer.render(scene, cam);
     }
     function open(id) {
+      renderList();
       if (!renderer) initGL();
       el.classList.add('open'); resize();
       select(id || (rig ? rig.cast.def.id : CAST[0].id));

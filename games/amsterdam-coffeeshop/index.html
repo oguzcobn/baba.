@@ -5,7 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AMSTERDAM: Coffeeshop Empire — AAA PBR &amp; Mathematical Calibration Engine</title>
 <script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
+<script src="vendor/SkeletonUtils.js"></script>
 <script src="src/characters/cast-engine.js"></script>
+<script src="src/characters/model-cast.js"></script>
+<script src="src/gameplay/market-mode.js"></script>
 <style>
   :root {
     --bg-glass: rgba(10, 15, 22, 0.84);
@@ -559,7 +563,7 @@
   const state = {
     cash: 2500.0, reputation: 62, hygiene: 96, priceMultiplier: 1.0, autoEOQ: false, staffCount: 1, ambianceScore: 50, seatCapacity: 6,
     day: 1, hour: 9.75, timeScale: 60, weather: 'Clear', quality: 'high',
-    calibrated: true, pipeMode: 'full', cameraMode: 1, doorOpen: false,
+    calibrated: true, pipeMode: 'full', cameraMode: 1, doorOpen: false, renderMode: 'hdr',
     decorMode: false, decorSelectedType: 'sofa', decorRotation: 0, decorSnap: true,
     audioEnabled: false,
     ledger: { revenue: 0, netRevenue: 0, cogs: 0, stockCost: 0, staffCost: 0, rent: 0, energy: 0, tax: 0, maintenance: 0, profit: 0, salesCount: 0 },
@@ -2635,7 +2639,9 @@
   const castRoster = (window.CastEngine ? CastEngine.roster(7) : []);
   let castCursor = 0;
   const castInUse = new Set();
-  function nextCastRig() {
+  function nextCastRig(forCustomer) {
+    // Müşteriler: yüklenen GLB modelleri (Otter-Chan, Meneer Pak, Bjorn) öncelikli
+    if (forCustomer && window.ModelCast && ModelCast.ready()) { const m = ModelCast.next(); if (m) return m; }
     for (let k = 0; k < castRoster.length; k++) {
       const id = castRoster[castCursor++ % castRoster.length];
       if (!castInUse.has(id)) { castInUse.add(id); return CastEngine.build(id); }
@@ -2651,7 +2657,7 @@
   // Müşteri dükkândan ayrılıp uzaklaşınca kadrodaki sıradaki karaktere dönüşür
   function swapNpcCharacter(n) {
     if (!n.meshObj.cast || !castRoster.length) return;
-    const fresh = nextCastRig(); if (!fresh) return;
+    const fresh = nextCastRig(n.role === 'customer'); if (!fresh) return;
     castInUse.delete(n.meshObj.cast.def.id);
     scene.remove(n.meshObj.group);
     fresh.group.position.copy(n.meshObj.group.position);
@@ -2666,7 +2672,7 @@
     for (let i = 0; i < CUSTOMERS + PEDESTRIANS; i++) {
       const isCust = i < CUSTOMERS;
       const pedIdx = i - CUSTOMERS;
-      let meshObj = (useCast && (isCust || pedIdx % 2 === 1)) ? nextCastRig() : null;
+      let meshObj = (useCast && (isCust || pedIdx % 2 === 1)) ? nextCastRig(isCust) : null;
       if (!meshObj) meshObj = createAnatomicalHuman(HUMAN_PROFILES[i % HUMAN_PROFILES.length]);
       const sx = isCust ? (-18 + i * 4.6) : (-20 + pedIdx * 7.5);
       const sz = isCust ? -4.8 : (pedIdx % 2 === 0 ? -4.5 : 30.8);
@@ -3073,12 +3079,16 @@
     attachOrderBubbleToNPC(npc);
   }
 
-  function getWaitingCustomer() { return npcs.find(n => n.role === 'customer' && n.state === 'queued'); }
+  function getWaitingCustomer() {
+    if (window.MarketMode && MarketMode.active()) return MarketMode.queueHead(true);
+    return npcs.find(n => n.role === 'customer' && n.state === 'queued');
+  }
 
   // POS Session State
   const posSession = { activeNpc: null, tray: [], idVerified: false, preparing: false };
 
   function openPOSForCustomer(npc) {
+    if (window.MarketMode && MarketMode.active()) { MarketMode.enterCheckout(); return; }
     if (!npc) { showToast('Sırada bekleyen müşteri yok — müşterilerin içeri girmesini bekleyin.'); return; }
     if (!npc.order) assignCustomerOrder(npc);
     posSession.activeNpc = npc;
@@ -3245,8 +3255,9 @@
     let gross = 0, tax = 0, cogsSum = 0, sold = 0;
     cust.order.items.forEach(id => {
       const it = state.catalog.find(c => c.id === id);
-      if (!it || it.stock <= 0) return;
-      it.stock -= 1; sold++;
+      if (!it) return;
+      if (!cust.order.taken) { if (it.stock <= 0) return; it.stock -= 1; }
+      sold++;
       const p = +(it.price * state.priceMultiplier).toFixed(2);
       const r = it.btw || 0.21;
       gross += p; tax += +(p * (r / (1 + r))).toFixed(2); cogsSum += it.unitCost;
@@ -3631,6 +3642,17 @@
     if (playerGroup) playerGroup.visible = mode !== 1;
   }
 
+  function setRenderMode(mode) {
+    state.renderMode = mode === 'basic' ? 'basic' : 'hdr';
+    const basic = state.renderMode === 'basic';
+    renderer.outputEncoding = basic ? THREE.sRGBEncoding : THREE.LinearEncoding;
+    renderer.toneMapping = basic ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
+    renderer.toneMappingExposure = basic ? 1.05 : 1.0;
+    // Ortam haritası (PMREM) zayıf/yazılımsal GPU'larda bozulabiliyor → uyumlu modda kapalı
+    if (basic) { if (scene.environment) scene.userData.envSave = scene.environment; scene.environment = null; }
+    else if (scene.userData.envSave) scene.environment = scene.userData.envSave;
+  }
+
   function setDecorMode(active) {
     state.decorMode = active;
     document.getElementById('btn-decorate').classList.toggle('btn-active', active);
@@ -3757,6 +3779,7 @@
       const btn = e.target.closest('button'); if (!btn) return;
       const item = state.catalog.find(c => c.id === btn.dataset.id); if (!item) return;
       if (btn.dataset.act === 'inspect') openProductInspector(item);
+      else if (btn.dataset.act === 'restock' && window.MarketMode && MarketMode.active()) { MarketMode.openTablet('order'); }
       else if (btn.dataset.act === 'restock') {
         const cost = +(item.unitCost * 10).toFixed(2);
         if (state.cash < cost) { showToast('Yetersiz bakiye'); return; }
@@ -3872,7 +3895,10 @@
   // =========================================================================
   function stepSimulation(dt, elapsed) {
     state.hour += (dt * state.timeScale) / 3600;
-    if (state.hour >= 24) { state.hour -= 24; endDaySettlement(); }
+    if (state.hour >= 24) {
+      if (window.MarketMode && MarketMode.active()) state.hour = 23.99;  // market modu: gün, rapor ekranından bitirilir
+      else { state.hour -= 24; endDaySettlement(); }
+    }
 
     const targetDoor = state.doorOpen ? -Math.PI * 0.52 : 0;
     doorPivot.rotation.y += (targetDoor - doorPivot.rotation.y) * Math.min(1, dt * 8);
@@ -4110,7 +4136,9 @@
           n.meshObj.armL.shoulder.rotation.x = -0.95; n.meshObj.armL.elbow.rotation.x = -0.60;
           n.meshObj.armR.shoulder.rotation.x = -0.95; n.meshObj.armR.elbow.rotation.x = -0.60;
         }
-        if (n.role === 'pedestrian') {
+        if (n.role === 'customer' && window.MarketMode && MarketMode.npcArrive(n, dt)) {
+          // market modu bu durumu kendisi yönetti (vitrin, kuyruk, kapalı mağaza)
+        } else if (n.role === 'pedestrian') {
           n.targetX = n.x > 0 ? -24 : 24;
         } else if (n.state === 'approach_door') {
           state.doorOpen = true;
@@ -4132,6 +4160,7 @@
           if (n.order.patienceLeft <= 0) {
             // M/M/c Queue Reneging: customer waited too long!
             if (posSession.activeNpc === n) document.getElementById('pos-modal').classList.remove('open');
+            if (window.MarketMode) MarketMode.onRenege(n);
             removeOrderBubbleFromNPC(n); n.state = 'leaving'; n.order = null;
             state.reputation = Math.max(5, +(state.reputation - 2.0).toFixed(1));
             showToast('Bir müşteri kuyrukta çok beklediği için ayrıldı! (-2 İtibar)');
@@ -4159,7 +4188,7 @@
       n.meshObj.group.position.set(n.x, ny, n.z);
     });
 
-    if (state.staffCount > 0 && getWaitingCustomer()) {
+    if (state.staffCount > 0 && !(window.MarketMode && MarketMode.active()) && getWaitingCustomer()) {
       state.baristaTimer += dt * state.staffCount;
       if (state.baristaTimer >= 7.5) { state.baristaTimer = 0; serveNextCustomer(true); }
     }
@@ -4168,7 +4197,10 @@
 
     state.facility.progress += dt;
     if (state.facility.progress >= state.facility.duration) {
-      state.facility.progress = 0; state.catalog[state.facility.productIdx].stock += state.facility.capacity; updateUI();
+      state.facility.progress = 0;
+      if (window.MarketMode && MarketMode.active()) MarketMode.deliverBoxes(state.catalog[state.facility.productIdx].id, state.facility.capacity, 'Atölye');
+      else state.catalog[state.facility.productIdx].stock += state.facility.capacity;
+      updateUI();
     }
     const facBar = document.getElementById('fac-progress');
     if (facBar) facBar.style.width = `${(state.facility.progress / state.facility.duration) * 100}%`;
@@ -4362,6 +4394,11 @@
     spawnLivingCity();
     syncStaffEntities();
     if (window.CastEngine) CastEngine.mountGallery({ button: document.getElementById('btn-cast') });
+    // GLB modeller yüklenince dışarıdaki müşterileri yeni modellere dönüştür
+    window.addEventListener('models-ready', () => {
+      npcs.forEach(n => { if (n.role === 'customer' && n.z > -6.0 && !n.order) swapNpcCharacter(n); });
+    });
+    if (window.ModelCast && ModelCast.ready()) window.dispatchEvent(new Event('models-ready'));
 
     const rainCount = 900; rainPositions = new Float32Array(rainCount * 3);
     for (let i = 0; i < rainCount; i++) {
@@ -4402,7 +4439,7 @@
       const dx = e.clientX - lastMouseX, dy = e.clientY - lastMouseY;
       lastMouseX = e.clientX; lastMouseY = e.clientY;
       if (state.cameraMode === 3) { orbitCam.yaw -= dx * 0.006; orbitCam.pitch = Math.max(0.25, Math.min(1.35, orbitCam.pitch + dy * 0.005)); }
-      else { player.yaw -= dx * 0.005; player.pitch = Math.max(-0.8, Math.min(0.75, player.pitch - dy * 0.004)); }
+      else { player.yaw -= dx * 0.005; player.pitch = Math.max(-1.2, Math.min(0.9, player.pitch - dy * 0.004)); }
     });
     dom.addEventListener('wheel', e => { if (state.cameraMode === 3) orbitCam.dist = Math.max(7, Math.min(40, orbitCam.dist + e.deltaY * 0.015)); }, { passive: true });
     window.addEventListener('resize', () => {
@@ -4415,18 +4452,38 @@
     updateAtmosphere();
     updateUI();
 
+    // Market modu ve dış modüller için köprü (src/gameplay/market-mode.js)
+    window.GameBridge = {
+      state, player, keys, colliders, orbitCam, sound, CUST_NAMES, posSession,
+      get scene() { return scene; }, get camera() { return camera; }, get renderer() { return renderer; },
+      get npcs() { return npcs; }, get doorPivot() { return doorPivot; },
+      showToast, updateUI, recomputeProfit, setCameraMode, setRenderMode, setDecorMode, openPOSForCustomer,
+      attachOrderBubbleToNPC, removeOrderBubbleFromNPC, startOrderHandoffAnimation, createOrderBagMesh,
+      endDaySettlement, updateAtmosphere, syncStaffEntities, resolvePlayerCollision
+    };
+    if (/[?&]gfx=basic/.test(location.search)) setRenderMode('basic');
+    window.dispatchEvent(new Event('game-ready'));
+
     let accumulator = 0, simElapsed = 0;
     function animate(now) {
       requestAnimationFrame(animate);
       const rawDtMs = now - lastFrameTime; lastFrameTime = now;
       const dt = Math.min(0.05, rawDtMs / 1000);
       accumulator += dt;
+      if (window.__gamePaused) accumulator = 0;
       while (accumulator >= FIXED_DT) { simElapsed += FIXED_DT; stepSimulation(FIXED_DT, simElapsed); accumulator -= FIXED_DT; }
+
 
       skyMat.uniforms.uTime.value = simElapsed;
       waterMat.uniforms.uTime.value = simElapsed;
       updateCamera();
+      if (window.MarketMode && MarketMode.frame) MarketMode.frame(window.__gamePaused ? 0 : dt, simElapsed);
 
+      if (state.renderMode === 'basic') {
+        // Uyumlu grafik: tek geçiş, ACES + sRGB doğrudan ekrana (zayıf GPU / mobil)
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+      } else {
       // Multi-Pass AAA Rendering:
       // 1) HDR Scene + Depth -> hdrTarget
       renderer.setRenderTarget(hdrTarget);
@@ -4441,6 +4498,7 @@
       postScene.children = [postQuad];
       renderer.setRenderTarget(null);
       renderer.render(postScene, postCam);
+      }
 
       frameTimes.push(rawDtMs); if (frameTimes.length > 90) frameTimes.shift();
       fpsTimer += dt; frameCount++;
