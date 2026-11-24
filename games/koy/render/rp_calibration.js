@@ -202,7 +202,7 @@
     Calib.applySetup(V.setup);
     rp.post.expUniforms.uReset.value = 1;
     await waitFrames(frames || 20);
-    const W = rp.W, H = rp.H;
+    const W = rp.resolvedRT.width, H = rp.resolvedRT.height;
     const cache = {
       hdr: RP.makeRT(W, H), bloom: RP.makeRT(rp.bloomRT[0].width, rp.bloomRT[0].height),
       exp: RP.makeRT(1, 1, { type: THREE.FloatType, filter: THREE.NearestFilter }), W, H
@@ -441,14 +441,21 @@
     if (document.getElementById('rp-calib-panel')) return;
     const btn = document.createElement('button');
     btn.id = 'rp-calib-btn';
-    btn.textContent = '⚙ Render & Kalibrasyon';
-    btn.style.cssText = 'position:fixed;left:12px;bottom:66px;z-index:60;padding:7px 12px;border-radius:10px;border:1px solid rgba(182,214,192,.25);background:rgba(12,20,17,.82);color:#edf2ee;font:500 12px Inter,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(10px)';
+    btn.type = 'button';
+    btn.textContent = '⚙ Görüntü';
+    // lives in the existing top-right toolbar so it never overlaps the bottom bars or side panels
+    const bar = document.querySelector('.fixed.top-3.right-3');
+    const sib = bar && bar.querySelector('button');
+    if (sib) btn.className = sib.className;
+    else btn.style.cssText = 'position:fixed;right:12px;top:12px;z-index:60;padding:7px 12px;border-radius:10px;border:1px solid rgba(182,214,192,.25);background:rgba(12,20,17,.82);color:#edf2ee;font:500 12px Inter,system-ui,sans-serif;cursor:pointer';
     const panel = document.createElement('div');
     panel.id = 'rp-calib-panel';
-    panel.style.cssText = 'position:fixed;left:12px;bottom:106px;z-index:60;width:340px;max-height:70vh;overflow:auto;padding:12px;border-radius:14px;border:1px solid rgba(182,214,192,.2);background:rgba(12,20,17,.9);color:#edf2ee;font:12px Inter,system-ui,sans-serif;display:none;backdrop-filter:blur(14px)';
+    panel.style.cssText = 'position:fixed;right:12px;top:60px;z-index:40;width:min(340px,calc(100vw - 24px));max-height:calc(100vh - 150px);overflow:auto;padding:12px;border-radius:14px;border:1px solid rgba(182,214,192,.2);background:rgba(12,20,17,.92);color:#edf2ee;font:12px Inter,system-ui,sans-serif;display:none;backdrop-filter:blur(14px)';
     panel.innerHTML = `
-      <div style="font-weight:600;margin-bottom:8px">Render kalitesi</div>
-      <div id="rp-q" style="display:flex;gap:6px;margin-bottom:10px"></div>
+      <div style="font-weight:600;margin-bottom:6px">Görüntü kalitesi</div>
+      <div style="opacity:.75;line-height:1.4;margin-bottom:8px">Otomatik mod 60 FPS'i korur: önce iç çözünürlüğü, gerekirse kaliteyi ayarlar. Elle seçimde de çözünürlük 60 FPS için ayarlanır.</div>
+      <div id="rp-q" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:8px"></div>
+      <div id="rp-stat" style="font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.85;margin-bottom:10px"></div>
       <div style="font-weight:600;margin:6px 0">Kalibrasyon (ölç → en küçük kareler)</div>
       <div style="opacity:.75;line-height:1.4;margin-bottom:8px">Referans kareler ile render'ı aynı tür bölgelerde (OKLab L, C, h) karşılaştırır ve görüntü parametrelerini Levenberg–Marquardt ile uydurur.</div>
       <button id="rp-fit" style="width:100%;padding:6px;border-radius:8px;border:1px solid #74c69d55;background:#74c69d22;color:#d8f3dc;cursor:pointer">Yerleşik referanslarla yeniden uydur</button>
@@ -457,15 +464,34 @@
         <button id="rp-export" style="flex:1;padding:5px;border-radius:8px;border:1px solid #ffffff22;background:#ffffff10;color:#edf2ee;cursor:pointer">Parametreleri indir (JSON)</button>
         <button id="rp-reset" style="flex:1;padding:5px;border-radius:8px;border:1px solid #ffffff22;background:#ffffff10;color:#edf2ee;cursor:pointer">Varsayılan</button>
       </div>`;
-    document.body.appendChild(btn); document.body.appendChild(panel);
-    btn.onclick = () => { panel.style.display = panel.style.display === 'none' ? 'block' : 'none'; };
+    if (bar) bar.insertBefore(btn, bar.firstChild); else document.body.appendChild(btn);
+    document.body.appendChild(panel);
+    // the control drawer occupies the same corner: hide it while this panel is open
+    let drawerWasOpen = false;
+    btn.onclick = () => {
+      const open = panel.style.display === 'none';
+      panel.style.display = open ? 'block' : 'none';
+      const drawer = document.getElementById('panel-drawer');
+      if (drawer) {
+        if (open) { drawerWasOpen = !drawer.classList.contains('collapsed'); drawer.classList.add('collapsed'); document.body.classList.remove('rp-drawer-open'); }
+        else if (drawerWasOpen) { drawer.classList.remove('collapsed'); document.body.classList.add('rp-drawer-open'); }
+      }
+    };
+    setInterval(() => {
+      const r = Calib.rp, st = panel.querySelector('#rp-stat');
+      if (!r || !st || panel.style.display === 'none') return;
+      st.textContent = `${Math.round(1000 / (r._ftEMA || 16.7))} FPS · ${r.quality} · iç çözünürlük ${r.W}×${r.H} → ${r.OW}×${r.OH}`;
+    }, 500);
     const q = panel.querySelector('#rp-q');
-    ['low', 'medium', 'high', 'ultra'].forEach((k) => {
+    const mark = (sel) => [...q.children].forEach((c) => { c.style.background = c === sel ? '#74c69d33' : '#ffffff10'; });
+    ['auto', 'low', 'medium', 'high', 'ultra'].forEach((k) => {
       const b = document.createElement('button');
-      b.textContent = { low: 'Düşük', medium: 'Orta', high: 'Yüksek', ultra: 'Ultra' }[k];
-      b.style.cssText = 'flex:1;padding:5px;border-radius:8px;border:1px solid #ffffff22;background:#ffffff10;color:#edf2ee;cursor:pointer';
-      b.onclick = () => { Calib.rp.setQuality(k); Calib.rp.autoQuality = false; [...q.children].forEach((c) => { c.style.background = c === b ? '#74c69d33' : '#ffffff10'; }); };
+      b.type = 'button';
+      b.textContent = { auto: 'Otomatik', low: 'Düşük', medium: 'Orta', high: 'Yüksek', ultra: 'Ultra' }[k];
+      b.style.cssText = 'padding:5px 2px;border-radius:8px;border:1px solid #ffffff22;background:#ffffff10;color:#edf2ee;cursor:pointer;font-size:11px';
+      b.onclick = () => { if (k === 'auto') { Calib.rp.autoQuality = true; } else { Calib.rp.setQuality(k); Calib.rp.autoQuality = false; } mark(b); };
       q.appendChild(b);
+      if (k === 'auto') mark(b);
     });
     const log = panel.querySelector('#rp-fit-log');
     panel.querySelector('#rp-fit').onclick = async () => {

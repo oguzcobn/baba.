@@ -123,6 +123,8 @@
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(182, 214, 192, 0.13);
     }
+    @media (min-width: 641px) { body.rp-drawer-open #glb-controls-bar { right: calc(372px + 1.5rem); } }
+    @media (max-width: 640px) { body.rp-drawer-open #glb-controls-bar { display: none; } }
     #panel-drawer {
       transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease;
     }
@@ -916,7 +918,7 @@
       function isInsideCottage(x, z, margin) {
         const m = margin || 0;
         const inMain = Math.abs(x - COTTAGE_X) < (6.7 + m) && Math.abs(z - COTTAGE_Z) < (4.1 + m);
-        const inNeighbor = Math.abs(x - NEIGHBOR_X) < (4.2 + m) && Math.abs(z - NEIGHBOR_Z) < (3.2 + m);
+        const inNeighbor = false; // neighbouring cottage removed
         return inMain || inNeighbor;
       }
 
@@ -3160,8 +3162,8 @@
       }
 
       const mainChimneys = buildScottishCottage(COTTAGE_X, COTTAGE_Z, 1.0, 0.0, true);
-      const neighborChimneys = buildScottishCottage(NEIGHBOR_X, NEIGHBOR_Z, 0.84, 0.45, false);
-      const allChimneySources = [mainChimneys[0], neighborChimneys[0]];
+      // (the neighbouring cottage was removed — one hero cottage in the glen)
+      const allChimneySources = [mainChimneys[0]];
 
       // =========================================================================
       // 8. DRY-STONE GARDEN WALL (SCOTTISH DYKE), WOODEN GATE & COBBLESTONE PATH
@@ -3715,6 +3717,15 @@
       const saddle = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.05, 0.24), hullMat);
       saddle.position.set(0, 0.89, -0.22); bikeLeanGroup.add(saddle);
       scene.add(bikeG);
+      // A rider: the bicycle no longer rides itself. Pelvis on the saddle, hands on the bars,
+      // feet on the pedals; legs follow the crank (gear ratio ≈ 0.45 crank turns per wheel turn).
+      const bikeRider = buildArticulatedFamilyMember({ scale: 0.8, topColor: 0x2f5d8a, botColor: 0x2b2b30, hairColor: 0x3a2a1c, isChild: true });
+      scene.remove(bikeRider.root);
+      bikeLeanGroup.add(bikeRider.root);
+      bikeRider.root.position.set(0, 0.92 - 0.86 * 0.8, -0.2);
+      bikeRider.pelv.rotation.x = 0.32;                       // leaning toward the handlebar
+      bikeRider.armL.rotation.x = bikeRider.armR.rotation.x = -1.15;
+      bikeRider.armL.rotation.z = -0.12; bikeRider.armR.rotation.z = 0.12;
 
       const bikePhys = { s: 0, speed: 3.2, wheelAngle: 0, leanRad: 0 };
 
@@ -3865,6 +3876,9 @@
         bikePhys.wheelAngle += (bikePhys.speed / BIKE_WHEEL_R) * dt;
         rearWheel.rotation.x = bikePhys.wheelAngle;
         frontWheel.rotation.x = bikePhys.wheelAngle;
+        const crank = bikePhys.wheelAngle * 0.45;
+        bikeRider.legL.rotation.x = -0.65 + 0.32 * Math.sin(crank);
+        bikeRider.legR.rotation.x = -0.65 + 0.32 * Math.sin(crank + Math.PI);
       }
 
       // 5. Family Members: Anne (Mother) & Çocuk (1 Child, age-appropriate proportions!)
@@ -6109,6 +6123,7 @@
       const drawer = document.getElementById('panel-drawer');
       function updatePanelUI() {
         drawer.classList.toggle('collapsed', !state.panelOpen);
+        document.body.classList.toggle('rp-drawer-open', !!state.panelOpen);
       }
       updatePanelUI();
 
@@ -6168,7 +6183,7 @@
 
       document.getElementById('slider-density').addEventListener('input', (e) => {
         state.grassCount = parseInt(e.target.value, 10);
-        grassGeo.instanceCount = Math.min(placed, state.grassCount);
+        grassGeo.instanceCount = Math.min(placed, state.grassCount, window.__rp ? window.__rp.Q.grass : Infinity);
         const formatted = state.grassCount.toLocaleString('tr-TR');
         document.getElementById('val-density').textContent = `${formatted} sap`;
         document.getElementById('hud-blades').textContent = formatted;

@@ -203,6 +203,7 @@
     rpShadowMap: { value: null },
     rpShadowMatrix: { value: new THREE.Matrix4() },
     rpShadowTexel: { value: new THREE.Vector2(1 / 2048, 1 / 2048) },
+    rpShadowTaps: { value: 8 },
     rpCloudShadow: { value: null },
     rpCloudShadowXform: { value: new THREE.Vector4(0, 0, 1 / 4000, 0) },
     rpAlbedoGrass: { value: 1.0 },
@@ -221,6 +222,7 @@
     uniform sampler2D rpShadowMap;
     uniform mat4 rpShadowMatrix;
     uniform vec2 rpShadowTexel;
+    uniform int rpShadowTaps;
     uniform sampler2D rpCloudShadow;
     uniform vec4 rpCloudShadowXform;
     uniform float rpAlbedoGrass;
@@ -257,10 +259,11 @@
       P[8]=vec2(0.507,0.064); P[9]=vec2(0.896,0.412); P[10]=vec2(-0.322,-0.933); P[11]=vec2(-0.792,-0.598);
       float s = 0.0;
       for (int i = 0; i < 12; i++) {
+        if (i >= rpShadowTaps) break;              // 4 / 6 / 8 / 12 taps by quality (TAA smooths the rest)
         vec2 o = R * P[i] * rpShadowTexel * 1.6;
         s += step(z, rpUnpackDepth(texture2D(rpShadowMap, sc.xy + o)));
       }
-      return s / 12.0;
+      return s / float(rpShadowTaps);
     }
     float rpCloudShadowAt(vec3 wp) {
       vec2 uv = (wp.xz - rpCloudShadowXform.xy) * rpCloudShadowXform.z + 0.5;

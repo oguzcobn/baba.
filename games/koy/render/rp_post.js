@@ -368,12 +368,13 @@
       uCurViewProjInv: { value: new THREE.Matrix4() },
       uJitter: { value: new THREE.Vector2() },
       uFeedback: { value: 0.9 },
+      uCurRes: { value: new THREE.Vector2(1, 1) },
       uReset: { value: 1 }
     });
     this.taaPass = new RP.Pass(RP.DEPTH_GLSL + `
       uniform sampler2D uCurrent, uHistory, uExposureTex;
       uniform mat4 uPrevViewProj, uCurViewProjInv;
-      uniform vec2 uRes, uJitter;
+      uniform vec2 uRes, uJitter, uCurRes;   // uRes: output (history) · uCurRes: internal (current frame)
       uniform float uFeedback;
       uniform int uReset;
       vec3 rgb2ycocg(vec3 c) { return vec3(0.25 * c.r + 0.5 * c.g + 0.25 * c.b, 0.5 * c.r - 0.5 * c.b, -0.25 * c.r + 0.5 * c.g - 0.25 * c.b); }
@@ -396,22 +397,23 @@
         return max(r / ws, vec3(0.0));
       }
       void main() {
-        vec2 px = 1.0 / uRes;
-        vec2 uvC = vUv - uJitter * 0.5;      // un-jittered sample position
+        vec2 px = 1.0 / uCurRes;
+        // the jittered frame shows the point of output position vUv at vUv + jitter/2
+        vec2 uvS = vUv + uJitter * 0.5;
         vec2 ex = texelFetch(uExposureTex, ivec2(0, 0), 0).rg;   // (this frame, previous frame)
-        vec3 cur = texture(uCurrent, vUv).rgb * ex.x;              // pre-exposure happens here
+        vec3 cur = texture(uCurrent, uvS).rgb * ex.x;              // pre-exposure happens here
         if (uReset == 1) { outColor = vec4(cur, 1.0); return; }
         // closest depth in 3×3 for reprojection (reduces edge ghosting)
         float dMin = 1.0; vec2 uvD = vUv;
         vec3 m1 = vec3(0.0), m2 = vec3(0.0), cmin = vec3(1e9), cmax = vec3(-1e9);
         for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
           vec2 o = vec2(x, y) * px;
-          float dd = rawDepth(vUv + o);
+          float dd = rawDepth(uvS + o);
           if (dd < dMin) { dMin = dd; uvD = vUv + o; }
-          vec3 s = tm(rgb2ycocg(texture(uCurrent, vUv + o).rgb * ex.x));
+          vec3 s = tm(rgb2ycocg(texture(uCurrent, uvS + o).rgb * ex.x));
           m1 += s; m2 += s * s; cmin = min(cmin, s); cmax = max(cmax, s);
         }
-        vec4 clip = vec4((uvD - uJitter * 0.5) * 2.0 - 1.0, dMin * 2.0 - 1.0, 1.0);
+        vec4 clip = vec4(uvD * 2.0 - 1.0, dMin * 2.0 - 1.0, 1.0);
         vec4 wp = uCurViewProjInv * clip; wp /= wp.w;
         vec4 prev;
         if (dMin >= 1.0) {     // sky: reproject direction only
@@ -420,7 +422,7 @@
           prev = uPrevViewProj * vec4(dir, 0.0);
         } else prev = uPrevViewProj * wp;
         vec2 uvPrev = prev.xy / prev.w * 0.5 + 0.5;
-        vec2 motion = uvPrev - (vUv - uJitter * 0.5);
+        vec2 motion = uvPrev - vUv;
         vec3 mu = m1 / 9.0, sig = sqrt(max(m2 / 9.0 - mu * mu, 0.0));
         float gamma = 1.0;
         vec3 bmin = max(cmin, mu - gamma * sig), bmax = min(cmax, mu + gamma * sig);
@@ -433,7 +435,9 @@
         float ma = max(a.x, max(a.y, a.z));
         if (ma > 1.0) hist = cen + v / ma;
         float speed = length(motion * uRes);
-        float fb = mix(uFeedback, 0.7, saturate(speed / 12.0));
+        // upsampling: fewer new samples per output pixel → trust history a bit more when still
+        float upF = clamp(uCurRes.x / uRes.x, 0.5, 1.0);
+        float fb = mix(mix(0.95, uFeedback, (upF - 0.5) * 2.0), 0.7, saturate(speed / 12.0));
         if (off) fb = 0.0;
         vec3 res = mix(curT, hist, fb);
         outColor = vec4(max(ycocg2rgb(itm(res)), vec3(0.0)), 1.0);
