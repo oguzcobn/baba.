@@ -1,0 +1,25 @@
+.overlay:not(.hidden) {
+  background: linear-gradient(125deg, #080c169c, #080c164d 70%), var(--scene) center / cover;
+  overflow: auto;
+  padding: 12px;
+}
+.overlay > div {
+  max-height: 100%;
+  overflow: auto;
+  backdrop-filter: blur(12px);
+  animation: arcade-enter .38s ease-out both;
+}
+[data-arcade="age-of-war"] { --scene: url(art/age-of-war.webp); }
+[data-arcade="warfare-1917"] { --scene: url(art/warfare-1917.webp); }
+[data-arcade="the-waitress"] { --scene: url(art/the-waitress.webp); }
+[data-arcade="fancy-pants-3"] { --scene: url(art/fancy-pants-3.webp); }
+[data-arcade="territory-war"] { --scene: url(art/territory-war.webp); }
+[data-arcade="electric-man-2"] { --scene: url(art/electric-man-2.webp); }
+[data-arcade="warfare-1917"] .overlay > div { border-radius: 3px; border-left: 5px solid #b1a37e; }
+[data-arcade="age-of-war"] .overlay > div { border-radius: 4px 28px; border-top: 4px solid #d8a958; }
+[data-arcade="the-waitress"] .overlay > div { border: 4px double #ffcc9d; border-radius: 36px 36px 12px 12px; }
+[data-arcade="fancy-pants-3"] .overlay > div { border: 3px solid #283a40; box-shadow: 7px 8px 0 #283a40; transform: rotate(-1deg); }
+[data-arcade="territory-war"] .overlay > div { border-radius: 0; border-bottom: 4px solid #54bfdc; text-align: left; }
+[data-arcade="electric-man-2"] .overlay > div { border-radius: 26px 3px; box-shadow: 0 0 45px #5e4de877; }
+@keyframes arcade-enter { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .overlay > div { animation: none; } }

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="electric-man-2">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -75,6 +75,7 @@
 @media(prefers-reduced-motion:reduce){#wrap>.overlay,#wrap>.overlay *,#wrap>.overlay::before{animation:none!important;transition:none!important}}
 
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -131,6 +132,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -189,7 +191,8 @@ function addSparks(x, y, col, n = 14) {
 
 function doAttack(type) {
   const p = st.p;
-  if (!st.running || p.atkT > 0) return;
+  if (!st.running) return;
+  if (p.atkT > 0) { p.queued = type; return; }
   if (type === 'super') {
     if (p.en < 35) return;
     p.en -= 35; st.slowMo = 0.65; st.shake = 16; p.atk = 'super'; p.atkT = 0.42;
@@ -205,7 +208,7 @@ function doAttack(type) {
   for (const e of st.enemies) {
     if (e.dead) continue;
     const dx = e.x - p.x;
-    if (Math.abs(dx) < rng && (type === 'super' || Math.sign(dx) === p.face || Math.abs(dx) < 30)) {
+    if (Math.abs(p.y - e.y) < 45 && Math.abs(dx) < rng && (type === 'super' || Math.sign(dx) === p.face || Math.abs(dx) < 30)) {
       e.hp -= dmg; e.stun = 0.55;
       const dir = dx >= 0 ? 1 : -1;
       e.vx = dir * (type === 'super' ? 520 : (type === 'kick' ? 340 : 190));
@@ -216,7 +219,7 @@ function doAttack(type) {
       if (e.hp <= 0) { e.dead = true; e.vy = -420; st.shake = 10; }
     }
   }
-  if (hit) { st.combo++; document.getElementById('combo-txt').textContent = `COMBO x${st.combo}`; }
+  if (hit) { p.comboTime = 1.25; st.combo++; p.best = Math.max(p.best || 0, st.combo); document.getElementById('combo-txt').textContent = `COMBO x${st.combo}`; }
 }
 
 function update(rawDt) {
@@ -228,8 +231,20 @@ function update(rawDt) {
 
   const gY = canvas.height * 0.78, p = st.p;
   p.en = Math.min(100, p.en + 16 * dt);
-  if (p.atkT > 0) { p.atkT -= rawDt; if (p.atkT <= 0) p.atk = null; }
+  if (p.atkT > 0) { p.atkT -= rawDt; if (p.atkT <= 0) {
+    p.atk = null;
+    const queued = p.queued;
+    p.queued = null;
+    if (queued) doAttack(queued);
+  } }
 
+  if (p.comboTime > 0) {
+    p.comboTime -= rawDt;
+    if (p.comboTime <= 0) {
+      st.combo = 0;
+      document.getElementById('combo-txt').textContent = 'COMBO x0';
+    }
+  }
   if (st.keys.l) { p.vx = -310; p.face = -1; }
   else if (st.keys.r) { p.vx = 310; p.face = 1; }
   else p.vx *= 0.75;
@@ -252,8 +267,10 @@ function update(rawDt) {
     if (Math.abs(dx) > 64) { e.vx = e.face * (135 + st.wave * 10); e.anim += dt * 7; }
     else {
       e.vx *= 0.7; e.cd -= dt;
+      if (e.cd < 0.22 && e.cd > 0) addSparks(e.x, e.y - 45, '#fb7185', 1);
       if (e.cd <= 0) {
         e.cd = Math.max(0.6, 1.35 - st.wave * 0.08);
+        if (Math.abs(p.y - e.y) > 38) continue;
         p.hp -= 10; st.combo = 0; document.getElementById('combo-txt').textContent = 'COMBO x0';
         p.vx = e.face * 210; addSparks(p.x, p.y - 34, '#ef4444', 10); sfx(160, 70, 0.14);
       }
@@ -264,7 +281,7 @@ function update(rawDt) {
   if (p.hp <= 0) {
     st.running = false;
     document.getElementById('end-title').textContent = 'YERE SERİLDİN!';
-    document.getElementById('end-sub').textContent = `Ulaştığın Dalga: ${st.wave} · En Yüksek Kombo: x${st.combo}`;
+    document.getElementById('end-sub').textContent = `Ulaştığın Dalga: ${st.wave} · En Yüksek Kombo: x${p.best || 0}`;
     document.getElementById('end-ov').classList.remove('hidden');
   }
 
@@ -295,6 +312,9 @@ function drawStickFighter(x, y, face, col, anim, atk, dead, rot) {
   ctx.moveTo(2, -50); ctx.lineTo(atk === 'punch' || atk === 'super' ? 34 : 16, -48);
   ctx.moveTo(2, -50); ctx.lineTo(-14, -40);
   ctx.stroke();
+  ctx.fillStyle = '#182641';
+  ctx.beginPath(); ctx.roundRect(-9, -53, 22, 27, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = col; ctx.fillRect(1, -47, 10, 3);
   // Glowing Head
   ctx.fillStyle = '#050814'; ctx.beginPath(); ctx.arc(2, -66, 11, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.shadowBlur = 0;
@@ -309,8 +329,9 @@ function render() {
   bg.addColorStop(0, st.slowMo > 0 ? '#082f49' : '#050814'); bg.addColorStop(1, '#0f172a');
   ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
 
+  arcadeArt.backdrop(ctx, W, H, st.time * .02, st.slowMo > 0 ? 'saturate(1.6)' : '');
   // Cyber Arena Floor Grid
-  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, gY, W, H - gY);
+  ctx.fillStyle = '#0c142658'; ctx.fillRect(0, gY, W, H - gY);
   ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 3;
   ctx.beginPath(); ctx.moveTo(0, gY); ctx.lineTo(W, gY); ctx.stroke();
 

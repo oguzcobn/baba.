@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="t d">
+<title id="t">ROTA. — Denizcilik Konferansı</title><desc id="d">Gece mavisi ve turkuaz tonlarında modern organizasyon simülasyonu kapağı, konferans limanı ve gemi</desc>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#09202f"/><stop offset=".52" stop-color="#0c4652"/><stop offset="1" stop-color="#127b78"/></linearGradient>
+<linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#145864"/><stop offset="1" stop-color="#082635"/></linearGradient>
+<linearGradient id="roof" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#5ce7d3"/><stop offset="1" stop-color="#17a6b6"/></linearGradient>
+<filter id="shadow"><feDropShadow dx="0" dy="13" stdDeviation="15" flood-color="#00141c" flood-opacity=".4"/></filter>
+<pattern id="grid" width="62" height="62" patternUnits="userSpaceOnUse"><path d="M62 0H0V62" fill="none" stroke="#caffee" stroke-opacity=".045"/></pattern>
+</defs>
+<rect width="1280" height="720" fill="url(#bg)"/><rect width="1280" height="720" fill="url(#grid)"/>
+<circle cx="1035" cy="160" r="220" fill="#62fff0" opacity=".055"/><circle cx="1035" cy="160" r="146" fill="none" stroke="#8be8d8" stroke-opacity=".22" stroke-width="2"/>
+<path d="M0 475C230 425 290 517 520 480S908 415 1280 505V720H0Z" fill="url(#sea)"/>
+<path d="M0 565C243 524 392 633 613 571S1020 530 1280 581" stroke="#5de0d5" stroke-width="3" stroke-opacity=".27" fill="none"/>
+<g transform="translate(725 216)" filter="url(#shadow)">
+<path d="M33 228H514L461 307H110Z" fill="#cdf2ec"/><path d="M33 228H514L475 277H78Z" fill="#41bdbe"/>
+<path d="M101 139H417V228H101Z" fill="#effefa"/><path d="M136 92H391V139H136Z" fill="#b8e6e1"/><path d="M194 42H347V92H194Z" fill="#effefa"/>
+<path d="M220 4H238V42H220Z" fill="#e9fffa"/><path d="M246 4H264V42H246Z" fill="#b3e4dc"/><path d="M194 42H347V51H194Z" fill="url(#roof)"/>
+<path d="M129 157H385" stroke="#0b6574" stroke-width="7" stroke-linecap="round"/><path d="M129 181H385" stroke="#0b6574" stroke-width="7" stroke-linecap="round"/>
+<g fill="#0a5a6d"><rect x="155" y="64" width="35" height="14" rx="4"/><rect x="203" y="64" width="35" height="14" rx="4"/><rect x="251" y="64" width="35" height="14" rx="4"/><rect x="299" y="64" width="35" height="14" rx="4"/></g>
+<path d="M470 300C530 309 570 308 606 298" fill="none" stroke="#64ddd2" stroke-width="10" stroke-linecap="round" opacity=".6"/>
+</g>
+<g transform="translate(40 80)">
+<rect x="0" y="0" width="112" height="5" rx="2" fill="#f8b461"/><text x="0" y="75" font-family="Arial,Helvetica,sans-serif" fill="#ffffff" font-size="83" font-weight="900" letter-spacing="-7">ROTA<tspan fill="#66e5d6">.</tspan></text>
+<text x="5" y="116" font-family="Arial,Helvetica,sans-serif" fill="#8de8dd" font-size="17" font-weight="700" letter-spacing="7">EXPERIENCES</text>
+<text x="0" y="232" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="40" font-weight="800">DENİZCİLİK</text>
+<text x="0" y="281" fill="#ffffff" font-family="Arial,Helvetica,sans-serif" font-size="40" font-weight="800">KONFERANSI</text>
+<text x="2" y="327" fill="#c0dfdf" font-family="Arial,Helvetica,sans-serif" font-size="20">Teklif ver. Planla. Krizi yönet.</text>
+<rect x="0" y="383" width="155" height="38" rx="19" fill="#10b5a7"/><text x="78" y="409" fill="#062a31" font-family="Arial,Helvetica,sans-serif" font-size="16" font-weight="800" text-anchor="middle">YENİ GÖREV</text>
+</g>
+<g transform="translate(48 638)" fill="#b1e4db" font-family="Arial,Helvetica,sans-serif" font-size="18" font-weight="700"><text>45 MİSAFİR</text><circle cx="180" cy="-6" r="4" fill="#f8b461"/><text x="205">3 GÜN</text><circle cx="310" cy="-6" r="4" fill="#f8b461"/><text x="338">9 KARAR</text></g>
+</svg>

@@ -153,8 +153,10 @@ const App = (() => {
     { id: 'draft', name: 'Süper Lig Draft', tags: [['Futbol', 'Football'], ['18 kulüp', '18 clubs'], ['İstatistik', 'Stats']], best: () => ls.get('draft_best', 0) + T(' p', ' pts') },
     { id: 'istiklal1919', name: ['1919: Medeniyetlerin Çağı', '1919: Age of Civilizations'], tags: [['Strateji', 'Strategy'], ['1919–1923', '1919–1923'], ['İki mod', 'Two modes']], best: () => T('Dünya modu · 32 bölgeli tarihsel senaryo', 'World mode · 32-region historical campaign') },
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
+    { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
+    { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
+    { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
-    { id: 'wild-ones', name: ['Vahşi Dostlar (Wild Ones)', 'Wild Ones'], tags: [['Topçu', 'Artillery'], ['Yıkılabilir', 'Destructible'], ['1v1 / 2P', '1v1 / 2P']], best: () => T('6 Karakter', '6 Pets') },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'warfare-1917', name: ["Warfare 1917: Siper Savaşı","Warfare 1917"], tags: [["Strateji","Strategy"],["Siper","Trenches"],["1917","1917"]], best: () => T('Yeni oyun', 'New game') },
@@ -167,6 +169,7 @@ const App = (() => {
     { id: 'gta-vice-city', name: 'GTA: Vice City', tags: [['Aksiyon', 'Action'], ['Klasik', 'Classic'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'tekken-3', name: 'Tekken 3', tags: [['Dövüş', 'Fighting'], ['Arcade', 'Arcade'], ['Miniplay', 'Miniplay']], best: () => T('Harici', 'External') },
     { id: 'hungry-shark', name: ['Aç Köpekbalığı', 'Hungry Shark'], tags: [['Arcade', 'Arcade'], ['Okyanus', 'Ocean'], ['Hayatta Kalma', 'Survival']], best: () => { const b = ls.get('bb_best_hungry_shark', 0); return b ? b.toLocaleString(I18N.locale) : '—'; } },
+    { id: 'rota-conference', name: ['ROTA. — Denizcilik Konferansı', 'ROTA. — Maritime Conference'], tags: [['Simülasyon', 'Simulation'], ['Etkinlik Yönetimi', 'Event Management'], ['Operasyon', 'Operations']], best: () => { const r = ls.get('rota_conference_records_v2', null); return r?.bestScore ? r.bestScore + T(' puan', ' points') : T('Yeni görev', 'New mission'); } },
     { id: 'dsan-shipyard', name: ['Damen Tersane Tycoon', 'Damen Shipyard Tycoon'], tags: [['3D Yönetim', '3D Management'], ['Gemi İnşası', 'Shipbuilding'], ['Tersane', 'Shipyard']], best: () => T('Antalya · 3D', 'Antalya · 3D') },
     { id: '2048', name: '2048', tags: [['Bulmaca', 'Puzzle'], ['Kaydır', 'Swipe']], best: () => ls.get('bb_best_2048', 0) },
     { id: 'sudoku', name: 'Sudoku', tags: [['Mantık', 'Logic'], ['3 seviye', '3 levels']], best: () => { const b = ls.get('bb_best_sudoku', null); return b ? fmtT(b) : '—'; } },
@@ -231,7 +234,7 @@ const App = (() => {
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
-    'wild-ones': 'img/library/wild-ones-1280.webp',
+    'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
     'tekken-3': 'img/library/tekken-3-1280.webp',
@@ -244,7 +247,7 @@ const App = (() => {
   });
   function menu() {
     // Oyun kütüphanesi (js/oyunlar.js): hero video, vitrin, filtrelenebilir kütüphane, kategoriler
-    onLeave(BABALibrary.render({ root: root(), games: GAMES, T, esc, P, isOwner, covers: GAME_COVERS }));
+    onLeave(BABALibrary.render({ root: root(), games: GAMES, isExternal: id => Object.hasOwn(EXTERNAL_GAME_URLS, id), T, esc, P, isOwner, covers: GAME_COVERS }));
     if (typeof BABACovers !== 'undefined') onLeave(BABACovers.mount({
       container: root(), games: GAMES.map(g => ({ id: g.id, name: P(g.name) })),
       defaults: GAME_COVERS, isOwner: () => isOwner()
@@ -348,16 +351,6 @@ const App = (() => {
       msgType: 'baba-kafa-topu-score', scoreId: 'kafa-topu'
     });
   }
-  function wildOnes() {
-    openEmbeddedGame({
-      title: T('Vahşi Dostlar (Wild Ones)', 'Wild Ones'),
-      url: 'games/wild-ones/index.html?v=1',
-      tag: T('Arcade · Yıkılabilir Topçu Savaşı', 'Arcade · Destructible Artillery'),
-      lead: T('Yıkılabilir adalarda 6 özel karakterle bazuka, misket bombası, hava saldırısı ve nükleer düellosu.', 'Artillery battle across destructible islands with 6 hand-drawn pets and 6 weapons.'),
-      tip: T('A/D yürü, W zıpla, fareyle nişan al, Sol Tık/Boşluk basılı tutup bırakarak ateş et.', 'A/D walk, W jump, aim with mouse, hold & release Click/Space to fire.'),
-      msgType: 'baba-wild-ones-score', scoreId: 'wild-ones'
-    });
-  }
   function yilanArenasi() {
     openEmbeddedGame({
       title: T('Yılan Arenası (Slither.io)', 'Snake Arena (Slither.io)'),
@@ -368,11 +361,31 @@ const App = (() => {
       msgType: 'baba-yilan-arenasi-score', scoreId: 'yilan-arenasi'
     });
   }
-  // ZIP'teki 8 bağımsız HTML oyunu: mevcut Wild Ones oyunu korunur.
+  const EXTERNAL_GAME_URLS = {
+    'age-of-war': 'https://flash-games.io/age-of-war',
+    'warfare-1917': 'https://flash-games.io/warfare-1917',
+    'the-waitress': 'https://flash-games.io/the-waitress',
+    'fancy-pants-3': 'https://flash-games.io/fancy-pants-adventure-3',
+    'territory-war': 'https://flash-games.io/territory-war',
+    'electric-man-2': 'https://flash-games.io/electric-man-2',
+    'gta-vice-city': 'https://www.miniplay.com/game/gta-vice-city',
+    'tekken-3': 'https://www.miniplay.com/game/tekken-3'
+  };
   const ARCADE_IMPORTED = [{"id":"age-of-war","name":["Age of War: Çağlar Savaşı","Age of War"],"tip":["Strateji","Strategy"]},{"id":"gunblood","name":["Gunblood: Düello","Gunblood: Duel"],"tip":["Düello","Duel"]},{"id":"warfare-1917","name":["Warfare 1917: Siper Savaşı","Warfare 1917"],"tip":["Strateji","Strategy"]},{"id":"the-waitress","name":["The Waitress: BABA Kafe","The Waitress: Cafe"],"tip":["Simülasyon","Simulation"]},{"id":"fancy-pants-3","name":["Fancy Pants 3","Fancy Pants 3"],"tip":["Platform","Platformer"]},{"id":"territory-war","name":["Territory War: Bölge Savaşı","Territory War"],"tip":["Strateji","Strategy"]},{"id":"electric-man-2","name":["Electric Man 2","Electric Man 2"],"tip":["Dövüş","Fighting"]},{"id":"wild-ones-world","name":["Wild Ones: World Edition","Wild Ones: World Edition"],"tip":["Topçu","Artillery"]}];
   function importedArcadeGame(id) {
     const cfg = ARCADE_IMPORTED.find(g => g.id === id);
     if (!cfg) return;
+    const externalUrl = EXTERNAL_GAME_URLS[id];
+    if (externalUrl) {
+      openEmbeddedGame({
+        title: T(...cfg.name),
+        url: externalUrl,
+        tag: T('BABA. ARCADE · Harici Bağlantı', 'BABA. ARCADE · External'),
+        lead: T('Flash Games üzerinden oyna. Çerçeve açılmazsa “Yeni sekmede aç ↗” bağlantısını kullan.', 'Play via Flash Games. If the embed is blocked, use “Open in a new tab ↗”.'),
+        tip: T("Oyun bağlantısı harici bir siteye açılır.", "The game is hosted on an external site.")
+      });
+      return;
+    }
     openEmbeddedGame({
       title: T(...cfg.name),
       url: 'games/arcade/' + id + '.html?v=2',
@@ -384,7 +397,7 @@ const App = (() => {
   function gtaViceCity() {
     openEmbeddedGame({
       title: 'GTA: Vice City',
-      url: 'https://www.miniplay.com/game/gta-vice-city',
+      url: EXTERNAL_GAME_URLS['gta-vice-city'],
       tag: T('Klasik Aksiyon · Harici Bağlantı', 'Classic Action · External'),
       lead: T('Miniplay üzerinden GTA: Vice City. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'GTA: Vice City via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
       tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
@@ -393,7 +406,7 @@ const App = (() => {
   function tekken3() {
     openEmbeddedGame({
       title: 'Tekken 3',
-      url: 'https://www.miniplay.com/game/tekken-3',
+      url: EXTERNAL_GAME_URLS['tekken-3'],
       tag: T('Arcade Dövüş · Harici Bağlantı', 'Arcade Fighting · External'),
       lead: T('Miniplay üzerinden Tekken 3. Çerçeve tarayıcı güvenlik politikası nedeniyle açılmazsa “Yeni sekmede aç ↗” butonunu kullan.', 'Tekken 3 via Miniplay. If the embed is blocked by the site, use “Open in a new tab ↗”.'),
       tip: T('Harici site içeriği olduğu için tam ekran veya yeni sekmede daha akıcı çalışır.', 'Opens smoothest in a new tab.')
@@ -442,6 +455,58 @@ const App = (() => {
       if (req) { try { await req.call(frame); return; } catch (_) {} }
       window.open(DSAN_SHIPYARD_URL, '_blank', 'noopener');
     };
+  }
+
+  /* ==================== ROTA. CONFERENCE ==================== */
+  const ROTA_CONFERENCE_URL = 'games/rota-conference/index.html';
+  function rotaConference() {
+    const b = shell(T('ROTA. — Denizcilik Konferansı', 'ROTA. — Maritime Conference'), `<div class="vd-bar"><p class="bb-tip">${T('45 katılımcılı, üç günlük konferans için teklif ver, ekibini kur, tedarikçileri seç ve dört operasyon krizini çöz.', 'Bid on a three-day conference for 45 guests, hire your team, select vendors and handle four operational crises.')}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${ROTA_CONFERENCE_URL}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in new tab')} ↗</a></div></div>
+      <div class="dsan-frame rota-game-frame"><iframe src="${ROTA_CONFERENCE_URL}" title="ROTA. — Denizcilik Konferansı" allow="fullscreen" allowfullscreen loading="eager"></iframe></div>
+      <p class="bb-tip">${T('Kararların kârı, dakikliği ve müşteri memnuniyetini değiştirir. Oyun otomatik kaydedilir.', 'Your choices affect profit, punctuality and satisfaction. Progress is automatically saved.')}</p>`, T('Etkinlik işletme simülasyonu · Antalya', 'Event management simulation · Antalya'));
+    b.closest('.game-page').classList.add('dsan-page','rota-game-page');
+    const frame = b.querySelector('.rota-game-frame'), button = b.querySelector('[data-a=full]');
+    button.onclick = async () => {
+      click();
+      const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+      if (req) { try { await req.call(frame); return; } catch (_) {} }
+      window.open(ROTA_CONFERENCE_URL, '_blank', 'noopener');
+    };
+  }
+
+  /* ==================== PEYNİR KAÇIŞI 3D ==================== */
+  function runawayCheese() {
+    openEmbeddedGame({
+      title: T('Peynir Kaçışı 3D', 'Cheese Escape 3D'),
+      url: 'games/runaway-cheese/index.html',
+      tag: T('BABA. ARCADE · 3D Fizik Kovalamacası', 'BABA. ARCADE · 3D Physics Chase'),
+      lead: T('Peyniri yokuş aşağı yuvarla, engellerin üzerinden sıçra ve peşindeki koşuculara yakalanma!', 'Roll a cheese wheel downhill, bounce past obstacles and escape the crowd of runners!'),
+      tip: T('Bilgisayarda ← → veya A/D; telefonda dokunarak ya da kaydırarak yönlendir. Tam ekran önerilir.', 'Use ← → or A/D on desktop; touch buttons or swipe on mobile. Full screen recommended.')
+    });
+    const page = root().querySelector('.game-page');
+    if (page) page.classList.add('cheese-page');
+  }
+
+  /* ==================== TRABZON YAYLA SAVUNMASI / 3D TOWER DEFENSE ==================== */
+  function yaylaSavunmasi() {
+    openEmbeddedGame({
+      title: T('Trabzon Yayla Savunması', 'Trabzon Highland Defense'),
+      url: 'games/yayla-savunmasi/index.html?v=1',
+      tag: T('BABA. STRATEJİ · 3D Kule Savunma', 'BABA. STRATEGY · 3D Tower Defense'),
+      lead: T('Yaylayı 10 dalga boyunca savun: taş platformlara Serender Okçu, Kaçkar Topçu, Fırtına Kulesi kur; Kemençe, Meşale ve Zigana Buzulu güçlerini doğru anda kullan.', 'Defend the highland for 10 waves: build towers on the stone pads and time your Kemençe, Torch and Glacier powers.'),
+      tip: T('Platforma dokun → kule seç. Sürükleyerek döndür, iki parmakla yakınlaş. “PBR Kalibrasyon” panelinde ışığı gerçek yayla fotoğraflarına göre ölçüp ayarlayabilirsin.', 'Tap a pad → pick a tower. Drag to orbit, pinch to zoom. The “PBR Calibration” panel measures the lighting against real highland photos.')
+    });
+  }
+
+  /* ==================== SİS HATTI. / STORY PIXEL ART ==================== */
+  function sisHatti() {
+    openEmbeddedGame({
+      title: T('SİS HATTI. — 02:17', 'FOG LINE. — 02:17'),
+      url: 'games/sis-hatti/index.html',
+      tag: T('BABA. STORIES · Pixel Art Hikâye', 'BABA. STORIES · Pixel Art Narrative'),
+      lead: T('Lodos Limanı’nda kayıp bir yolcunun izini sür. Keşfet, insanlarla konuş, radyo bulmacasını çöz ve dört olası sondan hangisine ulaşacağına karar ver.', 'Explore a haunted harbor, talk to locals, solve a radio puzzle, and decide which of the multiple endings will be yours.'),
+      tip: T('WASD veya ok tuşlarıyla gez, E ile etkileş, J ile günlüğü aç. Telefonda yön tuşları, dokunarak hareket ve etkileşim tuşu var. Oyun otomatik kaydedilir.', 'Move with WASD or arrows, E to interact, J for journal. Mobile controls and tap-to-move supported. Auto-save enabled.')
+    });
+    const page = root().querySelector('.game-page');if(page)page.classList.add('sis-page');
   }
 
   /* ==================== 2048 ==================== */
@@ -754,14 +819,17 @@ const App = (() => {
     else if (r === 'istiklal1919') istiklal1919();
     else if (r === 'vadi') vadi();
     else if (r === 'kafa-topu') kafaTopu();
-    else if (r === 'wild-ones') wildOnes();
-    else if (r === 'ates-ve-su') { location.replace('#oyunlar'); return; }
+    else if (r === 'ates-ve-su' || r === 'wild-ones') { location.replace('#oyunlar'); return; }
     else if (r === 'yilan-arenasi') yilanArenasi();
     else if (ARCADE_IMPORTED.some(g => g.id === r)) importedArcadeGame(r);
     else if (r === 'gta-vice-city') gtaViceCity();
     else if (r === 'tekken-3') tekken3();
     else if (r === 'hungry-shark') hungryShark();
     else if (r === 'dsan-shipyard') dsanShipyard();
+    else if (r === 'rota-conference') rotaConference();
+    else if (r === 'runaway-cheese') runawayCheese();
+    else if (r === 'sis-hatti') sisHatti();
+    else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();

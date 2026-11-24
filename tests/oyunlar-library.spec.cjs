@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
-const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','kafa-topu','wild-ones','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','2048','sudoku','mines','blocks'];
-const SVG = new Set(['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world']);
+const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','yayla-savunmasi','kafa-topu','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','rota-conference','2048','sudoku','mines','blocks'];
+const SVG = new Set(['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','rota-conference']);
 for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
   test.use({viewport:vp});
   test('hero, kapaklar, filtre, arama, vitrin ve son oynanan', async ({page}) => {
@@ -15,6 +15,11 @@ for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe
     for (const id of IDS) await expect(page.locator(`[data-game-cover="${id}"] img`)).toHaveAttribute('src',`img/library/${id}-1280.${SVG.has(id)?'svg':'webp'}`);
     const broken = await page.evaluate(async()=>{const imgs=[...document.querySelectorAll('.lb-card img')];await Promise.all(imgs.map(i=>{i.loading='eager';return i.decode().catch(()=>{});}));return imgs.filter(i=>!i.naturalWidth).map(i=>i.src);});
     expect(broken).toEqual([]);
+    await expect(page.locator('.lb-card[data-cat="web"]:not(.lb-hide)')).toHaveCount(0);
+    await expect(page.locator('.lb-slide a[href="#age-of-war"]')).toHaveCount(0);
+    await page.locator('.lb-filters button[data-cat="web"]').click();
+    await expect(page.locator('.lb-card:not(.lb-hide)')).toHaveCount(8);
+    await expect(page.locator('.lb-card[data-id="tekken-3"]')).toBeVisible();
     await page.locator('.lb-filters button[data-cat="puz"]').click();
     await expect(page.locator('.lb-card:not(.lb-hide)')).toHaveCount(3);
     await expect(page.locator('.lb-count b')).toHaveText('3');

@@ -1,0 +1,46 @@
+.campaign-clock{flex:none;padding:6px 12px;color:#f3dfaf;background:#1c292c;border-block:1px solid #786948;font:600 12px/1.45 system-ui;letter-spacing:.025em}
+.map-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#app .drawer-controls{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #74684b;background:#243336}
+#app .drawer-controls button{border:0;color:#f1ddb0;background:transparent;min-height:44px}
+#app .layout[data-drawer="closed"]{grid-template-columns:minmax(0,1fr) 100px}
+#app .layout[data-drawer="closed"] .sidebody,#app .layout[data-drawer="closed"] .tabs,#app .layout[data-drawer="closed"] #drawer-close{display:none}
+#app .layout[data-drawer="full"]{grid-template-columns:minmax(0,1fr) minmax(300px,42%)}
+#app .province:focus-visible{stroke:#fff3ae;stroke-width:2}
+@media(max-width:700px){
+ #app .campaign-clock{padding:4px 8px;font-size:11px}
+ #app .layout[data-drawer]{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(0,36%)}
+ #app .layout[data-drawer="closed"]{grid-template-rows:minmax(0,1fr) 46px}
+ #app .layout[data-drawer="full"]{grid-template-rows:minmax(0,1fr) minmax(0,62%)}
+ #app .tabs button,#app .bottom button{min-height:44px}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #app .layout[data-drawer]{grid-template-columns:minmax(0,1fr) minmax(215px,34%);grid-template-rows:minmax(0,1fr)}
+ #app .layout[data-drawer="closed"]{grid-template-columns:minmax(0,1fr) 100px}
+ #app .layout[data-drawer="full"]{grid-template-columns:minmax(0,1fr) 48%}
+}
+#app .tabs{overflow-x:auto;scrollbar-width:thin}
+#app .tabs button{flex:1 0 auto;min-height:42px;padding-inline:8px}
+.econ-panel{display:grid;gap:7px}
+.econ-panel h3,.econ-panel p{margin:0}
+.econ-panel progress{width:100%;height:.5rem;accent-color:#dec484}
+.econ-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.econ-row strong{text-align:right;color:#f2dbac}
+.econ-field,.econ-item,.econ-panel details[open]{display:grid;gap:5px}
+.econ-field select{min-width:0;width:100%;padding:8px;background:#172b35;color:#f5e8d2;border:1px solid #677e80}
+.econ-item{padding-block:7px;border-bottom:1px solid #65716b}
+.econ-panel summary{cursor:pointer;color:#efd399;padding:6px 0}
+.econ-panel output{font-size:12px;color:#ded3be}
+
+.province.contested{stroke:#f7a64f;stroke-width:2.8;stroke-dasharray:5 2}
+.province.occupied{stroke:#d6c189;stroke-dasharray:2 2}
+.front-gauge{display:grid;grid-template-columns:1fr auto;gap:.18em .5em;font-size:.85rem;margin:.35em 0}
+.front-gauge progress{grid-column:span 2;width:100%;height:.45em;accent-color:#c19c5e}
+
+.era-art-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+.era-card{margin:0;background:#222b2b;border:1px solid #685e47}
+.era-frame{position:relative;overflow:hidden;aspect-ratio:1;background:#323c37;color:#cfba83;display:grid;place-items:center}
+.era-frame img{position:absolute;width:500%;height:600%;max-width:none}
+.era-card figcaption{font-size:.78rem;padding:.3rem .4rem}
+.history-portrait{width:70px;float:right;border-radius:3px;margin:0 0 .5rem .5rem}
+
+.history-initials{float:right;font:700 1.25rem Georgia;color:#ead9ab;background:#354542;border:1px solid #897f63;border-radius:50%;width:3rem;aspect-ratio:1;display:grid;place-items:center;margin-left:.5rem}
+.econ-item>.era-card{display:grid;grid-template-columns:4rem 1fr;align-items:center}

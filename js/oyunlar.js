@@ -6,7 +6,7 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world"]);
+  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
   const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
@@ -18,12 +18,15 @@ const BABALibrary = (() => {
     draft: { cat: 'foot', accent: '#c8ff3a', time: ['10 dk', '10 min'], blurb: ['Çark döner, 18 Süper Lig kulübünün son 10 yılından 11+2 kur ve 34 maçlık sezonu izle.', 'Spin the wheel, build an 11+2 from 18 Süper Lig clubs’ last decade and watch a 34-game season.'] },
     istiklal1919: { cat: 'str', accent: '#e9c46a', time: ['Sefer', 'Campaign'], blurb: ['1919–1923: cepheler, diplomasi ve kaynak yönetimiyle tarihsel strateji.', '1919–1923: fronts, diplomacy and resources in a historical strategy game.'] },
     vadi: { cat: 'str', accent: '#7fd36b', time: ['3 bölüm', '3 chapters'], blurb: ['Vadide şehrini kur, kaynakları yönet ve üç bölümlük seferi tamamla.', 'Build your city in the valley, manage resources and finish a three-chapter campaign.'] },
+    'rota-conference': { cat: 'sim', accent: '#0aa99f', time: ['15–20 dk', '15–20 min'], isNew: true, blurb: ['45 kişilik uluslararası konferansı yönet: teklif, otel, ekip, dört kriz ve gerçek kâr hesabı.', 'Run a conference for 45 guests: bidding, hotels, staff, four crises and a real profit breakdown.'] },
     'dsan-shipyard': { cat: 'sim', accent: '#3db7ff', time: ['3D yönetim', '3D management'], isNew: true, blurb: ['Antalya’da 3D tersane: sekiz tekne, deniz denemesi, İK görüşmeleri ve müşteri ziyaretleri.', 'A 3D shipyard in Antalya: eight vessels, sea trials, HR interviews and client visits.'] },
+    'runaway-cheese': { cat: 'arc', accent: '#ffdb4d', time: ['3D kovalamaca', '3D chase'], isNew: true, blurb: ['Peynir tekerleği ol, yokuştan yuvarlan; çitlerden, kütüklerden ve peşindeki koşuculardan kaç.', 'Roll a cheese wheel downhill and dodge logs, rocks and the hilarious crowd chasing behind.'] },
+    'sis-hatti': { cat: 'arc', accent: '#d3ab79', time: ['Hikâye RPG', 'Story RPG'], isNew: true, blurb: ['02:17’de kaybolan bir yolcu, sisli liman, gizemli telsiz: keşfet, ipuçlarını birleştir ve farklı sonlara ulaş.', 'A missing passenger, foggy harbor and midnight radio. Investigate, solve clues and discover multiple endings.'] },
+    'yayla-savunmasi': { cat: 'str', accent: '#9fc36a', time: ['10 dalga', '10 waves'], isNew: true, blurb: ['Zigana dağları, Uzungöl ve ladin ormanları arasında 3D kule savunma; ışığı gerçek yayla fotoğraflarına göre ölçülüp ayarlanmış.', '3D tower defense among the Zigana peaks, a highland lake and spruce forests, lit to match real Black Sea highland photos.'] },
     '2048': { cat: 'puz', accent: '#ffb547', time: ['5 dk', '5 min'], blurb: ['Kaydır, birleştir, 2048’e ulaş. Kısa molaların klasiği.', 'Swipe, merge, reach 2048. The short-break classic.'] },
     sudoku: { cat: 'puz', accent: '#8b9bff', time: ['3 seviye', '3 levels'], blurb: ['Kolaydan zora üç seviye; temiz bir kafa ve bir fincan kahve.', 'Three levels from easy to hard; a clear head and a cup of coffee.'] },
     mines: { cat: 'puz', accent: '#ff5c7a', time: ['Klasik', 'Classic'], blurb: ['Sayıları oku, bayrakları dik, mayına basmadan alanı temizle.', 'Read the numbers, plant the flags, clear the field without a blast.'] },
     'kafa-topu': { cat: 'foot', accent: '#c8ff3a', time: ['Süper Lig', 'Süper Lig'], isNew: true, blurb: ['Sports Heads mekaniğiyle Süper Lig kafa futbolu: 8 takım, güçlendirmeler, kupa ve 2 kişilik mod.', 'Sports Heads style Süper Lig football: 8 teams, power-ups, championship cup and 2-player mode.'] },
-    'wild-ones': { cat: 'arc', accent: '#ffd447', time: ['Topçu', 'Artillery'], isNew: true, blurb: ['Yıkılabilir adalarda 6 karakterle sırayla topçu savaşı: bazuka, misket bombası, hava saldırısı ve nükleer.', 'Turn-based artillery pet battle on destructible islands with bazooka, cluster bomb, airstrike and nuke.'] },
     'age-of-war': { cat: 'str', accent: '#f8b84e', time: ["5 çağ","5 eras"], isNew: true, blurb: ["Taş Devri'nden geleceğe yüksel, üssünü savun ve asker üret.","Advance from the Stone Age to the future, defend your base and deploy units."] },
     'gunblood': { cat: 'arc', accent: '#e9954f', time: ["Düello","Duel"], isNew: true, blurb: ["Reflekslerini test et: hızlı silah çekme ve fizik tabanlı western düelloları.","Test your reflexes in physics-based quick-draw western duels."] },
     'warfare-1917': { cat: 'str', accent: '#c0bb7d', time: ["1917","1917"], isNew: true, blurb: ["Siperlere asker ve tank gönder, topçuyla cepheyi ilerlet.","Command trench infantry, tanks and artillery on the 1917 front."] },
@@ -40,27 +43,29 @@ const BABALibrary = (() => {
   };
   const CATS = [
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
-    { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }
+    { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }, { id: 'web', tr: 'Web Oyunları', en: 'Web Games' }
   ];
-  const FEATURED = ['kafa-topu', 'wild-ones', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
+  const SPOTLIGHT = ['yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
 
   function render(o) {
-    const { root, games, T, esc, P, isOwner, covers } = o;
+    const { root, games, isExternal, T, esc, P, isOwner, covers } = o;
+    const localGames = games.filter(g => !isExternal(g.id));
+    const featured = SPOTLIGHT.filter(id => !isExternal(id));
     const L = id => games.find(g => g.id === id);
-    const m = id => META[id] || { cat: 'arc', accent: '#c8ff3a', time: ['', ''], blurb: ['', ''] };
+    const m = id => ({ ...(META[id] || { cat: 'arc', accent: '#c8ff3a', time: ['', ''], blurb: ['', ''] }), ...(isExternal(id) ? { cat: 'web' } : {}) });
     const name = g => P(g.name), bl = id => T(...m(id).blurb), tags = g => g.tags.map(t => P(t));
     const coverOf = id => (covers && covers[id]) || COVER(id, 1280);
-    const last = ls.get('baba_last_game', null), lastG = last && L(last.id);
-    const catCount = id => id === 'all' ? games.length : games.filter(g => m(g.id).cat === id).length;
+    const last = ls.get('baba_last_game', null), lastG = last && !isExternal(last.id) && L(last.id);
+    const catCount = id => id === 'all' ? localGames.length : games.filter(g => m(g.id).cat === id).length;
     const date = new Date().toLocaleDateString((typeof I18N !== 'undefined' && I18N.locale) || 'tr-TR', { weekday: 'long', day: 'numeric', month: 'long' });
-    const band = (dir) => `<div class="lb-band ${dir}" aria-hidden="true"><div class="lb-band-track">${[0, 1].map(() => games.map(g => `<span>${esc(name(g))}</span><i>${icon(I.spark)}</i>`).join('')).join('')}</div></div>`;
+    const band = (dir) => `<div class="lb-band ${dir}" aria-hidden="true"><div class="lb-band-track">${[0, 1].map(() => localGames.map(g => `<span>${esc(name(g))}</span><i>${icon(I.spark)}</i>`).join('')).join('')}</div></div>`;
 
     const card = (g, i) => {
       const mm = m(g.id), best = (() => { try { return g.best(); } catch (e) { return '—'; } })();
-      return `<a class="lb-card" href="#${g.id}" data-id="${g.id}" data-cat="${mm.cat}" data-name="${esc((name(g) + ' ' + tags(g).join(' ')).toLocaleLowerCase('tr-TR'))}" data-i="${i}" style="--acc:${mm.accent};--d:${(i % 8) * 60}ms">
+      return `<a class="lb-card${mm.cat === 'web' ? ' lb-hide' : ''}" href="#${g.id}" data-id="${g.id}" data-cat="${mm.cat}" data-name="${esc((name(g) + ' ' + tags(g).join(' ')).toLocaleLowerCase('tr-TR'))}" data-i="${i}" style="--acc:${mm.accent};--d:${(i % 8) * 60}ms">
         <div class="lb-cover">
           <div class="card-art card-art-cover" data-game-cover="${g.id}"><img src="${esc(coverOf(g.id))}" ${covers && covers[g.id] && covers[g.id].indexOf('img/library/') !== 0 ? '' : `srcset="${SRCSET(g.id)}" sizes="(max-width:640px) 92vw, (max-width:1100px) 46vw, 30vw"`} alt="${esc(name(g))}" loading="lazy" decoding="async"></div>
           <span class="lb-shine" aria-hidden="true"></span>
@@ -79,7 +84,7 @@ const BABALibrary = (() => {
       return `<article class="lb-slide${i ? '' : ' on'}" data-k="${i}" style="--acc:${mm.accent}" aria-hidden="${i ? 'true' : 'false'}">
         <img class="lb-slide-img" src="${COVER(id, 1280)}" srcset="${SRCSET(id)}" sizes="100vw" alt="" loading="${i ? 'lazy' : 'eager'}" decoding="async">
         <div class="lb-slide-shade"></div>
-        <div class="lb-slide-txt"><span class="lb-badge">${String(i + 1).padStart(2, '0')} / ${String(FEATURED.length).padStart(2, '0')} · ${T('Öne çıkan', 'Featured')}</span>
+        <div class="lb-slide-txt"><span class="lb-badge">${String(i + 1).padStart(2, '0')} / ${String(featured.length).padStart(2, '0')} · ${T('Öne çıkan', 'Featured')}</span>
           <h3>${esc(name(g))}</h3><p>${esc(bl(id))}</p>
           <div class="lb-tags light">${tags(g).map(t => `<span>${esc(t)}</span>`).join('')}</div>
           <a class="lb-btn pri" href="#${id}" tabindex="${i ? -1 : 0}">${icon(I.play)} ${T('Şimdi oyna', 'Play now')}</a></div></article>`; };
@@ -124,13 +129,13 @@ const BABALibrary = (() => {
       <section class="lb-feat" id="lbFeatured" aria-roledescription="carousel" aria-label="${T('Öne çıkan oyunlar', 'Featured games')}">
         <header class="lb-sec-head"><p class="lb-eyebrow">${T('Vitrin', 'Spotlight')}</p><h2>${T('Bu hafta <em>sahnede</em>', 'On stage <em>this week</em>')}</h2>
           <div class="lb-feat-ctl"><button type="button" data-f="prev" aria-label="${T('Önceki', 'Previous')}">${icon(I.prev)}</button><button type="button" data-f="next" aria-label="${T('Sonraki', 'Next')}">${icon(I.next)}</button></div></header>
-        <div class="lb-stage">${FEATURED.map(slide).join('')}
-          <div class="lb-dots" role="tablist">${FEATURED.map((id, i) => `<button type="button" role="tab" data-k="${i}" aria-label="${esc(name(L(id)))}" aria-selected="${i ? 'false' : 'true'}"><i></i></button>`).join('')}</div></div>
+        <div class="lb-stage">${featured.map(slide).join('')}
+          <div class="lb-dots" role="tablist">${featured.map((id, i) => `<button type="button" role="tab" data-k="${i}" aria-label="${esc(name(L(id)))}" aria-selected="${i ? 'false' : 'true'}"><i></i></button>`).join('')}</div></div>
       </section>
 
       <section class="lb-lib" id="lbLibrary">
         <header class="lb-sec-head"><p class="lb-eyebrow">${T('Koleksiyon', 'Collection')}</p><h2>${T('Tüm <em>oyunlar</em>', 'All <em>games</em>')}</h2>
-          <div class="bb-cover-toolbar lb-tools"><span class="lb-count" aria-live="polite"><b>${games.length}</b> ${T('oyun', 'games')}</span>
+          <div class="bb-cover-toolbar lb-tools"><span class="lb-count" aria-live="polite"><b>${localGames.length}</b> ${T('oyun', 'games')}</span>
             <label class="lb-sort">${T('Sırala', 'Sort')}<select aria-label="${T('Sırala', 'Sort')}"><option value="rec">${T('Önerilen', 'Recommended')}</option><option value="az">A–Z</option><option value="last">${T('Son oynanan', 'Recently played')}</option></select></label>
             ${isOwner() ? `<button type="button" id="bbCoverEditToggle" class="bb-cover-edit-toggle" aria-controls="bbCoverEditor" aria-expanded="false">✎ ${T('Kapakları Düzenle', 'Edit covers')}</button>` : ''}</div></header>
         <div class="lb-filters" role="toolbar" aria-label="${T('Kategori filtresi', 'Category filter')}">${CATS.map((c, i) => `<button type="button" data-cat="${c.id}" aria-pressed="${i ? 'false' : 'true'}">${T(c.tr, c.en)}<small>${catCount(c.id)}</small></button>`).join('')}</div>
@@ -211,7 +216,7 @@ const BABALibrary = (() => {
     let cat = 'all', q = '';
     const apply = () => {
       let n = 0;
-      cards.forEach(c => { const ok = (cat === 'all' || c.dataset.cat === cat) && (!q || c.dataset.name.includes(q)); c.classList.toggle('lb-hide', !ok); if (ok) n++; });
+      cards.forEach(c => { const ok = (cat === 'all' ? c.dataset.cat !== 'web' : c.dataset.cat === cat) && (!q || c.dataset.name.includes(q)); c.classList.toggle('lb-hide', !ok); if (ok) n++; });
       count.textContent = n; empty.hidden = n > 0;
       $$('.lb-filters button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.cat === cat)));
     };

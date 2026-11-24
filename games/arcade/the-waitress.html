@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-arcade="the-waitress">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -58,6 +58,7 @@
 @media(prefers-reduced-motion:reduce){#wrap>.overlay,#wrap>.overlay *,#wrap>.overlay::before{animation:none!important;transition:none!important}}
 
 </style>
+<link rel="stylesheet" href="arcade-art.css">
 </head>
 <body>
 <div id="wrap">
@@ -98,6 +99,7 @@
   </div>
 </div>
 
+<script src="arcade-art.js"></script>
 <script>
 (() => {
 'use strict';
@@ -168,7 +170,7 @@ function performAction(act) {
       tb.state = 'ordered'; tb.patience = 1.0;
       w.orderTicket = { tableId: tb.id, dish: tb.dish };
       ding(580, 820); addFloat(tb.x, tb.y - 45, `📝 ${tb.dish.icon} Sipariş Alındı`, '#fef3c7');
-    } else if (tb.state === 'ordered' && w.tray && w.tray.id === tb.dish.id) {
+    } else if (tb.state === 'ordered' && w.tray && w.tray.tableId === tb.id) {
       w.tray = null; tb.state = 'eating'; tb.eatTimer = 4.2;
       const tipBonus = Math.round(tb.patience * 25 * st.combo);
       tb.tip = tb.dish.price + tipBonus;
@@ -178,17 +180,21 @@ function performAction(act) {
       st.money += tb.tip;
       for (let k = 0; k < 10; k++) st.particles.push({ x: tb.x, y: tb.y - 10, vx: (Math.random() - 0.5) * 140, vy: -80 - Math.random() * 90, col: '#fde047', r: 4, life: 0.7 });
       addFloat(tb.x, tb.y - 40, `+${tb.tip} ₺ 💰`, '#fde047');
-      tb.state = 'empty'; tb.dish = null; ding(920, 1380); updateHUD();
+      tb.state = 'dirty'; tb.dish = null; ding(920, 1380); updateHUD();
+    } else if (tb.state === 'dirty') {
+      tb.state = 'empty';
+      ding(610, 920); addFloat(tb.x, tb.y - 40, 'Masa hazır', '#a7f3d0');
     }
   } else if (act.type === 'counter') {
     if (w.orderTicket) {
-      st.counterDishes.push({ dish: w.orderTicket.dish, cook: 2.2, ready: false });
+      st.counterDishes.push({ ...w.orderTicket, cook: 2.2 + st.counterDishes.length * 0.65, ready: false });
       addFloat(canvas.width * 0.84, canvas.height * 0.45, `👨‍🍳 ${w.orderTicket.dish.icon} Hazırlanıyor!`, '#fb923c');
       w.orderTicket = null; ding(440, 560);
     } else if (!w.tray) {
       const readyIdx = st.counterDishes.findIndex(d => d.ready);
       if (readyIdx >= 0) {
-        w.tray = st.counterDishes[readyIdx].dish;
+        const order = st.counterDishes[readyIdx];
+        w.tray = { ...order.dish, tableId: order.tableId };
         st.counterDishes.splice(readyIdx, 1);
         ding(680, 980); addFloat(w.x, w.y - 45, `🍽️ ${w.tray.icon} Tepside!`, '#4ade80');
       }
@@ -239,6 +245,9 @@ function update(dt) {
       tb.patience -= dt * (0.042 + st.day * 0.008);
       if (tb.patience <= 0) {
         tb.state = 'empty'; st.combo = 1;
+        if (w.orderTicket?.tableId === tb.id) w.orderTicket = null;
+        if (w.tray?.tableId === tb.id) w.tray = null;
+        st.counterDishes = st.counterDishes.filter(order => order.tableId !== tb.id);
         addFloat(tb.x, tb.y - 40, '😠 Müşteri Gitti!', '#ef4444'); updateHUD();
       }
     } else if (tb.state === 'eating') {
@@ -268,14 +277,9 @@ function update(dt) {
 
 function render() {
   const W = canvas.width, H = canvas.height;
-  // Warm Checkerboard Diner Floor
-  const tile = 48;
-  for (let y = 0; y < H; y += tile) {
-    for (let x = 0; x < W; x += tile) {
-      ctx.fillStyle = ((Math.floor(x / tile) + Math.floor(y / tile)) % 2 === 0) ? '#3b2419' : '#2e1b13';
-      ctx.fillRect(x, y, tile, tile);
-    }
-  }
+  ctx.fillStyle = '#2e1b13'; ctx.fillRect(0, 0, W, H);
+  arcadeArt.backdrop(ctx, W, H);
+  arcadeArt.bloom(ctx, W * .22, H * .22, H * .38, '#ffa54d35');
 
   // Kitchen Counter on Right
   const cx = W * 0.78, cy = H * 0.22, cw = W * 0.18, ch = H * 0.62;
@@ -302,7 +306,10 @@ function render() {
     ctx.fillStyle = '#92400e'; ctx.strokeStyle = '#fde68a'; ctx.lineWidth = 3;
     ctx.beginPath(); ctx.arc(tb.x, tb.y, 44, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-    if (tb.state !== 'empty') {
+    if (tb.state === 'dirty') {
+      ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = '#fef3c7';
+      ctx.fillText('TEMİZLE', tb.x, tb.y + 4);
+    } else if (tb.state !== 'empty') {
       // Customer sitting above table
       ctx.fillStyle = tb.custCol; ctx.beginPath(); ctx.arc(tb.x - 42, tb.y - 26, 20, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = '#fde68a'; ctx.beginPath(); ctx.arc(tb.x - 42, tb.y - 36, 13, 0, Math.PI * 2); ctx.fill();
