@@ -25,6 +25,7 @@ on:
       - 'tests/rota-conference.spec.cjs'
       - 'games/yilan-arenasi/index.html'
       - 'games/kafa-topu/index.html'
+      - 'games/yayla-savunmasi/**'
       - 'tests/arcade-import.spec.cjs'
       - 'tests/oyunlar-library.spec.cjs'
       - 'tests/arcade-games.spec.cjs'
