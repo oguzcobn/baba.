@@ -883,7 +883,7 @@
           });
         }
       }
-      return (typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
+      return (!useCanvasFallback && typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
     }
 
     function makeFlowerBedTexture() {
@@ -913,7 +913,7 @@
         g.fillStyle = '#fef08a';
         g.beginPath(); g.arc(fx, fy, 1.6, 0, Math.PI * 2); g.fill();
       }
-      return (typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
+      return (!useCanvasFallback && typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
     }
 
     function makeSoftGlowTexture(hexColor = '#ffcf70', size = 128) {
@@ -927,7 +927,7 @@
       grad.addColorStop(1, hexColor + '00');
       g.fillStyle = grad;
       g.fillRect(0, 0, size, size);
-      return (typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
+      return (!useCanvasFallback && typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
     }
 
     function makeShadowTexture() {
@@ -940,7 +940,7 @@
       grad.addColorStop(1, 'rgba(12, 22, 18, 0)');
       g.fillStyle = grad;
       g.beginPath(); g.ellipse(64, 32, 58, 28, 0, 0, Math.PI * 2); g.fill();
-      return (typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
+      return (!useCanvasFallback && typeof PIXI !== 'undefined') ? PIXI.Texture.from(c) : c;
     }
 
     // ==================== CUSTOM WEBGL ATMOSPHERE & LIGHTING SHADER ====================
@@ -1012,6 +1012,7 @@
     let farmerSprite = null;
     let farmerShadow = null;
     const npcVisuals = [];
+    const npcTextures = Object.create(null);
     let fxGraphics = null;
     let boatSprite = null;
 
@@ -1041,7 +1042,6 @@
         );
       });
 
-      const npcTextures={};
       await Promise.all(Object.entries(window.LIVING_NPC_ASSETS).map(async ([id,src])=>{try{npcTextures[id]=await loadImageTexture(src);}catch(e){console.warn('NPC sprite unavailable',id,e);}}));
       // Pre-bake procedural 3D-shaded crops, flowers, shadows, glows
       Object.keys(CROPS).forEach(cid => {
@@ -1098,7 +1098,8 @@
       centerCamera();
       applyAtmosphereVisuals();
 
-      app.ticker.add((delta) => gameLoop(delta / 60));
+      gameLoop(0.016);
+      app.ticker.add((delta) => {try{gameLoop(delta/60);}catch(err){console.error('WebGL frame failed; switching to Canvas',err);startSafeFallback();}});
     }
 
     function loadImageTexture(src) {
@@ -1414,9 +1415,10 @@
           const spriteKey = stage === 0 ? 'crop_sprout' : ('crop_' + cid);
           const f = ATLAS_FRAMES[spriteKey] || ATLAS_FRAMES.crop_sprout;
           const stageScale = stage === 0 ? 0.85 : stage === 1 ? 0.68 : 1.0;
-          const sp = new PIXI.Sprite(spriteTextures[spriteKey]);
-          sp.anchor.set(0.5, f.anchorY);
-          sp.scale.set(f.scale * stageScale);
+          const baked = spriteTextures[spriteKey];
+          const sp = new PIXI.Sprite(baked || cropTextures[cid][stage]);
+          sp.anchor.set(0.5, baked ? f.anchorY : 0.75);
+          sp.scale.set(baked ? f.scale * stageScale : 0.85);
           vis.entityContainer.addChild(sp);
           vis.mainSprite = sp;
           vis.shadowSprite.visible = stage > 0;
@@ -3527,6 +3529,12 @@
     }
 
     // ==================== ZERO-DEPENDENCY 2.5D CANVAS FALLBACK ENGINE ====================
+    function startSafeFallback(){
+      if(useCanvasFallback)return;
+      if(app){try{app.ticker.stop();app.destroy(true,{children:true});}catch(e){console.warn(e);}app=null;}
+      birds.length=0;butterflies.length=0;driftingLeaves.length=0;fireflies.length=0;smokePuffs.length=0;floatTexts.length=0;burstParticles.length=0;
+      initCanvas2DFallbackEngine();
+    }
     function initCanvas2DFallbackEngine() {
       useCanvasFallback = true;
       const container = document.getElementById('canvasContainer');
@@ -3569,7 +3577,7 @@
       function fbLoop(ts) {
         const dt = Math.min(0.05, (ts - prevT) / 1000 || 0.016);
         prevT = ts;
-        renderFallbackFrame(dt);
+        try{renderFallbackFrame(dt);}catch(err){console.error('Canvas render failed',err);const status=document.getElementById('livingStatus');if(status)status.textContent='Grafik hatası — sayfayı yenile';return;}
         requestAnimationFrame(fbLoop);
       }
       requestAnimationFrame(fbLoop);
@@ -3851,7 +3859,8 @@
                   ctx.fillStyle = 'rgba(12,24,18,0.26)';
                   ctx.beginPath(); ctx.ellipse(cx + Math.sin(tp.shadowAng) * 8, cy + 4, 26 * stageScale, 12 * stageScale, 0, 0, Math.PI * 2); ctx.fill();
                 }
-                drawAtlasSprite2D(ctx, spriteKey, cx, cy + 4, f.scale * stageScale, f.scale * stageScale, sway * 0.7);
+                if(ATLAS_FRAMES[spriteKey]) drawAtlasSprite2D(ctx, spriteKey, cx, cy + 4, f.scale * stageScale, f.scale * stageScale, sway * 0.7);
+                else { const cropCanvas=fbCropCanvases[tile.crop.id]?.[stage]; if(cropCanvas)ctx.drawImage(cropCanvas,cx-41,cy-57,82,82); }
                 if (stage < 2) {
                   ctx.fillStyle = 'rgba(15,23,42,0.55)'; ctx.fillRect(cx - 19, cy + 10, 38, 5);
                   ctx.fillStyle = tile.crop.watered ? '#38bdf8' : '#4ade80'; ctx.fillRect(cx - 18, cy + 11, 36 * prog, 3);
@@ -4046,7 +4055,7 @@
           console.warn('PixiJS fallback activated:', err);
         }
       }
-      initCanvas2DFallbackEngine();
+      startSafeFallback();
     };
   })();
   </script>
