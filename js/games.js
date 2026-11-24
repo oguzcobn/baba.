@@ -155,6 +155,7 @@ const App = (() => {
     { id: 'vadi', name: 'Empires of the Valley', tags: [['Strateji', 'Strategy'], ['Şehir kurma', 'City-building']], best: () => T('3 Bölümlük Sefer', 'Three-Chapter Campaign') },
     { id: 'runaway-cheese', name: ['Peynir Kaçışı 3D', 'Cheese Escape 3D'], tags: [['3D Arcade', '3D Arcade'], ['Fizik', 'Physics'], ['Kovalamaca', 'Chase']], best: () => { try { const v = Number(localStorage.getItem('baba_cheese_best') || 0); return v > 0 ? v + ' m' : T('Yeni', 'New'); } catch (e) { return T('Yeni', 'New'); } } },
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
+    { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
     { id: 'age-of-war', name: ["Age of War: Çağlar Savaşı","Age of War"], tags: [["Strateji","Strategy"],["5 çağ","5 eras"],["Üs savunması","Base defense"]], best: () => T('Yeni oyun', 'New game') },
     { id: 'gunblood', name: ["Gunblood: Düello","Gunblood: Duel"], tags: [["Düello","Duel"],["Western","Western"],["Refleks","Reflexes"]], best: () => T('Yeni oyun', 'New game') },
@@ -233,6 +234,7 @@ const App = (() => {
     'istiklal1919': 'img/library/istiklal1919-1280.webp',
     'vadi': 'img/library/vadi-1280.webp',
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
+    'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'yilan-arenasi': 'img/library/yilan-arenasi-1280.webp',
     'gta-vice-city': 'img/library/gta-vice-city-1280.webp',
     'tekken-3': 'img/library/tekken-3-1280.webp',
@@ -482,6 +484,17 @@ const App = (() => {
     });
     const page = root().querySelector('.game-page');
     if (page) page.classList.add('cheese-page');
+  }
+
+  /* ==================== TRABZON YAYLA SAVUNMASI / 3D TOWER DEFENSE ==================== */
+  function yaylaSavunmasi() {
+    openEmbeddedGame({
+      title: T('Trabzon Yayla Savunması', 'Trabzon Highland Defense'),
+      url: 'games/yayla-savunmasi/index.html?v=1',
+      tag: T('BABA. STRATEJİ · 3D Kule Savunma', 'BABA. STRATEGY · 3D Tower Defense'),
+      lead: T('Yaylayı 10 dalga boyunca savun: taş platformlara Serender Okçu, Kaçkar Topçu, Fırtına Kulesi kur; Kemençe, Meşale ve Zigana Buzulu güçlerini doğru anda kullan.', 'Defend the highland for 10 waves: build towers on the stone pads and time your Kemençe, Torch and Glacier powers.'),
+      tip: T('Platforma dokun → kule seç. Sürükleyerek döndür, iki parmakla yakınlaş. “PBR Kalibrasyon” panelinde ışığı gerçek yayla fotoğraflarına göre ölçüp ayarlayabilirsin.', 'Tap a pad → pick a tower. Drag to orbit, pinch to zoom. The “PBR Calibration” panel measures the lighting against real highland photos.')
+    });
   }
 
   /* ==================== SİS HATTI. / STORY PIXEL ART ==================== */
@@ -816,6 +829,7 @@ const App = (() => {
     else if (r === 'rota-conference') rotaConference();
     else if (r === 'runaway-cheese') runawayCheese();
     else if (r === 'sis-hatti') sisHatti();
+    else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === '2048') g2048();
     else if (r === 'sudoku') sudoku();
     else if (r === 'mines') mines();

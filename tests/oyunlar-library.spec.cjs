@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
-const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','kafa-topu','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','rota-conference','2048','sudoku','mines','blocks'];
+const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','yayla-savunmasi','kafa-topu','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','rota-conference','2048','sudoku','mines','blocks'];
 const SVG = new Set(['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','rota-conference']);
 for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
   test.use({viewport:vp});
