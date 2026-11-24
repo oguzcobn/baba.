@@ -336,6 +336,13 @@
     for (const [id,name,icon,color,cost,sec] of [
       ['tomato','Domates','🍅',0xe34b37,18,55],['cucumber','Salatalık','🥒',0x65a34d,17,50],['pepper','Biber','🌶️',0xd94b35,22,65],['carrot','Havuç','🥕',0xf28a2e,15,45],['potato','Patates','🥔',0xb18a52,16,52],['olive','Zeytin','🫒',0x708942,28,85],['orange','Portakal','🍊',0xf79832,30,90],['lemon','Limon','🍋',0xe8c941,28,80],['grape','Üzüm','🍇',0x8657a1,35,95],['sunflower','Ayçiçeği','🌻',0xe6ba32,24,70],['onion','Soğan','🧅',0xc89e79,14,45],['lettuce','Marul','🥬',0x79b651,12,40]
     ]) CROPS[id]={id,name,icon,color,hex:'#'+color.toString(16).padStart(6,'0'),cost,sell:Math.round(cost*2.6),growSec:sec,xp:Math.ceil(cost/2),minLevel:2};
+    // New production locations reuse existing baked buildings until bespoke artwork is available.
+    Object.assign(BUILDINGS,{
+      greenhouse:{id:'greenhouse',name:'Sera',icon:'🌱',sprite:'bungalow',cost:550,currency:'coins',minLevel:4,prodSec:65,productId:'tomato',productName:'Domates',productIcon:'🍅',sell:47,xp:25,desc:'Tohumdan sebze üretir.'},
+      olivepress:{id:'olivepress',name:'Zeytinyağı Atölyesi',icon:'🫒',sprite:'windmill',cost:720,currency:'coins',minLevel:5,prodSec:70,productId:'oliveoil',productName:'Zeytinyağı',productIcon:'🫙',sell:170,xp:35,desc:'Zeytinleri yağa dönüştürür.'},
+      restaurant:{id:'restaurant',name:'Sahil Restoranı',icon:'🍽️',sprite:'bakery',cost:950,currency:'coins',minLevel:6,prodSec:85,productId:'fishmeal',productName:'Balık Yemeği',productIcon:'🍽️',sell:230,xp:48,desc:'Taze balık ve sebze ile yemek üretir.'},
+      carpentry:{id:'carpentry',name:'Marangozhane',icon:'🪚',sprite:'dairy',cost:850,currency:'coins',minLevel:7,prodSec:70,productId:'furniture',productName:'Mobilya',productIcon:'🪑',sell:210,xp:40,desc:'Odunu mobilyaya dönüştürür.'}
+    });
     const ITEMS = {};
     Object.values(CROPS).forEach(c => { ITEMS[c.id] = { id: c.id, name: c.name, icon: c.icon, sell: c.sell }; });
     Object.values(ANIMALS).forEach(a => { ITEMS[a.productId] = { id: a.productId, name: a.productName, icon: a.productIcon, sell: a.sell }; });
@@ -352,6 +359,7 @@
     };
     Object.values(EXTRA_ITEMS).forEach(it => { ITEMS[it.id] = it; });
 
+    ITEMS.wood={id:'wood',name:'Odun',icon:'🪵',sell:28};
     const RECIPES = [
       { id: 'bread',    name: 'Köy Ekmeği',      icon: '🍞', reqs: { wheat: 2 },                     sec: 10, xp: 18, sell: 95,  energy: 12 },
       { id: 'smoothie', name: 'Papaya Smoothie', icon: '🍹', reqs: { papaya: 2, strawberry: 1 },     sec: 14, xp: 30, sell: 295, energy: 25 },
@@ -912,6 +920,8 @@
           for (let k = -8; k <= 8; k += 5) {
             g.beginPath(); g.moveTo(-8, -8 + k); g.lineTo(8, -14 + k); g.stroke();
           }
+        } else if(cropId!=='watermelon') {
+          const def=CROPS[cropId];for(let i=-2;i<=2;i++){const x=i*9,y=-12-Math.abs(i)*2;g.strokeStyle='#356f39';g.lineWidth=2.6;g.beginPath();g.moveTo(x,4);g.quadraticCurveTo(x-3,-10,x,y-10);g.stroke();g.fillStyle='#69a94a';g.beginPath();g.ellipse(x-5,y,7,3,-.5,0,Math.PI*2);g.fill();g.beginPath();g.ellipse(x+5,y-7,7,3,.5,0,Math.PI*2);g.fill();const grad=g.createRadialGradient(x-2,y-5,1,x,y,7);grad.addColorStop(0,'#fff5bf');grad.addColorStop(.35,def.hex);grad.addColorStop(1,'#3d5930');g.fillStyle=grad;g.beginPath();g.ellipse(x,y,5.5,cropId==='carrot'||cropId==='cucumber'?10:6,0,0,Math.PI*2);g.fill();}
         } else {
           // Watermelon vines + large striped 3D melon
           g.strokeStyle = '#15803d'; g.lineWidth = 2.5;
@@ -1917,15 +1927,19 @@
       }
       if(livingMode==='zen'&&!currentJob&&!jobs.length&&state.energy>0){for(const row of state.grid){const t=row.find(t=>t.unlocked&&t.crop&&getCropProgress(t.crop,Date.now())>=1);if(t){enqueueHarvest(t,t.x,t.y);break;}}}
       const active=npcs.filter(residentActive);
+      if(!state.lastWoodAt)state.lastWoodAt=Date.now();if(active.some(n=>n.id==='selim')&&Date.now()-state.lastWoodAt>=45000){state.lastWoodAt=Date.now();state.barn.wood=(state.barn.wood||0)+1;updateHUD();}
+      if(!state.lastFishAt)state.lastFishAt=Date.now();if(active.some(n=>n.id==='murat')&&weatherMode!=='rain'&&Date.now()-state.lastFishAt>=65000){state.lastFishAt=Date.now();state.barn.seabream=(state.barn.seabream||0)+1;updateHUD();}
+      if(!state.lastGardenAt)state.lastGardenAt=Date.now();if(active.some(n=>n.id==='ayse')&&Date.now()-state.lastGardenAt>=30000){state.lastGardenAt=Date.now();for(const row of state.grid)for(const t of row)if(t.crop&&!t.crop.watered){t.crop.watered=true;t.crop.plantedAt-=Math.max(0,t.crop.duration-(Date.now()-t.crop.plantedAt)/1000)*300;} }
       if(envTime-lastChat>12&&active.length>=2){
         const pairs=[];for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++)if(Math.hypot(active[i].gx-active[j].gx,active[i].gy-active[j].gy)<3.2)pairs.push([active[i],active[j]]);
         if(pairs.length){const [a,b]=pairs[Math.floor(Math.random()*pairs.length)];const ready=state.grid.flat().filter(t=>t.crop&&getCropProgress(t.crop,Date.now())>=1).length;const lines=weatherMode==='rain'?['Yağmur toprağa iyi geldi.','Evet, bugün sulamaya gerek yok.']:ready?['Tarlada '+ready+' ürün olgunlaşmış.','Hasattan sonra pazara uğrayalım.']:livingClock>17?['Güneş denizin üzerinde batıyor.','Akşam bahçede dinlenelim.']:state.coins<150?['Bu hafta biraz tasarruf edelim.','Ürünlerimizi pazara götürelim.']:['Ada bugün çok huzurlu.','Bahçeyi biraz daha büyütelim.'];a.tx=a.gx;a.ty=a.gy;b.tx=b.gx;b.ty=b.gy;a.chatUntil=envTime+6;b.chatUntil=envTime+6;a.speech=lines[0];b.speech=lines[1];a.facing=(b.gx-b.gy)>(a.gx-a.gy)?1:-1;b.facing=-a.facing;lastChat=envTime;state.islandEvents.push(a.name+': '+lines[0]+' '+b.name+': '+lines[1]);state.islandEvents=state.islandEvents.slice(-20);}
       }
-      if(lastIslandEventDay!==livingDay){lastIslandEventDay=livingDay;if(livingDay%5===0){const event='Hasat şenliği: köy pazarı bugün canlandı.';state.islandEvents.push(event);state.coins+=20*active.length;showToast(event,'success');}else if(livingDay%7===0){const event='Gece gökyüzünde kayan yıldızlar!';state.islandEvents.push(event);showToast(event,'info');}state.islandEvents=state.islandEvents.slice(-20);}
+      if(state.lastIslandEventDay!==livingDay){state.lastIslandEventDay=livingDay;if(livingDay%5===0){const event='Hasat şenliği: köy pazarı bugün canlandı.';state.islandEvents.push(event);state.coins+=20*active.length;showToast(event,'success');}else if(livingDay%7===0){const event='Gece gökyüzünde kayan yıldızlar!';state.islandEvents.push(event);showToast(event,'info');}state.islandEvents=state.islandEvents.slice(-20);}
+      if(livingMode==='zen'&&active.some(n=>n.id==='kemal')&&Date.now()-(state.lastBakerAt||0)>60000&&(state.barn.flour||0)>0){state.lastBakerAt=Date.now();state.barn.flour--;state.barn.bread=(state.barn.bread||0)+1;updateHUD();}
       const status=document.getElementById('livingStatus');if(status)status.textContent='Gün '+livingDay+' · '+String(Math.floor(livingClock)).padStart(2,'0')+':'+String(Math.floor(livingClock%1*60)).padStart(2,'0')+' · '+(jobs.length+(currentJob?1:0))+' görev';
       state.living={day:livingDay,clock:livingClock,mode:livingMode,speed:clockSpeed,auto:autoDayCycle};
     }
-    const buildingInputs={windmill:{wheat:1},bakery:{flour:1},dairy:{milk:1},juicebar:{papaya:1}};
+    const buildingInputs={windmill:{wheat:1},bakery:{flour:1},dairy:{milk:1},juicebar:{papaya:1},greenhouse:{wheat:1},olivepress:{olive:2},restaurant:{seabream:1,tomato:1},carpentry:{wood:2}};
     function consumeBuildingInputs(id){
       const inputs=buildingInputs[id]||{};if(Object.entries(inputs).some(([k,v])=>(state.barn[k]||0)<v)){showToast('Üretim için hammadde gerekli: '+Object.keys(inputs).map(k=>ITEMS[k]?.name||k).join(', '),'info');return false;}
       for(const [k,v] of Object.entries(inputs))state.barn[k]-=v;return true;
@@ -1948,7 +1962,7 @@
 
       if (fdist > 0.06) {
         farmer.state = 'walking';
-        const speed = 3.8;
+        const targetSpeed=Math.min(3.8,Math.sqrt(2*12*fdist));farmer.speed=(farmer.speed||0)+(targetSpeed-(farmer.speed||0))*Math.min(1,dt*14);const speed=Math.max(.35,farmer.speed);
         const step = Math.min(fdist, dt * speed);
         farmer.gx += (fdx / fdist) * step;
         farmer.gy += (fdy / fdist) * step;
@@ -2025,6 +2039,7 @@
           }
         }
       } else {
+        farmer.speed=0;
         farmer.state = 'idle';
         farmer.currentPose = 'ergun';
       }
@@ -2513,7 +2528,8 @@
         const ndx = npc.tx - npc.gx, ndy = npc.ty - npc.gy;
         const ndist = Math.hypot(ndx, ndy);
         if (ndist > 0.05) {
-          const step = Math.min(ndist, dt * 1.45);
+          const desired=Math.min(1.6,Math.sqrt(2*4*ndist));npc.speed=(npc.speed||0)+(desired-(npc.speed||0))*Math.min(1,dt*9);
+          const step = Math.min(ndist, dt * Math.max(.25,npc.speed));
           npc.gx += (ndx / ndist) * step;
           npc.gy += (ndy / ndist) * step;
           npc.stridePhase += step * 1.3;
@@ -3830,7 +3846,7 @@
         npcStep(npc,dt);
         const ndx = npc.tx - npc.gx, ndy = npc.ty - npc.gy, ndist = Math.hypot(ndx, ndy);
         if (ndist > 0.05) {
-          const step = Math.min(ndist, dt * 1.45);
+          const desired=Math.min(1.6,Math.sqrt(8*ndist));npc.speed=(npc.speed||0)+(desired-(npc.speed||0))*Math.min(1,dt*9);const step=Math.min(ndist,dt*Math.max(.25,npc.speed));
           npc.gx += (ndx / ndist) * step; npc.gy += (ndy / ndist) * step;
           npc.stridePhase += step * 1.3;
           if (Math.abs(ndx - ndy) > 0.02) npc.facing = (ndx - ndy) >= 0 ? 1 : -1;
