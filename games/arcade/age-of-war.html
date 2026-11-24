@@ -91,6 +91,23 @@
     box-shadow: 0 10px 30px rgba(217, 119, 6, 0.45);
   }
   .btn-war:hover { transform: translateY(-2px); }
+
+/* BABA. ARCADE — individual cinematic art direction */
+#wrap{isolation:isolate}
+#baba-ambient{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#baba-art-label{position:absolute;right:12px;bottom:8px;pointer-events:none;z-index:3;color:#e9ac5a;opacity:.7;font:800 9px system-ui;letter-spacing:.22em;text-shadow:0 2px 5px #000}
+#wrap>.overlay:not(.hidden){animation:arcadeReveal .55s cubic-bezier(.16,1,.3,1) both}
+#wrap>.overlay:not(.hidden) h1,#wrap>.overlay:not(.hidden) h2{animation:arcadeTitle .65s cubic-bezier(.16,1,.3,1) both;text-shadow:0 5px 22px #e9ac5a55}
+#wrap>.overlay:not(.hidden) button{transition:transform .22s cubic-bezier(.2,1.5,.3,1),box-shadow .22s,filter .22s;box-shadow:0 7px 22px #0006,0 0 0 1px #e9ac5a55}
+#wrap>.overlay:not(.hidden) button:hover{transform:translateY(-3px) scale(1.025);filter:brightness(1.1);box-shadow:0 14px 30px #0007,0 0 25px #e9ac5a66}
+#wrap>.overlay:not(.hidden) button:active{transform:translateY(1px) scale(.97)}
+#wrap>.overlay:not(.hidden) button:focus-visible{outline:3px solid #e9ac5a;outline-offset:4px}
+#wrap>.overlay:not(.hidden)::before{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 70% 30%,rgba(110,55,18,.45),transparent 65%);animation:arcadeGlow 6s ease-in-out infinite alternate}
+@keyframes arcadeReveal{from{opacity:0;transform:scale(1.025)}to{opacity:1;transform:scale(1)}}
+@keyframes arcadeTitle{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+@keyframes arcadeGlow{from{opacity:.3}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#wrap>.overlay,#wrap>.overlay *,#wrap>.overlay::before{animation:none!important;transition:none!important}}
+
 </style>
 <link rel="stylesheet" href="arcade-art.css">
 </head>
@@ -568,6 +585,25 @@ window.onload = () => {
   }
   requestAnimationFrame(loop);
 };
+})();
+</script>
+<script>
+/* Non-interactive ambient physics and impact particles; gameplay untouched. */
+(function(){
+  const wrap=document.getElementById('wrap'); if(!wrap)return;
+  const canvas=document.createElement('canvas');canvas.id='baba-ambient';canvas.setAttribute('aria-hidden','true');wrap.appendChild(canvas);
+  const label=document.createElement('div');label.id='baba-art-label';label.textContent="CHRONICLES OF WAR";wrap.appendChild(label);
+  const ctx=canvas.getContext('2d');if(!ctx)return;
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const max=matchMedia('(max-width:650px)').matches?35:80;
+  let w=1,h=1,last=0,raf=0;
+  function resize(){w=Math.max(1,wrap.clientWidth);h=Math.max(1,wrap.clientHeight);const d=Math.min(devicePixelRatio||1,1.5);canvas.width=Math.round(w*d);canvas.height=Math.round(h*d);ctx.setTransform(d,0,0,d,0,0)}
+  const ro=typeof ResizeObserver==='function'?new ResizeObserver(resize):null;ro&&ro.observe(wrap);resize();
+  function make(x,y,hit){const a=Math.random()*Math.PI*2,s=hit?50+Math.random()*120:15+Math.random()*35;return{x:x===undefined?Math.random()*w:x,y:y===undefined?Math.random()*h:y,vx:hit?Math.cos(a)*s:(Math.random()-.5)*20,vy:hit?Math.sin(a)*s:-10-Math.random()*30,age:0,life:hit?.5+Math.random()*.5:1+Math.random()*3,r:hit?2.5:1+Math.random()*2,hit:!!hit}}
+  const p=Array.from({length:max},()=>make());
+  wrap.addEventListener('pointerdown',e=>{const b=wrap.getBoundingClientRect();for(let i=0;i<12;i++)p.push(make(e.clientX-b.left,e.clientY-b.top,true));if(p.length>max+48)p.splice(0,p.length-max-48)},{passive:true});
+  function loop(t){const dt=Math.min(.04,(t-last)/1000||.016);last=t;ctx.clearRect(0,0,w,h);if(!reduced.matches&&!document.hidden){for(let i=p.length-1;i>=0;i--){const q=p[i];q.age+=dt;q.x+=q.vx*dt;q.y+=q.vy*dt;if(q.hit)q.vy+=120*dt;if(q.age>q.life||q.y>h+20||q.y< -30||q.x< -30||q.x>w+30){if(q.hit)p.splice(i,1);else p[i]=make();continue}ctx.globalAlpha=Math.max(0,1-q.age/q.life)*(q.hit?.85:.3);ctx.fillStyle="#e9ac5a";ctx.strokeStyle="#e9ac5a";ctx.lineWidth=q.r;ctx.beginPath();ctx.arc(q.x,q.y,q.r,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;}}raf=requestAnimationFrame(loop)}
+  raf=requestAnimationFrame(loop);addEventListener('pagehide',()=>{cancelAnimationFrame(raf);ro&&ro.disconnect()},{once:true});
 })();
 </script>
 </body>
