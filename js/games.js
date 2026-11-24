@@ -492,7 +492,7 @@ const App = (() => {
   function koy() {
     openEmbeddedGame({
       title: T('KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'),
-      url: 'games/koy/index.html?v=4',
+      url: 'games/koy/index.html?v=5',
       tag: T('BABA. KÖY. · Glenmore, İskoçya · 3D', 'BABA. VILLAGE. · Glenmore, Scotland · 3D'),
       lead: T('Glencoe eteklerinde taş dağ evi, bahçe, gölet, aile ve hayvanlar: rüzgârda dalgalanan çayır, şömine, gün ve gece döngüsü.', 'A stone cottage, garden, pond, family and animals below Glencoe: a meadow waving in the wind, a fireplace and a day–night cycle.'),
       tip: T('Sürükleyerek döndür, WASD ile gez, F ile kapıyı aç, H ile huzur modu. Oyun 60 FPS’i korumak için çimen yoğunluğunu kendiliğinden ayarlar.', 'Drag to orbit, WASD to walk, F opens the door, H for zen mode. The game adjusts grass density by itself to hold 60 fps.')

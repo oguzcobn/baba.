@@ -106,7 +106,7 @@ a,button,[role="button"],[data-action],[data-game],input,select,textarea{touch-a
   App.render();
   try{Is.start()}catch(e){}
   try{if(App.user())CBN.start()}catch(e){}
-  if('serviceWorker' in navigator&&location.protocol.startsWith('http')){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update()})}).catch(()=>{});let done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!done){done=true;location.reload()}})}
+  if('serviceWorker' in navigator&&location.protocol.startsWith('http')){const had=!!navigator.serviceWorker.controller;navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update();document.addEventListener('visibilitychange',()=>{if(!document.hidden)r.update()})}).catch(()=>{});let done=false,pend=false;const go=()=>{if(pend&&!done&&document.hidden){done=true;location.reload()}};document.addEventListener('visibilitychange',go);navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had){pend=true;go()}})}
 </script>
 </body>
 </html>
