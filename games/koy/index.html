@@ -290,7 +290,7 @@
       <div class="space-y-1">
         <div class="flex justify-between items-center">
           <label for="slider-density" class="font-medium text-emerald-100">Çimen Sıklığı (N)</label>
-          <span class="font-mono-math text-emerald-300" id="val-density">220.000 sap</span>
+          <span class="flex items-center gap-1.5"><span class="font-mono-math text-emerald-300" id="val-density">220.000 sap</span><button id="btn-grass-auto" type="button" class="text-[9.5px] px-1.5 py-0.5 rounded-md bg-emerald-500/25 border border-emerald-400/45 text-emerald-100 cursor-pointer" title="60 FPS için çimen yoğunluğunu otomatik ayarla">Oto</button></span>
         </div>
         <input id="slider-density" type="range" min="80000" max="320000" step="10000" value="220000" />
         <p class="text-[10px] text-emerald-200/60">Çok katmanlı sık çayır örtüsü (kanopi doluluğu C_d·λ otomatik güncellenir)</p>
@@ -734,11 +734,13 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-4 gap-1">
+    <div class="grid grid-cols-3 gap-1">
       <button type="button" data-glbact="reading" class="glb-act-btn py-1 px-1 rounded-lg bg-amber-500/25 border border-amber-400/50 text-[10px] text-amber-100 cursor-pointer">Kitap</button>
       <button type="button" data-glbact="smoking" class="glb-act-btn py-1 px-1 rounded-lg bg-white/5 hover:bg-sky-500/25 border border-white/10 text-[10px] text-emerald-100 cursor-pointer">Sigara</button>
       <button type="button" data-glbact="chopping" class="glb-act-btn py-1 px-1 rounded-lg bg-white/5 hover:bg-emerald-500/25 border border-white/10 text-[10px] text-emerald-100 cursor-pointer">Odun</button>
       <button type="button" data-glbact="stoking" class="glb-act-btn py-1 px-1 rounded-lg bg-white/5 hover:bg-orange-500/25 border border-white/10 text-[10px] text-emerald-100 cursor-pointer">Körükle</button>
+      <button type="button" data-glbact="mowing" class="glb-act-btn py-1 px-1 rounded-lg bg-white/5 hover:bg-lime-500/25 border border-white/10 text-[10px] text-emerald-100 cursor-pointer">Çim Biç</button>
+      <button type="button" data-glbact="sleeping" class="glb-act-btn py-1 px-1 rounded-lg bg-white/5 hover:bg-indigo-500/25 border border-white/10 text-[10px] text-emerald-100 cursor-pointer">Uyku</button>
     </div>
     <div class="grid grid-cols-2 gap-1">
       <button id="btn-family-chat" type="button" class="py-1 px-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/35 border border-sky-400/40 text-[10px] text-sky-100 cursor-pointer">Aile Sohbeti</button>
@@ -1853,6 +1855,79 @@
       );
       terrainMesh.receiveShadow = true;
       scene.add(terrainMesh);
+      (function buildTurfGround() {
+        // Close-cropped Highland turf seen from above: thousands of short blades (Festuca/Agrostis greens),
+        // straw thatch, moss, clover and specks of peaty soil. Albedo + height → Sobel normal map.
+        const N = 1024, c = document.createElement('canvas'); c.width = c.height = N;
+        const g = c.getContext('2d');
+        const h = document.createElement('canvas'); h.width = h.height = N;
+        const hg = h.getContext('2d');
+        g.fillStyle = '#4c5a2c'; g.fillRect(0, 0, N, N);
+        hg.fillStyle = '#202020'; hg.fillRect(0, 0, N, N);
+        let seed = 7; const R = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+        // soil & moss mottling
+        for (let i = 0; i < 900; i++) {
+          const x = R() * N, y = R() * N, r = 6 + R() * 26;
+          g.fillStyle = R() < 0.55 ? `rgba(${70 + R() * 20 | 0},${62 + R() * 18 | 0},${38 + R() * 12 | 0},0.35)` : `rgba(${60 + R() * 25 | 0},${92 + R() * 25 | 0},${40 + R() * 15 | 0},0.30)`;
+          g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+        }
+        const greens = ['#5f7a33', '#6d8a3a', '#4f6a2b', '#7d9744', '#587237', '#8ea04f', '#45602a'];
+        for (let i = 0; i < 90000; i++) {
+          const x = R() * N, y = R() * N, len = 4 + R() * 11, a = R() * Math.PI * 2;
+          const straw = R() < 0.13;
+          g.strokeStyle = straw ? (R() < 0.5 ? '#a89a5c' : '#8d7f48') : greens[(R() * greens.length) | 0];
+          g.lineWidth = 0.8 + R() * 1.4;
+          g.globalAlpha = 0.55 + R() * 0.45;
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); g.stroke();
+          const v = 90 + R() * 150 | 0;
+          hg.strokeStyle = `rgb(${v},${v},${v})`; hg.lineWidth = g.lineWidth; hg.globalAlpha = 0.6;
+          hg.beginPath(); hg.moveTo(x, y); hg.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len); hg.stroke();
+        }
+        g.globalAlpha = 1; hg.globalAlpha = 1;
+        for (let i = 0; i < 260; i++) {   // white clover & tiny daisies
+          const x = R() * N, y = R() * N;
+          g.fillStyle = R() < 0.7 ? '#dfe6cf' : '#f1e39a';
+          g.beginPath(); g.arc(x, y, 1.2 + R() * 1.6, 0, Math.PI * 2); g.fill();
+        }
+        // make the texture tile seamlessly: blend a wrapped copy across the borders
+        const wrap = (cv) => { const t = document.createElement('canvas'); t.width = t.height = N; const tg = t.getContext('2d');
+          tg.drawImage(cv, -N / 2, -N / 2); tg.drawImage(cv, N / 2, -N / 2); tg.drawImage(cv, -N / 2, N / 2); tg.drawImage(cv, N / 2, N / 2);
+          const m = cv.getContext('2d'), grad = (x0, y0, x1, y1) => { const gr = m.createLinearGradient(x0, y0, x1, y1); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); return gr; };
+          m.save(); m.globalCompositeOperation = 'destination-out'; m.restore();
+          return t; };
+        const albedo = wrap(c), height = wrap(h);
+        // Sobel normal map from the height canvas
+        const hd = height.getContext('2d').getImageData(0, 0, N, N).data;
+        const nc = document.createElement('canvas'); nc.width = nc.height = N;
+        const nctx = nc.getContext('2d'), out = nctx.createImageData(N, N);
+        const H = (x, y) => hd[(((y + N) % N) * N + ((x + N) % N)) * 4] / 255;
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+          const dx = (H(x + 1, y - 1) + 2 * H(x + 1, y) + H(x + 1, y + 1)) - (H(x - 1, y - 1) + 2 * H(x - 1, y) + H(x - 1, y + 1));
+          const dy = (H(x - 1, y + 1) + 2 * H(x, y + 1) + H(x + 1, y + 1)) - (H(x - 1, y - 1) + 2 * H(x, y - 1) + H(x + 1, y - 1));
+          let nx = -dx * 1.6, ny = -dy * 1.6, nz = 1; const l = Math.hypot(nx, ny, nz); nx /= l; ny /= l; nz /= l;
+          const o = (y * N + x) * 4;
+          out.data[o] = (nx * 0.5 + 0.5) * 255; out.data[o + 1] = (ny * 0.5 + 0.5) * 255; out.data[o + 2] = (nz * 0.5 + 0.5) * 255; out.data[o + 3] = 255;
+        }
+        nctx.putImageData(out, 0, 0);
+        const mk = (cv) => { const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(110, 110);
+          t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); return t; };
+        const m = terrainMesh.material;
+        m.map = mk(albedo); m.normalMap = mk(nc); m.normalScale.set(0.9, 0.9); m.roughness = 0.98;
+        m.onBeforeCompile = (sh) => {
+          // two scales (1.6 m and 6 m tiles, rotated) hide repetition; vertex colours keep the macro moorland variation
+          sh.fragmentShader = sh.fragmentShader
+            .replace('#include <map_fragment>', `#ifdef USE_MAP
+                vec4 t1 = texture2D(map, vUv);
+                vec4 t2 = texture2D(map, mat2(0.8, -0.6, 0.6, 0.8) * vUv * 0.27 + 0.31);
+                vec4 texelColor = mix(t1, t2, 0.42);
+                diffuseColor *= texelColor;
+              #endif`)
+            .replace('#include <color_fragment>', `#ifdef USE_COLOR
+                diffuseColor.rgb *= clamp(vColor * 2.35, 0.0, 1.35);
+              #endif`);
+        };
+        m.needsUpdate = true;
+      })();
 
       // =========================================================================
       // 7. SCOTTISH HIGHLAND STONE COTTAGE & VILLAGE ARCHITECTURE
@@ -3550,27 +3625,65 @@
         const comb = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.05, 0.07), new THREE.MeshStandardMaterial({ color: 0xc92a2a }));
         comb.position.set(0, 0.42, 0.15); hg.add(comb);
         scene.add(hg);
-        chickens.push({ group: hg, cx: COOP_X + 1.8 + c * 0.7, cz: COOP_Z + 1.6, ang: c * 2.1, r: 1.2 + c * 0.4 });
+        chickens.push({ group: hg, head: hh, comb, cx: COOP_X + 1.8 + c * 0.7, cz: COOP_Z + 1.6, ang: c * 2.1, r: 1.2 + c * 0.4 });
       }
 
-      // 4. Family Pets: Highland Border Collie Dog (chasing bouncing ball) & Ginger Cat (hearth/doorstep)
+      // 4. Family Pets: articulated Border Collie (two-bone legs, mathematically driven gait) & Ginger Cat
+      //    Dimensions from a typical Border Collie: withers ≈ 0.53 m, hip height h ≈ 0.40 m, trunk ≈ 0.52 m.
       const dogG = new THREE.Group();
       const dogBlack = new THREE.MeshStandardMaterial({ color: 0x22201e, roughness: 0.88 });
       const dogWhite = new THREE.MeshStandardMaterial({ color: 0xede9e1, roughness: 0.88 });
-      const dBody = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), dogBlack);
-      dBody.scale.set(0.75, 0.78, 1.55); dBody.position.y = 0.42; dogG.add(dBody);
-      const dChest = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), dogWhite);
-      dChest.position.set(0, 0.44, 0.24); dogG.add(dChest);
-      const dHead = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 8), dogBlack);
-      dHead.position.set(0, 0.60, 0.34); dogG.add(dHead);
-      const dTail = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.04, 0.34, 6), dogBlack);
-      dTail.position.set(0, 0.52, -0.34); dTail.rotation.x = -0.8; dogG.add(dTail);
-      [[-0.10, 0.18], [0.10, 0.18], [-0.10, -0.18], [0.10, -0.18]].forEach(([lx, lz]) => {
-        const dl = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.028, 0.36, 6), dogWhite);
-        dl.position.set(lx, 0.18, lz); dogG.add(dl);
+      const dogTorso = new THREE.Group(); dogG.add(dogTorso);
+      const DOG_HIP_H = 0.40, DOG_L1 = 0.205, DOG_L2 = 0.205;
+      const dBody = new THREE.Mesh(new THREE.SphereGeometry(0.2, 14, 10), dogBlack);
+      dBody.scale.set(0.78, 0.8, 1.55); dBody.position.y = 0.44; dBody.castShadow = true; dogTorso.add(dBody);
+      const dChest = new THREE.Mesh(new THREE.SphereGeometry(0.135, 10, 8), dogWhite);
+      dChest.scale.set(1, 1.05, 0.9); dChest.position.set(0, 0.41, 0.22); dogTorso.add(dChest);
+      const dNeck = new THREE.Group(); dNeck.position.set(0, 0.5, 0.25); dogTorso.add(dNeck);
+      const dNeckM = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.2, 8), dogBlack);
+      dNeckM.rotation.x = 0.75; dNeckM.position.set(0, 0.05, 0.05); dNeck.add(dNeckM);
+      const dHeadG = new THREE.Group(); dHeadG.position.set(0, 0.12, 0.12); dNeck.add(dHeadG);
+      const dHead = new THREE.Mesh(new THREE.SphereGeometry(0.105, 12, 10), dogBlack);
+      dHead.scale.set(0.95, 0.9, 1.05); dHeadG.add(dHead);
+      const dBlaze = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), dogWhite);
+      dBlaze.scale.set(0.55, 1.1, 0.6); dBlaze.position.set(0, 0.03, 0.085); dHeadG.add(dBlaze);
+      const dSnout = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.055, 0.13, 8), dogWhite);
+      dSnout.rotation.x = Math.PI / 2; dSnout.position.set(0, -0.025, 0.13); dHeadG.add(dSnout);
+      const dNose = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), new THREE.MeshStandardMaterial({ color: 0x0e0d0c, roughness: 0.35 }));
+      dNose.position.set(0, -0.02, 0.2); dHeadG.add(dNose);
+      const dEars = [-1, 1].map((sx) => {
+        const e = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.08, 6), dogBlack);
+        e.position.set(sx * 0.06, 0.09, -0.01); e.rotation.z = -sx * 0.35; dHeadG.add(e); return e;
       });
+      // tail: three-segment chain so it can wag and stream
+      const dTail = new THREE.Group(); dTail.position.set(0, 0.5, -0.29); dogTorso.add(dTail);
+      const dTailSegs = [];
+      let tParent = dTail;
+      for (let i = 0; i < 3; i++) {
+        const sg = new THREE.Group(); if (i > 0) sg.position.y = 0.11; tParent.add(sg);
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(0.022 - i * 0.004, 0.034 - i * 0.005, 0.12, 6), i === 2 ? dogWhite : dogBlack);
+        m.position.y = 0.055; sg.add(m); dTailSegs.push(sg); tParent = sg;
+      }
+      // legs: hip/shoulder pivot → upper segment → middle joint → lower segment (+ paw)
+      const dogLegs = [
+        { key: 'LH', x:  0.085, z: -0.19, fore: false },
+        { key: 'LF', x:  0.085, z:  0.19, fore: true  },
+        { key: 'RH', x: -0.085, z: -0.19, fore: false },
+        { key: 'RF', x: -0.085, z:  0.19, fore: true  }
+      ].map((L) => {
+        const up = new THREE.Group(); up.position.set(L.x, DOG_HIP_H, L.z); dogTorso.add(up);
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(L.fore ? 0.038 : 0.05, 0.03, DOG_L1, 7), L.fore ? dogWhite : dogBlack);
+        thigh.position.y = -DOG_L1 / 2; up.add(thigh);
+        const lo = new THREE.Group(); lo.position.y = -DOG_L1; up.add(lo);
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.021, DOG_L2, 6), dogWhite);
+        shin.position.y = -DOG_L2 / 2; lo.add(shin);
+        const paw = new THREE.Mesh(new THREE.SphereGeometry(0.032, 6, 5), dogWhite);
+        paw.scale.set(1, 0.55, 1.35); paw.position.set(0, -DOG_L2 + 0.012, 0.018); lo.add(paw);
+        return Object.assign(L, { up, lo, off: 0 });
+      });
+      dogG.traverse((o) => { if (o.isMesh) o.castShadow = true; });
       scene.add(dogG);
-      const dogState = { pos: new THREE.Vector3(2.2, 0, 4.5), yaw: 0 };
+      const dogState = { pos: new THREE.Vector3(2.2, 0, 4.5), yaw: 0, v: 0, phase: 0, bob: 0, pitch: 0, lie: 0, tailT: 0, mode: 'play' };
       const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), new THREE.MeshStandardMaterial({ color: 0xd93829, roughness: 0.45 }));
       scene.add(ballMesh);
 
@@ -3580,6 +3693,11 @@
       catBody.scale.set(0.85, 0.68, 1.35); catBody.position.y = 0.11; catG.add(catBody);
       const catHead = new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 8), catMat);
       catHead.position.set(0, 0.18, 0.16); catG.add(catHead);
+      const catEars = [-1, 1].map((sx) => { const e = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.06, 5), catMat); e.position.set(sx * 0.045, 0.075, -0.005); catHead.add(e); return e; });
+      const catTail = new THREE.Group(); catTail.position.set(0, 0.12, -0.17); catG.add(catTail);
+      const catTailM = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.024, 0.16, 6), catMat); catTailM.position.y = 0.08; catTail.add(catTailM);
+      const catTailTip = new THREE.Group(); catTailTip.position.y = 0.16; catTail.add(catTailTip);
+      const catTailTipM = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.018, 0.13, 6), catMat); catTailTipM.position.y = 0.065; catTailTip.add(catTailTipM);
       scene.add(catG);
 
       // =========================================================================
@@ -4114,6 +4232,16 @@
       };
 
       function buildContextualDialogueExchange() {
+        const pool = buildLifeExchanges();
+        if (!pool.length || Math.random() < 0.4) pool.push(buildLegacyExchange());
+        const awake = ['father', 'mother', 'child'].filter((w) => !isAsleep(w));
+        for (let t = 0; t < 8; t++) {
+          const exx = pool[Math.floor(Math.random() * pool.length)].filter((l) => awake.includes(l.who));
+          if (exx.length >= 2) return exx;
+        }
+        return [];
+      }
+      function buildLegacyExchange() {
         const vStr = state.windSpeed.toFixed(1);
         const tRoom = state.roomTempC.toFixed(1);
         const qStr = state.firePowerKW.toFixed(1);
@@ -4183,9 +4311,476 @@
         }
         const act = speechState.activeSpeaker;
         const fPos = loadedGlbGroup ? loadedGlbGroup.position : glbAI.pos;
-        projectBubbleToScreen('bubble-father', fPos, 2.02, act && act.who === 'father' ? `Oğuzhan: "${act.text}"` : null);
-        projectBubbleToScreen('bubble-mother', motherRig.root.position, 1.88, act && act.who === 'mother' ? `Anne: "${act.text}"` : null);
-        projectBubbleToScreen('bubble-child',  childRig.root.position,  1.38, act && act.who === 'child'  ? `Çocuk: "${act.text}"` : null);
+        projectBubbleToScreen('bubble-father', fPos, 2.02, act && act.who === 'father' ? `Oğuzhan: "${act.text}"` : (isAsleep('father') ? 'Zzz…' : null));
+        projectBubbleToScreen('bubble-mother', motherRig.root.position, 1.88, act && act.who === 'mother' ? `Anne: "${act.text}"` : (isAsleep('mother') ? 'Zzz…' : null));
+        projectBubbleToScreen('bubble-child',  childRig.root.position,  1.38, act && act.who === 'child'  ? `Çocuk: "${act.text}"` : (isAsleep('child') ? 'Zzz…' : null));
+      }
+
+      // =========================================================================
+      // DAILY LIFE — schedules, sleep, cooking, chores, visits/chats + realistic gaits
+      // Clock: state.simMinutes (24× → one simulated hour ≈ 150 real seconds)
+      // =========================================================================
+      const smooth01 = (a, b, x) => { const t = THREE.MathUtils.clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+      const wrapPI = (a) => { while (a > Math.PI) a -= Math.PI * 2; while (a < -Math.PI) a += Math.PI * 2; return a; };
+      const FAM_FLOOR_Y = getTerrainHeight(COTTAGE_X, COTTAGE_Z) + 0.02;
+      const V2 = (x, z) => new THREE.Vector3(x, 0, z);
+      // bench (4.6, 2.8) faces local +z, yaw −0.55 → seat point / approach point in world space
+      const BENCH_YAW = -0.55;
+      const benchPt = (lx, lz) => V2(4.6 + lx * Math.cos(BENCH_YAW) + lz * Math.sin(BENCH_YAW), 2.8 - lx * Math.sin(BENCH_YAW) + lz * Math.cos(BENCH_YAW));
+      const SPOTS = {
+        cook:    { p: V2(COTTAGE_X + 1.85, COTTAGE_Z - 2.15), yaw: Math.PI },
+        water:   { p: V2(VEG_X + 1.9, VEG_Z + 0.4), yaw: -Math.PI / 2 },
+        hens:    { p: V2(COOP_X + 3.6, COOP_Z + 3.0), yaw: Math.atan2(-1.1, -1.4) },
+        laundry: { p: V2(CLOTH_X - 0.3, CLOTH_Z + 0.6), yaw: Math.PI },
+        bench:   { p: benchPt(0.42, 0.62), yaw: BENCH_YAW, seat: benchPt(0.42, 0.04) },
+        fire:    { p: V2(COTTAGE_X + 0.78, COTTAGE_Z - 0.95), yaw: Math.PI * 0.82 },
+        mBed:    { p: V2(COTTAGE_X - 4.22, COTTAGE_Z - 0.3), yaw: 0, lie: V2(COTTAGE_X - 4.65 + 0.42, COTTAGE_Z - 0.86), lieY: 0.86 },
+        swing:   { p: V2(SWING_X, SWING_Z), yaw: -0.35 },
+        room:    { p: V2(COTTAGE_X + 4.45, COTTAGE_Z + 1.35), yaw: 0.2 },
+        ducks:   { p: V2(POND_X + 3.75, POND_Z + 0.5), yaw: -Math.PI / 2 },
+        cBed:    { p: V2(COTTAGE_X + 4.85, COTTAGE_Z - 0.62), yaw: 0, lie: V2(COTTAGE_X + 4.85, COTTAGE_Z - 1.18), lieY: 0.74 }
+      };
+      const ACT_LABEL = {
+        sleeping: 'uyuyor', cooking: 'mutfakta yemek yapıyor', watering: 'sebzeleri suluyor', hens: 'tavukları yemliyor',
+        laundry: 'çamaşır asıyor', bench: 'bankta dinleniyor', fire: 'şöminenin başında ısınıyor', swinging: 'salıncakta sallanıyor',
+        bedroom: 'odasında oyuncaklarıyla oynuyor', ducks: 'göletteki ördekleri besliyor', dogplay: 'köpekle top oynuyor', visit: 'sohbete gidiyor'
+      };
+      motherRig.root.rotation.order = 'YXZ';
+      childRig.root.rotation.order = 'YXZ';
+      Object.assign(motherAI, { rig: motherRig, who: 'mother', name: 'Anne', lie: 0, gait: 0, walkV: 1.22, stride: 1.30, faceYaw: Math.PI, spot: 'cook', visitWho: null, chatted: false, repathT: 0 });
+      Object.assign(childAI,  { rig: childRig,  who: 'child',  name: 'Çocuk', lie: 0, gait: 0, walkV: 1.32, stride: 0.96, faceYaw: -0.35, spot: 'swing', visitWho: null, chatted: false, repathT: 0 });
+      motherAI.activity = 'cooking'; childAI.activity = 'swinging';
+
+      function simHour() { return (state.simMinutes / 60) % 24; }
+      function isAsleep(who) {
+        if (who === 'father') return glbAI.activity === 'sleeping' && glbAI.phase === 'acting';
+        const ai = who === 'mother' ? motherAI : childAI;
+        return ai.activity === 'sleeping' && ai.waypoints.length > 0 && ai.wpIdx >= ai.waypoints.length;
+      }
+      function personPos(who) { return who === 'father' ? glbAI.pos : who === 'mother' ? motherAI.pos : childAI.pos; }
+      function mealName(h) { return h < 10 ? 'kahvaltı' : h < 15 ? 'öğle yemeği' : 'akşam yemeği'; }
+
+      // Fixed parts of the day; everything else is chosen freely.
+      function scheduledActivity(ai, h) {
+        if (ai.who === 'mother') {
+          if (h >= 22.25 || h < 6.75) return 'sleeping';
+          if ((h >= 6.75 && h < 8.0) || (h >= 12.0 && h < 13.0) || (h >= 18.0 && h < 19.5)) return 'cooking';
+        } else {
+          if (h >= 21.0 || h < 7.5) return 'sleeping';
+        }
+        return null;
+      }
+      function chooseFreeActivity(ai, h, isRaining) {
+        const opts = [];
+        const add = (a, w) => { if (w > 0) opts.push([a, w]); };
+        const fatherFree = !isAsleep('father') && glbAI.phase === 'acting' && glbAI.activity !== 'mowing';
+        if (ai.who === 'mother') {
+          add('watering', !isRaining && vegState.moisture < 0.9 ? (h < 11 || h > 16 ? 3 : 1.2) : 0);
+          add('hens', !isRaining && h < 12 ? 2.2 : (!isRaining ? 0.6 : 0));
+          add('laundry', !isRaining && h >= 9.5 && h < 16 && state.windSpeed < 11 ? 1.6 : 0);
+          add('bench', !isRaining && h >= 13 && h < 20.5 ? 2.0 : 0);
+          add('fire', isRaining || h >= 19.5 || h < 8 ? 2.4 : 0.3);
+          add('visit:father', fatherFree ? 1.1 : 0);
+          add('visit:child', !isAsleep('child') ? 0.8 : 0);
+        } else {
+          add('swinging', !isRaining ? 2.4 : 0);
+          add('dogplay', !isRaining && !(h >= 20.5) ? 2.2 : 0);
+          add('ducks', !isRaining ? 1.4 : 0);
+          add('bedroom', isRaining ? 3.0 : 0.7);
+          add('visit:mother', !isAsleep('mother') ? (motherAI.activity === 'cooking' ? 1.8 : 0.7) : 0);
+          add('visit:father', fatherFree ? 0.9 : 0);
+        }
+        // don't immediately repeat
+        const cur = ai.activity === 'visit' ? 'visit:' + ai.visitWho : ai.activity;
+        let tot = 0; opts.forEach((o) => { if (o[0] === cur) o[1] *= 0.25; tot += o[1]; });
+        let r = Math.random() * tot;
+        for (const o of opts) { r -= o[1]; if (r <= 0) return o[0]; }
+        return opts.length ? opts[0][0] : (ai.who === 'mother' ? 'fire' : 'bedroom');
+      }
+      function spotFor(ai, act) {
+        if (act === 'sleeping') return ai.who === 'mother' ? SPOTS.mBed : SPOTS.cBed;
+        const map = { cooking: 'cook', watering: 'water', hens: 'hens', laundry: 'laundry', bench: 'bench', fire: 'fire', swinging: 'swing', bedroom: 'room', ducks: 'ducks' };
+        return SPOTS[map[act]] || null;
+      }
+      function goActivity(ai, actKey) {
+        let act = actKey, visitWho = null;
+        if (actKey.startsWith('visit:')) { act = 'visit'; visitWho = actKey.slice(6); }
+        ai.activity = act; ai.visitWho = visitWho; ai.chatted = false;
+        ai.timer = 0; ai.repathT = 0; ai.walkT = 0;
+        ai.duration = act === 'visit' ? 13 : 26 + Math.random() * 24;
+        let dest, yaw = ai.faceYaw;
+        if (act === 'visit') {
+          const tp = personPos(visitWho);
+          const away = new THREE.Vector3(ai.pos.x - tp.x, 0, ai.pos.z - tp.z);
+          if (away.lengthSq() < 1e-4) away.set(0, 0, 1);
+          away.normalize().multiplyScalar(0.95);
+          dest = V2(tp.x + away.x, tp.z + away.z);
+        } else if (act === 'dogplay') {
+          dest = V2(dogState.pos.x + 1.2, dogState.pos.z + 0.6);
+        } else {
+          const sp = spotFor(ai, act); dest = sp.p.clone(); yaw = sp.yaw;
+        }
+        ai.faceYaw = yaw;
+        ai.waypoints = buildFamilyDoorwayPath(ai.pos, dest);
+        ai.wpIdx = 0;
+        const txt = act === 'visit'
+          ? `${ai.name} ${visitWho === 'father' ? 'babanın' : visitWho === 'mother' ? 'annesinin' : 'çocuğun'} yanına sohbete gitti`
+          : `${ai.name} ${ACT_LABEL[act] || act}`;
+        recordWorldMemory(txt);
+      }
+
+      // Human walking for the simple rigs: hip angle from the same empirical gait curve the father uses
+      // (Winter 2009), stride-locked so feet don't slide: cycle rate = v / stride length.
+      function animateRigWalk(ai, v, dt, amp) {
+        const rig = ai.rig, k = 1 - Math.exp(-dt * 16);
+        ai.gait = (ai.gait + (v / ai.stride) * dt) % 1;
+        const gL = evalHumanGaitAngles(ai.gait), gR = evalHumanGaitAngles(ai.gait + 0.5);
+        rig.legL.rotation.x = lerp(rig.legL.rotation.x, gL.hip * amp, k);
+        rig.legR.rotation.x = lerp(rig.legR.rotation.x, gR.hip * amp, k);
+        rig.armL.rotation.x = lerp(rig.armL.rotation.x, gR.hip * 0.8 * amp, k);   // arm swings with the opposite leg
+        rig.armR.rotation.x = lerp(rig.armR.rotation.x, gL.hip * 0.8 * amp, k);
+        rig.armL.rotation.z = lerp(rig.armL.rotation.z, 0.06, k); rig.armR.rotation.z = lerp(rig.armR.rotation.z, -0.06, k);
+        const u = ai.gait * Math.PI * 2;
+        rig.pelv.position.y = rig.sc * (0.86 - 0.022 * amp * Math.cos(2 * u)); // inverted-pendulum vault: 2 bobs / stride
+        rig.pelv.rotation.z = 0.035 * Math.sin(u);   // pelvic list
+        rig.pelv.rotation.y = -0.07 * Math.cos(u);   // pelvic rotation leads the swing leg
+        rig.pelv.rotation.x = lerp(rig.pelv.rotation.x, amp > 1.1 ? 0.12 : 0.03, k); // runners lean forward
+      }
+      function relaxRig(ai, dt, elapsed) {
+        const rig = ai.rig, k = 1 - Math.exp(-dt * 6);
+        rig.legL.rotation.x = lerp(rig.legL.rotation.x, 0, k);
+        rig.legR.rotation.x = lerp(rig.legR.rotation.x, 0, k);
+        rig.pelv.rotation.set(lerp(rig.pelv.rotation.x, 0, k), lerp(rig.pelv.rotation.y, 0, k), lerp(rig.pelv.rotation.z, 0, k));
+        // quiet breathing (~15 breaths/min) + postural sway
+        rig.pelv.position.y = lerp(rig.pelv.position.y, rig.sc * (0.86 + 0.003 * Math.sin(elapsed * 1.57)), k);
+        rig.armL.rotation.z = lerp(rig.armL.rotation.z, 0.04, k); rig.armR.rotation.z = lerp(rig.armR.rotation.z, -0.04, k);
+      }
+
+      function updateFamilyMember(ai, dt, elapsed, h, isRaining) {
+        const rig = ai.rig;
+        // 1) schedule: bed time / meal times take over; otherwise free choice when the current thing is done
+        const sched = scheduledActivity(ai, h);
+        if (ai.waypoints[ai.wpIdx]) ai.walkT = (ai.walkT || 0) + dt; else { ai.timer += dt; ai.walkT = 0; }
+        if (sched && ai.activity !== sched) goActivity(ai, sched);
+        else if (!sched && (ai.activity === 'sleeping' || (ai.activity === 'cooking' && ai.who === 'mother') || ai.timer > ai.duration || ai.walkT > 45)) goActivity(ai, chooseFreeActivity(ai, h, isRaining));
+        if (ai.activity === 'visit' && isAsleep(ai.visitWho)) goActivity(ai, chooseFreeActivity(ai, h, isRaining));
+
+        // dynamic targets re-plan every 1.5 s
+        ai.repathT += dt;
+        if ((ai.activity === 'dogplay' || (ai.activity === 'visit' && !ai.chatted)) && ai.repathT > 1.5) {
+          ai.repathT = 0;
+          const tp = ai.activity === 'dogplay' ? dogState.pos : personPos(ai.visitWho);
+          const lastWp = ai.waypoints[ai.waypoints.length - 1];
+          if (!lastWp || Math.hypot(lastWp.x - tp.x, lastWp.z - tp.z) > 1.6) {
+            const away = new THREE.Vector3(ai.pos.x - tp.x, 0, ai.pos.z - tp.z);
+            if (away.lengthSq() < 1e-4) away.set(1, 0, 0);
+            away.normalize().multiplyScalar(ai.activity === 'dogplay' ? 1.3 : 0.95);
+            ai.waypoints = buildFamilyDoorwayPath(ai.pos, V2(tp.x + away.x, tp.z + away.z)); ai.wpIdx = 0;
+          }
+        }
+
+        // 2) get out of bed before walking anywhere
+        const inBed = ai.activity === 'sleeping' && ai.wpIdx >= ai.waypoints.length;
+        ai.lie = THREE.MathUtils.clamp(ai.lie + (inBed ? dt : -dt) * 0.55, 0, 1);
+        const wp = ai.waypoints[ai.wpIdx];
+        if (wp && ai.lie <= 0.001 && !(ai.sit > 0)) {
+          const dx = wp.x - ai.pos.x, dz = wp.z - ai.pos.z, dist = Math.hypot(dx, dz);
+          const running = ai.activity === 'dogplay' && ai.who === 'child';
+          const v = running ? 2.3 : ai.walkV;
+          if (dist < 0.2) {
+            ai.wpIdx++;
+          } else {
+            const step = Math.min(dist, v * dt);
+            ai.pos.x += (dx / dist) * step; ai.pos.z += (dz / dist) * step;
+            resolveCapsuleWalls(ai.pos, ai.who === 'child' ? 0.24 : 0.28);
+            ai.yaw += wrapPI(Math.atan2(dx, dz) - ai.yaw) * (1 - Math.exp(-dt * 8));
+            if (running) { ai.stride = 1.45; animateRigWalk(ai, v, dt, 1.35); ai.stride = 0.96; }
+            else animateRigWalk(ai, v, dt, 1.0);
+            if (Math.hypot(ai.pos.x - COTTAGE_X, ai.pos.z - (COTTAGE_Z + 3.45)) < 2.2 && !state.doorOpen) toggleCottageDoor();
+          }
+        } else if (!wp) {
+          // 3) arrived: perform the activity
+          let fy = ai.faceYaw;
+          if (ai.activity === 'visit' || ai.activity === 'dogplay') {
+            const tp = ai.activity === 'visit' ? personPos(ai.visitWho) : dogState.pos;
+            fy = Math.atan2(tp.x - ai.pos.x, tp.z - ai.pos.z);
+            if (ai.activity === 'visit' && !ai.chatted) { ai.chatted = true; ai.timer = 0; startVisitChat(ai.who, ai.visitWho); }
+          }
+          ai.yaw += wrapPI(fy - ai.yaw) * (1 - Math.exp(-dt * 5));
+          relaxRig(ai, dt, elapsed);
+          const k = 1 - Math.exp(-dt * 8);
+          let aL = -0.05 + 0.03 * Math.sin(elapsed * 1.1), aR = -0.05 - 0.03 * Math.sin(elapsed * 1.1), aLz = 0.04, aRz = -0.04;
+          switch (ai.activity) {
+            case 'cooking': {           // stirring the stew: ~1 Hz circular wrist path, other hand steadies the pot
+              const w = elapsed * 2 * Math.PI * 0.95;
+              aR = -1.05 + 0.13 * Math.sin(w); aRz = -0.12 + 0.12 * Math.cos(w);
+              aL = -0.75; aLz = 0.18;
+              rig.pelv.rotation.x = lerp(rig.pelv.rotation.x, 0.1, k);
+              break; }
+            case 'watering': aR = -0.65 + Math.sin(elapsed * 3.2) * 0.14; aL = -0.35; break;
+            case 'hens': {               // scattering grain: a flick every ~1.6 s
+              const p = (elapsed * 0.62) % 1; const fl = p < 0.25 ? Math.sin(p / 0.25 * Math.PI) : 0;
+              aR = -0.45 - 0.95 * fl; aRz = -0.25 * fl; aL = -0.85; aLz = 0.2; break; }
+            case 'laundry': {            // reaching up to the line, pegging, reaching down to the basket
+              const p = (elapsed * 0.18) % 1; const up = p < 0.7 ? 1 : 0.5 - 0.5 * Math.cos((p - 0.7) / 0.3 * Math.PI * 2);
+              aL = -2.55 * up - 0.3 * (1 - up) + 0.08 * Math.sin(elapsed * 5); aR = -2.45 * up - 0.3 * (1 - up) - 0.08 * Math.sin(elapsed * 5);
+              aLz = 0.15; aRz = -0.15; break; }
+            case 'bench': aL = -0.55; aR = -0.55; aLz = 0.12; aRz = -0.12; break;
+            case 'fire': aL = -1.05 + 0.06 * Math.sin(elapsed * 0.8); aR = -1.05 - 0.06 * Math.sin(elapsed * 0.8); aLz = -0.2; aRz = 0.2; break;
+            case 'ducks': { const p = (elapsed * 0.5) % 1; const fl = p < 0.2 ? Math.sin(p / 0.2 * Math.PI) : 0; aR = -0.5 - 1.2 * fl; aL = -0.25; break; }
+            case 'bedroom': aL = -0.45 + Math.sin(elapsed * 2.8) * 0.15; aR = -0.45 - Math.sin(elapsed * 2.8) * 0.15; break;
+            case 'dogplay': { const p = (elapsed * 0.9) % 1; aR = -0.3 - 1.4 * (p < 0.3 ? Math.sin(p / 0.3 * Math.PI) : 0); aL = -0.2; break; }
+            case 'visit': { const t = speechState.activeSpeaker && speechState.activeSpeaker.who === ai.who ? 1 : 0;   // talking gestures
+              aR = -0.2 - t * (0.45 + 0.25 * Math.sin(elapsed * 3.1)); aL = -0.1 - t * 0.2 * Math.sin(elapsed * 2.3 + 1); break; }
+            case 'sleeping': aL = 0; aR = 0; aLz = 0.1; aRz = -0.1; break;
+          }
+          rig.armL.rotation.x = lerp(rig.armL.rotation.x, aL, k); rig.armR.rotation.x = lerp(rig.armR.rotation.x, aR, k);
+          rig.armL.rotation.z = lerp(rig.armL.rotation.z, aLz, k); rig.armR.rotation.z = lerp(rig.armR.rotation.z, aRz, k);
+          if (ai.activity === 'watering') vegState.moisture = Math.min(1.0, vegState.moisture + dt * 0.04);
+        } else {
+          relaxRig(ai, dt, elapsed);
+        }
+        if (rig.waterCan) rig.waterCan.visible = (ai.activity === 'watering' && !wp);
+
+        // 4) place the rig: standing, sitting on the bench, swinging, or lying in bed (minimum-jerk transfer)
+        const gy = getWorldFloorY(ai.pos.x, ai.pos.z);
+        if (ai.lie > 0.001) {
+          const sp = spotFor(ai, 'sleeping'), L = minJerk(ai.lie);
+          ai.yaw += wrapPI(0 - ai.yaw) * Math.min(1, dt * 4);
+          rig.root.position.set(lerp(ai.pos.x, sp.lie.x, L), lerp(gy, FAM_FLOOR_Y + sp.lieY, L), lerp(ai.pos.z, sp.lie.z, L));
+          rig.root.rotation.set(-Math.PI / 2 * L, ai.yaw, 0);
+          rig.pelv.position.y = rig.sc * (0.86 + 0.006 * Math.sin(elapsed * 1.05) * L);   // slow sleep breathing ~10/min
+        } else if (ai.activity === 'swinging' && !wp && Math.hypot(ai.pos.x - SWING_X, ai.pos.z - SWING_Z) < 0.8) {
+          const seatWorld = new THREE.Vector3(0, -SWING_L, 0);
+          swingPivot.localToWorld(seatWorld);
+          rig.root.position.set(seatWorld.x, seatWorld.y - 0.36, seatWorld.z);
+          rig.root.rotation.set(swingPhys.theta * 0.85, -0.35, 0);
+          // pumping: legs extend on the forward swing, tuck on the back swing (phase-locked to the pendulum)
+          rig.legL.rotation.x = rig.legR.rotation.x = -1.25 + swingPhys.theta * 0.75;
+          rig.armL.rotation.x = rig.armR.rotation.x = -0.85 - swingPhys.theta * 0.25;
+          rig.pelv.rotation.x = -swingPhys.theta * 0.35;
+        } else if ((ai.activity === 'bench' && !wp) || ai.sit > 0) {
+          const sp = SPOTS.bench, k = 1 - Math.exp(-dt * 4);
+          ai.sit = THREE.MathUtils.clamp((ai.sit || 0) + ((ai.activity === 'bench' && !wp) ? dt * 1.2 : -dt * 1.5), 0, 1);
+          const S = minJerk(ai.sit);
+          rig.root.position.set(lerp(ai.pos.x, sp.seat.x, S), getTerrainHeight(sp.seat.x, sp.seat.z), lerp(ai.pos.z, sp.seat.z, S));
+          rig.root.rotation.set(0, ai.yaw, 0);
+          rig.pelv.position.y = lerp(rig.sc * 0.86, 0.57, S);
+          rig.legL.rotation.x = lerp(rig.legL.rotation.x, -1.2 * S, k); rig.legR.rotation.x = lerp(rig.legR.rotation.x, -1.12 * S, k);
+          rig.pelv.rotation.x = -0.06 * S;
+        } else {
+          ai.sit = 0;
+          rig.root.position.set(ai.pos.x, gy, ai.pos.z);
+          rig.root.rotation.set(0, ai.yaw, 0);
+        }
+      }
+
+      // ---------- Border Collie gait model ----------
+      // Gait choice by Froude number Fr = v²/(g·h) (Alexander 1984): walk < 0.5 < trot < 2.5 < gallop.
+      // Stride length λ = h · 2.3 · Fr^0.3 (Alexander & Jayes 1983), stride frequency f = v/λ,
+      // duty factor β(Fr) falls from ≈0.62 (walk) to ≈0.30 (gallop). Stance foot stroke S = λβ = v·β/f
+      // so a planted paw is exactly stationary on the ground. Legs: analytic two-bone IK.
+      const DOG_GAITS = {                     // phase offsets [LH, LF, RH, RF]
+        walk:   [0.00, 0.25, 0.50, 0.75],     // lateral-sequence walk
+        trot:   [0.00, 0.50, 0.50, 0.00],     // diagonal pairs (LH+RF, RH+LF)
+        gallop: [0.00, 0.50, 0.10, 0.40]      // rotary gallop LH → RH → RF → LF
+      };
+      const _dogPrevYaw = { v: 0 };
+      function updateDog(dt, elapsed, h, isNight) {
+        const ds = dogState;
+        const rest = isNight;
+        ds.mode = rest ? 'rest' : 'play';
+        const tx = rest ? COTTAGE_X - 1.05 : rigidBall.pos.x;
+        const tz = rest ? COTTAGE_Z + 4.15 : rigidBall.pos.z;
+        const dx = tx - ds.pos.x, dz = tz - ds.pos.z, dist = Math.hypot(dx, dz);
+        const stopDist = rest ? 0.04 : 0.42;
+        let headErr = 0;
+        if (dist > 0.03 && ds.lie < 0.05) {
+          headErr = wrapPI(Math.atan2(dx, dz) - ds.yaw);
+          const wMax = Math.min(7.5, 6.5 / Math.max(ds.v, 0.55));       // lateral accel v·ω ≤ 6.5 m/s²
+          ds.yaw = wrapPI(ds.yaw + THREE.MathUtils.clamp(headErr, -wMax * dt, wMax * dt));
+        }
+        const yawRate = wrapPI(ds.yaw - _dogPrevYaw.v) / Math.max(dt, 1e-4); _dogPrevYaw.v = ds.yaw;
+        // speed profile: accelerate, cruise, then brake at constant deceleration to stop at the target
+        const vMax = rest ? 0.95 : 4.3, aAcc = 4.5, aBrk = 3.6;
+        let vDes = Math.min(vMax, Math.sqrt(2 * aBrk * Math.max(0, dist - stopDist)));
+        vDes *= Math.max(0.2, Math.cos(Math.min(Math.abs(headErr), Math.PI / 2)));
+        if (ds.lie > 0.02) vDes = 0;
+        ds.v = Math.max(0, ds.v + THREE.MathUtils.clamp(vDes - ds.v, -aBrk * dt * 1.6, aAcc * dt));
+        ds.pos.x += Math.sin(ds.yaw) * ds.v * dt;
+        ds.pos.z += Math.cos(ds.yaw) * ds.v * dt;
+        if (!rest && dist < 0.56 && rigidBall.kickCooldown <= 0) {
+          // nose the ball away: impulse J = m·Δv toward the open meadow
+          const bx = rigidBall.pos.x, bz = rigidBall.pos.z;
+          const toCenter = new THREE.Vector2(2.6 - bx, 5.2 - bz).normalize();
+          const randAng = (Math.random() - 0.5) * 1.25;
+          const kx = toCenter.x * Math.cos(randAng) - toCenter.y * Math.sin(randAng);
+          const kz = toCenter.x * Math.sin(randAng) + toCenter.y * Math.cos(randAng);
+          rigidBall.vel.set(kx * (3.4 + Math.random() * 1.6), 3.6 + Math.random() * 1.4, kz * (3.4 + Math.random() * 1.6));
+          rigidBall.kickCooldown = 1.6;
+        }
+        ds.lie = THREE.MathUtils.clamp(ds.lie + ((rest && dist < 0.3 && ds.v < 0.08) ? dt * 0.6 : -dt * 1.2), 0, 1);
+
+        const g = 9.81, hh = DOG_HIP_H, v = ds.v;
+        const Fr = v * v / (g * hh);
+        const wGal = smooth01(2.1, 2.9, Fr);
+        const wTrot = smooth01(0.32, 0.62, Fr) * (1 - wGal);
+        const wWalk = Math.max(0, 1 - wTrot - wGal);
+        const lambda = hh * 2.3 * Math.pow(Math.max(Fr, 0.015), 0.3);
+        const f = v / lambda;
+        ds.phase = (ds.phase + f * dt) % 1;
+        const beta = 0.28 + 0.36 * Math.exp(-0.7 * Fr);
+        const moving = smooth01(0.02, 0.25, v);
+        const lift = Math.min(0.11, 0.04 + 0.035 * Math.sqrt(Fr)) * moving;
+        const S = lambda * beta * moving;
+        const P = ds.phase * Math.PI * 2;
+        // trunk: walk = inverted pendulum (high at mid-stance), trot = spring-mass (low at mid-stance), gallop = pitching
+        const midSt = beta * 0.5 * Math.PI * 2;
+        const bob = moving * (wWalk * 0.007 * Math.cos(2 * (P - midSt)) - wTrot * 0.016 * Math.cos(2 * (P - midSt)) + wGal * 0.03 * Math.cos(P - 0.4));
+        const pitch = moving * wGal * 0.11 * Math.sin(P + 0.6);
+        const L = minJerk(ds.lie);
+        const torsoY = bob - 0.25 * L;
+        dogTorso.position.y = torsoY;
+        dogTorso.rotation.x = pitch;
+        const bank = THREE.MathUtils.clamp(Math.atan(v * yawRate / g), -0.25, 0.25);
+        dogTorso.rotation.z = lerp(dogTorso.rotation.z, -bank * 0.6, 1 - Math.exp(-dt * 6));
+        const cp = Math.cos(pitch), sp = Math.sin(pitch);
+
+        dogLegs.forEach((Lg, i) => {
+          // blend phase offsets on the unit circle so gait transitions are continuous
+          const ox = wWalk * Math.cos(2 * Math.PI * DOG_GAITS.walk[i]) + wTrot * Math.cos(2 * Math.PI * DOG_GAITS.trot[i]) + wGal * Math.cos(2 * Math.PI * DOG_GAITS.gallop[i]);
+          const oy = wWalk * Math.sin(2 * Math.PI * DOG_GAITS.walk[i]) + wTrot * Math.sin(2 * Math.PI * DOG_GAITS.trot[i]) + wGal * Math.sin(2 * Math.PI * DOG_GAITS.gallop[i]);
+          const offT = Math.atan2(oy, ox) / (2 * Math.PI);
+          Lg.off += wrapPI((offT - Lg.off) * 2 * Math.PI) / (2 * Math.PI) * (1 - Math.exp(-dt * 5));
+          const phi = (((ds.phase + Lg.off) % 1) + 1) % 1;
+          let fz, fy;
+          if (phi < beta) { const s = phi / beta; fz = S * (0.5 - s); fy = 0; }
+          else { const s = (phi - beta) / (1 - beta); fz = -S * 0.5 + S * (0.5 - 0.5 * Math.cos(Math.PI * s)); fy = lift * Math.sin(Math.PI * s); }
+          // lying: forepaws stretched forward, hind legs folded under
+          const nz = Lg.z + (Lg.fore ? 0.03 : -0.03);
+          let Pz = lerp(nz + fz, Lg.fore ? Lg.z + 0.2 : Lg.z + 0.06, L);
+          let Py = lerp(fy, 0.03, L);
+          // level frame → torso frame (undo bob and pitch)
+          const qy = Py - torsoY, qz = Pz;
+          const yt = qy * cp + qz * sp, zt = -qy * sp + qz * cp;
+          const dyy = yt - hh, dzz = zt - Lg.z;
+          const D = THREE.MathUtils.clamp(Math.hypot(dyy, dzz), 0.04, DOG_L1 + DOG_L2 - 0.004);
+          const phi0 = Math.atan2(dzz, -dyy);
+          const a = Math.acos(THREE.MathUtils.clamp((DOG_L1 * DOG_L1 + D * D - DOG_L2 * DOG_L2) / (2 * DOG_L1 * D), -1, 1));
+          const knee = Math.PI - Math.acos(THREE.MathUtils.clamp((DOG_L1 * DOG_L1 + DOG_L2 * DOG_L2 - D * D) / (2 * DOG_L1 * DOG_L2), -1, 1));
+          if (Lg.fore) { Lg.up.rotation.x = -(phi0 + a); Lg.lo.rotation.x = knee; }   // carpus points forward
+          else         { Lg.up.rotation.x = -(phi0 - a); Lg.lo.rotation.x = -knee; }  // hock points backward
+        });
+
+        // head: gaze stabilised against trunk bob/pitch, looks at the ball, rests on the paws when lying
+        const ballYaw = wrapPI(Math.atan2(rigidBall.pos.x - ds.pos.x, rigidBall.pos.z - ds.pos.z) - ds.yaw);
+        const kH = 1 - Math.exp(-dt * 7);
+        dNeck.rotation.y = lerp(dNeck.rotation.y, rest ? 0 : THREE.MathUtils.clamp(ballYaw, -0.7, 0.7) * (1 - moving * 0.6), kH);
+        dNeck.rotation.x = lerp(dNeck.rotation.x, -pitch * 0.85 + 0.5 * L + moving * wGal * 0.25, kH);
+        dNeck.position.y = 0.5 - bob * 0.7;
+        dHeadG.rotation.x = 0.1 * L;
+        dEars.forEach((e, i) => { e.rotation.x = lerp(e.rotation.x, -0.55 * moving - 0.2 * L, kH); });
+        // tail: travelling-wave wag (≈2.6 Hz when happy/idle), streams out behind at speed, drops when lying
+        ds.tailT += dt;
+        const happy = (1 - moving * 0.75) * (1 - L * 0.85);
+        const baseX = lerp(lerp(-0.75, -1.35, moving), -2.25, L);
+        dTail.rotation.x = lerp(dTail.rotation.x, baseX, kH);
+        dTailSegs.forEach((sg, i) => {
+          sg.rotation.z = (0.55 * happy + 0.1) * Math.sin(ds.tailT * 2 * Math.PI * (2.6 - moving) - i * 0.75);
+          sg.rotation.x = i > 0 ? lerp(0.15, 0.05, moving) : 0;
+        });
+        dogG.position.set(ds.pos.x, getTerrainHeight(ds.pos.x, ds.pos.z), ds.pos.z);
+        dogG.rotation.y = ds.yaw;
+      }
+
+      // ---------- Ginger cat: breathing, tail, curled sleep ----------
+      function updateCat(dt, elapsed, isNight, isRaining) {
+        const curled = isNight || isRaining;
+        if (curled) {
+          catG.position.set(COTTAGE_X + 0.95, getTerrainHeight(COTTAGE_X, COTTAGE_Z) + 0.04, COTTAGE_Z - 1.35);
+          catG.rotation.y = -0.8;
+        } else {
+          catG.position.set(COTTAGE_X + 0.72, getTerrainHeight(COTTAGE_X + 0.72, COTTAGE_Z + 3.9) + 0.12, COTTAGE_Z + 3.9);
+          catG.rotation.y = 0.4;
+        }
+        const br = Math.sin(elapsed * 2 * Math.PI * (curled ? 0.33 : 0.42));   // resting respiration 20–25 /min
+        catBody.scale.set(0.85 * (1 + 0.025 * br), (curled ? 0.6 : 0.68) * (1 + 0.04 * br), curled ? 1.15 : 1.35);
+        catHead.position.set(curled ? 0.085 : 0, curled ? 0.1 : 0.18 + 0.004 * br, curled ? 0.12 : 0.16);
+        catHead.rotation.y = curled ? 0.9 : 0.35 * Math.sin(elapsed * 0.31) + 0.25 * Math.sin(elapsed * 0.83);
+        catTail.rotation.y = curled ? 1.9 + 0.05 * Math.sin(elapsed * 0.6) : 0.5 * Math.sin(elapsed * 0.9);
+        catTail.rotation.x = curled ? -1.45 : -0.6 + 0.12 * Math.sin(elapsed * 1.7);
+        catTailTip.rotation.x = curled ? 0 : 0.5 + 0.35 * Math.sin(elapsed * 2.9);   // tip flicks
+        const tw = Math.max(0, Math.sin(elapsed * 0.7) - 0.96) * 18;                 // occasional ear twitch
+        catEars.forEach((e, i) => { e.rotation.z = (i ? -1 : 1) * (0.18 + 0.3 * tw); });
+      }
+
+      // ---------- conversations ----------
+      function hhmm() { const m = state.simMinutes % 1440; return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`; }
+      function startVisitChat(from, to) {
+        const h = simHour(), tRoom = state.roomTempC.toFixed(1), lawn = Math.round(mowMeanInLawn() * 100);
+        const key = from + '>' + to;
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+        const lines = {
+          'mother>father': [
+            [{ who: 'mother', text: glbAI.activity === 'reading' ? 'Hangi kitabı okuyorsun? Bitince bana da ver.' : 'Biraz ara ver de bir çay içelim mi?' },
+             { who: 'father', text: `Olur, içerisi ${tRoom}°C, şöminenin önü tam çaylık.` }],
+            [{ who: 'mother', text: lawn > 80 ? 'Çimler yine uzamış, köpek içinde kayboluyor.' : 'Bahçe biçilince ne kadar ferah oldu.' },
+             { who: 'father', text: lawn > 80 ? 'Hava güzelse makineyi çıkarıp biçerim.' : 'Bir hafta idare eder, sonra yine biçerim.' }],
+            [{ who: 'mother', text: `${mealName(h < 12 ? 11 : h < 18 ? 17 : 19)} için ne istersin?` },
+             { who: 'father', text: 'Senin pırasalı çorbandan daha iyisi yok.' }]
+          ],
+          'mother>child': [
+            [{ who: 'mother', text: 'Elini yüzünü yıkadın mı tatlım?' }, { who: 'child', text: 'Yıkadım anne, köpek de yaladı zaten!' }],
+            [{ who: 'mother', text: 'Montunu giy, rüzgâr serinledi.' }, { who: 'child', text: 'Tamam anne, ama sadece salıncağa kadar!' }]
+          ],
+          'child>mother': [
+            [{ who: 'child', text: motherAI.activity === 'cooking' ? `Anne, ${mealName(h)} ne zaman hazır olur? Çok acıktım!` : 'Anne, benimle oyun oynar mısın?' },
+             { who: 'mother', text: motherAI.activity === 'cooking' ? 'Çorba kaynamak üzere, sofrayı kurmama yardım et.' : 'İşimi bitireyim, sonra saklambaç oynarız.' }],
+            [{ who: 'child', text: 'Anne, bugün göletteki ördekler bana yüzdü!' }, { who: 'mother', text: 'Ne güzel! Ekmeği küçük küçük ver ama.' }]
+          ],
+          'child>father': [
+            [{ who: 'child', text: 'Baba, odun kesmeyi bana da öğretir misin?' }, { who: 'father', text: 'Biraz büyüyünce; şimdilik odunları birlikte taşırız.' }],
+            [{ who: 'child', text: 'Baba, köpek topu hep benden önce kapıyor!' }, { who: 'father', text: 'O bir Border Collie, saatte 15 km koşar; sen de hızlısın ama.' }],
+            [{ who: 'child', text: 'Baba bu akşam masal okur musun?' }, { who: 'father', text: 'Söz, yatmadan önce Loch Ness canavarını anlatırım.' }]
+          ]
+        };
+        const pool = lines[key];
+        if (pool) { speechState.queue = pick(pool).slice(); speechState.timer = 0.2; }
+      }
+      function buildLifeExchanges() {
+        const h = simHour(), wind = state.windSpeed.toFixed(1), lawn = Math.round(mowMeanInLawn() * 100);
+        const isStorm = (state.weather === 'storm' || state.weather === 'mist');
+        const ex = [];
+        if (h >= 6.5 && h < 9.5) ex.push([
+          { who: 'father', text: `Günaydın! Gece rüzgâr ${wind} m/s esti ama mışıl mışıl uyudum.` },
+          { who: 'mother', text: 'Günaydın, kahvaltıya yulaf lapası ve yumurta yapıyorum.' },
+          { who: 'child', text: 'Günaydın! Köpek kapının önünde beni bekliyordu.' }]);
+        if (h >= 20.4 && h < 22.4) ex.push([
+          { who: 'mother', text: `Saat ${hhmm()} oldu; dişlerini fırçala, yatma vakti.` },
+          { who: 'child', text: 'Bir masal daha anne, lütfen!' },
+          { who: 'father', text: 'Ben de ateşi küllendirip yatacağım. İyi geceler.' }]);
+        if (motherAI.activity === 'cooking') ex.push([
+          { who: 'mother', text: `Çorbaya bahçeden havuç ve pırasa kattım, ${mealName(h)} yarım saate hazır.` },
+          { who: 'child', text: 'Mmm, kokusu bahçeye kadar geliyor!' },
+          { who: 'father', text: 'Ellerine sağlık, ekmeği ben keserim.' }]);
+        if (glbAI.activity === 'mowing') ex.push([
+          { who: 'child', text: 'Baba, biçilmiş çimen çok güzel kokuyor!' },
+          { who: 'father', text: `Çimlerin boyu %${lawn}'e indi; iki günde yine uzar.` },
+          { who: 'mother', text: 'Sebze tarhının kenarına dikkat et ama.' }]);
+        else if (lawn > 88 && !isStorm && h > 8 && h < 18) ex.push([
+          { who: 'mother', text: 'Çimler epey uzamış, köpek içinde kayboluyor.' },
+          { who: 'father', text: 'Hava güzel, birazdan çim makinesini çıkarırım.' }]);
+        if (childAI.activity === 'dogplay') ex.push([
+          { who: 'child', text: 'Bak anne, köpek topu burnuyla itiyor!' },
+          { who: 'mother', text: 'Göletin kenarına fazla yaklaşma ama.' },
+          { who: 'father', text: 'Çoban köpeği o, seni de güdüyor galiba!' }]);
+        if (childAI.activity === 'ducks') ex.push([
+          { who: 'child', text: 'Ördeklere ekmek kırıntısı attım, hepsi bana yüzdü!' },
+          { who: 'mother', text: 'Ne güzel, ama sen de suya düşme.' }]);
+        if (motherAI.activity === 'laundry') ex.push([
+          { who: 'mother', text: `Rüzgâr ${wind} m/s, çamaşırlar bir saatte kurur.` },
+          { who: 'father', text: 'Yağmur başlarsa ben toplarım.' }]);
+        return ex;
       }
 
       function updateGardenAndFamily(dt, elapsed) {
@@ -4221,135 +4816,21 @@
             ch.group.position.set(hx, getTerrainHeight(hx, hz), hz);
             ch.group.rotation.y = Math.atan2(-Math.sin(a), Math.cos(a * 0.8));
             ch.group.rotation.x = Math.max(0, Math.sin(elapsed * 3.8 + i * 2.0) - 0.65) * 0.9; // Pecking!
+            // optokinetic head bob: head locked in space for ~75 % of the cycle (moves back relative to the body),
+            // then a quick forward thrust — period ≈ 0.38 s at a slow strut
+            const hp = (elapsed * 2.6 + i * 0.37) % 1;
+            const ho = hp < 0.75 ? 0.035 - 0.07 * (hp / 0.75) : -0.035 + 0.07 * ((hp - 0.75) / 0.25);
+            ch.head.position.z = 0.14 + ho; ch.comb.position.z = 0.15 + ho;
           }
         }
 
-        // 4. Border Collie Dog + REAL NEWTONIAN RIGID BODY BALL (Gravity, Impulse Bounce, Rolling Friction, Spin!)
+        // 4–7. Pets, lawn regrowth and the family's daily life
         stepWorldPhysicsEngine(dt, elapsed);
-        const bx = rigidBall.pos.x;
-        const bz = rigidBall.pos.z;
-        const dxD = bx - dogState.pos.x, dzD = bz - dogState.pos.z;
-        const distD = Math.hypot(dxD, dzD);
-        if (distD > 0.52) {
-          dogState.pos.x += (dxD / distD) * 2.45 * dt;
-          dogState.pos.z += (dzD / distD) * 2.45 * dt;
-          dogState.yaw = Math.atan2(dxD, dzD);
-        } else if (rigidBall.kickCooldown <= 0) {
-          // Real momentum transfer impulse J = m * deltaV toward open garden meadow!
-          const toCenter = new THREE.Vector2(2.6 - bx, 5.2 - bz).normalize();
-          const randAng = (Math.random() - 0.5) * 1.25;
-          const kx = toCenter.x * Math.cos(randAng) - toCenter.y * Math.sin(randAng);
-          const kz = toCenter.x * Math.sin(randAng) + toCenter.y * Math.cos(randAng);
-          rigidBall.vel.set(kx * (3.4 + Math.random() * 1.6), 3.6 + Math.random() * 1.4, kz * (3.4 + Math.random() * 1.6));
-          rigidBall.kickCooldown = 1.6;
-        }
-        dogG.position.set(dogState.pos.x, getTerrainHeight(dogState.pos.x, dogState.pos.z) + Math.abs(Math.sin(elapsed * 9.0)) * 0.04, dogState.pos.z);
-        dogG.rotation.y = dogState.yaw;
-        dTail.rotation.z = Math.sin(elapsed * 12.0) * 0.45;
-
-        // 5. Ginger Cat: curls by the fireplace in evening/rain, sunbathes on front stone doorstep in morning!
-        if (isNight || isRaining) {
-          catG.position.set(COTTAGE_X + 0.95, getTerrainHeight(COTTAGE_X, COTTAGE_Z) + 0.04, COTTAGE_Z - 1.35);
-          catG.rotation.y = -0.8;
-        } else {
-          catG.position.set(COTTAGE_X + 0.72, getTerrainHeight(COTTAGE_X + 0.72, COTTAGE_Z + 3.9) + 0.12, COTTAGE_Z + 3.9);
-          catG.rotation.y = 0.4;
-        }
-
-        // 6. Mother (Anne) — Doorway-Routed Pathfinding + Capsule-AABB Wall Collision!
-        motherAI.timer += dt;
-        if (motherAI.timer > motherAI.duration) {
-          motherAI.timer = 0;
-          const nextM = (motherAI.activity === 'cooking' && !isRaining && !isNight) ? 'watering' : 'cooking';
-          if (nextM !== motherAI.activity) {
-            motherAI.activity = nextM;
-            const destM = nextM === 'cooking'
-              ? new THREE.Vector3(COTTAGE_X + 1.85, 0, COTTAGE_Z - 2.15)
-              : new THREE.Vector3(VEG_X + 1.9, 0, VEG_Z + 0.4);
-            motherAI.waypoints = buildFamilyDoorwayPath(motherAI.pos, destM);
-            motherAI.wpIdx = 0;
-            recordWorldMemory(nextM === 'watering' ? 'Anne sebze bahçesini sulamaya çıktı' : 'Anne mutfakta yemek hazırlıyor');
-          }
-        }
-        const mWp = motherAI.waypoints[motherAI.wpIdx];
-        if (mWp) {
-          const mdx = mWp.x - motherAI.pos.x, mdz = mWp.z - motherAI.pos.z;
-          const mDist = Math.hypot(mdx, mdz);
-          if (mDist < 0.22) {
-            motherAI.wpIdx++;
-          } else {
-            motherAI.pos.x += (mdx / mDist) * 1.18 * dt;
-            motherAI.pos.z += (mdz / mDist) * 1.18 * dt;
-            resolveCapsuleWalls(motherAI.pos, 0.28);
-            motherAI.yaw = Math.atan2(mdx, mdz);
-            motherAI.phase += dt * 5.8;
-            const sw = Math.sin(motherAI.phase) * 0.45;
-            motherRig.legL.rotation.x = sw; motherRig.legR.rotation.x = -sw;
-            motherRig.armL.rotation.x = -sw * 0.6; motherRig.armR.rotation.x = sw * 0.6;
-            if (Math.hypot(motherAI.pos.x - COTTAGE_X, motherAI.pos.z - (COTTAGE_Z + 3.45)) < 2.2 && !state.doorOpen) toggleCottageDoor();
-          }
-        } else {
-          motherAI.yaw = motherAI.activity === 'cooking' ? Math.PI : -Math.PI / 2;
-          motherRig.legL.rotation.x = lerp(motherRig.legL.rotation.x, 0, dt * 6);
-          motherRig.legR.rotation.x = lerp(motherRig.legR.rotation.x, 0, dt * 6);
-          motherRig.armR.rotation.x = -0.65 + Math.sin(elapsed * 3.2) * 0.14;
-          motherRig.armL.rotation.x = -0.35;
-          if (motherAI.activity === 'watering') vegState.moisture = Math.min(1.0, vegState.moisture + dt * 0.04);
-        }
-        if (motherRig.waterCan) motherRig.waterCan.visible = (motherAI.activity === 'watering');
-        motherRig.root.position.set(motherAI.pos.x, getWorldFloorY(motherAI.pos.x, motherAI.pos.z), motherAI.pos.z);
-        motherRig.root.rotation.y = motherAI.yaw;
-
-        // 7. Child (1 Çocuk) — Doorway-Routed Pathfinding + Capsule-AABB Wall Collision!
-        childAI.timer += dt;
-        if (childAI.timer > childAI.duration) {
-          childAI.timer = 0;
-          const nextC = (childAI.activity === 'swinging' || isRaining || isNight) ? 'bedroom' : 'swinging';
-          if (nextC !== childAI.activity) {
-            childAI.activity = nextC;
-            const destC = nextC === 'swinging'
-              ? new THREE.Vector3(SWING_X, 0, SWING_Z)
-              : new THREE.Vector3(COTTAGE_X + 4.45, 0, COTTAGE_Z + 1.35);
-            childAI.waypoints = buildFamilyDoorwayPath(childAI.pos, destC);
-            childAI.wpIdx = 0;
-            recordWorldMemory(nextC === 'swinging' ? 'Çocuk bahçede salıncağa bindi' : 'Çocuk odasında oyuncaklarla oynuyor');
-          }
-        }
-        const cWp = childAI.waypoints[childAI.wpIdx];
-        if (cWp) {
-          const cdx = cWp.x - childAI.pos.x, cdz = cWp.z - childAI.pos.z;
-          const cDist = Math.hypot(cdx, cdz);
-          if (cDist < 0.24) {
-            childAI.wpIdx++;
-          } else {
-            childAI.pos.x += (cdx / cDist) * 1.42 * dt;
-            childAI.pos.z += (cdz / cDist) * 1.42 * dt;
-            resolveCapsuleWalls(childAI.pos, 0.24);
-            childAI.yaw = Math.atan2(cdx, cdz);
-            childAI.phase += dt * 7.2;
-            const sw = Math.sin(childAI.phase) * 0.55;
-            childRig.legL.rotation.x = sw; childRig.legR.rotation.x = -sw;
-            childRig.armL.rotation.x = -sw * 0.7; childRig.armR.rotation.x = sw * 0.7;
-            if (Math.hypot(childAI.pos.x - COTTAGE_X, childAI.pos.z - (COTTAGE_Z + 3.45)) < 2.2 && !state.doorOpen) toggleCottageDoor();
-          }
-          childRig.root.position.set(childAI.pos.x, getWorldFloorY(childAI.pos.x, childAI.pos.z), childAI.pos.z);
-          childRig.root.rotation.set(0, childAI.yaw, 0);
-        } else if (childAI.activity === 'swinging') {
-          const seatWorld = new THREE.Vector3(0, -SWING_L, 0);
-          swingPivot.localToWorld(seatWorld);
-          childRig.root.position.set(seatWorld.x, seatWorld.y - 0.36, seatWorld.z);
-          childRig.root.rotation.set(swingPhys.theta * 0.85, -0.35, 0);
-          childRig.legL.rotation.x = -1.25 + swingPhys.theta * 0.55;
-          childRig.legR.rotation.x = -1.25 + swingPhys.theta * 0.55;
-          childRig.armL.rotation.x = -0.85; childRig.armR.rotation.x = -0.85;
-        } else {
-          childAI.yaw = 0.2;
-          childRig.legL.rotation.x = 0; childRig.legR.rotation.x = 0;
-          childRig.armL.rotation.x = -0.45 + Math.sin(elapsed * 2.8) * 0.15;
-          childRig.armR.rotation.x = -0.45 - Math.sin(elapsed * 2.8) * 0.15;
-          childRig.root.position.set(childAI.pos.x, getWorldFloorY(childAI.pos.x, childAI.pos.z), childAI.pos.z);
-          childRig.root.rotation.set(0, childAI.yaw, 0);
-        }
+        updateDog(dt, elapsed, hrNow, isNight);
+        updateCat(dt, elapsed, isNight, isRaining);
+        mowRegrow(dt * Math.max(0, state.timeSpeed));
+        updateFamilyMember(motherAI, dt, elapsed, hrNow, isRaining);
+        updateFamilyMember(childAI, dt, elapsed, hrNow, isRaining);
 
         // Update 3D-Projected Memory-Driven Family Speech Bubbles!
         updateFamilySpeech(dt, elapsed);
@@ -5264,6 +5745,43 @@
         uWarmLightStrength: { value: 0.7 }
       };
 
+      // Mow mask (128² over a 52 m square around the garden): 255 = full height, ~80 = freshly cut
+      const MOW_N = 128, MOW_EXT = 36, MOW_CX = 0, MOW_CZ = 0;
+      const mowData = new Uint8Array(MOW_N * MOW_N * 4).fill(255);
+      const mowTex = new THREE.DataTexture(mowData, MOW_N, MOW_N, THREE.RGBAFormat);
+      mowTex.minFilter = mowTex.magFilter = THREE.LinearFilter; mowTex.needsUpdate = true;
+      grassUniforms.uMowTex = { value: mowTex };
+      grassUniforms.uMowXf = { value: new THREE.Vector4(MOW_CX, MOW_CZ, 1 / MOW_EXT, 0) };
+      function mowCut(x, z, radius) {
+        const cx = ((x - MOW_CX) / MOW_EXT + 0.5) * MOW_N, cz = ((z - MOW_CZ) / MOW_EXT + 0.5) * MOW_N, r = radius / MOW_EXT * MOW_N;
+        let changed = false;
+        for (let j = Math.floor(cz - r); j <= Math.ceil(cz + r); j++) for (let i = Math.floor(cx - r); i <= Math.ceil(cx + r); i++) {
+          if (i < 0 || j < 0 || i >= MOW_N || j >= MOW_N || Math.hypot(i - cx, j - cz) > r) continue;
+          const o = (j * MOW_N + i) * 4;
+          if (mowData[o] > 82) { mowData[o] = mowData[o + 1] = mowData[o + 2] = 82; changed = true; }
+        }
+        if (changed) mowTex.needsUpdate = true;
+      }
+      let mowRegrowT = 0;
+      function mowRegrow(dtSim) {
+        // Lolium/Festuca leaf elongation ≈ 1–2 cm/day → full regrowth in ~2 simulated days
+        mowRegrowT += dtSim;
+        if (mowRegrowT < 600) return;              // every 10 simulated minutes
+        const step = Math.max(1, Math.round(mowRegrowT / 600 * 1.2));
+        mowRegrowT = 0;
+        for (let o = 0; o < mowData.length; o += 4) if (mowData[o] < 255) { const v = Math.min(255, mowData[o] + step); mowData[o] = mowData[o + 1] = mowData[o + 2] = v; }
+        mowTex.needsUpdate = true;
+      }
+      function mowMeanInLawn() {
+        let sum = 0, n = 0;
+        for (const L of LAWNS) for (let z = L.z0; z <= L.z1; z += 1) for (let x = L.x0; x <= L.x1; x += 1) {
+          const i = Math.round(((x - MOW_CX) / MOW_EXT + 0.5) * MOW_N), j = Math.round(((z - MOW_CZ) / MOW_EXT + 0.5) * MOW_N);
+          sum += mowData[(j * MOW_N + i) * 4] / 255; n++;
+        }
+        return n ? sum / n : 1;
+      }
+      const LAWNS = [ { x0: 2.6, x1: 5.2, z0: -2.2, z1: 1.8 }, { x0: -5.0, x1: -0.8, z0: -1.0, z1: 3.0 } ];
+
       const grassMat = new THREE.ShaderMaterial({
         side: THREE.DoubleSide,
         uniforms: grassUniforms,
@@ -5283,6 +5801,8 @@
           uniform float uAlphaCanopy;  // Inoue exponential attenuation alpha_c
           uniform float uHonamiK;      // Kelvin-Helmholtz wavenumber 2*pi/Lambda_x
           uniform float uLockInGain;   // Frequency lock-in gain
+          uniform sampler2D uMowTex;
+          uniform vec4 uMowXf;
 
           varying float vHeight;
           varying float vWindBend;
@@ -5310,7 +5830,9 @@
 
           void main() {
             float s = position.y; // Arc-length coordinate s in [0, 1]
-            float L = aBladeParams.x;
+            // mown blades are cut to ~32 % of their length and grow back over time
+            float mowH = texture2D(uMowTex, (aOffset.xz - uMowXf.xy) * uMowXf.z + 0.5).r;
+            float L = aBladeParams.x * mowH;
             float w = aBladeParams.y;
             float restLean = aBladeParams.z;
             float phase = aBladeParams.w;
@@ -5521,6 +6043,8 @@
           uTurbulence: grassUniforms.uTurbulence,
           uWindDir: grassUniforms.uWindDir,
           uHonamiK: grassUniforms.uHonamiK,
+          uMowTex: grassUniforms.uMowTex,
+          uMowXf: grassUniforms.uMowXf,
           uFogColor: grassUniforms.uFogColor,
           uFogDensity: grassUniforms.uFogDensity
         },
@@ -5528,6 +6052,8 @@
           attribute vec3 aOffset;
           attribute vec3 aColor;
           attribute float aPhase;
+          uniform sampler2D uMowTex;
+          uniform vec4 uMowXf;
           uniform float uWindPhase;
           uniform float uCanopyWind;
           uniform float uTurbulence;
@@ -5539,7 +6065,8 @@
             float proj = dot(aOffset.xz, uWindDir);
             float sway = sin(proj * (uHonamiK * 0.85) - uWindPhase * 0.78 + aPhase * 0.5) * 0.5 + 0.5;
             float disp = min(0.36, (0.025 * uCanopyWind) * (0.55 + sway * (0.55 + uTurbulence)));
-            vec3 wp = aOffset + position + vec3(uWindDir.x * disp, -disp * 0.25, uWindDir.y * disp);
+            float mowK = smoothstep(0.42, 0.7, texture2D(uMowTex, (aOffset.xz - uMowXf.xy) * uMowXf.z + 0.5).r);
+            vec3 wp = aOffset + position * mowK + vec3(uWindDir.x * disp, -disp * 0.25, uWindDir.y * disp) * mowK;
             vColor = aColor;
             vWorldPos = wp;
             gl_Position = projectionMatrix * viewMatrix * vec4(wp, 1.0);
@@ -6153,8 +6680,9 @@
 
       document.getElementById('slider-density').addEventListener('input', (e) => {
         state.grassCount = parseInt(e.target.value, 10);
-        fpsGov.grass = Math.min(placed, state.grassCount);
-        grassGeo.instanceCount = fpsGov.grass;
+        fpsGov.auto = false;                       // the user's density is kept; "Oto" re-enables the governor
+        setGrassAutoUI();
+        grassGeo.instanceCount = Math.min(placed, state.grassCount);
         const formatted = state.grassCount.toLocaleString('tr-TR');
         document.getElementById('val-density').textContent = `${formatted} sap`;
         document.getElementById('hud-blades').textContent = formatted;
@@ -6445,11 +6973,52 @@
       };
 
       const ACTIVITY_META = {
-        reading:  { label: 'Şömine başında oturup kitap okuyor...', duration: 16.0 },
-        smoking:  { label: 'Bahçede sigara içip manzarayı izliyor...', duration: 15.0 },
+        reading:  { label: 'Şömine başında oturup kitap okuyor...', duration: 30.0 },
+        smoking:  { label: 'Bahçede sigara içip manzarayı izliyor...', duration: 24.0 },
         chopping: { label: 'Bahçede kinetik zincirle odun kesiyor...', duration: 13.0 },
-        stoking:  { label: 'Odunları şömineye taşıyıp ateşi körüklüyor...', duration: 9.5 }
+        stoking:  { label: 'Odunları şömineye taşıyıp ateşi körüklüyor...', duration: 9.5 },
+        sleeping: { label: 'Yatak odasında uyuyor... Zzz', duration: 45.0 },
+        mowing:   { label: 'Çim makinesini garaja bıraktı, bahçe tertemiz.', duration: 3.0 }
       };
+      // Push reel mower: parked beside the cottage, pushed 0.92 m ahead of the father along boustrophedon rows
+      const MOWER_PARK = new THREE.Vector3(3.3, 0, -3.75);
+      const mowerG = new THREE.Group();
+      (function buildMower() {
+        const green = new THREE.MeshStandardMaterial({ color: 0x2f6b3a, roughness: 0.55, metalness: 0.25 });
+        const steel = new THREE.MeshStandardMaterial({ color: 0x8a8f94, roughness: 0.4, metalness: 0.8 });
+        const rubber = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.9 });
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.12, 0.46), green); deck.position.y = 0.15; mowerG.add(deck);
+        const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.12, 0.16, 12), steel); eng.position.set(0, 0.29, 0.03); mowerG.add(eng);
+        const bag = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.3), new THREE.MeshStandardMaterial({ color: 0x3b3f2e, roughness: 0.95 }));
+        bag.position.set(0, 0.25, -0.4); mowerG.add(bag);
+        mowerG.userData.wheels = [];
+        [[0.27, 0.16], [-0.27, 0.16], [0.27, -0.16], [-0.27, -0.16]].forEach(([wx, wz]) => {
+          const w = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 14), rubber);
+          w.rotation.z = Math.PI / 2; w.position.set(wx, 0.09, wz); mowerG.add(w); mowerG.userData.wheels.push(w);
+        });
+        [0.2, -0.2].forEach((hx) => {
+          const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.95, 6), steel);
+          bar.position.set(hx, 0.58, -0.38); bar.rotation.x = -0.62; mowerG.add(bar);
+        });
+        const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.46, 8), rubber);
+        grip.rotation.z = Math.PI / 2; grip.position.set(0, 0.97, -0.64); mowerG.add(grip);
+        mowerG.traverse((o) => { if (o.isMesh) { o.castShadow = true; } });
+        mowerG.position.set(MOWER_PARK.x, getTerrainHeight(MOWER_PARK.x, MOWER_PARK.z), MOWER_PARK.z);
+        mowerG.rotation.y = Math.PI / 2;
+        scene.add(mowerG);
+      })();
+      function buildMowRoute() {
+        const pts = []; let flip = false;
+        const lawn = (x0, x1, zA, zB) => {
+          const st = zB > zA ? 0.5 : -0.5;
+          for (let z = zA; st > 0 ? z <= zB + 1e-6 : z >= zB - 1e-6; z += st) {
+            pts.push(new THREE.Vector3(flip ? x1 : x0, 0, z), new THREE.Vector3(flip ? x0 : x1, 0, z)); flip = !flip;
+          }
+        };
+        lawn(2.3, 4.5, -2.2, 1.8);     // east lawn (mower reaches 0.9 m beyond the father)
+        lawn(-1.4, -4.3, 3.0, -1.0);   // west lawn, worked back toward the path
+        return pts;
+      }
 
       let toastTimer = null;
       function showSceneToast(msg) {
@@ -6828,27 +7397,24 @@
       const _tR = new THREE.Vector3();
 
       function buildPathToActivity(targetAct) {
-        const doorIn  = new THREE.Vector3(COTTAGE_X, 0, COTTAGE_Z + 2.45);
-        const doorOut = new THREE.Vector3(COTTAGE_X, 0, COTTAGE_Z + 4.45);
-        const pathMid = new THREE.Vector3(getPathCenterX(-1.5), 0, -1.5);
-
         const targets = {
-          reading:  { pt: new THREE.Vector3(COTTAGE_X - 1.75, 0, COTTAGE_Z - 0.17), inside: true,  faceYaw: 0.64 },
-          smoking:  { pt: new THREE.Vector3(3.15, 0, 2.35),                        inside: false, faceYaw: 0.25 },
-          chopping: { pt: new THREE.Vector3(CHOP_X - 0.90, 0, CHOP_Z + 0.02),      inside: false, faceYaw: Math.PI / 2 },
-          stoking:  { pt: new THREE.Vector3(COTTAGE_X - 0.10, 0, COTTAGE_Z - 1.12),inside: true,  faceYaw: Math.PI }
+          reading:  { pt: new THREE.Vector3(COTTAGE_X - 1.75, 0, COTTAGE_Z - 0.17), faceYaw: 0.64 },
+          smoking:  { pt: new THREE.Vector3(3.15, 0, 2.35),                         faceYaw: 0.25 },
+          chopping: { pt: new THREE.Vector3(CHOP_X - 0.90, 0, CHOP_Z + 0.02),       faceYaw: Math.PI / 2 },
+          stoking:  { pt: new THREE.Vector3(COTTAGE_X - 0.10, 0, COTTAGE_Z - 1.12), faceYaw: Math.PI },
+          sleeping: { pt: new THREE.Vector3(COTTAGE_X - 5.05, 0, COTTAGE_Z - 0.3),  faceYaw: 0 },
+          mowing:   { pt: MOWER_PARK.clone(),                                       faceYaw: Math.PI / 2 }
         };
-
-        const curInside = Math.abs(glbAI.pos.x - COTTAGE_X) < 6.2 && Math.abs(glbAI.pos.z - COTTAGE_Z) < 3.6;
         const dest = targets[targetAct] || targets.reading;
-        const wps = [];
-        if (curInside && !dest.inside) {
-          wps.push(doorIn, doorOut, pathMid, dest.pt);
-        } else if (!curInside && dest.inside) {
-          wps.push(pathMid, doorOut, doorIn, dest.pt);
-        } else {
-          wps.push(dest.pt);
-        }
+        // doorway-routed (front door + interior bedroom doors) so nobody walks through walls
+        const wps = buildFamilyDoorwayPath(glbAI.pos, dest.pt);
+        if (targetAct === 'mowing') {
+          glbAI.mowStartIdx = wps.length;                 // first waypoint after picking up the mower
+          const route = buildMowRoute();
+          wps.push(...route);
+          glbAI.mowEndIdx = wps.length - 1;
+          wps.push(MOWER_PARK.clone());                   // push it back and park
+        } else { glbAI.mowStartIdx = 1e9; glbAI.mowEndIdx = -1; }
         return { wps, faceYaw: dest.faceYaw };
       }
 
@@ -6871,7 +7437,9 @@
             reading: 'Şömine başındaki berjere yürüyor...',
             smoking: 'Hava almak için bahçeye çıkıyor...',
             chopping: 'Odun kesmek için kütüğe gidiyor...',
-            stoking: 'Kestiği odunları şömineye taşıyor...'
+            stoking: 'Kestiği odunları şömineye taşıyor...',
+            sleeping: 'Yatak odasına yatmaya gidiyor...',
+            mowing: 'Çim makinesini alıp bahçeyi biçiyor...'
           };
           statusEl.textContent = walkLabels[actKey] || 'Yürüyor...';
         }
@@ -6909,14 +7477,20 @@
         let kneeLTarget = 0.0;
         let kneeRTarget = 0.0;
         const carryingWood = (glbAI.activity === 'stoking' && glbAI.phase === 'walking');
+        const mowerAttached = (glbAI.activity === 'mowing' && glbAI.phase === 'walking' && glbAI.wpIdx >= (glbAI.mowStartIdx || 1e9));
+        // bedtime: whatever he is doing, he goes to bed at night (autonomous mode)
+        const hNight = (state.simMinutes / 60) % 24;
+        if (glbAI.enabled && (hNight >= 22.5 || hNight < 6.5) && glbAI.activity !== 'sleeping' && (glbAI.phase === 'walking' || glbAI.timer > 1.0)) startCharacterActivity('sleeping');
 
-        if (glbAI.phase === 'walking') {
+        if (glbAI.phase === 'walking' && (glbAI.lie || 0) > 0.001) {
+          // getting out of bed first (minimum-jerk transfer below)
+        } else if (glbAI.phase === 'walking') {
           const targetWp = glbAI.waypoints[glbAI.wpIdx];
           if (targetWp) {
             const dx = targetWp.x - glbAI.pos.x;
             const dz = targetWp.z - glbAI.pos.z;
             const dist = Math.hypot(dx, dz);
-            const walkSpeed = carryingWood ? 1.15 : 1.38; // Real comfortable human walking velocity ~1.35 m/s
+            const walkSpeed = mowerAttached ? 0.95 : (carryingWood ? 1.15 : 1.38); // Real comfortable human walking velocity ~1.35 m/s
 
             if (dist < 0.16) {
               glbAI.wpIdx++;
@@ -6937,7 +7511,7 @@
               glbAI.yaw += diff * (1.0 - Math.exp(-dt * 7.0));
 
               // Exact Stride-Locked Gait Cycle (T_cycle ≈ 1.15 s at 1.38 m/s -> 0.79 m step length, ZERO foot sliding!)
-              const strideLen = 1.56;
+              const strideLen = 1.56 * Math.pow(walkSpeed / 1.38, 0.42);   // slower → shorter steps (Grieve 1968)
               glbAI.gaitCycle = (glbAI.gaitCycle + (walkSpeed / strideLen) * dt) % 1.0;
               // Trigger surface-aware footstep audio at exact heel-strike gait markers (u = 0.0 & 0.5)
               const halfIdx = glbAI.gaitCycle < 0.5 ? 0 : 1;
@@ -6958,7 +7532,7 @@
 
               dampRot(charRig.pelvisPivot, 0.04, pelvYaw, pelvRoll, kBlend);
               // Thoracic spine counter-rotates opposite to pelvis to conserve angular momentum!
-              dampRot(charRig.spinePivot, carryingWood ? 0.07 : 0.03, -pelvYaw * 1.45, -pelvRoll * 0.75, kBlend);
+              dampRot(charRig.spinePivot, mowerAttached ? 0.16 : (carryingWood ? 0.07 : 0.03), -pelvYaw * (mowerAttached ? 0.6 : 1.45), -pelvRoll * 0.75, kBlend);
               dampRot(charRig.headPivot, -0.03, -pelvYaw * 0.45, 0, kBlend);
 
               // Left & Right Hip, Double-Peak Knee, and Heel-Strike / Achilles Push-Off Ankle!
@@ -6970,7 +7544,15 @@
               dampRot(charRig.ankRPivot, gR.ankle, 0, 0, kBlend);
               kneeRTarget = gR.knee;
 
-              if (carryingWood) {
+              if (mowerAttached) {
+                // both hands on the mower grip, elbows soft, pushing from the hips
+                _tL.set( 0.21, -0.02, 0.43);
+                _tR.set(-0.21, -0.02, 0.43);
+                solveArmIK('L', charRig.shLPivot, charRig.elbLPivot, _tL, _poleL, kBlend);
+                solveArmIK('R', charRig.shRPivot, charRig.elbRPivot, _tR, _poleR, kBlend);
+                dampRot(charRig.wriLPivot, 0, 0, 0, kBlend);
+                dampRot(charRig.wriRPivot, 0, 0, 0, kBlend);
+              } else if (carryingWood) {
                 // Both hands physically lock onto left & right ends of the carried firewood bundle!
                 _tL.set( 0.17, 0.18, 0.27);
                 _tR.set(-0.17, 0.18, 0.27);
@@ -6999,7 +7581,22 @@
           while (diff < -Math.PI) diff += Math.PI * 2;
           glbAI.yaw += diff * (1.0 - Math.exp(-dt * 5.0));
 
-          if (glbAI.activity === 'reading') {
+          if (glbAI.activity === 'sleeping' || glbAI.activity === 'mowing') {
+            // neutral supine / standing pose; lying is applied to the whole body below
+            pelvY = 0.93;
+            dampRot(charRig.pelvisPivot, 0, 0, 0, kBlend);
+            dampRot(charRig.spinePivot, 0.01 * breath, 0, 0, kBlend);
+            dampRot(charRig.headPivot, glbAI.activity === 'sleeping' ? -0.08 : 0, 0, 0, kBlend);
+            dampRot(charRig.hipLPivot, 0, 0, 0.04, kBlend); dampRot(charRig.hipRPivot, 0, 0, -0.04, kBlend);
+            dampRot(charRig.ankLPivot, glbAI.activity === 'sleeping' ? 0.35 : 0, 0, 0, kBlend);
+            dampRot(charRig.ankRPivot, glbAI.activity === 'sleeping' ? 0.35 : 0, 0, 0, kBlend);
+            kneeLTarget = 0.06; kneeRTarget = 0.1;
+            _tL.set( 0.24, -0.16, 0.05); _tR.set(-0.24, -0.16, 0.05);
+            solveArmIK('L', charRig.shLPivot, charRig.elbLPivot, _tL, _poleL, kBlend);
+            solveArmIK('R', charRig.shRPivot, charRig.elbRPivot, _tR, _poleR, kBlend);
+            const hNow = (state.simMinutes / 60) % 24;
+            if (glbAI.activity === 'sleeping' && (hNow >= 22.5 || hNow < 6.5)) glbAI.timer = Math.min(glbAI.timer, 1.0); // sleep through the night
+          } else if (glbAI.activity === 'reading') {
             // TRUE SEATED POSTURE ON TARTAN WINGBACK ARMCHAIR:
             // Hips flex -84 deg forward, KNEES BEND +86 deg downward, boots rest flat on oak floor!
             // Exact armchair clearance: pelvY=0.71 sits cleanly ON TOP of tartan cushion (y=0.66),
@@ -7184,12 +7781,13 @@
             const isStormy = (state.weather === 'storm' || state.weather === 'mist');
             const hour = (state.simMinutes / 60) % 24;
             const isEvening = (hour >= 18 || hour < 7);
-            const candidates = ['reading', 'smoking', 'chopping', 'stoking'];
+            const candidates = ['reading', 'smoking', 'chopping', 'stoking', 'mowing'];
             let bestAct = 'reading', bestScore = -1e9;
 
             candidates.forEach((act) => {
               // Invalidate stoking if firewood stock is 0
               if (act === 'stoking' && state.firewoodStock <= 0) return;
+              if (act === 'mowing' && (isStormy || hour < 8.5 || hour > 18.5 || mowMeanInLawn() < 0.8)) return;
               let N = 0.3, P = 0.5, T = 0.5, E = 0.7, C = 0.2;
               if (act === 'reading') {
                 N = (100 - glbAI.needs.focus) / 100 * 0.7 + (100 - glbAI.needs.energy) / 100 * 0.5;
@@ -7206,6 +7804,9 @@
                 T = isEvening ? 0.25 : 0.9;
                 E = isStormy ? 0.25 : 0.85;
                 C = 0.55;
+              } else if (act === 'mowing') {
+                N = smooth01(0.8, 0.95, mowMeanInLawn()) * 0.95 + 0.1;
+                T = 0.9; E = 0.9; C = 0.45;
               } else if (act === 'stoking') {
                 N = (state.roomTempC < 20.5 || state.firePowerKW < 8.5) ? 0.95 : 0.45;
                 T = isEvening ? 0.95 : 0.6;
@@ -7216,7 +7817,7 @@
               const score = 1.15 * N + 0.4 * P + 0.55 * T + 0.65 * E - 0.45 * C - repeatPenalty + Math.random() * 0.12;
               if (score > bestScore) { bestScore = score; bestAct = act; }
             });
-            startCharacterActivity(bestAct);
+            startCharacterActivity((hour >= 22.5 || hour < 6.5) ? 'sleeping' : bestAct);
           }
         }
 
@@ -7245,6 +7846,28 @@
         charRig.pelvisPivot.position.z = lerp(charRig.pelvisPivot.position.z, pelvZ, kBlend);
         loadedGlbGroup.position.set(glbAI.pos.x, groundY, glbAI.pos.z);
         loadedGlbGroup.rotation.y = glbAI.yaw;
+        // lie down in / get up from the double bed (minimum-jerk, ~1.8 s)
+        glbAI.lie = THREE.MathUtils.clamp((glbAI.lie || 0) + ((glbAI.phase === 'acting' && glbAI.activity === 'sleeping') ? dt : -dt) * 0.55, 0, 1);
+        loadedGlbGroup.rotation.order = 'YXZ';
+        if (glbAI.lie > 0.001) {
+          const Ls = minJerk(glbAI.lie);
+          loadedGlbGroup.position.set(lerp(glbAI.pos.x, COTTAGE_X - 4.65 - 0.4, Ls), lerp(groundY, FAM_FLOOR_Y + 0.88, Ls), lerp(glbAI.pos.z, COTTAGE_Z - 0.88, Ls));
+          loadedGlbGroup.rotation.x = -Math.PI / 2 * Ls;
+        } else loadedGlbGroup.rotation.x = 0;
+        // mower: pushed ahead along the rows, cuts a 0.76 m swath, wheels roll without slipping (ω = v/r)
+        if (mowerAttached) {
+          const fx = Math.sin(glbAI.yaw), fz = Math.cos(glbAI.yaw);
+          const mx = glbAI.pos.x + fx * 0.92, mz = glbAI.pos.z + fz * 0.92;
+          const prev = mowerG.position.clone();
+          mowerG.position.set(mx, getTerrainHeight(mx, mz), mz);
+          mowerG.rotation.y = glbAI.yaw;
+          const travelled = Math.hypot(mx - prev.x, mz - prev.z);
+          mowerG.userData.wheels.forEach((w) => { w.rotation.x += travelled / 0.09; });
+          if (glbAI.wpIdx > glbAI.mowStartIdx && glbAI.wpIdx <= glbAI.mowEndIdx) mowCut(mx, mz, 0.38);
+        } else if (glbAI.activity !== 'mowing' || glbAI.phase === 'acting' || glbAI.wpIdx < (glbAI.mowStartIdx || 1e9)) {
+          mowerG.position.set(MOWER_PARK.x, getTerrainHeight(MOWER_PARK.x, MOWER_PARK.z), MOWER_PARK.z);
+          mowerG.rotation.y = Math.PI / 2;
+        }
 
         // 1 Hz Needs Update (Section 16 update budget)
         glbAI.needTickTimer += dt;
@@ -7252,7 +7875,7 @@
           glbAI.needTickTimer = 0;
           const act = glbAI.activity;
           const isAct = (glbAI.phase === 'acting');
-          glbAI.needs.energy  = THREE.MathUtils.clamp(glbAI.needs.energy  + (isAct && act === 'reading' ? 1.4 : (act === 'chopping' ? -1.8 : -0.35)), 5, 100);
+          glbAI.needs.energy  = THREE.MathUtils.clamp(glbAI.needs.energy  + (isAct && act === 'sleeping' ? 2.6 : isAct && act === 'reading' ? 1.4 : (act === 'chopping' ? -1.6 : act === 'mowing' ? -0.8 : -0.35)), 5, 100);
           glbAI.needs.comfort = THREE.MathUtils.clamp(glbAI.needs.comfort + (isAct && (act === 'smoking' || act === 'stoking') ? 1.8 : -0.45), 5, 100);
           glbAI.needs.focus   = THREE.MathUtils.clamp(glbAI.needs.focus   + (isAct && act === 'reading' ? 2.1 : -0.55), 5, 100);
           const eN = Math.round(glbAI.needs.energy), cN = Math.round(glbAI.needs.comfort), fN = Math.round(glbAI.needs.focus);
@@ -7636,7 +8259,7 @@
       // Below 57 fps: remove 15 % of the grass blades (down to 40k), then lower the pixel ratio
       // one step. Holding 60 fps: give blades back slowly (back-off doubles after a failed raise).
       // =========================================================================
-      const fpsGov = { grass: Math.min(placed, state.grassCount), ema: 16.7, last: 0, t: 0, good: 0, wait: 3, lastRaise: 0,
+      const fpsGov = { auto: true, grass: Math.min(placed, state.grassCount), ema: 16.7, last: 0, t: 0, good: 0, wait: 3, lastRaise: 0,
         prSteps: [Math.min(window.devicePixelRatio || 1, 1.5), 1.25, 1.0, 0.85].filter((v, i, a) => i === 0 || v < a[0]) };
       fpsGov.pr = 0;
       function updateFpsGovernor(now) {
@@ -7646,7 +8269,7 @@
           fpsGov.t += ms; fpsGov.good = ms < 17.6 ? fpsGov.good + ms : 0;
         }
         fpsGov.last = now;
-        if (fpsGov.t < 700) return;
+        if (fpsGov.t < 700 || !fpsGov.auto) return;
         fpsGov.t = 0;
         const fps = 1000 / fpsGov.ema;
         const cap = Math.min(placed, state.grassCount);
@@ -7661,8 +8284,22 @@
         }
         const hb = document.getElementById('hud-blades');
         if (hb) hb.textContent = grassGeo.instanceCount.toLocaleString('tr-TR');
+        const vd = document.getElementById('val-density');
+        if (vd) vd.textContent = grassGeo.instanceCount.toLocaleString('tr-TR') + ' sap';
       }
+      function setGrassAutoUI() {
+        const b = document.getElementById('btn-grass-auto');
+        if (!b) return;
+        b.textContent = fpsGov.auto ? 'Oto ✓' : 'Oto';
+        b.className = fpsGov.auto
+          ? 'text-[9.5px] px-1.5 py-0.5 rounded-md bg-emerald-500/30 border border-emerald-400/60 text-emerald-50 cursor-pointer'
+          : 'text-[9.5px] px-1.5 py-0.5 rounded-md bg-white/5 border border-white/15 text-emerald-200 cursor-pointer';
+      }
+      document.getElementById('btn-grass-auto').addEventListener('click', () => { fpsGov.auto = true; fpsGov.good = 0; setGrassAutoUI(); });
+      setGrassAutoUI();
 
+      window.__koy = { state, motherAI, childAI, glbAI, dogState, mowMeanInLawn, fpsGov, camCtrl, rigidBall,   // inspection hook for tests
+        sim(sec) { let el = performance.now() / 1000; for (let t = 0; t < sec; t += 1 / 30) { el += 1 / 30; state.simMinutes += (1 / 30 / 60) * state.timeSpeed; updateGardenAndFamily(1 / 30, el); updateLivingCharacterAI(1 / 30, el); } } };
       updateCameraTransform(1.0);
       animate();
     })();
