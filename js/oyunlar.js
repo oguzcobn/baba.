@@ -6,12 +6,13 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
+  const IMPORTED_ARCADE = new Set(["living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
   const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
+    'living-island': {cat:'sim',accent:'#86c77a',time:['2.5D yaşam','2.5D life'],isNew:true,blurb:['Ergün ile adada tarım yap, köyü izle, üretim ve ticaretle çiftliğini büyüt.','Farm with Ergün, watch village life, and grow through production and trade.']},
     'hayat-oyunu': { cat: 'sim', accent: '#ff8a5c', time: ['Uzun soluklu', 'Long-form'], blurb: ['Doğumdan emekliliğe kendi hayatını kur: kariyer, ilişkiler, sağlık ve seçimler.', 'Build a life from birth to retirement: career, relationships, health and choices.'] },
     futbol: { cat: 'foot', accent: '#c8ff3a', time: ['2 mod', '2 modes'], blurb: ['Draft mı kariyer mi? Tarafını seç, kadronu kur, sahaya çık.', 'Draft or career? Pick your side, build a squad, take the pitch.'] },
     career: { cat: 'foot', accent: '#3de0c8', time: ['Sezonluk', 'Season-long'], blurb: ['Kulübü devral: transfer pazarlığı, antrenman, devre arası konuşması ve canlı 2D maç.', 'Take over a club: transfer talks, training, half-time talks and live 2D matches.'] },
@@ -46,7 +47,7 @@ const BABALibrary = (() => {
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }, { id: 'web', tr: 'Web Oyunları', en: 'Web Games' }
   ];
-  const SPOTLIGHT = ['koy', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
+  const SPOTLIGHT = ['living-island','koy', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
