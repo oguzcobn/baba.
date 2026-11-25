@@ -1,0 +1,50 @@
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; color: #f5fafb; background: #152630; font: 15px system-ui,sans-serif; }
+main { position: relative; isolation: isolate; height: 100dvh; min-height: 320px; overflow: hidden; }
+#preview, #map { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+header, .hud, .settings, #status { position: absolute; background: #10232eee; padding: 10px 14px; border-radius: 10px; }
+header { top: 12px; left: 12px; display: grid; gap: 3px; }
+header strong { font-size: 23px; letter-spacing: .06em; }
+.hud { top: 75px; left: 12px; }
+output { font-size: 24px; font-variant-numeric: tabular-nums; }
+progress { width: 105px; accent-color: #66e6db; }
+.settings { top: 12px; right: 12px; max-width: min(250px, 58vw); }
+summary { cursor: pointer; }
+form { display: grid; gap: 8px; margin: 12px 0; }
+input, button { font: inherit; border: 1px solid #537483; border-radius: 7px; padding: 6px 10px; }
+button { color: white; background: #204452; cursor: pointer; }
+input { width: 100%; }
+#status { left: 12px; bottom: 100px; max-width: calc(100% - 24px); margin: 0; }
+.controls { position: absolute; bottom: 37px; left: 12px; right: 12px; display: flex; justify-content: space-between; pointer-events: none; }
+.controls button { touch-action: none; pointer-events: auto; min-height: 50px; min-width: 52px; margin-right: 4px; }
+.controls button:active { background: #267c84; }
+footer { position: absolute; bottom: 20px; left: 12px; background: #10232eee; font-size: 11px; }
+footer a { color: inherit; }
+
+#vehicle { position: absolute; inset: 0; pointer-events: none; }
+.cockpit { width: 100%; height: 100%; }
+#wheel { transform-origin: 397px 474px; transform: rotate(var(--steering, 0deg)); transition: transform .12s ease-out; }
+.kartal-rear { display: none; position: absolute; left: 50%; bottom: 12%; transform: translateX(-50%); width: clamp(115px, 25vw, 260px); }
+#vehicle.chase .cockpit { display: none; }
+#vehicle.chase .kartal-rear { display: block; }
+.driver-controls { position: absolute; right: 12px; top: 75px; display: grid; gap: 6px; }
+button:disabled { cursor: default; opacity: .48; }
+#driver { position: absolute; right: 14px; bottom: 98px; width: clamp(108px, 21vw, 194px); margin: 0; background: #10232eee; border-radius: 10px; }
+#driver svg { display: block; width: 100%; }
+#driver-hand { animation: raise-hand 2.8s ease-in-out both; }
+#driver[data-action="beer"] #smoke-prop,
+#driver[data-action="beer"] #smoke-trail,
+#driver[data-action="smoke"] #beer-prop { display: none; }
+#driver[data-action="smoke"] #smoke-trail { animation: smoke-trail 2.8s ease both; }
+@keyframes raise-hand {
+  0%, 100% { transform: translateY(0); }
+  25%, 70% { transform: translate(-4px,-23px); }
+}
+@keyframes smoke-trail {
+  0%, 30%, 100% { opacity: 0; }
+  50%, 70% { opacity: .65; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #wheel, #driver-hand, #smoke-trail { animation: none !important; transition: none !important; }
+}

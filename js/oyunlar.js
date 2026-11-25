@@ -6,12 +6,13 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
+  const IMPORTED_ARCADE = new Set(["surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
   const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
+    surus: {cat:'sim',accent:'#60dce8',time:['3 km','3 km'],isNew:true,blurb:['Konyaaltı sahil yolunda sürüş yap.','Drive the Konyaaltı coastal road.']},
     'living-island': {cat:'sim',accent:'#86c77a',time:['2.5D yaşam','2.5D life'],isNew:true,blurb:['Ergün ile adada tarım yap, köyü izle, üretim ve ticaretle çiftliğini büyüt.','Farm with Ergün, watch village life, and grow through production and trade.']},
     'hayat-oyunu': { cat: 'sim', accent: '#ff8a5c', time: ['Uzun soluklu', 'Long-form'], blurb: ['Doğumdan emekliliğe kendi hayatını kur: kariyer, ilişkiler, sağlık ve seçimler.', 'Build a life from birth to retirement: career, relationships, health and choices.'] },
     futbol: { cat: 'foot', accent: '#c8ff3a', time: ['2 mod', '2 modes'], blurb: ['Draft mı kariyer mi? Tarafını seç, kadronu kur, sahaya çık.', 'Draft or career? Pick your side, build a squad, take the pitch.'] },

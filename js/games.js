@@ -159,6 +159,7 @@ const App = (() => {
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
+    { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('5 tekne · 15 denizci', '5 boats · 15 sailors') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
@@ -893,6 +894,13 @@ const App = (() => {
     else if (r === 'living-island') livingIsland();
     else if (r === 'koy') koy();
     else if (r === 'yelken') yelken();
+    else if (r === 'surus') openEmbeddedGame({
+      title: T('SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'),
+      url: 'games/surus/index.html',
+      tag: T('Sürüş simülasyonu', 'Driving simulator'),
+      lead: T('Konyaaltı sahilinde yaklaşık 3 km sür.', 'Drive about 3 km along the Konyaaltı coast.'),
+      tip: T('WASD veya ok tuşlarını kullan. Telefonda ekrandaki pedallara dokun.', 'Use WASD or the arrow keys. On phones, use the on-screen controls.')
+    });
     else if (r === 'simitci') simitci();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();

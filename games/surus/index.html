@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>SÜRÜŞ. — Konyaaltı</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<main>
+  <canvas id="preview" aria-label="Sürüş parkuru"></canvas>
+  <div id="map" hidden></div>
+  <div id="vehicle" aria-hidden="true">
+    <svg class="cockpit" viewBox="0 0 1000 540" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="dash" x2="0" y2="1"><stop stop-color="#343735"/><stop offset="1" stop-color="#121715"/></linearGradient>
+      </defs>
+      <path fill="#171d1a" d="M0 0h55l84 445H0zM1000 0h-50l-78 445h128z"/>
+      <path fill="url(#dash)" d="M0 540V431l106-12 183-3 26-23h180l32 27 354 7L1000 450v90z"/>
+      <path fill="#121615" stroke="#5a625c" stroke-width="3" d="M304 464v-46h198v46z"/>
+      <path fill="#979c8f" d="M328 437h150v2H328zm216 16h138v4H544zm0 8h138v4H544zm0 8h138v4H544z"/>
+      <circle cx="349" cy="438" r="13" fill="none" stroke="#bbbcb1" stroke-width="2"/>
+      <circle cx="453" cy="438" r="13" fill="none" stroke="#bbbcb1" stroke-width="2"/>
+      <g id="wheel">
+        <circle cx="397" cy="474" r="65" fill="none" stroke="#121615" stroke-width="13"/>
+        <path d="m339 470 58 15 58-15m-58 12v54" fill="none" stroke="#141916" stroke-width="9"/>
+        <rect x="369" y="467" width="56" height="26" rx="5" fill="#262d29"/>
+        <text x="397" y="484" text-anchor="middle" fill="#dad6be" font-size="10" font-family="sans-serif">TOFAŞ</text>
+      </g>
+      <text x="732" y="475" fill="#c7c9bb" font-size="16" font-family="sans-serif" letter-spacing="4">KARTAL</text>
+    </svg>
+    <svg class="kartal-rear" viewBox="0 0 260 154">
+      <defs>
+        <linearGradient id="paint" x2="0" y2="1"><stop stop-color="#ded9bb"/><stop offset="1" stop-color="#a69d76"/></linearGradient>
+      </defs>
+      <ellipse cx="130" cy="137" rx="122" ry="13" fill="#101815" opacity=".5"/>
+      <path d="M26 109h26v29H26zm182 0h26v29h-26z" fill="#191c1c"/>
+      <path d="m18 90 20-57 21-14h142l21 14 20 57v34H18z" fill="url(#paint)" stroke="#4b4b3e" stroke-width="3"/>
+      <path d="m45 38 15-13h140l15 13 10 39H35z" fill="#283d43" stroke="#171d1e" stroke-width="4"/>
+      <path d="M53 65h155M62 47h136M128 30v45" stroke="#647a7c" stroke-width="2"/>
+      <path d="M42 18h175M61 14h139" stroke="#222727" stroke-width="5"/>
+      <path d="M18 110h224v16H18zM94 94h72v18H94z" fill="#232923"/>
+      <path d="M22 89h46v18H22zm170 0h46v18h-46z" fill="#8a261e"/>
+      <path d="M22 89h46v5H22zm170 0h46v5h-46z" fill="#c87837"/>
+      <rect x="103" y="97" width="54" height="12" rx="2" fill="#ebe9db"/>
+      <text x="130" y="106" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="bold">07 KRT 94</text>
+      <text x="189" y="117" fill="#d5d0ba" font-family="sans-serif" font-size="7">KARTAL</text>
+    </svg>
+  </div>
+  <header><strong>SÜRÜŞ.</strong><span>Tofaş Kartal · Konyaaltı</span></header>
+  <section class="hud" aria-label="Sürüş bilgileri">
+    <output id="speed">0</output> km/sa
+    <div><progress id="distance" value="0" max="1" aria-label="Rota ilerlemesi"></progress></div>
+    <button id="reset" type="button">Başa dön</button>
+  </section>
+  <details class="settings">
+    <summary>Harita</summary>
+    <form id="google">
+      <label for="key">Google Map Tiles API anahtarı</label>
+      <input id="key" type="password" autocomplete="off" spellcheck="false" required>
+      <button type="submit">Google 3D'yi aç</button>
+    </form>
+    <button id="offline" type="button">Antrenman görünümüne dön</button>
+  </details>
+  <section class="driver-controls" aria-label="Şoför ve kamera">
+    <button id="camera" type="button">Takip kamerası</button>
+    <button id="beer" type="button">Bira iç</button>
+    <button id="smoke" type="button">Sigara yak</button>
+  </section>
+  <figure id="driver" hidden aria-hidden="true">
+    <svg viewBox="0 0 180 155">
+      <rect x="8" y="66" width="67" height="84" rx="15" fill="#282e29"/>
+      <path d="M35 155V99l32-28 39 17 32 67z" fill="#466653"/>
+      <path d="m68 71 5-22 13-13 29 6 10 18-4 18-18 5-8 17z" fill="#b98361"/>
+      <path d="M72 61q-10-4-7-20 3-25 31-26 24 0 29 23l-17-6-20 7-4 20z" fill="#292722"/>
+      <circle cx="114" cy="52" r="2" fill="#272322"/>
+      <path d="M116 71h8" stroke="#704a38" stroke-width="2"/>
+      <g id="driver-hand">
+        <path d="M83 144q30-6 40-35l4-17" fill="none" stroke="#b98361" stroke-width="13" stroke-linecap="round"/>
+        <g id="beer-prop"><rect x="120" y="73" width="14" height="24" rx="3" fill="#cf9a38"/><path d="M121 76h12m-12 17h12" stroke="#f1e5b7" stroke-width="2"/></g>
+        <g id="smoke-prop"><path d="m126 91 12-8" stroke="#f4e8d3" stroke-width="3"/><circle cx="138" cy="83" r="1.8" fill="#f28452"/></g>
+      </g>
+      <path id="smoke-trail" d="M137 68q12-9 5-16t7-19" fill="none" stroke="#d7d9ca" opacity=".65" stroke-width="2"/>
+    </svg>
+  </figure>
+  <p id="status" role="status">Antrenman görünümü · Gaz ve fren için ↑ / ↓, yön için ← / →.</p>
+  <div class="controls" aria-label="Dokunmatik sürüş kontrolleri">
+    <div><button type="button" data-key="left" aria-label="Sola yönel">◀</button><button type="button" data-key="right" aria-label="Sağa yönel">▶</button></div>
+    <div><button type="button" data-key="brake">Fren</button><button type="button" data-key="gas">Gaz</button></div>
+  </div>
+  <footer><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Rota © OpenStreetMap katkıcıları</a></footer>
+</main>
+<script type="module" src="./drive.js"></script>
+</body>
+</html>
