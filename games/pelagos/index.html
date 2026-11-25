@@ -1,0 +1,2582 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>PELAGOS — Hidrodinamik Suya Giriş &amp; Akışkan Fiziği Laboratuvarı</title>
+<link rel="stylesheet" href="tailwind.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #040914;
+    color: #e2e8f0;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; }
+  #glCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+    touch-action: none;
+  }
+  #glCanvas:active { cursor: grabbing; }
+  .glass {
+    background: rgba(8, 15, 29, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.25);
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #38bdf8;
+    border: 2px solid #0f172a;
+    cursor: pointer;
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.55);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #38bdf8;
+    border: 2px solid #0f172a;
+    cursor: pointer;
+  }
+  .panel-scroll::-webkit-scrollbar { width: 5px; }
+  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.28); border-radius: 99px; }
+  .tab-btn.active { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border-color: rgba(56, 189, 248, 0.42); }
+  .preset-btn.active { background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.55); color: #e0f2fe; }
+  .cam-btn.active, .spd-btn.active { background: rgba(56, 189, 248, 0.22); color: #7dd3fc; border-color: rgba(56, 189, 248, 0.45); }
+  #errorBanner { display: none; }
+</style>
+</head>
+<body>
+<canvas id="glCanvas"></canvas>
+
+<div id="errorBanner" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-6">
+  <div class="glass max-w-lg rounded-2xl p-6 text-slate-200">
+    <h1 class="text-lg font-semibold text-sky-400">WebGL 2.0 Bağlamı Başlatılamadı</h1>
+    <p id="errorText" class="mt-2 text-sm text-slate-300 leading-relaxed"></p>
+  </div>
+</div>
+
+<!-- Top-Left Minimal Scientific HUD -->
+<div id="topHud" class="fixed top-3 left-3 z-20 flex flex-wrap items-center gap-2 max-w-[calc(100vw-24px)] md:max-w-[calc(100vw-356px)]">
+  <div class="glass rounded-xl px-3.5 py-2 flex items-center gap-3">
+    <div>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
+        <span class="text-xs font-semibold tracking-wider uppercase text-slate-100">Pelagos CFD</span>
+        <span id="hudWeather" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-400/25">Açık</span>
+        <span id="hudQuality" class="mono text-[10px] px-1.5 py-0.5 rounded bg-slate-800/90 text-emerald-300 border border-emerald-500/25">120 Hz</span>
+      </div>
+      <div class="mono text-[11px] text-slate-400 mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5">
+        <span>FPS <strong id="hudFps" class="text-emerald-400 font-medium">--</strong></span>
+        <span>Saat <strong id="hudClock" class="text-amber-300 font-medium">16:15</strong></span>
+        <span>Hız <strong id="hudTimeScale" class="text-sky-300 font-medium">1.00&times;</strong></span>
+        <span>CFL <strong id="hudCfl" class="text-slate-200 font-medium">0.24</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass rounded-xl p-1 flex flex-wrap items-center gap-1">
+    <button id="btnQuickDrop" type="button" title="Havadan Madde Bırak (F)" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-amber-200 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/35 transition">Bırak (F)</button>
+    <button id="btnPause" type="button" title="Duraklat / Devam (Space)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:bg-slate-700/60 transition">Duraklat</button>
+    <button id="btnStepFrame" type="button" title="Kare Kare İlerlet (.)" class="px-2 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:bg-slate-700/60 transition">+1 Kare</button>
+    <button id="btnTogglePanel" type="button" title="Paneli Aç / Gizle (H)" class="px-2.5 py-1.5 rounded-lg text-xs font-medium text-sky-300 bg-sky-500/15 hover:bg-sky-500/25 transition">Panel</button>
+  </div>
+</div>
+
+<!-- Bottom-Left High-Speed Camera & Slow-Motion Bar -->
+<div class="fixed bottom-3 left-3 z-20 flex flex-col gap-1.5 max-w-[calc(100vw-24px)] md:max-w-[calc(100vw-356px)]">
+  <div class="flex flex-wrap items-center gap-1.5">
+    <div class="glass rounded-xl p-1 flex flex-wrap items-center gap-1">
+      <button type="button" data-cam="free" class="cam-btn active px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Serbest</button>
+      <button type="button" data-cam="grazing" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Su Seviyesi</button>
+      <button type="button" data-cam="split" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Yarım Su Altı</button>
+      <button type="button" data-cam="underwater" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Su Altı Kavite</button>
+      <button type="button" data-cam="follow" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Cisim Takip</button>
+      <button type="button" data-cam="aerial" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Kuşbakışı</button>
+    </div>
+    <div class="glass rounded-xl p-1 flex items-center gap-1">
+      <button type="button" data-spd="1.0" class="spd-btn active mono px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">1&times;</button>
+      <button type="button" data-spd="0.25" class="spd-btn mono px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">0.25&times;</button>
+      <button type="button" data-spd="0.1" class="spd-btn mono px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">0.1&times;</button>
+      <button type="button" data-spd="0.02" class="spd-btn mono px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">0.02&times;</button>
+    </div>
+  </div>
+</div>
+
+<!-- Right 3-Tab Scientific Lab Panel -->
+<aside id="controlPanel" class="glass fixed top-3 right-3 bottom-3 z-30 w-[328px] max-w-[calc(100vw-24px)] rounded-2xl flex flex-col overflow-hidden transition-transform duration-200">
+  <div class="px-3.5 pt-3 pb-2.5 border-b border-slate-700/50">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Hidrodinamik Laboratuvarı</h2>
+      <button id="btnClosePanel" type="button" class="text-xs text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded hover:bg-slate-800/70 transition">Gizle</button>
+    </div>
+    <div class="grid grid-cols-3 gap-1 mt-2.5">
+      <button type="button" data-tab="drop" class="tab-btn active text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">Madde &amp; FSI</button>
+      <button type="button" data-tab="env" class="tab-btn text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">Hava &amp; Deniz</button>
+      <button type="button" data-tab="lab" class="tab-btn text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">CFD &amp; Ölçüm</button>
+    </div>
+  </div>
+
+  <div class="panel-scroll flex-1 overflow-y-auto px-3.5 py-3 space-y-3.5 text-xs">
+
+    <!-- TAB 1: MATERIAL GEOMETRY & FSI DROP -->
+    <div id="tab-drop" class="tab-content space-y-3">
+      <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">3B Geometri &amp; Madde Seçimi</div>
+        <div class="grid grid-cols-1 gap-1.5">
+          <button type="button" data-mat="steel" class="mat-btn preset-btn active flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-left transition">
+            <div><div class="font-medium text-[11px] text-slate-100">Çelik Küre (PBR Metal)</div><div class="text-[10px] text-slate-400">7850 kg/m&sup3; &middot; Küre &middot; Derin Kavite</div></div>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-400/30">Batar</span>
+          </button>
+          <button type="button" data-mat="granite" class="mat-btn preset-btn flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-left transition">
+            <div><div class="font-medium text-[11px] text-slate-100">Granit Kaya (Düzensiz)</div><div class="text-[10px] text-slate-400">2700 kg/m&sup3; &middot; Asimetrik Sıçrama</div></div>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-400/30">Batar</span>
+          </button>
+          <button type="button" data-mat="oak" class="mat-btn preset-btn flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-left transition">
+            <div><div class="font-medium text-[11px] text-slate-100">Meşe Kütüğü (Silindir)</div><div class="text-[10px] text-slate-400">680 kg/m&sup3; &middot; Yönelimli Tork</div></div>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Yüzer</span>
+          </button>
+          <button type="button" data-mat="ice" class="mat-btn preset-btn flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-left transition">
+            <div><div class="font-medium text-[11px] text-slate-100">Buz Kristali (Kırılmalı)</div><div class="text-[10px] text-slate-400">917 kg/m&sup3; &middot; Poliedral Kristal</div></div>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-400/30">%89.5</span>
+          </button>
+          <button type="button" data-mat="buoy" class="mat-btn preset-btn flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-left transition">
+            <div><div class="font-medium text-[11px] text-slate-100">Deniz Şamandırası (Konik)</div><div class="text-[10px] text-slate-400">240 kg/m&sup3; &middot; Alçak Kütle Merkezi</div></div>
+            <span class="mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-400/30">Yüzer</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-0.5">
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Bırakma Yüksekliği H</span><span id="valDropH" class="mono text-amber-300">14.0 m</span></div>
+          <input id="slDropH" type="range" min="2" max="40" step="1" value="14" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Giriş Açısı &theta; (Eğik Atış)</span><span id="valEntryAng" class="mono text-sky-300">0°</span></div>
+          <input id="slEntryAng" type="range" min="0" max="42" step="2" value="0" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Boyut Ölçeği</span><span id="valDropScale" class="mono text-sky-300">1.00&times;</span></div>
+          <input id="slDropScale" type="range" min="0.5" max="1.6" step="0.1" value="1.0" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-1.5">
+        <button id="btnDropNow" type="button" class="col-span-2 py-2 px-2.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 border border-amber-400/50 text-amber-100 font-semibold text-xs transition">Havadan Bırak (F)</button>
+        <button id="btnClearDrops" type="button" class="py-2 px-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/50 text-slate-300 font-medium text-xs transition">Temizle</button>
+      </div>
+      <button id="btnMultiDrop" type="button" class="w-full py-1.5 px-2.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 text-sky-200 font-medium text-[11px] transition">Çift Cisim Girişim Testi (2&times; Bırak)</button>
+
+      <div class="grid grid-cols-2 gap-1.5 mono text-[10px]">
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Durum / Kavite</div>
+          <div id="stState" class="text-sky-300 font-semibold mt-0.5">Hazır</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Çarpma v<sub>imp</sub> / E<sub>k</sub></div>
+          <div id="stImp" class="text-amber-300 font-semibold mt-0.5">--</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Batma V<sub>sub</sub>/V</div>
+          <div id="stSub" class="text-emerald-300 font-semibold mt-0.5">-- %</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Kavite / Jet</div>
+          <div id="stCav" class="text-cyan-300 font-semibold mt-0.5">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: WEATHER, TIME OF DAY & SEA -->
+    <div id="tab-env" class="tab-content hidden space-y-3.5">
+      <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Hava Durumu</div>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button type="button" data-weather="calm" class="weather-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Durgun Su</button>
+          <button type="button" data-weather="clear" class="weather-btn preset-btn active px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Açık</button>
+          <button type="button" data-weather="cloudy" class="weather-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Bulutlu</button>
+          <button type="button" data-weather="fog" class="weather-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Sisli</button>
+          <button type="button" data-weather="rain" class="weather-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Yağmur</button>
+          <button type="button" data-weather="storm" class="weather-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Fırtına</button>
+        </div>
+      </div>
+
+      <div class="pt-1 border-t border-slate-700/50 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Günün Saati (37°K)</span>
+          <label class="inline-flex items-center gap-1.5 text-[10px] text-slate-300 cursor-pointer">
+            <input id="chkAutoTime" type="checkbox" class="accent-sky-400" />
+            <span>Otomatik</span>
+          </label>
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Yerel Saat</span><span id="valTimeOfDay" class="mono text-amber-300">16:15</span></div>
+          <input id="slTimeOfDay" type="range" min="0" max="24" step="0.05" value="16.25" />
+        </div>
+        <div class="grid grid-cols-4 gap-1">
+          <button type="button" data-hour="6.25" class="time-btn px-1.5 py-1 rounded-md bg-slate-900/70 border border-slate-700/60 text-[10px] text-slate-300 hover:border-amber-400/50 transition">Şafak</button>
+          <button type="button" data-hour="12.5" class="time-btn px-1.5 py-1 rounded-md bg-slate-900/70 border border-slate-700/60 text-[10px] text-slate-300 hover:border-amber-400/50 transition">Öğlen</button>
+          <button type="button" data-hour="18.2" class="time-btn px-1.5 py-1 rounded-md bg-slate-900/70 border border-slate-700/60 text-[10px] text-slate-300 hover:border-amber-400/50 transition">Batım</button>
+          <button type="button" data-hour="22.5" class="time-btn px-1.5 py-1 rounded-md bg-slate-900/70 border border-slate-700/60 text-[10px] text-slate-300 hover:border-amber-400/50 transition">Gece</button>
+        </div>
+      </div>
+
+      <div class="pt-1 border-t border-slate-700/50 space-y-2.5">
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Su &amp; Rüzgar Parametreleri</div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" data-water="sea" class="water-btn preset-btn active py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Deniz Suyu (1025)</button>
+          <button type="button" data-water="fresh" class="water-btn preset-btn py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Tatlı Su (998)</button>
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Rüzgar Hızı U<sub>10</sub></span><span id="valWind" class="mono text-sky-300">6.0 m/s</span></div>
+          <input id="slWind" type="range" min="0" max="24" step="0.5" value="6.0" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Dalga Dikliği</span><span id="valChoppy" class="mono text-sky-300">0.55</span></div>
+          <input id="slChoppy" type="range" min="0" max="1.4" step="0.05" value="0.55" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Su Derinliği h</span><span id="valDepth" class="mono text-sky-300">35 m</span></div>
+          <input id="slDepth" type="range" min="6" max="120" step="1" value="35" />
+        </div>
+        <div>
+          <div class="flex justify-between text-[11px] mb-1"><span class="text-slate-300">Bulut Örtüsü</span><span id="valClouds" class="mono text-sky-300">22%</span></div>
+          <input id="slClouds" type="range" min="0" max="1" step="0.02" value="0.22" />
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: CFD SOLVER, DIMENSIONLESS NUMBERS & HONEST MODEL SCOPE -->
+    <div id="tab-lab" class="tab-content hidden space-y-3">
+      <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Çözücü Hassasiyet Modu</div>
+        <div class="grid grid-cols-3 gap-1">
+          <button type="button" data-qual="realtime" class="qual-btn preset-btn active py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[10.5px] font-medium text-slate-200 transition">Real-Time</button>
+          <button type="button" data-qual="ultra" class="qual-btn preset-btn py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[10.5px] font-medium text-slate-200 transition">Ultra</button>
+          <button type="button" data-qual="scientific" class="qual-btn preset-btn py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[10.5px] font-medium text-slate-200 transition">Scientific</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-1.5 mono text-[10px]">
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Reynolds Re</div>
+          <div id="ndRe" class="text-sky-300 font-semibold mt-0.5">--</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Weber We</div>
+          <div id="ndWe" class="text-cyan-300 font-semibold mt-0.5">--</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Froude Fr</div>
+          <div id="ndFr" class="text-amber-300 font-semibold mt-0.5">--</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2">
+          <div class="text-slate-400">Bond Bo</div>
+          <div id="ndBo" class="text-emerald-300 font-semibold mt-0.5">--</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2 col-span-2">
+          <div class="text-slate-400">Yerel PDE Kütle Korunumu &Delta;&eta;<sub>ort</sub></div>
+          <div id="ndMass" class="text-slate-200 font-semibold mt-0.5">0.0000 m</div>
+        </div>
+        <div class="rounded-lg bg-slate-900/70 border border-slate-700/50 p-2 col-span-2">
+          <div class="text-slate-400">Akışkan Özellikleri (20&deg;C SI)</div>
+          <div id="ndFluid" class="text-slate-300 mt-0.5">&rho;=1025 &middot; &mu;=1.08e-3 &middot; &sigma;=0.0728</div>
+        </div>
+      </div>
+
+      <div class="rounded-xl bg-slate-900/65 border border-slate-700/50 p-2.5 text-[10.5px] text-slate-300 leading-relaxed space-y-1.5">
+        <div class="font-semibold text-sky-300 uppercase tracking-wider text-[10px]">Çözücü Mimarisi &amp; Şeffaf Sınırlar</div>
+        <p><strong class="text-slate-100">Gerçek Zamanlı Çözülenler:</strong> 96&times;96 yerel 2.5B dağılımlı sığ-su/Navier-Stokes PDE ızgarası (sabit 120–240 Hz adım, CFL kararlılığı, çoklu cisim dalga girişimi ve çift yönlü FSI), 3B kırılmalı su taç tabakası (ejecta sheet), 3B su altı hava kavitesi, pinch-off kontrollü 3B Worthington jet sütunu, 5 gerçek 3B cisim geometrisi ve su altı Snell penceresi.</p>
+        <p><strong class="text-slate-100">Tarayıcı Yaklaşıklıkları:</strong> Tam 3B iki-fazlı Navier-Stokes/FLIP hacim çözücüsü yerine yerel yükseklik-hız PDE + analitik Duclaux/Rayleigh-Plesset kavite kabuğu kullanılmıştır; çevrimdışı 12–20 yüksek hızlı referans video CIEDE2000/SSIM kalibrasyon veri seti bu tek dosya tarayıcı sürümüne gömülü değildir.</p>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<script>
+(() => {
+  'use strict';
+
+  // =========================================================================
+  // 1. REAL-WORLD SI FLUID & MATERIAL CONSTANTS
+  // =========================================================================
+  const WATER_TYPES = {
+    sea:   { label: 'Deniz Suyu', rho: 1025.0, mu: 1.08e-3, sigma: 0.0728, n: 1.339 },
+    fresh: { label: 'Tatlı Su',   rho: 998.2,  mu: 1.00e-3, sigma: 0.0720, n: 1.333 }
+  };
+
+  const PHYS = {
+    g: 9.81,
+    rhoAir: 1.225,
+    pAtm: 101325.0,
+    water: WATER_TYPES.sea
+  };
+
+  const MATERIALS = {
+    steel:   { name: 'Çelik Küre',   shape: 'sphere',   rho: 7850, r: 0.65, cd: 0.47, wetAngle: 112, rough: 0.12, metal: 0.90, color: [0.64, 0.69, 0.76], asym: 0.05 },
+    granite: { name: 'Granit Kaya',  shape: 'rock',     rho: 2700, r: 0.85, cd: 0.72, wetAngle: 102, rough: 0.88, metal: 0.04, color: [0.46, 0.44, 0.41], asym: 0.38 },
+    oak:     { name: 'Meşe Kütüğü',  shape: 'cylinder', rho: 680,  r: 0.52, len: 2.3, cd: 0.82, wetAngle: 68,  rough: 0.84, metal: 0.02, color: [0.54, 0.34, 0.18], asym: 0.25 },
+    ice:     { name: 'Buz Kristali', shape: 'crystal',  rho: 917,  r: 0.82, cd: 0.64, wetAngle: 42,  rough: 0.18, metal: 0.05, color: [0.78, 0.93, 0.99], asym: 0.22 },
+    buoy:    { name: 'Şamandıra',    shape: 'buoy',     rho: 240,  r: 0.68, cd: 0.56, wetAngle: 88,  rough: 0.36, metal: 0.08, color: [0.96, 0.34, 0.12], asym: 0.08 }
+  };
+
+  const WEATHER_MODES = {
+    calm:   { label: 'Durgun',  windSpeed: 0.0,  cloudCover: 0.12, mieScale: 0.80, choppiness: 0.00, foamThreshold: 0.44, rain: 0.0 },
+    clear:  { label: 'Açık',    windSpeed: 6.0,  cloudCover: 0.22, mieScale: 0.88, choppiness: 0.55, foamThreshold: 0.46, rain: 0.0 },
+    cloudy: { label: 'Bulutlu', windSpeed: 11.5, cloudCover: 0.68, mieScale: 1.35, choppiness: 0.95, foamThreshold: 0.50, rain: 0.0 },
+    fog:    { label: 'Sisli',   windSpeed: 4.5,  cloudCover: 0.78, mieScale: 2.85, choppiness: 0.45, foamThreshold: 0.38, rain: 0.0 },
+    rain:   { label: 'Yağmur',  windSpeed: 14.0, cloudCover: 0.86, mieScale: 1.95, choppiness: 1.10, foamThreshold: 0.58, rain: 0.68 },
+    storm:  { label: 'Fırtına', windSpeed: 21.0, cloudCover: 0.96, mieScale: 2.55, choppiness: 1.35, foamThreshold: 0.72, rain: 1.0 }
+  };
+
+  const QUALITY_MODES = {
+    realtime:   { hz: 120, label: '120 Hz' },
+    ultra:      { hz: 180, label: '180 Hz' },
+    scientific: { hz: 240, label: '240 Hz' }
+  };
+
+  const state = {
+    paused: false,
+    stepOnce: false,
+    simTime: 0,
+    timeScale: 1.0,
+    quality: 'realtime',
+    weather: 'clear',
+    waterKey: 'sea',
+    timeOfDay: 16.25,
+    autoTime: false,
+    sunElevDeg: 25.0,
+    sunAzimDeg: 235.0,
+    windSpeed: 6.0,
+    windDirDeg: 35,
+    choppiness: 0.55,
+    depth: 35,
+    cloudCover: 0.22,
+    mieScale: 0.88,
+    foamThreshold: 0.46,
+    exposure: 1.12,
+    rainIntensity: 0.0,
+    lightningFlash: 0.0,
+    nextLightningIn: 4.5,
+    // Drop config
+    selectedMat: 'steel',
+    dropHeight: 14.0,
+    entryAngleDeg: 0.0,
+    dropScale: 1.0,
+    // Camera
+    camMode: 'free',
+    camYaw: 0.48,
+    camPitch: 0.24,
+    camDist: 22.0,
+    smoothCam: null,
+    smoothTarget: null,
+    panelOpen: true,
+    fps: 60,
+    cflNumber: 0.24,
+    meanEtaError: 0.0
+  };
+
+  function applyTimeOfDay(hours) {
+    state.timeOfDay = ((hours % 24) + 24) % 24;
+    const lat = 37.0 * Math.PI / 180.0;
+    const decl = 8.0 * Math.PI / 180.0;
+    const ha = (state.timeOfDay - 12.0) * 15.0 * Math.PI / 180.0;
+    const sinEl = Math.sin(lat) * Math.sin(decl) + Math.cos(lat) * Math.cos(decl) * Math.cos(ha);
+    const elRad = Math.asin(Math.max(-1, Math.min(1, sinEl)));
+    const cosAz = (Math.sin(decl) - Math.sin(lat) * sinEl) / Math.max(Math.cos(lat) * Math.cos(elRad), 1e-4);
+    let azDeg = Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180.0 / Math.PI;
+    if (ha > 0) azDeg = 360.0 - azDeg;
+    state.sunElevDeg = Math.max(-15.0, Math.min(85.0, elRad * 180.0 / Math.PI));
+    state.sunAzimDeg = azDeg;
+  }
+  applyTimeOfDay(state.timeOfDay);
+
+  function formatClock(hours) {
+    const h = Math.floor(((hours % 24) + 24) % 24);
+    const m = Math.floor((hours - Math.floor(hours)) * 60);
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+
+  // =========================================================================
+  // 2. FAR-FIELD 10-COMPONENT GERSTNER OCEAN + COUPLED LOCAL 96x96 PDE SOLVER
+  //    Solves 2.5D Dispersive Shallow-Water / Navier-Stokes Momentum Equations:
+  //      d(eta)/dt + div(H * u) = S_disp (two-way body displacement!)
+  //      du/dt = -g * grad(eta) + (sigma/rho) * grad(lap(eta)) + nu * lap(u)
+  // =========================================================================
+  const GERSTNER_WAVES = [
+    [ 0.88,  0.47, 0.14, 24.0, 1.00],
+    [ 0.96, -0.28, 0.11, 16.5, 1.06],
+    [ 0.62,  0.78, 0.09, 11.2, 0.95],
+    [ 0.74, -0.67, 0.08,  8.4, 1.12],
+    [ 0.32,  0.95, 0.06,  6.1, 1.02],
+    [ 0.99,  0.12, 0.06,  4.5, 1.18],
+    [ 0.51, -0.86, 0.05,  3.3, 1.08],
+    [-0.22,  0.97, 0.04,  2.4, 1.15],
+    [ 0.83,  0.55, 0.04,  1.8, 1.22],
+    [ 0.42, -0.91, 0.03,  1.35, 1.25]
+  ];
+
+  function getOceanAmpScale() {
+    if (state.windSpeed < 0.2 || state.choppiness < 0.01) return 0.0;
+    return Math.min(1.85, Math.max(0.0, (state.windSpeed / 11.0) * state.choppiness * 0.75));
+  }
+
+  function evalGerstnerDisp(px, pz, time, ampScale) {
+    if (ampScale <= 1e-4) return { x: 0, y: 0, z: 0 };
+    let dispX = 0, dispY = 0, dispZ = 0;
+    const g = PHYS.g;
+    for (let i = 0; i < 10; i++) {
+      const w = GERSTNER_WAVES[i];
+      const len = Math.hypot(w[0], w[1]);
+      const dx = w[0] / len, dz = w[1] / len;
+      const k = 6.2831853 / w[3];
+      const c = Math.sqrt(g / k) * w[4];
+      const q = Math.min(0.42, Math.max(0.0, w[2] * ampScale));
+      const a = q / k;
+      const f = k * (dx * px + dz * pz - c * time);
+      dispX += dx * (a * Math.cos(f));
+      dispY += a * Math.sin(f);
+      dispZ += dz * (a * Math.cos(f));
+    }
+    return { x: dispX, y: dispY, z: dispZ };
+  }
+
+  // Local High-Resolution Coupled Fluid PDE Grid (96 x 96 over 32m x 32m centered at origin)
+  const PDE_N = 96;
+  const PDE_SIZE = 32.0; // meters (-16m .. +16m)
+  const PDE_DX = PDE_SIZE / PDE_N; // 0.3333 m
+  const PDE_CELLS = PDE_N * PDE_N;
+
+  const pdeEta = new Float32Array(PDE_CELLS);
+  const pdeU = new Float32Array(PDE_CELLS);   // velocity x (m/s)
+  const pdeV = new Float32Array(PDE_CELLS);   // velocity z (m/s)
+  const pdeFoam = new Float32Array(PDE_CELLS); // turbulence / air-water entrainment foam
+  const pdeLap = new Float32Array(PDE_CELLS);
+  const pdeRGBA = new Float32Array(PDE_CELLS * 4); // (eta, dEta/dx, dEta/dz, foam)
+
+  function clearLocalPDE() {
+    pdeEta.fill(0); pdeU.fill(0); pdeV.fill(0); pdeFoam.fill(0); pdeRGBA.fill(0);
+  }
+
+  // Inject volume displacement / momentum impulse directly into the coupled PDE grid
+  function injectFluidImpulse(wx, wz, radius, dEtaCenter, radialPush, foamAdd) {
+    const gx = ((wx + PDE_SIZE * 0.5) / PDE_SIZE) * PDE_N;
+    const gz = ((wz + PDE_SIZE * 0.5) / PDE_SIZE) * PDE_N;
+    const cellR = Math.ceil((radius * 2.8) / PDE_DX);
+    const ix0 = Math.max(2, Math.floor(gx - cellR));
+    const ix1 = Math.min(PDE_N - 3, Math.ceil(gx + cellR));
+    const iz0 = Math.max(2, Math.floor(gz - cellR));
+    const iz1 = Math.min(PDE_N - 3, Math.ceil(gz + cellR));
+    const inv2R2 = 1.0 / Math.max(2.0 * radius * radius, 0.08);
+
+    for (let iz = iz0; iz <= iz1; iz++) {
+      const dz = (iz + 0.5) * PDE_DX - PDE_SIZE * 0.5 - wz;
+      for (let ix = ix0; ix <= ix1; ix++) {
+        const dx = (ix + 0.5) * PDE_DX - PDE_SIZE * 0.5 - wx;
+        const r2 = dx * dx + dz * dz;
+        const w = Math.exp(-r2 * inv2R2);
+        if (w < 0.01) continue;
+        const idx = iz * PDE_N + ix;
+        // Volume-conserving Mexican-hat displacement: depresses center, lifts surrounding rim!
+        const rNorm2 = r2 / Math.max(radius * radius, 0.05);
+        const rimKernel = (1.0 - 0.5 * rNorm2) * Math.exp(-0.5 * rNorm2);
+        pdeEta[idx] = Math.max(-2.6, Math.min(2.6, pdeEta[idx] + dEtaCenter * rimKernel));
+        const dist = Math.sqrt(r2) + 1e-4;
+        const push = radialPush * w * Math.min(1.0, dist / Math.max(radius, 0.25));
+        pdeU[idx] += (dx / dist) * push;
+        pdeV[idx] += (dz / dist) * push;
+        pdeFoam[idx] = Math.min(1.0, pdeFoam[idx] + foamAdd * w);
+      }
+    }
+  }
+
+  function stepLocalPDE(dt) {
+    // Effective shallow-water dispersion depth H_eff for realistic gravity wave celerity c = sqrt(g * H_eff)
+    const hEff = Math.min(state.depth, 3.6);
+    const cWave = Math.sqrt(PHYS.g * hEff);
+    state.cflNumber = (cWave * dt) / PDE_DX;
+
+    const invDx = 1.0 / PDE_DX;
+    const invDx2 = invDx * invDx;
+    const capCoeff = (PHYS.water.sigma / PHYS.water.rho) * 18.0; // capillary dispersion stiffness
+    const visc = 0.018; // turbulent eddy viscosity
+    const foamDecay = Math.exp(-dt * 0.28);
+
+    // 1. Precompute Laplacian of eta for capillary-gravity dispersion (omega^2 = gk + sigma/rho k^3)
+    for (let z = 1; z < PDE_N - 1; z++) {
+      const row = z * PDE_N;
+      for (let x = 1; x < PDE_N - 1; x++) {
+        const i = row + x;
+        pdeLap[i] = (pdeEta[i - 1] + pdeEta[i + 1] + pdeEta[i - PDE_N] + pdeEta[i + PDE_N] - 4.0 * pdeEta[i]) * invDx2;
+      }
+    }
+
+    // 2. Momentum equation: du/dt = -g grad(eta) + (sigma/rho) grad(lap(eta)) + nu lap(u)
+    for (let z = 2; z < PDE_N - 2; z++) {
+      const row = z * PDE_N;
+      for (let x = 2; x < PDE_N - 2; x++) {
+        const i = row + x;
+        const dEtaDx = (pdeEta[i + 1] - pdeEta[i - 1]) * 0.5 * invDx;
+        const dEtaDz = (pdeEta[i + PDE_N] - pdeEta[i - PDE_N]) * 0.5 * invDx;
+        const dLapDx = (pdeLap[i + 1] - pdeLap[i - 1]) * 0.5 * invDx;
+        const dLapDz = (pdeLap[i + PDE_N] - pdeLap[i - PDE_N]) * 0.5 * invDx;
+        const lapU = (pdeU[i - 1] + pdeU[i + 1] + pdeU[i - PDE_N] + pdeU[i + PDE_N] - 4.0 * pdeU[i]) * invDx2;
+        const lapV = (pdeV[i - 1] + pdeV[i + 1] + pdeV[i - PDE_N] + pdeV[i + PDE_N] - 4.0 * pdeV[i]) * invDx2;
+
+        // Sponge absorbing boundary near domain edges (prevents artificial box reflections!)
+        const bx = Math.min(x, PDE_N - 1 - x);
+        const bz = Math.min(z, PDE_N - 1 - z);
+        const edgeDist = Math.min(bx, bz);
+        const sponge = edgeDist < 10 ? (1.0 - (10 - edgeDist) * 0.018) : 0.9985;
+
+        pdeU[i] = (pdeU[i] + dt * (-PHYS.g * dEtaDx + capCoeff * dLapDx + visc * lapU)) * sponge;
+        pdeV[i] = (pdeV[i] + dt * (-PHYS.g * dEtaDz + capCoeff * dLapDz + visc * lapV)) * sponge;
+      }
+    }
+
+    // 3. Continuity equation (mass conservation): d(eta)/dt = -H_eff * div(u)
+    let sumEta = 0.0;
+    for (let z = 2; z < PDE_N - 2; z++) {
+      const row = z * PDE_N;
+      for (let x = 2; x < PDE_N - 2; x++) {
+        const i = row + x;
+        const divU = ((pdeU[i + 1] - pdeU[i - 1]) + (pdeV[i + PDE_N] - pdeV[i - PDE_N])) * 0.5 * invDx;
+        const bx = Math.min(x, PDE_N - 1 - x);
+        const bz = Math.min(z, PDE_N - 1 - z);
+        const edgeDist = Math.min(bx, bz);
+        const sponge = edgeDist < 10 ? (1.0 - (10 - edgeDist) * 0.022) : 0.9994;
+        pdeEta[i] = Math.max(-2.6, Math.min(2.6, (pdeEta[i] - dt * hEff * divU) * sponge));
+        pdeFoam[i] *= foamDecay;
+        sumEta += pdeEta[i];
+      }
+    }
+    state.meanEtaError = sumEta / PDE_CELLS;
+  }
+
+  function packLocalPDETexture() {
+    const inv2Dx = 0.5 / PDE_DX;
+    for (let z = 1; z < PDE_N - 1; z++) {
+      const row = z * PDE_N;
+      for (let x = 1; x < PDE_N - 1; x++) {
+        const i = row + x;
+        const p = i * 4;
+        pdeRGBA[p]     = pdeEta[i];
+        pdeRGBA[p + 1] = (pdeEta[i + 1] - pdeEta[i - 1]) * inv2Dx;
+        pdeRGBA[p + 2] = (pdeEta[i + PDE_N] - pdeEta[i - PDE_N]) * inv2Dx;
+        pdeRGBA[p + 3] = pdeFoam[i];
+      }
+    }
+  }
+
+  // Bilinear sampler for local PDE height & velocity (shared by FSI physics AND GPU shader!)
+  function sampleLocalPDE(wx, wz) {
+    const u = (wx + PDE_SIZE * 0.5) / PDE_SIZE;
+    const v = (wz + PDE_SIZE * 0.5) / PDE_SIZE;
+    if (u <= 0.02 || u >= 0.98 || v <= 0.02 || v >= 0.98) return { eta: 0, vx: 0, vz: 0 };
+    const fx = u * PDE_N - 0.5, fz = v * PDE_N - 0.5;
+    const x0 = Math.max(0, Math.min(PDE_N - 2, Math.floor(fx)));
+    const z0 = Math.max(0, Math.min(PDE_N - 2, Math.floor(fz)));
+    const tx = fx - x0, tz = fz - z0;
+    const i00 = z0 * PDE_N + x0, i10 = i00 + 1, i01 = i00 + PDE_N, i11 = i01 + 1;
+    const bilerp = (arr) => {
+      const a = arr[i00] + (arr[i10] - arr[i00]) * tx;
+      const b = arr[i01] + (arr[i11] - arr[i01]) * tx;
+      return a + (b - a) * tz;
+    };
+    return { eta: bilerp(pdeEta), vx: bilerp(pdeU), vz: bilerp(pdeV) };
+  }
+
+  function sampleTotalWater(wx, wz) {
+    const ampScale = getOceanAmpScale();
+    let oceanY = 0;
+    if (ampScale > 1e-4) {
+      const d0 = evalGerstnerDisp(wx, wz, state.simTime, ampScale);
+      const d1 = evalGerstnerDisp(wx - d0.x, wz - d0.z, state.simTime, ampScale);
+      oceanY = d1.y;
+    }
+    const loc = sampleLocalPDE(wx, wz);
+    return { y: oceanY + loc.eta, vx: loc.vx, vz: loc.vz };
+  }
+
+  // =========================================================================
+  // 3. 3D RIGID BODIES, 3D LIQUID CROWN SHEETS, 3D AIR CAVITIES,
+  //    3D WORTHINGTON JET COLUMNS & REFRACTIVE DROPLETS (ZERO CANNED EFFECTS!)
+  // =========================================================================
+  const bodies = [];
+  const liquidStructures = []; // Each water-entry event owns a live 3D crown sheet + cavity + Worthington jet!
+  let latestBody = null;
+
+  // Refractive ballistic water droplets & underwater Boyle's-law air bubbles
+  const MAX_DROPS = 1400;
+  const dropPos = new Float32Array(MAX_DROPS * 3);
+  const dropVel = new Float32Array(MAX_DROPS * 3);
+  const dropLife = new Float32Array(MAX_DROPS);
+  const dropRadius = new Float32Array(MAX_DROPS);
+  const dropKind = new Float32Array(MAX_DROPS); // 0 = refractive water droplet, 1 = underwater air bubble
+  let dropCursor = 0;
+
+  function emitDrop(x, y, z, vx, vy, vz, radius, life, kind) {
+    const idx = dropCursor;
+    dropCursor = (dropCursor + 1) % MAX_DROPS;
+    const p3 = idx * 3;
+    dropPos[p3] = x; dropPos[p3 + 1] = y; dropPos[p3 + 2] = z;
+    dropVel[p3] = vx; dropVel[p3 + 1] = vy; dropVel[p3 + 2] = vz;
+    dropRadius[idx] = radius;
+    dropLife[idx] = life;
+    dropKind[idx] = kind;
+  }
+
+  function dropMaterial(offsetX = 0, offsetZ = 0) {
+    const mat = MATERIALS[state.selectedMat] || MATERIALS.steel;
+    const s = state.dropScale;
+    const R = mat.r * s;
+    const len = mat.len ? mat.len * s : R * 2.0;
+
+    // Exact geometric volume per shape
+    let vol;
+    if (mat.shape === 'cylinder') vol = Math.PI * R * R * len;
+    else if (mat.shape === 'buoy') vol = (4.0 / 3.0) * Math.PI * R * R * R * 1.15;
+    else vol = (4.0 / 3.0) * Math.PI * R * R * R;
+
+    const mass = mat.rho * vol;
+    // Approximate principal moment of inertia I
+    const inertia = mat.shape === 'cylinder'
+      ? mass * (0.25 * R * R + (1.0 / 12.0) * len * len)
+      : 0.4 * mass * R * R;
+
+    const wx = offsetX + (Math.random() - 0.5) * 1.8;
+    const wz = offsetZ + (Math.random() - 0.5) * 1.8;
+    const eta = sampleTotalWater(wx, wz).y;
+
+    // Entry angle horizontal launch velocity if oblique entry is selected
+    const angRad = (state.entryAngleDeg * Math.PI) / 180.0;
+    const approxVimp = Math.sqrt(2.0 * PHYS.g * state.dropHeight);
+    const initVx = Math.sin(angRad) * approxVimp * 0.65;
+
+    // Multi-station FSI sample offsets in local body coordinates (gives real torque & tumbling!)
+    let stations;
+    if (mat.shape === 'cylinder') {
+      const hL = len * 0.42;
+      stations = [
+        [-hL, 0, 0, 0.25], [0, 0, 0, 0.50], [hL, 0, 0, 0.25]
+      ];
+    } else if (mat.shape === 'buoy') {
+      // Weighted bottom keel (y = -0.6*R) -> low center of mass -> snaps upright!
+      stations = [
+        [0, -0.55 * R, 0, 0.35], [0, 0.15 * R, 0, 0.35],
+        [0.45 * R, 0, 0, 0.15], [-0.45 * R, 0, 0, 0.15]
+      ];
+    } else {
+      const d = 0.45 * R;
+      stations = [
+        [0, 0, 0, 0.40], [d, 0, 0, 0.15], [-d, 0, 0, 0.15], [0, 0, d, 0.15], [0, 0, -d, 0.15]
+      ];
+    }
+
+    const body = {
+      matKey: state.selectedMat,
+      shape: mat.shape,
+      name: mat.name,
+      rho: mat.rho,
+      r: R,
+      len,
+      cd: mat.cd,
+      wetAngle: mat.wetAngle,
+      rough: mat.rough,
+      metal: mat.metal,
+      color: mat.color,
+      asym: mat.asym,
+      vol,
+      mass,
+      inertia,
+      stations,
+      x: wx - initVx * Math.sqrt((2.0 * state.dropHeight) / PHYS.g) * 0.5,
+      y: eta + state.dropHeight,
+      z: wz,
+      vx: initVx,
+      vy: 0.0,
+      vz: 0.0,
+      pitch: mat.shape === 'cylinder' ? 0.25 : (mat.shape === 'rock' ? Math.random() * 2.0 : 0.0),
+      roll: mat.shape === 'cylinder' ? 0.15 : (mat.shape === 'rock' ? Math.random() * 2.0 : 0.0),
+      yaw: Math.random() * Math.PI * 2.0,
+      wxRot: mat.shape === 'rock' ? (Math.random() - 0.5) * 1.4 : 0.0,
+      wzRot: mat.shape === 'cylinder' ? (Math.random() - 0.5) * 0.6 : 0.0,
+      prevSubVol: 0.0,
+      hitWater: false,
+      vImp: 0.0,
+      ekImp: 0.0,
+      re: 0, we: 0, fr: 0, bo: 0,
+      subFrac: 0.0,
+      cavStruct: null,
+      status: 'Serbest Düşüş'
+    };
+    bodies.push(body);
+    if (bodies.length > 10) bodies.shift();
+    latestBody = body;
+  }
+
+  function stepFixedPhysics(dt) {
+    const rhoW = PHYS.water.rho;
+    const muW = PHYS.water.mu;
+    const sigW = PHYS.water.sigma;
+    const windRad = (state.windDirDeg * Math.PI) / 180.0;
+    const windVx = Math.cos(windRad) * state.windSpeed;
+    const windVz = Math.sin(windRad) * state.windSpeed;
+
+    // 1. Step 3D Rigid Bodies with Two-Way FSI Coupling to Local PDE Grid
+    for (let i = 0; i < bodies.length; i++) {
+      const b = bodies[i];
+      const water = sampleTotalWater(b.x, b.z);
+      const R = b.r;
+      const charL = b.shape === 'cylinder' ? Math.cbrt(b.vol * 1.9) : 2.0 * R;
+
+      // Exact submerged volume & orientation-dependent torque across body stations
+      let totalSubFrac = 0.0;
+      let torquePitch = 0.0;
+      let torqueRoll = 0.0;
+      const cp = Math.cos(b.pitch), sp = Math.sin(b.pitch);
+      const cr = Math.cos(b.roll), sr = Math.sin(b.roll);
+
+      for (let s = 0; s < b.stations.length; s++) {
+        const st = b.stations[s];
+        // Rotate local station offset
+        const sx = st[0] * cp + st[1] * sp;
+        const sy = -st[0] * sp + st[1] * cp;
+        const sz = st[2] * cr - sy * sr;
+        const wy = b.y + sy * cr + st[2] * sr;
+        const wLoc = sampleTotalWater(b.x + sx, b.z + sz).y;
+        const hs = Math.max(0.0, Math.min(2.0 * R, wLoc - (wy - R)));
+        const frac = (hs * hs * (3.0 * R - hs)) / (4.0 * R * R * R);
+        totalSubFrac += frac * st[3];
+        // Hydrostatic buoyancy restoring torque from station lever arm
+        const fBuoySt = rhoW * PHYS.g * b.vol * st[3] * frac;
+        torquePitch += fBuoySt * sx * 0.45;
+        torqueRoll  += fBuoySt * sz * 0.45;
+      }
+      // Special low-center-of-mass righting torque for marine buoy
+      if (b.shape === 'buoy') {
+        torquePitch -= Math.sin(b.pitch) * b.mass * PHYS.g * R * 1.35;
+        torqueRoll  -= Math.sin(b.roll) * b.mass * PHYS.g * R * 1.35;
+      }
+
+      const vSub = totalSubFrac * b.vol;
+      b.subFrac = totalSubFrac;
+
+      // Continuous water-entry detection & dimensionless physics numbers
+      if (!b.hitWater && totalSubFrac > 0.008) {
+        b.hitWater = true;
+        const vRel = Math.hypot(b.vx - water.vx, b.vy, b.vz - water.vz);
+        b.vImp = vRel;
+        b.ekImp = 0.5 * b.mass * vRel * vRel;
+        b.re = (rhoW * vRel * charL) / muW;
+        b.we = (rhoW * vRel * vRel * charL) / sigW;
+        b.fr = vRel / Math.sqrt(PHYS.g * charL);
+        b.bo = (Math.abs(b.rho - rhoW) * PHYS.g * charL * charL) / sigW;
+
+        // Physically determine whether an air cavity forms (Weber > 40 & Froude > 1.2 & sufficient velocity/roughness)
+        const formsCavity = b.we > 45.0 && b.fr > 1.15 && (b.vImp > 3.8 || b.wetAngle > 85);
+        const tPinch = formsCavity
+          ? Math.min(0.52, Math.max(0.18, 1.55 * Math.sqrt(R / PHYS.g) * Math.pow(Math.max(b.fr, 1.0), 0.14)))
+          : -1.0;
+
+        // Create coupled 3D Liquid Structure (3D Ejecta Crown Sheet + 3D Subsurface Cavity + Pinch-off Worthington Jet)
+        const struct = {
+          body: b,
+          x: b.x,
+          z: b.z,
+          y0: water.y,
+          r0: R,
+          vImp: b.vImp,
+          vxImp: b.vx,
+          vzImp: b.vz,
+          asym: b.asym,
+          seed: Math.random() * 100.0,
+          age: 0.0,
+          formsCavity,
+          tPinch,
+          pinched: false,
+          cavDepth: 0.0,
+          cavMaxRadius: R * (1.15 + Math.min(0.9, b.fr * 0.045)),
+          // 3D Crown Sheet kinematics
+          crownH: 0.05,
+          crownVy: b.vImp * 0.42,
+          crownR: R * 1.05,
+          crownVr: b.vImp * 0.24,
+          crownAlive: true,
+          dropShedTimer: 0.0,
+          // 3D Worthington Jet kinematics (ONLY activates when cavity pinches off!)
+          jetActive: false,
+          jetH: 0.0,
+          jetVy: 0.0,
+          jetR: R * 0.34,
+          jetAge: 0.0,
+          jetShedTimer: 0.0
+        };
+        b.cavStruct = struct;
+        liquidStructures.push(struct);
+        if (liquidStructures.length > 6) liquidStructures.shift();
+      }
+
+      // Two-way FSI: inject exact displaced volume rate dV/dt into the local Navier-Stokes/SW PDE grid!
+      const dVdt = (vSub - b.prevSubVol) / dt;
+      b.prevSubVol = vSub;
+      if (Math.abs(dVdt) > 0.01 && b.y > water.y - 3.5 * R) {
+        const dEta = Math.max(-0.28, Math.min(0.28, (-dVdt * dt) / (Math.PI * R * R * 1.35)));
+        const push = Math.max(-2.2, Math.min(3.5, (dVdt / (2.0 * Math.PI * R * R)) * 0.35));
+        const foam = Math.min(0.45, Math.abs(dVdt) * 0.012);
+        injectFluidImpulse(b.x, b.z, R * 1.15, dEta, push, foam);
+      }
+
+      const area = b.shape === 'cylinder' ? (2.0 * R * b.len * 0.65) : (Math.PI * R * R);
+      if (totalSubFrac <= 0.002) {
+        // Free-fall in air with quadratic aerodynamic drag
+        const rvx = b.vx - windVx, rvz = b.vz - windVz;
+        const vm = Math.hypot(rvx, b.vy, rvz);
+        const fd = 0.5 * PHYS.rhoAir * b.cd * area * vm;
+        b.vx += (-fd * rvx / b.mass) * dt;
+        b.vy += (-PHYS.g - (fd * b.vy) / b.mass) * dt;
+        b.vz += (-fd * rvz / b.mass) * dt;
+        b.status = 'Serbest Düşüş';
+      } else {
+        // Consistent FSI forces (ZERO double-counting!):
+        // Added mass m_a = 0.5 * rho_w * V_sub
+        const mAdded = 0.5 * rhoW * vSub;
+        const mEff = b.mass + mAdded;
+
+        const F_buoy = rhoW * PHYS.g * vSub;
+        const F_grav = b.mass * PHYS.g;
+
+        // Slamming impulse strictly during initial surface piercing (0 < subFrac < 0.45, vy < 0)
+        let F_slam = 0.0;
+        if (b.vy < 0 && totalSubFrac < 0.45) {
+          const sN = totalSubFrac / 0.45;
+          const cs = 1.65 * Math.sin(sN * Math.PI) * (1.0 - 0.3 * sN);
+          F_slam = 0.5 * rhoW * cs * area * b.vy * b.vy;
+        }
+
+        // Relative velocity against the LIVE local PDE fluid velocity!
+        const rvx = b.vx - water.vx;
+        const rvz = b.vz - water.vz;
+        const vMag = Math.hypot(rvx, b.vy, rvz);
+        const inCav = b.cavStruct && b.cavStruct.formsCavity && !b.cavStruct.pinched;
+        const cdEff = inCav ? b.cd * 0.66 : b.cd;
+        const wetArea = area * Math.pow(totalSubFrac, 0.66);
+
+        const F_dragX = -0.5 * rhoW * cdEff * wetArea * vMag * rvx;
+        const F_dragY = -0.5 * rhoW * cdEff * wetArea * vMag * b.vy;
+        const F_dragZ = -0.5 * rhoW * cdEff * wetArea * vMag * rvz;
+
+        // Gentle surface wave-radiation damping only while straddling the free surface
+        const surfBand = (totalSubFrac > 0.02 && totalSubFrac < 0.98) ? 1.0 : 0.0;
+        const F_radY = -surfBand * 0.24 * rhoW * wetArea * Math.sqrt(PHYS.g * R) * b.vy;
+
+        b.vx += (F_dragX / mEff) * dt;
+        b.vy += ((F_buoy - F_grav + F_slam + F_dragY + F_radY) / mEff) * dt;
+        b.vz += (F_dragZ / mEff) * dt;
+
+        // Angular dynamics (rock tumbling, oak log settling horizontally, buoy righting!)
+        const rotDamp = 2.6 * (1.0 + totalSubFrac * 3.5);
+        b.wxRot += (torquePitch / b.inertia - rotDamp * b.wxRot) * dt;
+        b.wzRot += (torqueRoll  / b.inertia - rotDamp * b.wzRot) * dt;
+
+        if (inCav) b.status = 'Hava Kavitesi';
+        else if (b.rho > rhoW) b.status = b.y <= -state.depth + R ? 'Tabanda' : 'Batıyor';
+        else b.status = 'Yüzüyor';
+      }
+
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.z += b.vz * dt;
+      b.pitch += b.wxRot * dt;
+      b.roll += b.wzRot * dt;
+
+      const seabed = -state.depth + R;
+      if (b.y < seabed) {
+        b.y = seabed; b.vy = 0; b.vx *= 0.5; b.vz *= 0.5;
+        b.wxRot *= 0.5; b.wzRot *= 0.5;
+        b.status = 'Tabanda';
+      }
+    }
+
+    // 2. Step 3D Liquid Crown Sheets, 3D Subsurface Air Cavities & 3D Worthington Jet Columns
+    for (let i = liquidStructures.length - 1; i >= 0; i--) {
+      const st = liquidStructures[i];
+      st.age += dt;
+      const b = st.body;
+
+      // Update 3D Ejecta Crown Sheet kinematics (rises, expands, thins, sheds droplets at rim!)
+      if (st.crownAlive) {
+        st.crownVy -= PHYS.g * 1.15 * dt;
+        st.crownH += st.crownVy * dt;
+        st.crownR += st.crownVr * dt;
+        st.crownVr *= Math.exp(-dt * 1.45);
+
+        // Shed refractive water droplets from the Rayleigh-Taylor rim fingers!
+        st.dropShedTimer += dt;
+        if (st.crownH > 0.25 && st.dropShedTimer >= 0.022 && st.age < 0.75) {
+          st.dropShedTimer = 0;
+          const rimDrops = 10;
+          for (let k = 0; k < rimDrops; k++) {
+            const ang = (k / rimDrops) * Math.PI * 2.0 + st.age * 7.3 + Math.random() * 0.4;
+            const finger = 1.0 + 0.28 * Math.sin(ang * 10.0 + st.seed) + st.asym * Math.cos(ang - st.seed);
+            const rx = st.x + Math.cos(ang) * st.crownR * finger;
+            const rz = st.z + Math.sin(ang) * st.crownR * finger;
+            const ry = st.y0 + st.crownH * (0.85 + 0.25 * finger);
+            const vOut = st.crownVr * (1.15 + Math.random() * 0.45) * finger;
+            const vUp = Math.max(0.6, st.crownVy * (1.05 + Math.random() * 0.35));
+            // Droplet size derived physically from rim thickness (larger drops for higher radius/lower Weber)
+            const dRad = (0.045 + Math.random() * 0.055) * Math.min(1.5, st.r0 / 0.65);
+            emitDrop(rx, ry, rz, Math.cos(ang) * vOut + st.vxImp * 0.25, vUp, Math.sin(ang) * vOut + st.vzImp * 0.25, dRad, 1.8, 0.0);
+          }
+        }
+        if (st.crownH <= 0.02 && st.age > 0.2) {
+          st.crownAlive = false;
+          // Collapsing crown sheet returns momentum to the PDE grid!
+          injectFluidImpulse(st.x, st.z, st.crownR * 0.85, -0.14, 0.6, 0.25);
+        }
+      }
+
+      // Update 3D Subsurface Air Cavity Depth & Hydrostatic Deep-Seal Pinch-Off!
+      if (st.formsCavity) {
+        if (!st.pinched) {
+          st.cavDepth = Math.max(st.cavDepth, st.y0 - b.y);
+          if (st.age >= st.tPinch) {
+            st.pinched = true;
+            // Pinch-off collapses cavity radially, focusing fluid at center -> launches 3D Worthington Jet!
+            const jetStrength = Math.min(1.35, Math.max(0.45, Math.pow(b.fr / 12.0, 0.35) * Math.pow(Math.min(b.rho, 4500) / rhoW, 0.2)));
+            st.jetActive = b.fr > 1.8;
+            st.jetVy = st.vImp * 0.62 * jetStrength;
+            st.jetH = 0.15;
+            st.jetR = st.r0 * 0.34;
+            // Pinch-off also injects an upward rebound pulse into the local PDE!
+            injectFluidImpulse(st.x, st.z, st.r0 * 1.3, 0.55 * jetStrength, 1.4, 0.55);
+
+            // Release entrained underwater air bubbles from cavity collapse
+            const pinchY = st.y0 - st.cavDepth * 0.52;
+            for (let k = 0; k < 48; k++) {
+              const ang = Math.random() * Math.PI * 2.0;
+              const rr = Math.random() * st.r0 * 0.9;
+              emitDrop(
+                st.x + Math.cos(ang) * rr,
+                pinchY - Math.random() * st.cavDepth * 0.45,
+                st.z + Math.sin(ang) * rr,
+                (Math.random() - 0.5) * 0.8,
+                0.8 + Math.random() * 1.4,
+                (Math.random() - 0.5) * 0.8,
+                0.04 + Math.random() * 0.06,
+                3.5 + Math.random() * 2.5,
+                1.0
+              );
+            }
+          }
+        }
+      }
+
+      // Update 3D Coherent Worthington Jet Liquid Column (Rayleigh-Plateau tip breakup into refractive drops!)
+      if (st.jetActive) {
+        st.jetAge += dt;
+        st.jetVy -= PHYS.g * 0.95 * dt;
+        st.jetH += st.jetVy * dt;
+        st.jetShedTimer += dt;
+        // Pinch off large refractive droplets from the thinning jet tip via Rayleigh-Plateau instability
+        if (st.jetH > 0.6 && st.jetShedTimer >= 0.045 && st.jetAge < 1.1) {
+          st.jetShedTimer = 0;
+          for (let k = 0; k < 3; k++) {
+            const ang = Math.random() * Math.PI * 2.0;
+            const dRad = (0.065 + Math.random() * 0.06) * Math.min(1.4, st.r0 / 0.65);
+            emitDrop(
+              st.x + Math.cos(ang) * st.jetR * 0.4,
+              st.y0 + st.jetH * (0.88 + Math.random() * 0.14),
+              st.z + Math.sin(ang) * st.jetR * 0.4,
+              Math.cos(ang) * (0.35 + Math.random() * 0.65),
+              Math.max(0.4, st.jetVy * (0.95 + Math.random() * 0.2)),
+              Math.sin(ang) * (0.35 + Math.random() * 0.65),
+              dRad,
+              2.4,
+              0.0
+            );
+          }
+        }
+        if (st.jetH <= 0.05 && st.jetAge > 0.25) {
+          st.jetActive = false;
+          injectFluidImpulse(st.x, st.z, st.r0 * 0.9, -0.22, 0.8, 0.3);
+        }
+      }
+
+      if (st.age > 6.0 && !st.crownAlive && !st.jetActive) {
+        liquidStructures.splice(i, 1);
+      }
+    }
+
+    // 3. Step Refractive Droplets & Underwater Boyle's-Law Bubbles + Secondary Splashes!
+    for (let i = 0; i < MAX_DROPS; i++) {
+      if (dropLife[i] <= 0) continue;
+      dropLife[i] -= dt;
+      const p3 = i * 3;
+      const kind = dropKind[i];
+
+      if (kind > 0.5) {
+        // Underwater rising air bubble: buoyant velocity + lateral wobble + bursts into foam at surface!
+        const wSurf = sampleTotalWater(dropPos[p3], dropPos[p3 + 2]).y;
+        dropPos[p3]     += (dropVel[p3] + Math.sin(state.simTime * 7.0 + i) * 0.22) * dt;
+        dropPos[p3 + 1] += dropVel[p3 + 1] * dt;
+        dropPos[p3 + 2] += (dropVel[p3 + 2] + Math.cos(state.simTime * 7.0 + i) * 0.22) * dt;
+        if (dropPos[p3 + 1] >= wSurf) {
+          // Burst at free surface -> adds foam & tiny capillary ripple!
+          injectFluidImpulse(dropPos[p3], dropPos[p3 + 2], 0.35, 0.015, 0.08, 0.18);
+          dropLife[i] = 0;
+        }
+      } else {
+        // Ballistic water droplet: gravity + quadratic air drag
+        const rvx = dropVel[p3] - windVx * 0.35;
+        const rvz = dropVel[p3 + 2] - windVz * 0.35;
+        const vm = Math.hypot(rvx, dropVel[p3 + 1], rvz);
+        const dragK = (0.35 * PHYS.rhoAir * vm) / Math.max(rhoW * dropRadius[i], 1.0);
+        dropVel[p3]     -= dragK * rvx * dt;
+        dropVel[p3 + 1] += (-PHYS.g - dragK * dropVel[p3 + 1]) * dt;
+        dropVel[p3 + 2] -= dragK * rvz * dt;
+        dropPos[p3]     += dropVel[p3] * dt;
+        dropPos[p3 + 1] += dropVel[p3 + 1] * dt;
+        dropPos[p3 + 2] += dropVel[p3 + 2] * dt;
+
+        // Secondary Splash when falling droplet re-impacts the water surface!
+        const wSurf = sampleTotalWater(dropPos[p3], dropPos[p3 + 2]).y;
+        if (dropVel[p3 + 1] < -0.5 && dropPos[p3 + 1] <= wSurf) {
+          const dR = dropRadius[i];
+          if (dR > 0.045) {
+            injectFluidImpulse(dropPos[p3], dropPos[p3 + 2], dR * 3.8, -0.045 * Math.min(2.0, -dropVel[p3 + 1] * 0.15), 0.22, 0.14);
+          }
+          dropLife[i] = 0;
+        }
+      }
+    }
+
+    // 4. Advance Local 96x96 Coupled Fluid PDE Grid
+    stepLocalPDE(dt);
+  }
+
+  // =========================================================================
+  // 4. WEBGL 2.0 SETUP & SHADERS
+  // =========================================================================
+  const canvas = document.getElementById('glCanvas');
+  const gl = canvas.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'high-performance' });
+  if (!gl) {
+    document.getElementById('errorBanner').style.display = 'flex';
+    document.getElementById('errorText').textContent = 'Tarayıcınız WebGL 2.0 bağlamı oluşturamadı.';
+    return;
+  }
+
+  // Local PDE RGBA16F texture (eta, slopeX, slopeZ, foam)
+  const pdeTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, pdeTex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, PDE_N, PDE_N, 0, gl.RGBA, gl.FLOAT, pdeRGBA);
+
+  const COMMON_ATMO_GLSL = `#version 300 es
+  precision highp float;
+  precision highp int;
+
+  const float PI = 3.14159265359;
+  const vec3 BETA_R = vec3(5.8e-6, 13.5e-6, 33.1e-6);
+  const float H_R = 8000.0;
+  const float H_M = 1200.0;
+  const float R_EARTH = 6360000.0;
+  const float R_ATMO  = 6420000.0;
+
+  vec2 raySphere(vec3 ro, vec3 rd, float r) {
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - r * r;
+    float d = b * b - c;
+    if (d < 0.0) return vec2(-1.0);
+    float s = sqrt(d);
+    return vec2(-b - s, -b + s);
+  }
+
+  float hash21(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+
+  float noise2D(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = hash21(i);
+    float b = hash21(i + vec2(1.0, 0.0));
+    float c = hash21(i + vec2(0.0, 1.0));
+    float d = hash21(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+  }
+
+  float fbmClouds(vec2 p) {
+    float v = 0.0, a = 0.5;
+    mat2 rot = mat2(0.80, 0.60, -0.60, 0.80);
+    for (int i = 0; i < 4; i++) {
+      v += a * noise2D(p);
+      p = rot * p * 2.03 + vec2(13.7, 7.3);
+      a *= 0.5;
+    }
+    return v;
+  }
+
+  vec3 computeAtmosphere(vec3 rd, vec3 sunDir, float mieScale, float cloudCover, float time, bool includeDisc) {
+    vec3 dir = normalize(rd);
+    float dayFactor = smoothstep(-0.08, 0.08, sunDir.y);
+    vec3 activeLightDir = sunDir.y >= -0.02 ? sunDir : normalize(vec3(-sunDir.x, max(-sunDir.y, 0.18), -sunDir.z));
+    vec3 ro = vec3(0.0, R_EARTH + 15.0, 0.0);
+    vec3 rayD = normalize(vec3(dir.x, max(dir.y, 0.002), dir.z));
+
+    vec2 hit = raySphere(ro, rayD, R_ATMO);
+    float dt = hit.y * 0.2;
+    vec3 betaM = vec3(21.0e-6) * mieScale;
+    float mu = dot(rayD, activeLightDir);
+    float phaseR = 3.0 / (16.0 * PI) * (1.0 + mu * mu);
+    float g = 0.76;
+    float phaseM = (1.0 - g * g) / (4.0 * PI * pow(max(1.0 + g * g - 2.0 * g * mu, 1e-4), 1.5));
+
+    vec3 sumR = vec3(0.0), sumM = vec3(0.0);
+    float optR = 0.0, optM = 0.0;
+    for (int i = 0; i < 5; i++) {
+      vec3 pos = ro + rayD * (float(i) + 0.5) * dt;
+      float h = max(length(pos) - R_EARTH, 0.0);
+      float hr = exp(-h / H_R) * dt, hm = exp(-h / H_M) * dt;
+      optR += hr; optM += hm;
+      vec2 lHit = raySphere(pos, activeLightDir, R_ATMO);
+      float ldt = lHit.y * 0.5, lOptR = 0.0, lOptM = 0.0;
+      for (int j = 0; j < 2; j++) {
+        vec3 lPos = pos + activeLightDir * (float(j) + 0.5) * ldt;
+        float lh = max(length(lPos) - R_EARTH, 0.0);
+        lOptR += exp(-lh / H_R) * ldt;
+        lOptM += exp(-lh / H_M) * ldt;
+      }
+      vec3 atten = exp(-(BETA_R * (optR + lOptR) + betaM * 1.11 * (optM + lOptM)));
+      sumR += atten * hr; sumM += atten * hm;
+    }
+
+    vec3 sky = mix(1.35, 22.0, dayFactor) * (sumR * BETA_R * phaseR + sumM * betaM * phaseM);
+    if (dayFactor < 0.99) {
+      sky += vec3(0.012, 0.022, 0.045) * (1.0 - dayFactor);
+      if (includeDisc && dir.y > 0.02 && hash21(floor(dir.xz / (dir.y + 0.15) * 180.0)) > 0.9965) {
+        sky += vec3(0.85, 0.92, 1.0) * (1.0 - dayFactor) * smoothstep(0.02, 0.25, dir.y) * 1.4;
+      }
+    }
+    if (cloudCover > 0.01 && dir.y > 0.008) {
+      vec2 uv = dir.xz * (2600.0 / (dir.y + 0.08)) * 0.00022 + vec2(time * 0.0045, time * 0.002);
+      float n = fbmClouds(uv);
+      float density = smoothstep(1.0 - cloudCover * 0.85, 1.05 - cloudCover * 0.25, n * 0.82 + fbmClouds(uv * 2.5) * 0.24) * smoothstep(0.008, 0.16, dir.y);
+      if (density > 0.001) {
+        float lightTrans = exp(-max(fbmClouds(uv + activeLightDir.xz * 0.08) - n + 0.18, 0.0) * 3.8);
+        vec3 sunTint = mix(vec3(0.32, 0.42, 0.62), mix(vec3(1.0, 0.48, 0.22), vec3(1.0, 0.96, 0.90), smoothstep(0.0, 0.35, sunDir.y)), dayFactor);
+        sky = mix(sky, sunTint * (0.28 + 1.35 * lightTrans + pow(max(mu, 0.0), 8.0) * 0.5) * mix(0.22, 1.35, dayFactor), clamp(density * 0.88, 0.0, 0.92));
+      }
+    }
+    if (includeDisc) {
+      float discDot = dot(dir, activeLightDir);
+      if (dayFactor > 0.05) {
+        vec3 sunColor = mix(vec3(1.0, 0.38, 0.12), vec3(1.0, 0.95, 0.88), smoothstep(-0.02, 0.3, sunDir.y));
+        sky += sunColor * smoothstep(0.99972, 0.99988, discDot) * 42.0 * dayFactor;
+      } else {
+        sky += vec3(0.85, 0.90, 1.0) * smoothstep(0.99965, 0.99982, discDot) * 6.5;
+      }
+    }
+    return sky;
+  }
+
+  vec3 fastSkyColor(vec3 rd, vec3 sunDir, float mieScale) {
+    vec3 dir = normalize(vec3(rd.x, max(rd.y, 0.02), rd.z));
+    float dayFactor = smoothstep(-0.08, 0.08, sunDir.y);
+    vec3 activeL = sunDir.y >= -0.02 ? sunDir : normalize(vec3(-sunDir.x, max(-sunDir.y, 0.18), -sunDir.z));
+    float viewAM = 1.0 / (dir.y + 0.15), sunAM = 1.0 / (max(activeL.y, 0.03) + 0.15);
+    vec3 betaM = vec3(21.0e-6) * mieScale;
+    float mu = dot(dir, activeL);
+    float phaseR = 3.0 / (16.0 * PI) * (1.0 + mu * mu);
+    float g = 0.76;
+    float phaseM = (1.0 - g * g) / (4.0 * PI * pow(max(1.0 + g * g - 2.0 * g * mu, 1e-4), 1.5));
+    vec3 scat = (BETA_R * H_R * phaseR + betaM * H_M * phaseM) * viewAM;
+    vec3 atten = exp(-0.55 * (BETA_R * H_R * (viewAM + sunAM) + betaM * 1.11 * H_M * (viewAM + sunAM)));
+    return scat * atten * mix(1.35, 22.0, dayFactor) + vec3(0.012, 0.022, 0.045) * (1.0 - dayFactor);
+  }
+
+  float ggxSpec(vec3 N, vec3 V, vec3 L, float roughness) {
+    vec3 H = normalize(V + L);
+    float NdotH = max(dot(N, H), 0.0);
+    float a = roughness * roughness, a2 = a * a;
+    float denom = NdotH * NdotH * (a2 - 1.0) + 1.0;
+    return a2 / max(0.0001, PI * denom * denom);
+  }
+
+  vec3 acesToneMap(vec3 x) {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0);
+  }
+  `;
+
+  // --- SKY & UNDERWATER VOLUME BACKGROUND SHADER ---
+  const SKY_VS = `#version 300 es
+  precision highp float;
+  out vec2 vUv;
+  void main() {
+    vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+    vUv = pos;
+    gl_Position = vec4(pos * 2.0 - 1.0, 0.9999, 1.0);
+  }
+  `;
+
+  const SKY_FS = COMMON_ATMO_GLSL + `
+  in vec2 vUv;
+  out vec4 fragColor;
+  uniform mat4 uInvViewProj;
+  uniform vec3 uCamPos;
+  uniform vec3 uSunDir;
+  uniform float uMieScale;
+  uniform float uCloudCover;
+  uniform float uTime;
+  uniform float uExposure;
+  uniform float uLightning;
+
+  void main() {
+    vec4 ndc = vec4(vUv * 2.0 - 1.0, 1.0, 1.0);
+    vec4 world = uInvViewProj * ndc;
+    vec3 rd = normalize(world.xyz / world.w - uCamPos);
+
+    vec3 col;
+    if (uCamPos.y < -0.05) {
+      // Physically based underwater Beer-Lambert volumetric depth background + god-ray glow
+      float dayF = smoothstep(-0.08, 0.12, uSunDir.y);
+      float depth = max(-uCamPos.y, 0.1);
+      vec3 deepCol = vec3(0.004, 0.035, 0.075);
+      vec3 upCol = vec3(0.025, 0.24, 0.34) * exp(-depth * vec3(0.28, 0.06, 0.035)) * mix(0.2, 1.25, dayF);
+      col = mix(deepCol, upCol, smoothstep(-0.4, 0.75, rd.y));
+      float sunShaft = pow(max(dot(rd, normalize(vec3(uSunDir.x, max(uSunDir.y, 0.2), uSunDir.z))), 0.0), 10.0);
+      col += vec3(0.08, 0.38, 0.42) * sunShaft * exp(-depth * 0.12) * dayF;
+    } else {
+      vec3 rdSky = normalize(vec3(rd.x, max(rd.y, 0.0), rd.z));
+      col = computeAtmosphere(rdSky, uSunDir, uMieScale, uCloudCover, uTime, true);
+      // ufkun altı (okyanus ızgarasının ötesi): okyanus sisinin kullandığı ufuk rengine yumuşak geçiş → turuncu bant yok
+      vec3 haze = fastSkyColor(vec3(rd.x, 0.003, rd.z), uSunDir, uMieScale);
+      col = mix(col, haze, smoothstep(0.035, -0.004, rd.y));
+      col += vec3(0.55, 0.72, 1.0) * uLightning * (0.35 + 0.65 * smoothstep(0.0, 0.45, max(rd.y, 0.0)));
+    }
+    col = acesToneMap(col * uExposure);
+    col = pow(col, vec3(1.0 / 2.2));
+    fragColor = vec4(col, 1.0);
+  }
+  `;
+
+  // --- COUPLED OCEAN + LOCAL PDE VERTEX SHADER ---
+  const OCEAN_VS = `#version 300 es
+  precision highp float;
+  precision highp int;
+  const float PI = 3.14159265359;
+  layout(location = 0) in vec2 aGridXZ;
+
+  uniform mat4 uViewProj;
+  uniform vec3 uCamPos;
+  uniform float uTime;
+  uniform float uAmpScale;
+  uniform sampler2D uLocalFluid;
+  uniform float uPdeSize;
+
+  out vec3 vWorldPos;
+  out vec3 vNormal;
+  out float vFoam;
+  out float vCrest;
+  out float vDist;
+  out float vWaveHeight;
+
+  vec3 gerstnerWave(vec2 pos, vec2 dir, float steepness, float wavelength, float speedMul, inout vec3 tangent, inout vec3 binormal, inout float jacobian) {
+    float k = 6.2831853 / wavelength;
+    float c = sqrt(9.81 / k) * speedMul;
+    vec2 d = normalize(dir);
+    float q = clamp(steepness * uAmpScale, 0.0, 0.42);
+    float a = q / k;
+    float f = k * (dot(d, pos) - c * uTime);
+    float sf = sin(f), cf = cos(f);
+    tangent += vec3(-d.x * d.x * (q * sf), d.x * (q * cf), -d.x * d.y * (q * sf));
+    binormal += vec3(-d.x * d.y * (q * sf), d.y * (q * cf), -d.y * d.y * (q * sf));
+    jacobian -= q * sf;
+    return vec3(d.x * (a * cf), a * sf, d.y * (a * cf));
+  }
+
+  void main() {
+    vec2 baseXZ = aGridXZ;
+    float r = length(baseXZ - uCamPos.xz);
+    float distFade = 1.0 - smoothstep(140.0, 950.0, r) * 0.88;
+    float detailFade = 1.0 - smoothstep(30.0, 150.0, r);
+
+    vec3 tangent = vec3(1.0, 0.0, 0.0);
+    vec3 binormal = vec3(0.0, 0.0, 1.0);
+    float jacobian = 1.0;
+    vec3 disp = vec3(0.0);
+
+    if (uAmpScale > 0.001) {
+      disp += gerstnerWave(baseXZ, vec2( 0.88,  0.47), 0.14 * distFade, 24.0, 1.00, tangent, binormal, jacobian);
+      disp += gerstnerWave(baseXZ, vec2( 0.96, -0.28), 0.11 * distFade, 16.5, 1.06, tangent, binormal, jacobian);
+      disp += gerstnerWave(baseXZ, vec2( 0.62,  0.78), 0.09 * distFade, 11.2, 0.95, tangent, binormal, jacobian);
+      disp += gerstnerWave(baseXZ, vec2( 0.74, -0.67), 0.08 * distFade,  8.4, 1.12, tangent, binormal, jacobian);
+      disp += gerstnerWave(baseXZ, vec2( 0.32,  0.95), 0.06 * distFade,  6.1, 1.02, tangent, binormal, jacobian);
+      disp += gerstnerWave(baseXZ, vec2( 0.99,  0.12), 0.06 * distFade,  4.5, 1.18, tangent, binormal, jacobian);
+      if (detailFade > 0.01) {
+        disp += gerstnerWave(baseXZ, vec2( 0.51, -0.86), 0.05 * detailFade, 3.3,  1.08, tangent, binormal, jacobian);
+        disp += gerstnerWave(baseXZ, vec2(-0.22,  0.97), 0.04 * detailFade, 2.4,  1.15, tangent, binormal, jacobian);
+        disp += gerstnerWave(baseXZ, vec2( 0.83,  0.55), 0.04 * detailFade, 1.8,  1.22, tangent, binormal, jacobian);
+        disp += gerstnerWave(baseXZ, vec2( 0.42, -0.91), 0.03 * detailFade, 1.35, 1.25, tangent, binormal, jacobian);
+      }
+    }
+
+    vec3 surfNormal = normalize(cross(binormal, tangent));
+    float foamOut = clamp(1.0 - jacobian, 0.0, 1.0);
+
+    // Seamless hybrid coupling with Local 96x96 Navier-Stokes/Shallow-Water PDE Grid!
+    vec2 pdeUv = (baseXZ + vec2(uPdeSize * 0.5)) / uPdeSize;
+    if (pdeUv.x > 0.01 && pdeUv.x < 0.99 && pdeUv.y > 0.01 && pdeUv.y < 0.99) {
+      float edgeMask = smoothstep(0.01, 0.14, pdeUv.x) * (1.0 - smoothstep(0.86, 0.99, pdeUv.x))
+                     * smoothstep(0.01, 0.14, pdeUv.y) * (1.0 - smoothstep(0.86, 0.99, pdeUv.y));
+      vec4 loc = texture(uLocalFluid, pdeUv);
+      disp.y += loc.r * edgeMask;
+      surfNormal = normalize(surfNormal - vec3(loc.g, 0.0, loc.b) * edgeMask);
+      foamOut = clamp(foamOut + loc.a * edgeMask, 0.0, 1.0);
+    }
+
+    vec3 worldPos = vec3(baseXZ.x + disp.x, disp.y, baseXZ.y + disp.z);
+    vWorldPos = worldPos;
+    vNormal = surfNormal;
+    vFoam = foamOut;
+    vCrest = clamp(disp.y * 0.9 + 0.25, 0.0, 1.0);
+    vDist = length(worldPos - uCamPos);
+    vWaveHeight = disp.y;
+    gl_Position = uViewProj * vec4(worldPos, 1.0);
+  }
+  `;
+
+  // --- COUPLED OCEAN FRAGMENT SHADER (Supports Both Above-Water & Underwater Snell's Window!) ---
+  const OCEAN_FS = COMMON_ATMO_GLSL + `
+  in vec3 vWorldPos;
+  in vec3 vNormal;
+  in float vFoam;
+  in float vCrest;
+  in float vDist;
+  in float vWaveHeight;
+  out vec4 fragColor;
+
+  uniform vec3 uCamPos;
+  uniform vec3 uSunDir;
+  uniform float uTime;
+  uniform float uDepth;
+  uniform float uFoamThreshold;
+  uniform float uMieScale;
+  uniform float uCloudCover;
+  uniform float uExposure;
+  uniform float uRainIntensity;
+  uniform float uLightning;
+  uniform float uAmpScale;
+  uniform float uWaterIOR;
+  uniform sampler2D uLocalFluid;
+  uniform float uPdeSize;
+
+  float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+  float noise2(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash2(i), hash2(i + vec2(1.0, 0.0)), f.x), mix(hash2(i + vec2(0.0, 1.0)), hash2(i + vec2(1.0, 1.0)), f.x), f.y);
+  }
+  float seaDetail(vec2 p, float t) {
+    mat2 r1 = mat2(0.82, 0.57, -0.57, 0.82), r2 = mat2(0.94, -0.34, 0.34, 0.94);
+    float h = (1.0 - abs(noise2(p * 0.72 + vec2(t * 0.45, t * 0.28)) * 2.0 - 1.0)) * 0.48;
+    h += (1.0 - abs(noise2((r1 * p) * 1.65 - vec2(t * 0.62, -t * 0.36)) * 2.0 - 1.0)) * 0.28;
+    h += noise2((r2 * p) * 3.8 + vec2(t * 0.85, -t * 0.52)) * 0.16;
+    h += noise2(p * 8.2 - vec2(t * 1.1, t * 0.7)) * 0.08;
+    return h;
+  }
+  vec3 microNormal(vec2 p, float t) {
+    float e = 0.055, h0 = seaDetail(p, t);
+    return normalize(vec3((h0 - seaDetail(p + vec2(e, 0.0), t)) * 3.4, 1.0, (h0 - seaDetail(p + vec2(0.0, e), t)) * 3.4));
+  }
+
+  void main() {
+    vec3 V = normalize(uCamPos - vWorldPos);
+    float dayFactor = smoothstep(-0.08, 0.08, uSunDir.y);
+    vec3 L = uSunDir.y >= -0.02 ? uSunDir : normalize(vec3(-uSunDir.x, max(-uSunDir.y, 0.18), -uSunDir.z));
+
+    // Sample high-res local PDE slopes & turbulence foam per fragment too!
+    vec3 N = normalize(vNormal);
+    float pdeFoam = 0.0;
+    vec2 pdeUv = (vWorldPos.xz + vec2(uPdeSize * 0.5)) / uPdeSize;
+    if (pdeUv.x > 0.01 && pdeUv.x < 0.99 && pdeUv.y > 0.01 && pdeUv.y < 0.99) {
+      float edgeMask = smoothstep(0.01, 0.12, pdeUv.x) * (1.0 - smoothstep(0.88, 0.99, pdeUv.x))
+                     * smoothstep(0.01, 0.12, pdeUv.y) * (1.0 - smoothstep(0.88, 0.99, pdeUv.y));
+      vec4 loc = texture(uLocalFluid, pdeUv);
+      N = normalize(N - vec3(loc.g, 0.0, loc.b) * 0.45 * edgeMask);
+      pdeFoam = loc.a * edgeMask;
+    }
+
+    float microAmp = (0.06 + 0.28 * clamp(uAmpScale, 0.0, 1.0)) * ((1.0 - smoothstep(18.0, 165.0, vDist)) * 0.92 + 0.05);
+    vec3 mN = microNormal(vWorldPos.xz, uTime);
+    N = normalize(N + vec3(mN.x, 0.0, mN.z) * microAmp);
+
+    if (uRainIntensity > 0.02 && vDist < 90.0) {
+      float rainFade = (1.0 - smoothstep(12.0, 90.0, vDist)) * uRainIntensity;
+      vec2 rp = vWorldPos.xz * 2.8, cell = floor(rp), f = fract(rp) - 0.5;
+      float tOff = fract(uTime * 1.9 + hash2(cell)), dR = length(f);
+      float ring = sin((dR - tOff * 0.45) * 38.0) * exp(-dR * 8.0) * (1.0 - tOff);
+      N = normalize(N + vec3(f.x, 0.0, f.y) * ring * 0.45 * rainFade);
+    }
+
+    // UNDERWATER VIEW: Snell's Window & Total Internal Reflection (TIR) looking UP at the water surface!
+    if (!gl_FrontFacing || uCamPos.y < vWorldPos.y - 0.05) {
+      vec3 Nu = -N;
+      vec3 refrUp = refract(-V, Nu, uWaterIOR / 1.0003);
+      vec3 col;
+      if (length(refrUp) < 0.01) {
+        // Total Internal Reflection (beyond critical angle ~48.6 deg) -> deep mirror reflection of sea floor/volume
+        col = vec3(0.008, 0.07, 0.12) * mix(0.25, 1.1, dayFactor);
+      } else {
+        // Snell's Window: refracted sky & sun visible through the cone above!
+        vec3 skyIn = fastSkyColor(refrUp, uSunDir, uMieScale);
+        float cosI = clamp(dot(Nu, V), 0.0, 1.0);
+        float fTIR = pow(1.0 - cosI, 4.0);
+        col = mix(skyIn * 0.85, vec3(0.01, 0.09, 0.14), fTIR);
+      }
+      col *= exp(-vDist * vec3(0.24, 0.06, 0.038));
+      col = acesToneMap(col * uExposure);
+      col = pow(col, vec3(1.0 / 2.2));
+      fragColor = vec4(col, 1.0);
+      return;
+    }
+
+    if (dot(N, V) < 0.0) N = normalize(N - V * dot(N, V) + vec3(0.0, 0.05, 0.0));
+
+    float f0 = pow((1.0003 - uWaterIOR) / (1.0003 + uWaterIOR), 2.0);
+    float fresnel = f0 + (1.0 - f0) * pow(1.0 - max(dot(N, V), 0.001), 5.0);
+
+    vec3 R = reflect(-V, N);
+    R.y = max(R.y, 0.004);
+    vec3 reflSky = fastSkyColor(R, uSunDir, uMieScale);
+    if (uCloudCover > 0.02 && R.y > 0.01) {
+      vec2 cuv = R.xz * (2600.0 / (R.y + 0.08)) * 0.00022 + vec2(uTime * 0.0045, uTime * 0.002);
+      float cdens = smoothstep(1.0 - uCloudCover * 0.85, 1.05 - uCloudCover * 0.25, fbmClouds(cuv)) * smoothstep(0.01, 0.16, R.y);
+      vec3 cTint = mix(vec3(0.28, 0.36, 0.54), mix(vec3(1.0, 0.52, 0.28), vec3(1.0, 0.96, 0.90), smoothstep(0.0, 0.35, uSunDir.y)), dayFactor);
+      reflSky = mix(reflSky, cTint * mix(0.25, 1.4, dayFactor), clamp(cdens * 0.75, 0.0, 0.85));
+    }
+
+    float sunZenith = max(L.y, 0.02);
+    vec3 sunCol = exp(-(BETA_R * H_R + vec3(21.0e-6) * uMieScale * 1.11 * H_M) / sunZenith) * mix(vec3(0.45, 0.55, 0.78) * 1.4, vec3(3.4, 3.2, 2.95), dayFactor) * (1.0 - uCloudCover * 0.45);
+    reflSky += sunCol * pow(max(dot(R, L), 0.0), 16.0) * 0.42;
+
+    // Beer-Lambert RGB optical seawater absorption + wave-crest SSS
+    vec3 sigmaRGB = vec3(0.45, 0.068, 0.028);
+    float opticalDepth = mix(9.5, 1.8, clamp(vCrest, 0.0, 1.0));
+    vec3 transmittance = exp(-opticalDepth * sigmaRGB);
+    float backLight = pow(clamp(dot(V, -L + N * 0.45), 0.0, 1.0), 2.8);
+    float crestSSS = (backLight * 0.78 + max(0.0, L.y) * 0.32) * vCrest * 0.95;
+
+    vec3 deepCol = vec3(0.008, 0.055, 0.135);
+    vec3 shallowCol = vec3(0.025, 0.28, 0.36);
+    vec3 waterBody = mix(deepCol, shallowCol, clamp(vCrest * 0.38 + 0.10, 0.0, 1.0)) * (0.65 + 0.55 * transmittance) * mix(0.28, 1.15, dayFactor);
+    vec3 sssColor = vec3(0.02, 0.62, 0.58) * transmittance * crestSSS * sunCol;
+
+    // Aerated turquoise bubble cloud driven directly by PDE turbulence!
+    vec3 aeratedTurquoise = mix(shallowCol * 1.45, vec3(0.18, 0.72, 0.76) * sunCol * 0.55, 0.55);
+    vec3 refractCol = mix(waterBody + sssColor, aeratedTurquoise, clamp(pdeFoam * 0.78, 0.0, 0.82));
+    vec3 col = mix(refractCol, reflSky, clamp(fresnel * 1.12, 0.0, 0.96));
+
+    // Dual-lobe GGX sun sparkle
+    float distRough = smoothstep(80.0, 2200.0, vDist) * 0.14;
+    col += sunCol * (ggxSpec(N, V, L, 0.024 + distRough) * 0.92 + ggxSpec(N, V, L, 0.13 + distRough) * 0.16) * max(dot(N, L), 0.0) * (0.28 + 0.72 * fresnel) * 2.2;
+
+    // Lacy cellular seafoam webbing driven by wave breaking + PDE impact turbulence
+    vec2 foamP = vWorldPos.xz * 1.8;
+    float cellA = 1.0 - abs(noise2(foamP * 1.45 + vec2(uTime * 0.22, -uTime * 0.18)) * 2.0 - 1.0);
+    float cellB = 1.0 - abs(noise2(foamP * 3.8 - vec2(uTime * 0.35, uTime * 0.25)) * 2.0 - 1.0);
+    float lacyWeb = pow(clamp(cellA * 0.58 + cellB * 0.42, 0.0, 1.0), 2.2) * (0.6 + 0.5 * noise2(vWorldPos.xz * 9.5));
+
+    float foamBias = (uFoamThreshold - 0.48) * 0.65;
+    float whitecap = smoothstep(0.56 - foamBias, 0.86 - foamBias, vFoam * 0.85 + lacyWeb * 0.45);
+    float pdeWhite = pdeFoam * (0.35 + 0.85 * lacyWeb);
+    float surfaceFoam = clamp(whitecap * 0.70 + pdeWhite, 0.0, 0.94);
+    if (surfaceFoam > 0.005) {
+      vec3 skyAmb = fastSkyColor(vec3(0.0, 0.85, 0.0), uSunDir, uMieScale);
+      vec3 foamLit = clamp(skyAmb * 0.52 + sunCol * (dot(N, L) * 0.75 + 0.25) * 0.48, vec3(0.0), vec3(1.35));
+      col = mix(col, mix(aeratedTurquoise, foamLit, smoothstep(0.08, 0.55, surfaceFoam)), surfaceFoam);
+    }
+
+    col += vec3(0.45, 0.62, 0.95) * uLightning * fresnel * 0.65;
+    vec3 viewDir = normalize(vWorldPos - uCamPos);
+    vec3 horizonSky = fastSkyColor(vec3(viewDir.x, max(viewDir.y, 0.003), viewDir.z), uSunDir, uMieScale) + vec3(0.45, 0.60, 0.90) * uLightning * 0.5;
+    col = mix(col, horizonSky, clamp(1.0 - exp(-vDist * 0.00018 * (0.65 + 0.65 * uMieScale)), 0.0, 1.0));
+
+    col = acesToneMap(col * uExposure);
+    col = pow(col, vec3(1.0 / 2.2));
+    fragColor = vec4(col, 1.0);
+  }
+  `;
+
+  // --- 3D REFRACTIVE LIQUID MESH SHADER (Crown Sheet, Subsurface Air Cavity & Worthington Jet!) ---
+  // Uses the EXACT same physical optical model as the ocean: Fresnel + Snell refraction + Beer-Lambert + GGX!
+  const LIQUID_VS = `#version 300 es
+  precision highp float;
+  layout(location = 0) in vec3 aPos;
+  layout(location = 1) in vec3 aNorm;
+  layout(location = 2) in float aThick; // 0 (thin translucent rim) .. 1 (thick aerated core)
+  uniform mat4 uViewProj;
+  out vec3 vWorldPos;
+  out vec3 vNorm;
+  out float vThick;
+  void main() {
+    vWorldPos = aPos;
+    vNorm = aNorm;
+    vThick = aThick;
+    gl_Position = uViewProj * vec4(aPos, 1.0);
+  }
+  `;
+
+  const LIQUID_FS = COMMON_ATMO_GLSL + `
+  in vec3 vWorldPos;
+  in vec3 vNorm;
+  in float vThick;
+  out vec4 fragColor;
+
+  uniform vec3 uCamPos;
+  uniform vec3 uSunDir;
+  uniform float uMieScale;
+  uniform float uExposure;
+  uniform float uWaterIOR;
+  uniform float uMode; // 0 = Crown/Jet Liquid Sheet, 1 = Subsurface Air Cavity Shell
+
+  void main() {
+    vec3 N = normalize(vNorm);
+    if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(uCamPos - vWorldPos);
+    float dayF = smoothstep(-0.08, 0.12, uSunDir.y);
+    vec3 L = uSunDir.y >= -0.02 ? uSunDir : normalize(vec3(-uSunDir.x, max(-uSunDir.y, 0.18), -uSunDir.z));
+
+    float NdotV = max(dot(N, V), 0.001);
+    float f0 = pow((1.0003 - uWaterIOR) / (1.0003 + uWaterIOR), 2.0);
+    float fresnel = f0 + (1.0 - f0) * pow(1.0 - NdotV, 5.0);
+
+    vec3 R = reflect(-V, N);
+    vec3 T = refract(-V, N, 1.0003 / uWaterIOR);
+    vec3 reflSky = fastSkyColor(vec3(R.x, max(R.y, 0.03), R.z), uSunDir, uMieScale);
+    vec3 refrBg = fastSkyColor(vec3(T.x, max(T.y, 0.04), T.z), uSunDir, uMieScale);
+    vec3 sunCol = mix(vec3(0.45, 0.55, 0.78) * 1.4, vec3(3.4, 3.2, 2.95), dayF);
+
+    vec3 col;
+    float alpha;
+    if (uMode > 0.5) {
+      // Subsurface Air Cavity Wall: bright silver-cyan total-internal-reflection sheen underwater!
+      float rim = pow(1.0 - NdotV, 2.2);
+      col = mix(vec3(0.08, 0.36, 0.44), vec3(0.75, 0.94, 0.99), rim * 0.85) * mix(0.3, 1.15, dayF);
+      col += sunCol * ggxSpec(N, V, L, 0.08) * 0.45;
+      alpha = clamp(0.32 + rim * 0.55, 0.0, 0.88);
+    } else {
+      // Real Transparent Refractive Liquid Sheet / Worthington Jet Column!
+      // Thin edges transmit refracted background sky/water; thicker aerated rim whitens naturally
+      vec3 beerTrans = exp(-vThick * 0.65 * vec3(0.45, 0.068, 0.028));
+      vec3 refractedLiquid = refrBg * beerTrans * 0.92 + vec3(0.02, 0.26, 0.34) * (1.0 - beerTrans) * mix(0.25, 1.1, dayF);
+      float spec = ggxSpec(N, V, L, 0.032) * 1.15;
+      col = mix(refractedLiquid, reflSky, clamp(fresnel * 1.15, 0.0, 0.95)) + sunCol * spec * max(dot(N, L), 0.0);
+      // Aerated rim froth at the breaking top edge (vThick near 0.15..0.35)
+      float froth = smoothstep(0.55, 0.05, vThick) * 0.35;
+      col = mix(col, vec3(0.88, 0.95, 0.98) * mix(0.35, 1.15, dayF), froth);
+      // Physically based alpha: Fresnel edges + thickness opacity (never solid plastic, never invisible)
+      alpha = clamp(0.24 + fresnel * 0.68 + vThick * 0.38, 0.18, 0.92);
+    }
+
+    col = acesToneMap(col * uExposure);
+    col = pow(col, vec3(1.0 / 2.2));
+    fragColor = vec4(col, alpha);
+  }
+  `;
+
+  // --- 3D RIGID BODY PBR SHADER (Metal, Rough Rock, Bark, Refractive Ice Crystal, Buoy) ---
+  const BODY_VS = `#version 300 es
+  precision highp float;
+  layout(location = 0) in vec3 aPos;
+  layout(location = 1) in vec3 aNorm;
+  uniform mat4 uViewProj;
+  uniform mat4 uModel;
+  out vec3 vWorldPos;
+  out vec3 vLocalPos;
+  out vec3 vNorm;
+  void main() {
+    vec4 wp = uModel * vec4(aPos, 1.0);
+    vWorldPos = wp.xyz;
+    vLocalPos = aPos;
+    vNorm = normalize(mat3(uModel) * aNorm);
+    gl_Position = uViewProj * wp;
+  }
+  `;
+
+  const BODY_FS = COMMON_ATMO_GLSL + `
+  in vec3 vWorldPos;
+  in vec3 vLocalPos;
+  in vec3 vNorm;
+  out vec4 fragColor;
+  uniform vec3 uCamPos;
+  uniform vec3 uSunDir;
+  uniform vec3 uBaseColor;
+  uniform float uRough;
+  uniform float uMetal;
+  uniform float uShapeType; // 0=steel, 1=rock, 2=oak, 3=ice, 4=buoy
+  uniform float uMieScale;
+  uniform float uExposure;
+
+  void main() {
+    vec3 N = normalize(vNorm);
+    vec3 V = normalize(uCamPos - vWorldPos);
+    float dayF = smoothstep(-0.08, 0.08, uSunDir.y);
+    vec3 L = uSunDir.y >= -0.02 ? uSunDir : normalize(vec3(-uSunDir.x, max(-uSunDir.y, 0.18), -uSunDir.z));
+    vec3 skyAmb = fastSkyColor(vec3(0.0, 0.75, 0.0), uSunDir, uMieScale);
+    vec3 direct = mix(vec3(0.4, 0.5, 0.7), vec3(3.2, 3.0, 2.7), dayF);
+
+    vec3 albedo = uBaseColor;
+    if (uShapeType > 0.5 && uShapeType < 1.5) {
+      // Procedural rough granite mineral grain
+      float grain = noise2D(vLocalPos.xy * 12.0 + vLocalPos.z * 7.0);
+      albedo *= 0.72 + 0.52 * grain;
+    } else if (uShapeType > 1.5 && uShapeType < 2.5) {
+      // Procedural oak bark longitudinal grooves
+      float bark = noise2D(vec2(atan(vLocalPos.y, vLocalPos.z) * 5.0, vLocalPos.x * 2.5));
+      albedo *= 0.65 + 0.55 * bark;
+    } else if (uShapeType > 3.5) {
+      // Marine buoy white reflective stripe on collar
+      if (abs(vLocalPos.y) < 0.22) albedo = vec3(0.94, 0.96, 0.98);
+    }
+
+    vec3 R = reflect(-V, N);
+    vec3 envRefl = fastSkyColor(vec3(R.x, max(R.y, 0.02), R.z), uSunDir, uMieScale);
+    float NdotV = max(dot(N, V), 0.001);
+    float F = mix(0.04, 0.92, uMetal) + (1.0 - mix(0.04, 0.92, uMetal)) * pow(1.0 - NdotV, 5.0);
+    float spec = ggxSpec(N, V, L, max(uRough, 0.06));
+    vec3 diffuse = albedo * (1.0 - uMetal) * (direct * max(dot(N, L), 0.0) + skyAmb * 0.75);
+    vec3 specular = mix(vec3(1.0), albedo, uMetal) * (direct * spec * max(dot(N, L), 0.0) * 0.55 + envRefl * F);
+    vec3 col = diffuse + specular;
+
+    // Glacial Ice Crystal internal translucency & refraction highlight
+    if (uShapeType > 2.5 && uShapeType < 3.5) {
+      float internalGlow = pow(1.0 - NdotV, 1.8) * 0.55 + 0.2;
+      col = mix(col, vec3(0.55, 0.88, 0.98) * (direct * 0.35 + skyAmb * 0.9), internalGlow * 0.65);
+    }
+
+    // Beer-Lambert underwater attenuation when submerged
+    if (vWorldPos.y < 0.0) {
+      float dSub = -vWorldPos.y;
+      col *= exp(-dSub * vec3(0.42, 0.085, 0.048));
+    }
+    col = acesToneMap(col * uExposure);
+    col = pow(col, vec3(1.0 / 2.2));
+    fragColor = vec4(col, 1.0);
+  }
+  `;
+
+  // --- REFRACTIVE BALLISTIC DROPLET & UNDERWATER BUBBLE SHADER ---
+  // Renders glinting Fresnel-rimmed refractive water drops (NOT flat white dots or smoke!)
+  const DROP_VS = `#version 300 es
+  precision highp float;
+  layout(location = 0) in vec3 aPos;
+  layout(location = 1) in float aLife;
+  layout(location = 2) in float aRadius;
+  layout(location = 3) in float aKind;
+  uniform mat4 uViewProj;
+  uniform vec3 uCamPos;
+  out float vLife;
+  out float vKind;
+  void main() {
+    vLife = aLife;
+    vKind = aKind;
+    float d = max(length(aPos - uCamPos), 1.5);
+    gl_Position = uViewProj * vec4(aPos, 1.0);
+    gl_PointSize = aLife > 0.0 ? clamp((aRadius * 480.0) / d, 2.0, 20.0) : 0.0;
+  }
+  `;
+
+  const DROP_FS = `#version 300 es
+  precision highp float;
+  in float vLife;
+  in float vKind;
+  out vec4 fragColor;
+  uniform vec3 uSunDir;
+  void main() {
+    if (vLife <= 0.0) discard;
+    vec2 pc = gl_PointCoord * 2.0 - 1.0;
+    float r2 = dot(pc, pc);
+    if (r2 > 1.0) discard;
+    // Reconstruct spherical normal on the droplet for true Fresnel rim + specular glint!
+    float nz = sqrt(max(0.0, 1.0 - r2));
+    vec3 nDrop = normalize(vec3(pc.x, -pc.y, nz));
+    float fres = 0.04 + 0.96 * pow(1.0 - nz, 4.0);
+    float glint = pow(max(dot(nDrop, normalize(vec3(0.4, 0.7, 0.6))), 0.0), 28.0);
+    float dayF = smoothstep(-0.08, 0.14, uSunDir.y);
+
+    vec3 col;
+    float alpha;
+    if (vKind > 0.5) {
+      // Underwater buoyant air bubble: crisp silver-cyan Fresnel rim
+      col = mix(vec3(0.12, 0.45, 0.55), vec3(0.88, 0.98, 1.0), fres + glint * 0.8) * mix(0.35, 1.1, dayF);
+      alpha = clamp(0.28 + fres * 0.65 + glint * 0.5, 0.0, 0.92);
+    } else {
+      // Transparent refractive water droplet: dark-cyan core, bright sky Fresnel rim + sharp sun specular!
+      vec3 coreCol = vec3(0.08, 0.28, 0.36) * mix(0.3, 1.0, dayF);
+      vec3 rimCol  = vec3(0.82, 0.93, 0.98) * mix(0.35, 1.15, dayF);
+      col = mix(coreCol, rimCol, fres * 0.85) + vec3(1.0, 0.98, 0.94) * glint * 1.4 * dayF;
+      alpha = clamp(0.35 + fres * 0.55 + glint * 0.5, 0.0, 0.92);
+    }
+    fragColor = vec4(col, alpha);
+  }
+  `;
+
+  const RAIN_VS = `#version 300 es
+  precision highp float;
+  layout(location = 0) in vec3 aPos;
+  uniform mat4 uViewProj;
+  void main() { gl_Position = uViewProj * vec4(aPos, 1.0); }
+  `;
+  const RAIN_FS = `#version 300 es
+  precision highp float;
+  out vec4 fragColor;
+  uniform float uRainAlpha;
+  void main() { fragColor = vec4(0.76, 0.86, 0.96, uRainAlpha); }
+  `;
+
+  function compileShader(type, src) {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(sh));
+    return sh;
+  }
+  function createProgram(vsSrc, fsSrc) {
+    const p = gl.createProgram();
+    gl.attachShader(p, compileShader(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(p, compileShader(gl.FRAGMENT_SHADER, fsSrc));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p));
+    return p;
+  }
+
+  const skyProg = createProgram(SKY_VS, SKY_FS);
+  const oceanProg = createProgram(OCEAN_VS, OCEAN_FS);
+  const liquidProg = createProgram(LIQUID_VS, LIQUID_FS);
+  const bodyProg = createProgram(BODY_VS, BODY_FS);
+  const dropProg = createProgram(DROP_VS, DROP_FS);
+  const rainProg = createProgram(RAIN_VS, RAIN_FS);
+
+  // =========================================================================
+  // 5. GEOMETRY BUILDERS (Ocean + 5 Distinct 3D Material Meshes + Dynamic 3D Liquid Mesh)
+  // =========================================================================
+  const skyVao = gl.createVertexArray();
+
+  // High-density Cartesian ocean grid (ultra-fine over the 32m PDE zone, stretching 2200m to horizon)
+  const GRID_N = 180;
+  const oceanVerts = new Float32Array((GRID_N + 1) * (GRID_N + 1) * 2);
+  let vi = 0;
+  for (let iz = 0; iz <= GRID_N; iz++) {
+    const nz = (iz / GRID_N) * 2.0 - 1.0;
+    const wz = Math.sign(nz) * (Math.abs(nz) * 24.0 + Math.pow(Math.abs(nz), 3.0) * 2200.0);
+    for (let ix = 0; ix <= GRID_N; ix++) {
+      const nx = (ix / GRID_N) * 2.0 - 1.0;
+      const wx = Math.sign(nx) * (Math.abs(nx) * 24.0 + Math.pow(Math.abs(nx), 3.0) * 2200.0);
+      oceanVerts[vi++] = wx; oceanVerts[vi++] = wz;
+    }
+  }
+  const oceanIndices = new Uint32Array(GRID_N * GRID_N * 6);
+  let ii = 0;
+  const stride = GRID_N + 1;
+  for (let iz = 0; iz < GRID_N; iz++) {
+    for (let ix = 0; ix < GRID_N; ix++) {
+      const i0 = iz * stride + ix, i1 = i0 + 1, i2 = i0 + stride, i3 = i2 + 1;
+      oceanIndices[ii++] = i0; oceanIndices[ii++] = i2; oceanIndices[ii++] = i1;
+      oceanIndices[ii++] = i1; oceanIndices[ii++] = i2; oceanIndices[ii++] = i3;
+    }
+  }
+  const oceanVao = gl.createVertexArray();
+  gl.bindVertexArray(oceanVao);
+  const oceanVbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, oceanVbo);
+  gl.bufferData(gl.ARRAY_BUFFER, oceanVerts, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const oceanEbo = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, oceanEbo);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, oceanIndices, gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+
+  // Helper to upload a triangle soup mesh (pos + smooth/flat normals) into a VAO
+  function makeBodyVao(posArr, normArr) {
+    const vao = gl.createVertexArray();
+    gl.bindVertexArray(vao);
+    const pb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, pb);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(posArr), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    const nb = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, nb);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normArr), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+    return { vao, count: posArr.length / 3 };
+  }
+  function pushTriFlat(posArr, normArr, a, b, c) {
+    const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+    const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+    let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+    for (const p of [a, b, c]) { posArr.push(p[0], p[1], p[2]); normArr.push(nx, ny, nz); }
+  }
+
+  // 1. Steel Sphere (smooth UV sphere)
+  function buildSphereMesh(displaceFn, flat) {
+    const P = [], N = [], LAT = 14, LON = 22;
+    const pt = (la, lo) => {
+      const th = (la / LAT) * Math.PI, ph = (lo / LON) * Math.PI * 2.0;
+      const x = Math.sin(th) * Math.cos(ph), y = Math.cos(th), z = Math.sin(th) * Math.sin(ph);
+      const r = displaceFn ? displaceFn(x, y, z) : 1.0;
+      return [x * r, y * r, z * r];
+    };
+    for (let la = 0; la < LAT; la++) {
+      for (let lo = 0; lo < LON; lo++) {
+        const p00 = pt(la, lo), p10 = pt(la + 1, lo), p01 = pt(la, lo + 1), p11 = pt(la + 1, lo + 1);
+        if (flat) {
+          pushTriFlat(P, N, p00, p10, p11); pushTriFlat(P, N, p00, p11, p01);
+        } else {
+          for (const tri of [[p00, p10, p11], [p00, p11, p01]]) {
+            for (const p of tri) { const l = Math.hypot(p[0], p[1], p[2]) || 1; P.push(p[0], p[1], p[2]); N.push(p[0]/l, p[1]/l, p[2]/l); }
+          }
+        }
+      }
+    }
+    return makeBodyVao(P, N);
+  }
+
+  // 2. Cylindrical Oak Timber Log (along X axis, length = 3.6*R)
+  function buildCylinderMesh() {
+    const P = [], N = [], SEGS = 20, hL = 1.85;
+    for (let i = 0; i < SEGS; i++) {
+      const a0 = (i / SEGS) * Math.PI * 2.0, a1 = ((i + 1) / SEGS) * Math.PI * 2.0;
+      const r0 = 0.94 + 0.08 * Math.sin(a0 * 5.0), r1 = 0.94 + 0.08 * Math.sin(a1 * 5.0);
+      const p00 = [-hL, Math.cos(a0) * r0, Math.sin(a0) * r0];
+      const p01 = [ hL, Math.cos(a0) * r0, Math.sin(a0) * r0];
+      const p10 = [-hL, Math.cos(a1) * r1, Math.sin(a1) * r1];
+      const p11 = [ hL, Math.cos(a1) * r1, Math.sin(a1) * r1];
+      pushTriFlat(P, N, p00, p10, p11); pushTriFlat(P, N, p00, p11, p01);
+      pushTriFlat(P, N, [-hL, 0, 0], p10, p00);
+      pushTriFlat(P, N, [ hL, 0, 0], p01, p11);
+    }
+    return makeBodyVao(P, N);
+  }
+
+  // 3. Conical Marine Buoy (keel + wide collar + conical top + beacon)
+  function buildBuoyMesh() {
+    const P = [], N = [], SEGS = 20;
+    const profile = [[-1.1, 0.15], [-0.45, 0.55], [-0.15, 1.05], [0.20, 1.05], [0.55, 0.62], [1.15, 0.14], [1.45, 0.08]];
+    for (let r = 0; r < profile.length - 1; r++) {
+      const y0 = profile[r][0], rad0 = profile[r][1];
+      const y1 = profile[r + 1][0], rad1 = profile[r + 1][1];
+      for (let i = 0; i < SEGS; i++) {
+        const a0 = (i / SEGS) * Math.PI * 2.0, a1 = ((i + 1) / SEGS) * Math.PI * 2.0;
+        const p00 = [Math.cos(a0) * rad0, y0, Math.sin(a0) * rad0];
+        const p10 = [Math.cos(a1) * rad0, y0, Math.sin(a1) * rad0];
+        const p01 = [Math.cos(a0) * rad1, y1, Math.sin(a0) * rad1];
+        const p11 = [Math.cos(a1) * rad1, y1, Math.sin(a1) * rad1];
+        pushTriFlat(P, N, p00, p01, p11); pushTriFlat(P, N, p00, p11, p10);
+      }
+    }
+    return makeBodyVao(P, N);
+  }
+
+  const SHAPE_MESHES = {
+    sphere:   buildSphereMesh(null, false),
+    rock:     buildSphereMesh((x, y, z) => 0.84 + 0.24 * Math.sin(x * 3.7 + y * 2.9) + 0.16 * Math.cos(z * 4.5 - x * 2.3), true),
+    crystal:  buildSphereMesh((x, y, z) => 0.88 + 0.22 * Math.abs(Math.sin(x * 2.5) * Math.cos(z * 2.5)) + 0.15 * Math.sign(y) * y * y, true),
+    cylinder: buildCylinderMesh(),
+    buoy:     buildBuoyMesh()
+  };
+
+  // Dynamic GPU Buffer for 3D Refractive Liquid Meshes (Crown Sheet, Subsurface Cavity, Worthington Jet)
+  const MAX_LIQ_VERTS = 16000;
+  const liqPosArr = new Float32Array(MAX_LIQ_VERTS * 3);
+  const liqNormArr = new Float32Array(MAX_LIQ_VERTS * 3);
+  const liqThickArr = new Float32Array(MAX_LIQ_VERTS);
+  const liqVao = gl.createVertexArray();
+  gl.bindVertexArray(liqVao);
+  const liqPosBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, liqPosBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, liqPosArr, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  const liqNormBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, liqNormBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, liqNormArr, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 0, 0);
+  const liqThickBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, liqThickBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, liqThickArr, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
+  function buildDynamicLiquidRingMesh(ringCount, segCount, evalRingPt) {
+    let vCount = 0;
+    const pts = [];
+    for (let r = 0; r <= ringCount; r++) {
+      const row = [];
+      const vr = r / ringCount;
+      for (let s = 0; s <= segCount; s++) {
+        const ang = (s / segCount) * Math.PI * 2.0;
+        row.push(evalRingPt(vr, ang));
+      }
+      pts.push(row);
+    }
+    for (let r = 0; r < ringCount; r++) {
+      for (let s = 0; s < segCount; s++) {
+        const a = pts[r][s], b = pts[r + 1][s], c = pts[r + 1][s + 1], d = pts[r][s + 1];
+        for (const tri of [[a, b, c], [a, c, d]]) {
+          if (vCount + 3 > MAX_LIQ_VERTS) return vCount;
+          const p0 = tri[0], p1 = tri[1], p2 = tri[2];
+          const ux = p1[0] - p0[0], uy = p1[1] - p0[1], uz = p1[2] - p0[2];
+          const vx = p2[0] - p0[0], vy = p2[1] - p0[1], vz = p2[2] - p0[2];
+          let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+          const l = Math.hypot(nx, ny, nz) || 1; nx /= l; ny /= l; nz /= l;
+          for (const p of tri) {
+            liqPosArr[vCount * 3] = p[0]; liqPosArr[vCount * 3 + 1] = p[1]; liqPosArr[vCount * 3 + 2] = p[2];
+            liqNormArr[vCount * 3] = nx; liqNormArr[vCount * 3 + 1] = ny; liqNormArr[vCount * 3 + 2] = nz;
+            liqThickArr[vCount] = p[3];
+            vCount++;
+          }
+        }
+      }
+    }
+    return vCount;
+  }
+
+  // Refractive droplets VAO
+  const dropVao = gl.createVertexArray();
+  gl.bindVertexArray(dropVao);
+  const dropPosBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, dropPosBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, dropPos, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  const dropLifeBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, dropLifeBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, dropLife, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 1, gl.FLOAT, false, 0, 0);
+  const dropRadBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, dropRadBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, dropRadius, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 1, gl.FLOAT, false, 0, 0);
+  const dropKindBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, dropKindBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, dropKind, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
+  // Rain streaks VAO
+  const RAIN_COUNT = 450;
+  const rainSeeds = Array.from({ length: RAIN_COUNT }, () => [(Math.random() - 0.5) * 65, Math.random() * 32, (Math.random() - 0.5) * 65]);
+  const rainVerts = new Float32Array(RAIN_COUNT * 6);
+  const rainVao = gl.createVertexArray();
+  gl.bindVertexArray(rainVao);
+  const rainBuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, rainBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, rainVerts, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
+  // =========================================================================
+  // 6. MAT4 LINEAR ALGEBRA
+  // =========================================================================
+  function mat4Perspective(fovRad, aspect, near, far) {
+    const f = 1.0 / Math.tan(fovRad * 0.5), nf = 1.0 / (near - far);
+    return new Float32Array([f / aspect, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0]);
+  }
+  function mat4LookAt(eye, target, up) {
+    let zx = eye[0] - target[0], zy = eye[1] - target[1], zz = eye[2] - target[2];
+    let zl = Math.hypot(zx, zy, zz) || 1; zx /= zl; zy /= zl; zz /= zl;
+    let xx = up[1] * zz - up[2] * zy, xy = up[2] * zx - up[0] * zz, xz = up[0] * zy - up[1] * zx;
+    let xl = Math.hypot(xx, xy, xz) || 1; xx /= xl; xy /= xl; xz /= xl;
+    let yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+    return new Float32Array([
+      xx, yx, zx, 0, xy, yy, zy, 0, xz, yz, zz, 0,
+      -(xx * eye[0] + xy * eye[1] + xz * eye[2]),
+      -(yx * eye[0] + yy * eye[1] + yz * eye[2]),
+      -(zx * eye[0] + zy * eye[1] + zz * eye[2]), 1
+    ]);
+  }
+  function mat4Mul(a, b) {
+    const out = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      out[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+    return out;
+  }
+  function mat4Invert(m) {
+    const inv = new Float32Array(16);
+    inv[0]  =  m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+    inv[4]  = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+    inv[8]  =  m[4]*m[9]*m[15]  - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+    inv[12] = -m[4]*m[9]*m[14]  + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+    inv[1]  = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+    inv[5]  =  m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+    inv[9]  = -m[0]*m[9]*m[15]  + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+    inv[13] =  m[0]*m[9]*m[14]  - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+    inv[2]  =  m[1]*m[6]*m[15]  - m[1]*m[7]*m[14]  - m[5]*m[2]*m[15] + m[5]*m[3]*m[14] + m[13]*m[2]*m[7]  - m[13]*m[3]*m[6];
+    inv[6]  = -m[0]*m[6]*m[15]  + m[0]*m[7]*m[14]  + m[4]*m[2]*m[15] - m[4]*m[3]*m[14] - m[12]*m[2]*m[7]  + m[12]*m[3]*m[6];
+    inv[10] =  m[0]*m[5]*m[15]  - m[0]*m[7]*m[13]  - m[4]*m[1]*m[15] + m[4]*m[3]*m[13] + m[12]*m[1]*m[7]  - m[12]*m[3]*m[5];
+    inv[14] = -m[0]*m[5]*m[14]  + m[0]*m[6]*m[13]  + m[4]*m[1]*m[14] - m[4]*m[2]*m[13] - m[12]*m[1]*m[6]  + m[12]*m[2]*m[5];
+    inv[3]  = -m[1]*m[6]*m[11]  + m[1]*m[7]*m[10]  + m[5]*m[2]*m[11] - m[5]*m[3]*m[10] - m[9]*m[2]*m[7]   + m[9]*m[3]*m[6];
+    inv[7]  =  m[0]*m[6]*m[11]  - m[0]*m[7]*m[10]  - m[4]*m[2]*m[11] + m[4]*m[3]*m[10] + m[8]*m[2]*m[7]   - m[8]*m[3]*m[6];
+    inv[11] = -m[0]*m[5]*m[11]  + m[0]*m[7]*m[9]   + m[4]*m[1]*m[11] - m[4]*m[3]*m[9]  - m[8]*m[1]*m[7]   + m[8]*m[3]*m[5];
+    inv[15] =  m[0]*m[5]*m[10]  - m[0]*m[6]*m[9]   - m[4]*m[1]*m[10] + m[4]*m[2]*m[9]  + m[8]*m[1]*m[6]   - m[8]*m[2]*m[5];
+    let det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+    if (Math.abs(det) < 1e-8) return new Float32Array(16);
+    det = 1.0 / det;
+    for (let i = 0; i < 16; i++) inv[i] *= det;
+    return inv;
+  }
+  function mat4BodyModel(x, y, z, yaw, pitch, roll, s) {
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const cr = Math.cos(roll), sr = Math.sin(roll);
+    return new Float32Array([
+      (cy*cr + sy*sp*sr)*s,  (cp*sr)*s,  (-sy*cr + cy*sp*sr)*s, 0,
+      (-cy*sr + sy*sp*cr)*s, (cp*cr)*s,  (sy*sr + cy*sp*cr)*s,  0,
+      (sy*cp)*s,             (-sp)*s,    (cy*cp)*s,             0,
+      x, y, z, 1
+    ]);
+  }
+
+  // =========================================================================
+  // 7. INTERACTION & UI BINDINGS
+  // =========================================================================
+  let dragging = false, lastX = 0, lastY = 0;
+  canvas.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    state.camYaw -= (e.clientX - lastX) * 0.0055;
+    state.camPitch = Math.max(-0.55, Math.min(1.38, state.camPitch + (e.clientY - lastY) * 0.0045));
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  canvas.addEventListener('pointerup', () => { dragging = false; });
+  canvas.addEventListener('pointercancel', () => { dragging = false; });
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    state.camDist = Math.max(5.5, Math.min(110.0, state.camDist * (1.0 + e.deltaY * 0.001)));
+  }, { passive: false });
+
+  window.addEventListener('keydown', (e) => {
+    if (document.activeElement.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+    if (e.code === 'Period') { state.paused = true; state.stepOnce = true; $('btnPause').textContent = 'Devam'; }
+    if (e.code === 'KeyH') togglePanel();
+    if (e.code === 'KeyF') { e.preventDefault(); dropMaterial(0, 0); }
+  });
+
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.0);
+    const w = Math.max(320, Math.floor(window.innerWidth * dpr));
+    const h = Math.max(200, Math.floor(window.innerHeight * dpr));
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  }
+  window.addEventListener('resize', resizeCanvas);
+
+  const $ = (id) => document.getElementById(id);
+
+  function syncUi() {
+    const clk = formatClock(state.timeOfDay);
+    $('hudClock').textContent = clk;
+    $('valTimeOfDay').textContent = clk;
+    $('slTimeOfDay').value = state.timeOfDay;
+    $('valWind').textContent = state.windSpeed.toFixed(1) + ' m/s';
+    $('slWind').value = state.windSpeed;
+    $('valChoppy').textContent = state.choppiness.toFixed(2);
+    $('slChoppy').value = state.choppiness;
+    $('valDepth').textContent = Math.round(state.depth) + ' m';
+    $('slDepth').value = state.depth;
+    $('valClouds').textContent = Math.round(state.cloudCover * 100) + '%';
+    $('slClouds').value = state.cloudCover;
+    $('valDropH').textContent = state.dropHeight.toFixed(1) + ' m';
+    $('slDropH').value = state.dropHeight;
+    $('valEntryAng').textContent = Math.round(state.entryAngleDeg) + '°';
+    $('slEntryAng').value = state.entryAngleDeg;
+    $('valDropScale').textContent = state.dropScale.toFixed(2) + '×';
+    $('slDropScale').value = state.dropScale;
+    $('hudWeather').textContent = (WEATHER_MODES[state.weather] || WEATHER_MODES.clear).label;
+    $('hudTimeScale').textContent = state.timeScale.toFixed(2) + '×';
+    $('hudQuality').textContent = QUALITY_MODES[state.quality].label;
+    const w = PHYS.water;
+    $('ndFluid').textContent = `ρ=${w.rho} · μ=${w.mu.toExponential(2)} · σ=${w.sigma}`;
+  }
+
+  function togglePause() {
+    state.paused = !state.paused;
+    $('btnPause').textContent = state.paused ? 'Devam' : 'Duraklat';
+  }
+  function togglePanel() {
+    state.panelOpen = !state.panelOpen;
+    $('controlPanel').style.transform = state.panelOpen ? 'translateX(0)' : 'translateX(calc(100% + 24px))';
+  }
+
+  $('btnPause').addEventListener('click', togglePause);
+  $('btnStepFrame').addEventListener('click', () => { state.paused = true; state.stepOnce = true; $('btnPause').textContent = 'Devam'; });
+  $('btnTogglePanel').addEventListener('click', togglePanel);
+  $('btnClosePanel').addEventListener('click', togglePanel);
+  $('btnQuickDrop').addEventListener('click', () => dropMaterial(0, 0));
+  $('btnDropNow').addEventListener('click', () => dropMaterial(0, 0));
+  $('btnMultiDrop').addEventListener('click', () => { dropMaterial(-2.4, 0); dropMaterial(2.4, 0.4); });
+  $('btnClearDrops').addEventListener('click', () => {
+    bodies.length = 0; liquidStructures.length = 0; dropLife.fill(0); clearLocalPDE(); latestBody = null;
+    $('stState').textContent = 'Hazır'; $('stImp').textContent = '--'; $('stSub').textContent = '-- %'; $('stCav').textContent = '--';
+  });
+
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach((c) => c.classList.add('hidden'));
+      btn.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.remove('hidden');
+    });
+  });
+
+  document.querySelectorAll('.mat-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.selectedMat = btn.dataset.mat;
+      document.querySelectorAll('.mat-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.weather-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const w = WEATHER_MODES[btn.dataset.weather];
+      if (!w) return;
+      state.weather = btn.dataset.weather;
+      state.windSpeed = w.windSpeed; state.cloudCover = w.cloudCover; state.mieScale = w.mieScale;
+      state.choppiness = w.choppiness; state.foamThreshold = w.foamThreshold; state.rainIntensity = w.rain;
+      document.querySelectorAll('.weather-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncUi();
+    });
+  });
+
+  document.querySelectorAll('.water-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.waterKey = btn.dataset.water;
+      PHYS.water = WATER_TYPES[state.waterKey];
+      document.querySelectorAll('.water-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncUi();
+    });
+  });
+
+  document.querySelectorAll('.qual-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.quality = btn.dataset.qual;
+      document.querySelectorAll('.qual-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncUi();
+    });
+  });
+
+  document.querySelectorAll('.time-btn').forEach((btn) => {
+    btn.addEventListener('click', () => { applyTimeOfDay(parseFloat(btn.dataset.hour)); syncUi(); });
+  });
+
+  document.querySelectorAll('.spd-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.timeScale = parseFloat(btn.dataset.spd);
+      document.querySelectorAll('.spd-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      syncUi();
+    });
+  });
+
+  document.querySelectorAll('.cam-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.camMode = btn.dataset.cam;
+      document.querySelectorAll('.cam-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (state.camMode === 'grazing') { state.camPitch = 0.08; state.camDist = 14.0; }
+      else if (state.camMode === 'split') { state.camPitch = 0.01; state.camDist = 11.5; }
+      else if (state.camMode === 'underwater') { state.camPitch = -0.18; state.camDist = 12.5; }
+      else if (state.camMode === 'aerial') { state.camPitch = 0.85; state.camDist = 42.0; }
+      else { state.camPitch = 0.24; state.camDist = 22.0; }
+    });
+  });
+
+  $('slTimeOfDay').addEventListener('input', (e) => { applyTimeOfDay(parseFloat(e.target.value)); syncUi(); });
+  $('chkAutoTime').addEventListener('change', (e) => { state.autoTime = e.target.checked; });
+  $('slWind').addEventListener('input', (e) => { state.windSpeed = parseFloat(e.target.value); syncUi(); });
+  $('slChoppy').addEventListener('input', (e) => { state.choppiness = parseFloat(e.target.value); syncUi(); });
+  $('slDepth').addEventListener('input', (e) => { state.depth = parseFloat(e.target.value); syncUi(); });
+  $('slClouds').addEventListener('input', (e) => { state.cloudCover = parseFloat(e.target.value); syncUi(); });
+  $('slDropH').addEventListener('input', (e) => { state.dropHeight = parseFloat(e.target.value); syncUi(); });
+  $('slEntryAng').addEventListener('input', (e) => { state.entryAngleDeg = parseFloat(e.target.value); syncUi(); });
+  $('slDropScale').addEventListener('input', (e) => { state.dropScale = parseFloat(e.target.value); syncUi(); });
+
+  // Uniform locations
+  const skyLoc = {
+    invVP: gl.getUniformLocation(skyProg, 'uInvViewProj'), camPos: gl.getUniformLocation(skyProg, 'uCamPos'),
+    sunDir: gl.getUniformLocation(skyProg, 'uSunDir'), mie: gl.getUniformLocation(skyProg, 'uMieScale'),
+    clouds: gl.getUniformLocation(skyProg, 'uCloudCover'), time: gl.getUniformLocation(skyProg, 'uTime'),
+    exp: gl.getUniformLocation(skyProg, 'uExposure'), lightning: gl.getUniformLocation(skyProg, 'uLightning')
+  };
+  const ocLoc = {
+    vp: gl.getUniformLocation(oceanProg, 'uViewProj'), camPos: gl.getUniformLocation(oceanProg, 'uCamPos'),
+    sunDir: gl.getUniformLocation(oceanProg, 'uSunDir'), time: gl.getUniformLocation(oceanProg, 'uTime'),
+    amp: gl.getUniformLocation(oceanProg, 'uAmpScale'), depth: gl.getUniformLocation(oceanProg, 'uDepth'),
+    foam: gl.getUniformLocation(oceanProg, 'uFoamThreshold'), mie: gl.getUniformLocation(oceanProg, 'uMieScale'),
+    clouds: gl.getUniformLocation(oceanProg, 'uCloudCover'), exp: gl.getUniformLocation(oceanProg, 'uExposure'),
+    rain: gl.getUniformLocation(oceanProg, 'uRainIntensity'), lightning: gl.getUniformLocation(oceanProg, 'uLightning'),
+    ior: gl.getUniformLocation(oceanProg, 'uWaterIOR'), localFluid: gl.getUniformLocation(oceanProg, 'uLocalFluid'),
+    pdeSize: gl.getUniformLocation(oceanProg, 'uPdeSize')
+  };
+  const liqLoc = {
+    vp: gl.getUniformLocation(liquidProg, 'uViewProj'), camPos: gl.getUniformLocation(liquidProg, 'uCamPos'),
+    sunDir: gl.getUniformLocation(liquidProg, 'uSunDir'), mie: gl.getUniformLocation(liquidProg, 'uMieScale'),
+    exp: gl.getUniformLocation(liquidProg, 'uExposure'), ior: gl.getUniformLocation(liquidProg, 'uWaterIOR'),
+    mode: gl.getUniformLocation(liquidProg, 'uMode')
+  };
+  const bdLoc = {
+    vp: gl.getUniformLocation(bodyProg, 'uViewProj'), model: gl.getUniformLocation(bodyProg, 'uModel'),
+    camPos: gl.getUniformLocation(bodyProg, 'uCamPos'), sunDir: gl.getUniformLocation(bodyProg, 'uSunDir'),
+    color: gl.getUniformLocation(bodyProg, 'uBaseColor'), rough: gl.getUniformLocation(bodyProg, 'uRough'),
+    metal: gl.getUniformLocation(bodyProg, 'uMetal'), shapeType: gl.getUniformLocation(bodyProg, 'uShapeType'),
+    mie: gl.getUniformLocation(bodyProg, 'uMieScale'), exp: gl.getUniformLocation(bodyProg, 'uExposure')
+  };
+  const drLoc = {
+    vp: gl.getUniformLocation(dropProg, 'uViewProj'), camPos: gl.getUniformLocation(dropProg, 'uCamPos'),
+    sunDir: gl.getUniformLocation(dropProg, 'uSunDir')
+  };
+  const rnLoc = { vp: gl.getUniformLocation(rainProg, 'uViewProj'), alpha: gl.getUniformLocation(rainProg, 'uRainAlpha') };
+
+  // =========================================================================
+  // 8. FIXED-TIMESTEP ACCUMULATOR PHYSICS LOOP & RENDERER
+  // =========================================================================
+  if (window.innerWidth < 768) {
+    state.panelOpen = false;
+    $('controlPanel').style.transform = 'translateX(calc(100% + 24px))';
+  }
+  syncUi();
+  resizeCanvas();
+
+  let prevNow = performance.now();
+  let accumulator = 0.0;
+  let hudTimer = 0, fpsAccum = 0, fpsFrames = 0;
+
+  function frame(now) {
+    const rawDt = Math.min((now - prevNow) * 0.001, 0.05);
+    prevNow = now;
+
+    // Frame-rate independent fixed timestep with adaptive substepping (120 / 180 / 240 Hz)
+    const fixedDt = 1.0 / QUALITY_MODES[state.quality].hz;
+    if (!state.paused) {
+      accumulator += rawDt * state.timeScale;
+      let steps = 0;
+      const maxSteps = 12;
+      while (accumulator >= fixedDt && steps < maxSteps) {
+        state.simTime += fixedDt;
+        stepFixedPhysics(fixedDt);
+        accumulator -= fixedDt;
+        steps++;
+      }
+      if (state.autoTime) applyTimeOfDay(state.timeOfDay + rawDt * 0.35);
+      if (state.weather === 'storm') {
+        state.nextLightningIn -= rawDt;
+        if (state.nextLightningIn <= 0) { state.lightningFlash = 1.0; state.nextLightningIn = 3.0 + Math.random() * 6.0; }
+      }
+      state.lightningFlash *= Math.exp(-rawDt * 6.5);
+      if (state.lightningFlash < 0.005) state.lightningFlash = 0;
+    } else if (state.stepOnce) {
+      state.stepOnce = false;
+      state.simTime += fixedDt;
+      stepFixedPhysics(fixedDt);
+    }
+
+    // Upload updated 96x96 local coupled fluid PDE field to GPU
+    packLocalPDETexture();
+    gl.bindTexture(gl.TEXTURE_2D, pdeTex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, PDE_N, PDE_N, gl.RGBA, gl.FLOAT, pdeRGBA);
+
+    // Telemetry updates
+    fpsAccum += rawDt; fpsFrames++; hudTimer += rawDt;
+    if (hudTimer >= 0.25) {
+      state.fps = fpsFrames / Math.max(fpsAccum, 0.001);
+      $('hudFps').textContent = Math.round(state.fps);
+      $('hudCfl').textContent = state.cflNumber.toFixed(2);
+      $('ndMass').textContent = (state.meanEtaError >= 0 ? '+' : '') + state.meanEtaError.toFixed(4) + ' m';
+      fpsAccum = 0; fpsFrames = 0; hudTimer = 0;
+
+      if (state.autoTime) {
+        const clk = formatClock(state.timeOfDay);
+        $('hudClock').textContent = clk; $('valTimeOfDay').textContent = clk; $('slTimeOfDay').value = state.timeOfDay;
+      }
+      if (latestBody) {
+        const b = latestBody;
+        $('stState').textContent = b.status;
+        $('stImp').textContent = b.hitWater ? `${b.vImp.toFixed(1)} m/s · ${(b.ekImp / 1000).toFixed(1)} kJ` : '--';
+        $('stSub').textContent = (b.subFrac * 100).toFixed(1) + ' %';
+        const st = b.cavStruct;
+        $('stCav').textContent = st ? (st.jetActive ? `Jet ${st.jetH.toFixed(1)}m` : (st.formsCavity ? `Kavite ${st.cavDepth.toFixed(1)}m` : 'Kavite Yok')) : '--';
+        if (b.hitWater) {
+          $('ndRe').textContent = b.re.toExponential(2);
+          $('ndWe').textContent = b.we.toFixed(0);
+          $('ndFr').textContent = b.fr.toFixed(2);
+          $('ndBo').textContent = b.bo.toExponential(2);
+        }
+      }
+    }
+
+    // Camera computation (supports Above Water, Split Over/Under, Underwater Cavity & Body Follow!)
+    let tgtX = 0, tgtY = 1.2, tgtZ = 0;
+    if ((state.camMode === 'free' || state.camMode === 'grazing') && latestBody && !latestBody.hitWater) {
+      tgtX = latestBody.x * 0.5; tgtY = Math.min(latestBody.y * 0.55, 10.0); tgtZ = latestBody.z * 0.5;   // düşen cismi kadrajda tut
+    } else if (state.camMode === 'follow' && latestBody) {
+      tgtX = latestBody.x; tgtY = Math.max(-14.0, latestBody.y); tgtZ = latestBody.z;
+    } else if (state.camMode === 'underwater') {
+      tgtY = -2.2;
+    } else if (state.camMode === 'split') {
+      tgtY = -0.12;
+    }
+    const desCamX = tgtX + Math.sin(state.camYaw) * Math.cos(state.camPitch) * state.camDist;
+    let desCamY = tgtY + Math.sin(state.camPitch) * state.camDist;
+    if (state.camMode === 'free' || state.camMode === 'grazing' || state.camMode === 'aerial') {
+      desCamY = Math.max(1.2, desCamY);
+    } else if (state.camMode === 'underwater') {
+      desCamY = Math.min(-0.9, desCamY);
+    } else if (state.camMode === 'split') {
+      desCamY = -0.04;
+    }
+    const desCamZ = tgtZ + Math.cos(state.camYaw) * Math.cos(state.camPitch) * state.camDist;
+    const lerpF = 1.0 - Math.exp(-rawDt * 9.0);
+    if (!state.smoothCam) {
+      state.smoothCam = [desCamX, desCamY, desCamZ];
+      state.smoothTarget = [tgtX, tgtY, tgtZ];
+    } else {
+      state.smoothCam[0] += (desCamX - state.smoothCam[0]) * lerpF;
+      state.smoothCam[1] += (desCamY - state.smoothCam[1]) * lerpF;
+      state.smoothCam[2] += (desCamZ - state.smoothCam[2]) * lerpF;
+      state.smoothTarget[0] += (tgtX - state.smoothTarget[0]) * lerpF;
+      state.smoothTarget[1] += (tgtY - state.smoothTarget[1]) * lerpF;
+      state.smoothTarget[2] += (tgtZ - state.smoothTarget[2]) * lerpF;
+    }
+
+    const aspect = canvas.width / Math.max(canvas.height, 1);
+    const proj = mat4Perspective((48 * Math.PI) / 180, aspect, 0.25, 6000.0);
+    const view = mat4LookAt(state.smoothCam, state.smoothTarget, [0, 1, 0]);
+    const vp = mat4Mul(proj, view);
+    const invVP = mat4Invert(vp);
+
+    const elRad = (state.sunElevDeg * Math.PI) / 180.0;
+    const azRad = (state.sunAzimDeg * Math.PI) / 180.0;
+    const sunDir = [Math.cos(elRad) * Math.sin(azRad), Math.sin(elRad), Math.cos(elRad) * Math.cos(azRad)];
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.01, 0.04, 0.08, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // PASS 1: Sky / Underwater Volume Background
+    gl.disable(gl.DEPTH_TEST);
+    gl.useProgram(skyProg);
+    gl.uniformMatrix4fv(skyLoc.invVP, false, invVP);
+    gl.uniform3fv(skyLoc.camPos, state.smoothCam);
+    gl.uniform3fv(skyLoc.sunDir, sunDir);
+    gl.uniform1f(skyLoc.mie, state.mieScale);
+    gl.uniform1f(skyLoc.clouds, state.cloudCover);
+    gl.uniform1f(skyLoc.time, state.simTime);
+    gl.uniform1f(skyLoc.exp, state.exposure);
+    gl.uniform1f(skyLoc.lightning, state.lightningFlash);
+    gl.bindVertexArray(skyVao);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // PASS 2: Coupled Open Ocean + 96x96 Local Fluid PDE Surface
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.useProgram(oceanProg);
+    gl.uniformMatrix4fv(ocLoc.vp, false, vp);
+    gl.uniform3fv(ocLoc.camPos, state.smoothCam);
+    gl.uniform3fv(ocLoc.sunDir, sunDir);
+    gl.uniform1f(ocLoc.time, state.simTime);
+    gl.uniform1f(ocLoc.amp, getOceanAmpScale());
+    gl.uniform1f(ocLoc.depth, state.depth);
+    gl.uniform1f(ocLoc.foam, state.foamThreshold);
+    gl.uniform1f(ocLoc.mie, state.mieScale);
+    gl.uniform1f(ocLoc.clouds, state.cloudCover);
+    gl.uniform1f(ocLoc.exp, state.exposure);
+    gl.uniform1f(ocLoc.rain, state.rainIntensity);
+    gl.uniform1f(ocLoc.lightning, state.lightningFlash);
+    gl.uniform1f(ocLoc.ior, PHYS.water.n);
+    gl.uniform1f(ocLoc.pdeSize, PDE_SIZE);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, pdeTex);
+    gl.uniform1i(ocLoc.localFluid, 0);
+    gl.bindVertexArray(oceanVao);
+    gl.drawElements(gl.TRIANGLES, oceanIndices.length, gl.UNSIGNED_INT, 0);
+
+    // PASS 3: 5 Distinct 3D Rigid Bodies (Sphere, Rock, Cylinder Log, Ice Crystal, Buoy)
+    if (bodies.length > 0) {
+      gl.useProgram(bodyProg);
+      gl.uniformMatrix4fv(bdLoc.vp, false, vp);
+      gl.uniform3fv(bdLoc.camPos, state.smoothCam);
+      gl.uniform3fv(bdLoc.sunDir, sunDir);
+      gl.uniform1f(bdLoc.mie, state.mieScale);
+      gl.uniform1f(bdLoc.exp, state.exposure);
+      const shapeIdxMap = { sphere: 0, rock: 1, cylinder: 2, crystal: 3, buoy: 4 };
+      for (let i = 0; i < bodies.length; i++) {
+        const b = bodies[i];
+        const mesh = SHAPE_MESHES[b.shape] || SHAPE_MESHES.sphere;
+        gl.uniform3fv(bdLoc.color, b.color);
+        gl.uniform1f(bdLoc.rough, b.rough);
+        gl.uniform1f(bdLoc.metal, b.metal);
+        gl.uniform1f(bdLoc.shapeType, shapeIdxMap[b.shape] || 0);
+        gl.uniformMatrix4fv(bdLoc.model, false, mat4BodyModel(b.x, b.y, b.z, b.yaw, b.pitch, b.roll, b.r));
+        gl.bindVertexArray(mesh.vao);
+        gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+      }
+    }
+
+    // PASS 4: 3D Refractive Liquid Meshes (Ejecta Crown Sheet, Subsurface Air Cavity & Worthington Jet!)
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    gl.useProgram(liquidProg);
+    gl.uniformMatrix4fv(liqLoc.vp, false, vp);
+    gl.uniform3fv(liqLoc.camPos, state.smoothCam);
+    gl.uniform3fv(liqLoc.sunDir, sunDir);
+    gl.uniform1f(liqLoc.mie, state.mieScale);
+    gl.uniform1f(liqLoc.exp, state.exposure);
+    gl.uniform1f(liqLoc.ior, PHYS.water.n);
+    gl.bindVertexArray(liqVao);
+
+    for (let i = 0; i < liquidStructures.length; i++) {
+      const st = liquidStructures[i];
+
+      // 4A. 3D Ejecta Crown Liquid Sheet (rises, flares outward, Rayleigh-Taylor rim fingers!)
+      if (st.crownAlive && st.crownH > 0.05) {
+        const vc = buildDynamicLiquidRingMesh(10, 36, (vr, ang) => {
+          const finger = 1.0 + 0.22 * Math.sin(ang * 10.0 + st.seed) * vr * vr + st.asym * Math.cos(ang - st.seed) * vr;
+          const flare = st.r0 * 0.92 + (st.crownR - st.r0 * 0.85) * Math.pow(vr, 0.82) * finger;
+          const tiltX = st.vxImp * 0.08 * vr;
+          const tiltZ = st.vzImp * 0.08 * vr;
+          const y = st.y0 - 0.1 + st.crownH * vr * (0.88 + 0.24 * finger) - 0.12 * vr * vr;
+          const thick = Math.max(0.05, 1.0 - vr * 0.85);
+          return [st.x + Math.cos(ang) * flare + tiltX, y, st.z + Math.sin(ang) * flare + tiltZ, thick];
+        });
+        if (vc > 0) {
+          gl.uniform1f(liqLoc.mode, 0.0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqPosBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqPosArr.subarray(0, vc * 3));
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqNormBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqNormArr.subarray(0, vc * 3));
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqThickBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqThickArr.subarray(0, vc));
+          gl.drawArrays(gl.TRIANGLES, 0, vc);
+        }
+      }
+
+      // 4B. 3D Subsurface Air Cavity Shell (Rayleigh-Plesset hydrostatic necking toward deep-seal pinch-off!)
+      if (st.formsCavity && st.cavDepth > 0.3 && st.age < st.tPinch * 2.2) {
+        const pinchProg = Math.min(1.0, st.age / Math.max(st.tPinch, 0.15));
+        const postFade = st.pinched ? Math.max(0.0, 1.0 - (st.age - st.tPinch) / (st.tPinch * 1.1)) : 1.0;
+        if (postFade > 0.05) {
+          const vc = buildDynamicLiquidRingMesh(12, 24, (vr, ang) => {
+            const zDepth = vr * st.cavDepth;
+            // Hydrostatic pinch-off waist near mid-depth (vr ~ 0.55)
+            const neck = Math.exp(-Math.pow((vr - 0.55) / 0.26, 2.0)) * pinchProg * 0.92;
+            const rad = Math.max(0.06, st.cavMaxRadius * (1.0 - 0.35 * vr) * (1.0 - neck) * postFade * (1.0 + st.asym * 0.25 * Math.cos(ang - st.seed)));
+            return [st.x + Math.cos(ang) * rad, st.y0 - zDepth, st.z + Math.sin(ang) * rad, 0.8];
+          });
+          if (vc > 0) {
+            gl.uniform1f(liqLoc.mode, 1.0);
+            gl.bindBuffer(gl.ARRAY_BUFFER, liqPosBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqPosArr.subarray(0, vc * 3));
+            gl.bindBuffer(gl.ARRAY_BUFFER, liqNormBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqNormArr.subarray(0, vc * 3));
+            gl.bindBuffer(gl.ARRAY_BUFFER, liqThickBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqThickArr.subarray(0, vc));
+            gl.drawArrays(gl.TRIANGLES, 0, vc);
+          }
+        }
+      }
+
+      // 4C. 3D Coherent Worthington Jet Liquid Column (thinning + Rayleigh-Plateau varicose necking!)
+      if (st.jetActive && st.jetH > 0.12) {
+        const vc = buildDynamicLiquidRingMesh(14, 20, (vr, ang) => {
+          // Rayleigh-Plateau varicose undulation along rising column
+          const rpVaricose = 1.0 + 0.24 * Math.sin(vr * 16.0 - st.jetAge * 14.0) * vr;
+          const taper = Math.max(0.035, st.jetR * (1.15 - 0.85 * Math.pow(vr, 0.72)) * rpVaricose);
+          const y = st.y0 - 0.08 + st.jetH * vr;
+          const thick = Math.max(0.12, 0.95 - vr * 0.65);
+          return [st.x + Math.cos(ang) * taper, y, st.z + Math.sin(ang) * taper, thick];
+        });
+        if (vc > 0) {
+          gl.uniform1f(liqLoc.mode, 0.0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqPosBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqPosArr.subarray(0, vc * 3));
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqNormBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqNormArr.subarray(0, vc * 3));
+          gl.bindBuffer(gl.ARRAY_BUFFER, liqThickBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, liqThickArr.subarray(0, vc));
+          gl.drawArrays(gl.TRIANGLES, 0, vc);
+        }
+      }
+    }
+
+    // PASS 5: Refractive Ballistic Water Droplets & Underwater Air Bubbles
+    gl.useProgram(dropProg);
+    gl.uniformMatrix4fv(drLoc.vp, false, vp);
+    gl.uniform3fv(drLoc.camPos, state.smoothCam);
+    gl.uniform3fv(drLoc.sunDir, sunDir);
+    gl.bindVertexArray(dropVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dropPosBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, dropPos);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dropLifeBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, dropLife);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dropRadBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, dropRadius);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dropKindBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, dropKind);
+    gl.drawArrays(gl.POINTS, 0, MAX_DROPS);
+
+    // PASS 6: 3D Wind-Slanted Rain Streaks (above water only)
+    if (state.rainIntensity > 0.02 && state.smoothCam[1] > 0.0) {
+      const windRad = (state.windDirDeg * Math.PI) / 180.0;
+      const slantX = Math.cos(windRad) * state.windSpeed * 0.045;
+      const slantZ = Math.sin(windRad) * state.windSpeed * 0.045;
+      const fallRate = 18.0 + state.rainIntensity * 9.0;
+      const activeRain = Math.floor(RAIN_COUNT * state.rainIntensity);
+      for (let i = 0; i < activeRain; i++) {
+        const rs = rainSeeds[i];
+        const ry = ((rs[1] - state.simTime * fallRate) % 32.0 + 32.0) % 32.0;
+        const rx = state.smoothCam[0] + rs[0], rz = state.smoothCam[2] + rs[2];
+        const idx = i * 6;
+        rainVerts[idx] = rx; rainVerts[idx + 1] = ry; rainVerts[idx + 2] = rz;
+        rainVerts[idx + 3] = rx - slantX; rainVerts[idx + 4] = ry + 0.85; rainVerts[idx + 5] = rz - slantZ;
+      }
+      gl.useProgram(rainProg);
+      gl.uniformMatrix4fv(rnLoc.vp, false, vp);
+      gl.uniform1f(rnLoc.alpha, 0.24 + state.rainIntensity * 0.24);
+      gl.bindVertexArray(rainVao);
+      gl.bindBuffer(gl.ARRAY_BUFFER, rainBuf);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, rainVerts.subarray(0, activeRain * 6));
+      gl.drawArrays(gl.LINES, 0, activeRain * 2);
+    }
+
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+    requestAnimationFrame(frame);
+  }
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

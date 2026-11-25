@@ -160,6 +160,9 @@ const App = (() => {
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
+    { id: 'pelagos', name: ['PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'], tags: [['Fizik', 'Physics'], ['Akışkan', 'Fluid'], ['WebGL2', 'WebGL2']], best: () => T('5 cisim · 6 hava', '5 bodies · 6 weathers') },
+    { id: 'serpentia', name: ['SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'], tags: [['Simülasyon', 'Simulation'], ['Doğa', 'Nature'], ['3D', '3D']], best: () => T('10 tür · 4 doğa', '10 species · 4 habitats') },
+    { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
@@ -247,6 +250,9 @@ const App = (() => {
     'koy': 'img/library/koy-1280.webp',
     'simitci': 'img/library/simitci-1280.webp',
     'operasyon-hatti': 'img/library/operasyon-hatti-1280.webp',
+    'pelagos': 'img/library/pelagos-1280.webp',
+    'serpentia': 'img/library/serpentia-1280.webp',
+    'dune': 'img/library/dune-1280.webp',
     'yelken': 'img/library/yelken-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'amsterdam-coffeeshop': 'img/library/amsterdam-coffeeshop-1280.webp',
@@ -515,6 +521,37 @@ const App = (() => {
     });
     const page = root().querySelector('.game-page');
     if (page) page.classList.add('koy-page');
+  }
+
+  /* ==================== PELAGOS. / SERPENTIA. / DUNE. ==================== */
+  function pelagosGame() {
+    openEmbeddedGame({
+      title: T('PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'),
+      url: 'games/pelagos/index.html?v=1',
+      tag: T('BABA. PELAGOS. · Akışkan fiziği · WebGL2', 'BABA. PELAGOS. · Fluid physics · WebGL2'),
+      lead: T('Çelik küre, granit, meşe kütüğü, buz ve şamandırayı denize bırak: taç sıçraması, hava kavitesi, Worthington jeti ve dalga girişimini ağır çekimde izle.', 'Drop a steel sphere, granite, an oak log, ice or a buoy into the sea: watch the crown splash, air cavity, Worthington jet and wave interference in slow motion.'),
+      tip: T('F ile bırak, fareyle sürükleyerek kamerayı döndür, tekerlekle yaklaş. Space duraklatır, nokta (.) kare kare ilerletir, H paneli gizler. 0.1× ve 0.02× ağır çekimi dene.', 'F to drop, drag to orbit, wheel to zoom. Space pauses, period (.) steps a frame, H hides the panel. Try 0.1× and 0.02× slow motion.')
+    });
+  }
+
+  function serpentiaGame() {
+    openEmbeddedGame({
+      title: T('SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'),
+      url: 'games/serpentia/index.html?v=1',
+      tag: T('BABA. SERPENTIA. · Doğa simülasyonu · 3D', 'BABA. SERPENTIA. · Nature sim · 3D'),
+      lead: T('Kral kobradan anakondaya 10 yılan türü: gerçekçi sürünme biçimleri, avlanma, güneşlenme ve savunma; çayır, çöl, orman ve teraryumda.', 'Ten snake species from king cobra to anaconda: realistic locomotion, hunting, basking and defence across meadow, desert, jungle and terrarium.'),
+      tip: T('WASD/oklarla sürün, Shift hızlandırır, E ile saldır ve ye. Otonom AI modunda yılan kendi yaşar. Belgesel ve Makro kameralarını dene, P duraklatır.', 'Slither with WASD/arrows, Shift to speed up, E to strike and eat. In Autonomous AI mode the snake lives on its own. Try Documentary and Macro cameras, P pauses.')
+    });
+  }
+
+  function duneGame() {
+    openEmbeddedGame({
+      title: T('DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'),
+      url: 'games/dune/index.html?v=1',
+      tag: T('BABA. DUNE. · Açık dünya sürüş · 2.5D', 'BABA. DUNE. · Open-world driving · 2.5D'),
+      lead: T('Kum tepelerinde 4×4: lastik basıncı, diferansiyel kilidi, vinç, garaj yükseltmeleri ve günbatımı çölünde serbest sürüş.', '4×4 across the dunes: tyre pressure, diff lock, winch, garage upgrades and free roam in a sunset desert.'),
+      tip: T('W/S gaz-fren, A/D direksiyon, Space el freni. L diferansiyel kilidi, R vinç, C kamera, P fotoğraf modu. Yumuşak kumda lastik basıncını düşür.', 'W/S throttle-brake, A/D steer, Space handbrake. L diff lock, R winch, C camera, P photo mode. Lower tyre pressure in soft sand.')
+    });
   }
 
   /* ==================== OPERASYON HATTI. / TAKTİK 3D FPS ==================== */
@@ -916,6 +953,9 @@ const App = (() => {
     });
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
+    else if (r === 'pelagos') pelagosGame();
+    else if (r === 'serpentia') serpentiaGame();
+    else if (r === 'dune') duneGame();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
     else if (r === '2048') g2048();
