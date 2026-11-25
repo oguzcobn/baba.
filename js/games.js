@@ -537,7 +537,7 @@ const App = (() => {
   function serpentiaGame() {
     openEmbeddedGame({
       title: T('SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'),
-      url: 'games/serpentia/index.html?v=1',
+      url: 'games/serpentia/index.html?v=2',
       tag: T('BABA. SERPENTIA. · Doğa simülasyonu · 3D', 'BABA. SERPENTIA. · Nature sim · 3D'),
       lead: T('Kral kobradan anakondaya 10 yılan türü: gerçekçi sürünme biçimleri, avlanma, güneşlenme ve savunma; çayır, çöl, orman ve teraryumda.', 'Ten snake species from king cobra to anaconda: realistic locomotion, hunting, basking and defence across meadow, desert, jungle and terrarium.'),
       tip: T('WASD/oklarla sürün, Shift hızlandırır, E ile saldır ve ye. Otonom AI modunda yılan kendi yaşar. Belgesel ve Makro kameralarını dene, P duraklatır.', 'Slither with WASD/arrows, Shift to speed up, E to strike and eat. In Autonomous AI mode the snake lives on its own. Try Documentary and Macro cameras, P pauses.')

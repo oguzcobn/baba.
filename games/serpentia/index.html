@@ -983,10 +983,20 @@
       habitatGroup.add(grassMesh);
 
       // 3. Doğal Yosunlu Kayalar & Taşlar
+      // kaya: sRGB→doğrusal renk (aşırı parlak beyaz görünmesin) + taş/yosun dokusu
+      const stoneCv = document.createElement('canvas'); stoneCv.width = stoneCv.height = 128;
+      { const g = stoneCv.getContext('2d'), base = biomeId === 'desert' ? [155, 119, 84] : (biomeId === 'terrarium' ? [75, 78, 82] : [96, 100, 90]);
+        const img = g.createImageData(128, 128);
+        for (let i = 0; i < 128 * 128; i++) { const x = i % 128, y = (i / 128) | 0; const n = Math.sin(x * 0.31 + Math.sin(y * 0.17) * 3) * 0.5 + Math.sin(y * 0.23 + x * 0.07) * 0.5; const r = (Math.random() - 0.5) * 26 + n * 14;
+          img.data[i * 4] = base[0] + r; img.data[i * 4 + 1] = base[1] + r; img.data[i * 4 + 2] = base[2] + r; img.data[i * 4 + 3] = 255; }
+        g.putImageData(img, 0, 0);
+        if (biomeId !== 'desert') for (let i = 0; i < 26; i++) { g.fillStyle = `rgba(${60 + Math.random() * 30},${95 + Math.random() * 40},${40 + Math.random() * 20},${0.25 + Math.random() * 0.35})`; g.beginPath(); g.arc(Math.random() * 128, Math.random() * 50, 4 + Math.random() * 12, 0, 7); g.fill(); }
+        for (let i = 0; i < 14; i++) { g.strokeStyle = 'rgba(20,20,18,0.35)'; g.lineWidth = 1; g.beginPath(); let x = Math.random() * 128, y = Math.random() * 128; g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (Math.random() - 0.5) * 24; y += Math.random() * 14; g.lineTo(x, y); } g.stroke(); } }
+      const stoneTex = new THREE.CanvasTexture(stoneCv); stoneTex.encoding = THREE.sRGBEncoding; stoneTex.wrapS = stoneTex.wrapT = THREE.RepeatWrapping;
       const rockMat = new THREE.MeshStandardMaterial({
-        color: biomeId === 'desert' ? 0x9b7754 : (biomeId === 'terrarium' ? 0x4b4e52 : 0x52594e),
-        roughness: 0.88,
-        metalness: 0.04
+        color: 0xbfbfbf, map: stoneTex,
+        roughness: 0.92,
+        metalness: 0.0
       });
       const rockCoords = [
         [-2.8, -2.2, 0.45], [3.6, 2.2, 0.54], [-3.8, 1.4, 0.40],
