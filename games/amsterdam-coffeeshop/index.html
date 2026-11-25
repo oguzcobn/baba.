@@ -230,7 +230,7 @@
 </div>
 
 <button id="interact-prompt" type="button">E — Etkileşime Geç</button>
-<div id="event-banner" style="position:fixed;top:56px;left:10px;z-index:14;display:none;background:rgba(120,53,15,0.94);border:1px solid #f59e0b;color:#fef3c7;padding:7px 12px;border-radius:10px;font-size:11.5px;align-items:center;gap:8px;max-width:440px;"><span id="event-text">Olay</span><button class="btn btn-primary" id="btn-event-action" style="padding:3px 8px;font-size:11px;">Müdahale Et</button></div>
+<div id="event-banner" style="position:fixed;top:56px;left:10px;z-index:14;display:none;background:rgba(120,53,15,0.94);border:1px solid #f59e0b;color:#fef3c7;padding:7px 12px;border-radius:10px;font-size:11.5px;align-items:center;gap:8px;max-width:440px;"><span id="event-text">Olay</span><button class="btn btn-primary" id="btn-event-action" style="padding:3px 8px;font-size:11px;">Müdahale Et</button><kbd id="event-key" title="Fareyi bırakmadan onayla" style="font:700 11px/1 system-ui;background:#fef3c7;color:#78350f;border-radius:5px;padding:4px 6px;box-shadow:0 2px 0 #b45309;">Y</kbd></div>
 <div id="toast"></div>
 
 <aside class="drawer collapsed" id="main-drawer">
@@ -1573,7 +1573,7 @@
   }
 
   // Architectural Canal House with Recessed Windows, Sandstone Lintels/Sills, Pitched Roof & Gables
-  function buildCanalHouse(xCenter, zFront, facingSign, width, height, depth, brickMat, gableType, leanDeg) {
+  function buildCanalHouse(xCenter, zFront, facingSign, width, height, depth, brickMat, gableType, leanDeg, opts = {}) {
     const g = new THREE.Group();
     g.position.set(xCenter, 0, zFront);
     if (facingSign < 0) g.rotation.y = Math.PI;
@@ -1647,6 +1647,7 @@
     const cols = width > 5.0 ? 3 : 2;
     for (let fl = 0; fl < floors; fl++) {
       const wy = 2.15 + fl * 2.85;
+      if (fl === 0 && opts.wallen) { buildWallenGroundFloor(body, width, cols, frameMat, copingMat, opts); continue; }
       for (let c = 0; c < cols; c++) {
         const wx = ((c + 0.5) / cols - 0.5) * (width - 1.0);
         // Sill & Lintel
@@ -1677,6 +1678,164 @@
     const zMin = facingSign > 0 ? zFront - depth : zFront;
     const zMax = facingSign > 0 ? zFront : zFront + depth;
     addCollider(xCenter - width / 2, xCenter + width / 2, zMin, zMax, 'building');
+  }
+
+
+  // =========================================================================
+  // DE WALLEN (Oudezijds Achterburgwal) — kanalın karşı kıyısı
+  // Gerçek mahalle: kanal boyunca 17. yy. kalkan cepheli evler, zemin katlarda kırmızı
+  // neonla çerçevelenmiş yüksek cam kapılar ("ramen", ~200 adet), Bloedstraat'ta mavi ışık,
+  // Oudekerksplein'da Oude Kerk (1306, 67 m kule) ve Belle heykeli (2007), demir köprüler,
+  // yeşil "krul" pisuvar, karaağaçlar. Pencerelerde perdeler kapalı gösterilir.
+  // =========================================================================
+  const wallenGlow = [];      // { mat, base, night } — gece yoğunluğu updateAtmosphere'de ayarlanır
+  const wallenLights = [];
+  let wallenCurtainTex = null;
+  function wallenCurtainTexture() {
+    if (wallenCurtainTex) return wallenCurtainTex;
+    const c = document.createElement('canvas'); c.width = 128; c.height = 256;
+    const g = c.getContext('2d');
+    // kapalı kadife perde: dikey kıvrımlar (cos profili) + üstte korniş, altta ışık sızması
+    for (let x = 0; x < 128; x++) {
+      const f = 0.5 + 0.5 * Math.cos((x / 128) * Math.PI * 2 * 5.5);
+      const v = Math.round(70 + 120 * Math.pow(f, 1.6));
+      g.fillStyle = `rgb(${v},${Math.round(v * 0.12)},${Math.round(v * 0.2)})`; g.fillRect(x, 0, 1, 256);
+    }
+    g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(0, 0, 128, 14);
+    const gl = g.createLinearGradient(0, 200, 0, 256); gl.addColorStop(0, 'rgba(255,90,110,0)'); gl.addColorStop(1, 'rgba(255,120,140,0.55)');
+    g.fillStyle = gl; g.fillRect(0, 200, 128, 56);
+    wallenCurtainTex = new THREE.CanvasTexture(c); wallenCurtainTex.encoding = THREE.sRGBEncoding;
+    return wallenCurtainTex;
+  }
+  function neonSignTexture(text, hex, w = 512, h = 128) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.fillStyle = 'rgba(12,6,10,0.92)'; g.fillRect(0, 0, w, h);
+    g.strokeStyle = hex; g.lineWidth = 5; g.shadowColor = hex; g.shadowBlur = 18; g.strokeRect(8, 8, w - 16, h - 16);
+    g.font = `700 ${Math.round(h * 0.5)}px "Trebuchet MS", system-ui, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let k = 0; k < 3; k++) { g.shadowBlur = 26 - k * 8; g.fillStyle = k === 2 ? '#fff4f6' : hex; g.fillText(text, w / 2, h / 2 + 3); }
+    const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+  }
+  function buildWallenGroundFloor(body, width, cols, frameMat, copingMat, opts) {
+    const neonHex = opts.blue ? 0x3fa9ff : 0xff2a4a;
+    const curtainMat = new THREE.MeshStandardMaterial({ map: wallenCurtainTexture(), emissiveMap: wallenCurtainTexture(), color: 0xffffff,
+      emissive: opts.blue ? 0x6a8cff : 0xff3355, emissiveIntensity: 0.5, roughness: 0.9 });
+    if (opts.blue) curtainMat.color.setHex(0x8aa6ff);
+    wallenGlow.push({ mat: curtainMat, base: 0.45, night: 1.35 });
+    const neonMat = new THREE.MeshBasicMaterial({ color: neonHex });
+    const lampMat = new THREE.MeshStandardMaterial({ color: neonHex, emissive: neonHex, emissiveIntensity: 1.2, roughness: 0.3 });
+    wallenGlow.push({ mat: lampMat, base: 0.9, night: 2.6 });
+    const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x1a0c10, transparent: true, opacity: 0.22, roughness: 0.04, metalness: 0.6, clearcoat: 1.0, depthWrite: false });
+    const doorMat = new THREE.MeshStandardMaterial({ color: 0x1b2a22, roughness: 0.5 });
+    for (let c = 0; c < cols; c++) {
+      const wx = ((c + 0.5) / cols - 0.5) * (width - 1.0);
+      if (c === 0) {
+        // evin kendi kapısı: koyu yeşil boyalı ahşap kapı + üstte vasistas
+        const door = new THREE.Mesh(new THREE.BoxGeometry(0.98, 2.15, 0.1), doorMat); door.position.set(wx, 1.43, 0.05); body.add(door);
+        const fan = new THREE.Mesh(new THREE.PlaneGeometry(0.86, 0.32), new THREE.MeshStandardMaterial({ color: 0x0b1929, emissive: 0xffb347, emissiveIntensity: 0.4 }));
+        fan.position.set(wx, 2.72, 0.11); body.add(fan); windowGlowMats.push(fan.material);
+        continue;
+      }
+      // "raam": yüksek cam kapı, ahşap çerçeve, arkasında kapalı perde, çevresinde neon tüp, üstünde kırmızı lamba
+      // ahşap kasa: dört çıta (içi açık), arkada derin niş
+      [[0, 2.76, 1.12, 0.08], [0, 0.24, 1.12, 0.08], [-0.53, 1.5, 0.08, 2.6], [0.53, 1.5, 0.08, 2.6]].forEach(([dx, y, sx, sy]) => {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, 0.14), frameMat); bar.position.set(wx + dx, y, 0.03); body.add(bar);
+      });
+      const curtain = new THREE.Mesh(new THREE.PlaneGeometry(0.98, 2.44), curtainMat); curtain.position.set(wx, 1.5, 0.004); body.add(curtain);
+      const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.98, 2.44), glassMat); glass.position.set(wx, 1.5, 0.06); body.add(glass);
+      const t = 0.035;
+      [[0, 2.73, 1.06, t], [0, 0.27, 1.06, t], [-0.52, 1.5, t, 2.48], [0.52, 1.5, t, 2.48]].forEach(([dx, y, sx, sy]) => {
+        const tube = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, t), neonMat); tube.position.set(wx + dx, y, 0.12); body.add(tube);
+      });
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.16, 10), lampMat); lamp.position.set(wx, 3.0, 0.2); body.add(lamp);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.03, 0.22), frameMat); arm.position.set(wx, 3.1, 0.1); body.add(arm);
+      const sill = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.2), copingMat); sill.position.set(wx, 0.16, 0.08); body.add(sill);
+    }
+    if (opts.sign) {
+      const tex = neonSignTexture(opts.sign, opts.signHex || '#ff3d6e');
+      const sm = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 0.62), new THREE.MeshBasicMaterial({ map: tex }));
+      sm.position.set(0.35, 3.45, 0.14); body.add(sm);
+    }
+  }
+
+  function buildDeWallen(brickMat) {
+    // ---- Oude Kerk: 1306'dan kalma kilise, kule ~67 m (ölçekli ~40 m): tuğla gövde, sekizgen katlar, saat, kurşun kaplı sivri kule
+    const kerk = new THREE.Group(); kerk.position.set(-7.5, 0, 50.5);
+    const leadMat = new THREE.MeshStandardMaterial({ color: 0x4a5560, roughness: 0.45, metalness: 0.55 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0xd8d0c0, roughness: 0.7 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xd8a63a, metalness: 0.9, roughness: 0.25 });
+    const nave = new THREE.Mesh(new THREE.BoxGeometry(15, 12, 26), brickMat); nave.position.set(0, 6, 15); nave.castShadow = true; kerk.add(nave);
+    const naveRoofGeo = new THREE.CylinderGeometry(0.01, 8.4, 9, 4, 1); naveRoofGeo.rotateY(Math.PI / 4);
+    const naveRoof = new THREE.Mesh(naveRoofGeo, leadMat); naveRoof.scale.set(1, 1, 26 / 15); naveRoof.position.set(0, 16.4, 15); kerk.add(naveRoof);
+    for (const sx of [-1, 1]) for (let k = 0; k < 4; k++) {   // sivri kemerli gotik pencereler
+      const gw = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 6.5), new THREE.MeshStandardMaterial({ color: 0x1b2433, emissive: 0xffc070, emissiveIntensity: 0.1, metalness: 0.6, roughness: 0.15 }));
+      gw.position.set(sx * 7.52, 6.5, 6 + k * 6); gw.rotation.y = sx * Math.PI / 2; kerk.add(gw); windowGlowMats.push(gw.material);
+    }
+    const base = new THREE.Mesh(new THREE.BoxGeometry(6.4, 17, 6.4), brickMat); base.position.y = 8.5; base.castShadow = true; kerk.add(base);
+    const ledge = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.5, 7.0), stoneMat); ledge.position.y = 17.2; kerk.add(ledge);
+    const oct1 = new THREE.Mesh(new THREE.CylinderGeometry(2.7, 2.9, 6, 8), stoneMat); oct1.position.y = 20.4; oct1.castShadow = true; kerk.add(oct1);
+    const oct1Lead = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.9, 1.2, 8), leadMat); oct1Lead.position.y = 24; kerk.add(oct1Lead);
+    const lantern = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 2.0, 5, 8), leadMat); lantern.position.y = 27.1; kerk.add(lantern);
+    for (let k = 0; k < 8; k++) {   // lanternin açık kemerleri
+      const a = k / 8 * Math.PI * 2, op = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 2.6), new THREE.MeshBasicMaterial({ color: 0x0d0f12 }));
+      op.position.set(Math.sin(a) * 1.92, 27.3, Math.cos(a) * 1.92); op.rotation.y = a; kerk.add(op);
+    }
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(1.6, 10, 8), leadMat); spire.position.y = 34.6; spire.castShadow = true; kerk.add(spire);
+    const orb = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), goldMat); orb.position.y = 39.8; kerk.add(orb);
+    const cock = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.7, 4), goldMat); cock.rotation.z = Math.PI / 2; cock.position.y = 40.3; kerk.add(cock);
+    // saat kadranları (kanala bakan yüz + yanlar)
+    const dialC = document.createElement('canvas'); dialC.width = dialC.height = 128; const dg = dialC.getContext('2d');
+    dg.fillStyle = '#1f3a5f'; dg.beginPath(); dg.arc(64, 64, 60, 0, Math.PI * 2); dg.fill();
+    dg.strokeStyle = '#e8c15a'; dg.lineWidth = 4; dg.stroke();
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; dg.fillStyle = '#e8c15a'; dg.fillRect(64 + Math.sin(a) * 48 - 3, 64 - Math.cos(a) * 48 - 3, 6, 6); }
+    dg.strokeStyle = '#f5d77a'; dg.lineWidth = 5; dg.beginPath(); dg.moveTo(64, 64); dg.lineTo(64, 26); dg.moveTo(64, 64); dg.lineTo(92, 64); dg.stroke();
+    const dialTex = new THREE.CanvasTexture(dialC); dialTex.encoding = THREE.sRGBEncoding;
+    [[0, -3.22, Math.PI], [3.22, 0, Math.PI / 2], [-3.22, 0, -Math.PI / 2]].forEach(([dx, dz, ry]) => {
+      const d = new THREE.Mesh(new THREE.CircleGeometry(1.25, 28), new THREE.MeshStandardMaterial({ map: dialTex, roughness: 0.5 }));
+      d.position.set(dx, 14.2, dz); d.rotation.y = ry; kerk.add(d);
+    });
+    const arch = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 3.4), new THREE.MeshStandardMaterial({ color: 0x2a1b12 })); arch.position.set(0, 1.7, -3.22); arch.rotation.y = Math.PI; kerk.add(arch);
+    scene.add(kerk);
+
+    // ---- Belle (2007): Oudekerksplein'daki bronz heykel — kapı eşiğinde duran kadın; plaketi
+    const bronze = new THREE.MeshStandardMaterial({ color: 0x6e4e2c, metalness: 0.85, roughness: 0.38 });
+    const belle = new THREE.Group(); belle.position.set(10.6, 0.12, 30.6); belle.rotation.y = Math.PI;
+    const ped = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.55, 0.8), new THREE.MeshStandardMaterial({ color: 0x5e5a55, roughness: 0.6 })); ped.position.y = 0.27; belle.add(ped);
+    [[-0.42, 1.55, 0.1, 2.0], [0.42, 1.55, 0.1, 2.0], [0, 2.6, 0.94, 0.12]].forEach(([x, y, sx, sy]) => { const j = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, 0.16), bronze); j.position.set(x, y, -0.18); belle.add(j); });
+    const torso = new THREE.Mesh(THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.15, 0.62, 4, 10) : new THREE.CylinderGeometry(0.15, 0.18, 0.9, 10), bronze); torso.position.set(0, 1.42, 0); belle.add(torso);
+    const skirt = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, 0.45, 12), bronze); skirt.position.set(0, 1.0, 0); belle.add(skirt);
+    for (const sx of [-1, 1]) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.045, 0.48, 8), bronze); leg.position.set(sx * 0.08, 0.78, 0); belle.add(leg);
+      const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.5, 8), bronze); arm.position.set(sx * 0.24, 1.48, 0); arm.rotation.z = sx * 0.55; belle.add(arm); }
+    const headB = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 10), bronze); headB.position.set(0, 1.95, 0); belle.add(headB);
+    const plaqueC = document.createElement('canvas'); plaqueC.width = 256; plaqueC.height = 64; const pg = plaqueC.getContext('2d');
+    pg.fillStyle = '#3b2a1a'; pg.fillRect(0, 0, 256, 64); pg.fillStyle = '#e9cf8a'; pg.font = '600 15px Georgia, serif'; pg.textAlign = 'center';
+    pg.fillText('BELLE', 128, 22); pg.font = 'italic 12px Georgia, serif'; pg.fillText('Respect sex workers all over the world', 128, 46);
+    const plaqueTex = new THREE.CanvasTexture(plaqueC); plaqueTex.encoding = THREE.sRGBEncoding;
+    const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.25), new THREE.MeshStandardMaterial({ map: plaqueTex, metalness: 0.4, roughness: 0.5 }));
+    plaque.position.set(0, 0.3, 0.41); belle.add(plaque);
+    belle.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    scene.add(belle); addCollider(10.0, 11.2, 30.2, 31.0, 'statue');
+
+    // ---- yeşil dökme demir "krul" pisuvar (Amsterdam'a özgü kıvrık paravan)
+    const krulMat = new THREE.MeshStandardMaterial({ color: 0x1f4a37, metalness: 0.55, roughness: 0.45, side: THREE.DoubleSide });
+    const krul = new THREE.Group(); krul.position.set(-1.8, 0.12, 30.7);
+    const screen = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 1.7, 24, 1, true, 0.2, Math.PI * 1.55), krulMat); screen.position.y = 0.95; krul.add(screen);
+    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.85, 0.08, 24), krulMat); cap.position.y = 2.0; krul.add(cap);
+    const finial = new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 8), krulMat); finial.position.y = 2.12; krul.add(finial);
+    scene.add(krul); addCollider(-2.55, -1.05, 30.0, 31.4, 'krul');
+
+    // ---- sokak tabelası (kanal adı)
+    const sC = document.createElement('canvas'); sC.width = 512; sC.height = 96; const sg = sC.getContext('2d');
+    sg.fillStyle = '#f4f1ea'; sg.fillRect(0, 0, 512, 96); sg.strokeStyle = '#1b1b1b'; sg.lineWidth = 6; sg.strokeRect(6, 6, 500, 84);
+    sg.fillStyle = '#1b1b1b'; sg.font = '700 40px "Trebuchet MS", sans-serif'; sg.textAlign = 'center'; sg.fillText('Oudezijds Achterburgwal', 256, 62);
+    const sTex = new THREE.CanvasTexture(sC); sTex.encoding = THREE.sRGBEncoding;
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.45), new THREE.MeshStandardMaterial({ map: sTex, roughness: 0.6 }));
+    sign.position.set(14.0, 3.4, 32.1); sign.rotation.y = Math.PI; scene.add(sign);
+
+    // ---- kırmızı ışığın kaldırıma ve suya vurması: birkaç zayıf nokta ışık (gece güçlenir)
+    [-18, -7, 4, 15].forEach((x, k) => {
+      const l = new THREE.PointLight(k === 1 ? 0x4f8dff : 0xff2a48, 0, 9, 2); l.position.set(x, 1.9, 30.9); scene.add(l); wallenLights.push(l);
+    });
   }
 
   function buildEnterableCoffeeshop(brickMat) {
@@ -2924,6 +3083,8 @@
     const lampOn = THREE.MathUtils.smoothstep(nightT, 0.3, 0.85);
     streetLampLights.forEach(s => { s.light.intensity = lampOn * 1.45; s.bulbMat.emissiveIntensity = 0.15 + lampOn * 1.8; });
     windowGlowMats.forEach(m => { m.emissiveIntensity = 0.06 + lampOn * 0.85; });
+    wallenGlow.forEach(g => { g.mat.emissiveIntensity = g.base + lampOn * (g.night - g.base); });
+    wallenLights.forEach(l => { l.intensity = 0.15 + lampOn * 1.9; });
 
     rainPoints.visible = isRain;
     // Physical elevation + Kelvin + Airmass displayed above
@@ -3369,6 +3530,7 @@
     }
     banner.style.display = 'flex';
     sound.bell();
+    showToast('Yeni olay: onaylamak için Y tuşuna bas');
   }
 
   function resolveActiveEvent() {
@@ -3955,6 +4117,8 @@
       if (e.code === 'KeyE') triggerContextAction();
       if (e.code === 'KeyM') document.getElementById('btn-audio').click();
       if (e.code === 'KeyK' && window.CastEngine && CastEngine.openGallery) CastEngine.openGallery();
+      // Şehir olayı (denetim, influencer, arıza): fareyle bakarken Esc'e basmadan Y ile onayla
+      if (e.code === 'KeyY' && state.activeEvent && !e.repeat) { e.preventDefault(); resolveActiveEvent(); }
     });
     window.addEventListener('keyup', e => keys[e.code] = false);
   }
@@ -4480,9 +4644,13 @@
     [-24.5, -19.2, -14.0, -8.2, 8.2, 13.5, 22.8, 27.9].forEach((nx, i) => {
       buildCanalHouse(nx, -6.8, 1, 4.9 + (i % 2) * 0.45, 11.8 + (i % 3) * 1.4, 10.5, brickMaterials[(i + 1) % brickMaterials.length], gables[i % gables.length], 1.3 + (i % 3) * 0.4);
     });
+    const WALLEN_SIGNS = { 0: ['BAR \'t WALLETJE', '#ff3d6e'], 2: ['CAFÉ ROOD', '#ff5a3d'], 4: ['LIVE MUSIC', '#ff3d9e'], 5: ['HOTEL', '#5ab8ff'], 7: ['BAR 1306', '#ff3d6e'], 9: ['MUSEUM', '#ffd23d'] };
     for (let i = 0; i < 10; i++) {
-      buildCanalHouse(-24 + i * 5.3, 32.2, -1, 5.1, 12.0 + ((i * 7) % 4) * 1.1, 10.5, brickMaterials[(i + 2) % brickMaterials.length], gables[(i + 1) % gables.length], 1.4 + (i % 2) * 0.5);
+      const sg = WALLEN_SIGNS[i];
+      buildCanalHouse(-24 + i * 5.3, 32.2, -1, 5.1, 12.0 + ((i * 7) % 4) * 1.1, 10.5, brickMaterials[(i + 2) % brickMaterials.length], gables[(i + 1) % gables.length], 1.4 + (i % 2) * 0.5,
+        { wallen: true, blue: i === 3, sign: sg && sg[0], signHex: sg && sg[1] });
     }
+    buildDeWallen(brickMaterials[3 % brickMaterials.length]);
     buildBridge(brickMaterials[1]);
     buildStreetProps();
 
