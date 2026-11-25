@@ -67,8 +67,10 @@
 
   const MarketMode = window.MarketMode = {
     active: () => mm.started,
-    frame, npcArrive, onRenege, queueHead, enterCheckout, deliverBoxes, openTablet
+    frame, npcArrive, onRenege, queueHead, enterCheckout, deliverBoxes, openTablet,
+    addRevenue: (...a) => addRevenue(...a), emote: (n, t) => emote(n, t), isOpen: () => mm.open, level: () => mm.level
   };
+  const carry = (n, k) => { const c = n && n.meshObj && n.meshObj.cast; if (c && c.setCarry) c.setCarry(k); };
 
   // ---------------------------------------------------------------------------
   // BAŞLANGIÇ
@@ -419,7 +421,7 @@
   }
   function customers() { return B.npcs.filter(n => n.role === 'customer'); }
   const INSIDE = ['entering', 'mm_browse', 'mm_toqueue', 'queued'];
-  const insideCount = () => customers().filter(n => INSIDE.includes(n.state)).length;
+  const insideCount = () => customers().filter(n => INSIDE.includes(n.state) || /^lg_t_/.test(n.state)).length;
   const maxInside = () => Math.min(8, 3 + Math.floor(mm.level / 2) + (mm.up.capacity ? 2 : 0));
   const entryGap = () => clamp(15 - mm.level * 1.1 - (S.reputation - 50) / 8, 4.5, 18);
 
@@ -449,11 +451,14 @@
   }
   function npcArrive(n, dt) {
     if (!mm.started) return false;
+    if (window.Lounge && Lounge.arrive(n, dt)) return true;   // masa / VIP oda durumları
     const st = n.state;
     if (st === 'approach_door') {
       if (!mm.open) { n.state = 'walk_away'; n.targetX = n.x < 0 ? -22 : 22; n.targetZ = -4.8; return true; }
       if (insideCount() >= maxInside() || mm.nextEntry > 0) return true;   // kapıda bekler
+      if (customers().some(o => o !== n && o.state === 'approach_door' && o.lineT && o.lineT < n.lineT)) return true;   // sıradaki önce girer
       mm.nextEntry = entryGap();
+      if (window.Lounge && Lounge.admit(n)) return true;          // masaya ya da VIP odaya yönlendirildi
       S.doorOpen = true; n.state = 'entering'; n.targetX = (Math.random() - 0.5) * 0.8; n.targetZ = -7.7;
       planVisit(n); return true;
     }
@@ -469,6 +474,7 @@
         else {
           const q = Math.min(s.count, want.qty + (ratio < 0.9 && Math.random() < 0.3 ? 1 : 0));
           s.count -= q; for (let i = 0; i < q; i++) n.mmTaken.push(it.id);
+          carry(n, 'box');
           refreshSlot(s); syncStock(); n.handoffTimer = 0.45;
         }
       }
@@ -498,6 +504,7 @@
   }
   function onRenege(n) {
     if (!mm.started) return;
+    carry(n, null);
     if (mm.co && mm.co.npc === n) clearCounter(true);
     else if (n.order && n.order.taken) returnToShelf(n.order.items);
     n.inCheckout = false; mm.stats.lost++;
@@ -511,6 +518,7 @@
 
   // Satışı kapat: muhasebe, XP, itibar, poşet teslimi
   function settleSale(n, by, extra = {}) {
+    carry(n, null);
     const items = n.order.items; let gross = 0, tax = 0, cogs = 0, ratioSum = 0;
     for (const id of items) {
       const it = item(id) || mm.defs[id]; const p = it.price, r = it.btw || 0.21;
@@ -535,7 +543,19 @@
     B.startOrderHandoffAnimation(n, () => { n.state = 'leaving'; n.order = null; n.mmDone = false; n.mmPlan = null; });
     B.updateUI();
   }
+  // Masa / VIP oda satışları (garson servisi, giriş ücreti) — kasadaki satışla aynı muhasebe
+  function addRevenue(gross, btw, cogs, n, msg, xp) {
+    gross = r2(gross); const tax = r2(gross * (btw / (1 + btw))), net = r2(gross - tax);
+    S.cash = r2(S.cash + net);
+    const L = S.ledger; L.revenue = r2(L.revenue + gross); L.netRevenue = r2(L.netRevenue + net); L.cogs = r2(L.cogs + (cogs || 0)); L.tax = r2(L.tax + tax); L.salesCount += 1;
+    B.recomputeProfit();
+    mm.stats.served++; mm.stats.revenue = r2(mm.stats.revenue + gross); mm.totals.served++;
+    S.reputation = clamp(+(S.reputation + 0.3).toFixed(1), 5, 100);
+    addXP(xp || 6); if (n && msg) emote(n, msg + ' · ' + eur(gross));
+    B.updateUI();
+  }
   function rejectCustomer(n, msg) {
+    carry(n, null);
     returnToShelf(n.order.items);
     B.removeOrderBubbleFromNPC(n);
     n.inCheckout = false; n.state = 'leaving'; n.order = null; n.mmPlan = null; emote(n, msg);
@@ -574,12 +594,12 @@
     const co = mm.co;
     if (co.npc && co.scanned.length === 0) {   // hiç okutulmadıysa müşteriyi serbest bırak (kasiyer bakabilir)
       for (const u of co.units) if (u.parent) u.parent.remove(u);
-      co.npc.inCheckout = false; co.npc = null; co.units = []; co.id = null; co.phase = 'wait';
+      carry(co.npc, 'box'); co.npc.inCheckout = false; co.npc = null; co.units = []; co.id = null; co.phase = 'wait';
     }
     if (!mm.co.npc) mm.co = null;
   }
   function beginCustomer(n) {
-    const co = mm.co; co.npc = n; n.inCheckout = true; co.scanned = []; co.units = []; co.pay = null;
+    const co = mm.co; co.npc = n; n.inCheckout = true; co.scanned = []; co.units = []; co.pay = null; carry(n, null);
     co.idDone = !n.order.needsId; co.phase = 'scan';
     n.order.items.forEach((pid, i) => {
       const u = unitMesh(pid), row = Math.floor(i / 4), col = i % 4;
@@ -1269,7 +1289,7 @@
     });
     el('mm-settings').addEventListener('input', (e) => { if (e.target.id === 'mm-sens') { mm.settings.sens = +e.target.value; applySettings(); } });
     el('mm-help').addEventListener('click', (e) => { if (e.target.closest('button[data-close]')) closeUI(); });
-    if (window.ModelCast) el('mm-credits').innerHTML = '<b>3D model lisansları</b>' + ModelCast.credits().map(c => `<div>“${c.title}” — ${c.author} · <a href="${c.url}" target="_blank" rel="noopener">Sketchfab</a> · ${c.license} (oyun için optimize edildi)</div>`).join('');
+    if (window.ModelCast) el('mm-credits').innerHTML = '<b>3D model lisansları</b>' + ModelCast.credits().concat(window.Lounge ? Lounge.credits() : []).map(c => `<div>“${c.title}” — ${c.author} · <a href="${c.url}" target="_blank" rel="noopener">Sketchfab</a> · ${c.license} (oyun için optimize edildi)</div>`).join('');
     el('mm-report').addEventListener('click', (e) => { if (e.target.closest('#mm-next-day')) nextDay(); });
     el('mm-top').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return; const a = b.dataset.t;
@@ -1473,7 +1493,7 @@
       <button class="mm-mb" data-m="new">Yeni oyun<small>Jordaan'da küçük bir dükkânla başla</small></button>
       <button class="mm-mb" data-m="help">Nasıl oynanır</button>
       <button class="mm-mb" data-m="settings">Ayarlar</button>
-      <button class="mm-mb" data-m="cast">Karakterler<small>25 özgün müşteri</small></button>
+      <button class="mm-mb" data-m="cast">Karakterler<small>41 karakter · 16 model</small></button>
     </div><div class="mm-ver">BABA. Oyunlar · Market modu v1</div></div>
 
     <div class="mm-ov" id="mm-pause"><div class="mm-panel"><h2>Duraklatıldı</h2><div class="mm-pause-list">

@@ -21,6 +21,10 @@ Oyundaki aşağıdaki 3D modeller Sketchfab'dan alınmış ve web için optimize
 | Balthazar (Gezgin) | Balthazar (rigged & animated) | Jungle Jim | CC BY 4.0 | https://sketchfab.com/jungle_jim |
 | Ivan (Yaşlı Denizci) | Realistic Old Russian Guy | Jungle Jim | CC BY 4.0 | https://sketchfab.com/jungle_jim |
 | Mevrouw Noir (Siyah Elbiseli Hanım) | Lady In Black Dress | aribb | CC BY-NC 4.0 | https://sketchfab.com/chantinlong1103 |
+| Masalardaki küllük | CC0 - Ashtray | plaggy | CC BY 4.0 | https://sketchfab.com/3d-models/cc0-ashtray-313192b7abae47ffa82e4ba24e947f70 |
+| Masalardaki bong | Bong glass for smoking Weed | riosstudio | CC BY 4.0 | https://sketchfab.com/3d-models/bong-glass-for-smoking-weed-50ef251d19cc4e909f8369aae5aa901e |
+| Köşedeki dekor | High Mushroom Smoking weed | damongraphics | CC BY 4.0 | https://sketchfab.com/3d-models/high-mushroom-smoking-weed-d3b9e71cd1d74cf692ab19d0aa392c87 |
+| VIP oda iç dekoru | Room Weed | Cosmar_one | CC BY 4.0 | https://sketchfab.com/3d-models/room-weed-91e12fd8c06f49309a452d82e43d98c0 |
 | Vitrin ürünü (kavanoz içi) | Weed Nug 1 | nicholscameron4321 | CC BY 4.0 | https://sketchfab.com/3d-models/weed-nug-1-968daae03a614dfa80d9327e067eae94 |
 
 Lisans metinleri: https://creativecommons.org/licenses/by/4.0/ · https://creativecommons.org/licenses/by-nc/4.0/

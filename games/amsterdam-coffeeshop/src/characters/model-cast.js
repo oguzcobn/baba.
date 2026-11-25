@@ -33,7 +33,7 @@
     { id: 'glb_boy', file: 'boy.glb', name: 'Daan', title: 'Kampüs Çocuğu', stature: 1.78, color: 0x2563eb, Fr: 0.23, desc: 'Üniversite kampüsünden gelen, sınav haftasında kahvesiz yaşayamayan genç.', credit: C('character boy #1 (FBX)', 'BELAZ', 'https://sketchfab.com/asset_for_games') },
     { id: 'glb_balthazar', file: 'balthazar.glb', name: 'Balthazar', title: 'Gezgin', stature: 1.82, color: 0x92400e, Fr: 0.19, desc: 'Dünyayı dolaşıp her şehirden bir hikâye toplayan gezgin.', credit: C('Balthazar (rigged & animated)', 'Jungle Jim', 'https://sketchfab.com/jungle_jim') },
     { id: 'glb_oldrus', file: 'oldrus.glb', name: 'Ivan', title: 'Yaşlı Denizci', stature: 1.72, color: 0x64748b, Fr: 0.13, desc: 'Gençliğinde Baltık\'ta gemi kaptanlığı yapmış, ağır ve sakin adımlı yaşlı denizci.', credit: C('Realistic Old Russian Guy (animated)', 'Jungle Jim', 'https://sketchfab.com/jungle_jim') },
-    { id: 'glb_lady', file: 'lady.glb', name: 'Mevrouw Noir', title: 'Siyah Elbiseli Hanım', stature: 1.72, color: 0x111827, Fr: 0.2, desc: 'Opera çıkışı uğrayan, her zaman en zarif siparişi veren hanımefendi.', credit: C('Lady In Black Dress', 'aribb', 'https://sketchfab.com/chantinlong1103', 'CC BY-NC 4.0') },
+    { id: 'glb_lady', file: 'lady.glb', name: 'Mevrouw Noir', title: 'Siyah Elbiseli Hanım', stature: 1.72, rotY: Math.PI, color: 0x111827, Fr: 0.2, desc: 'Opera çıkışı uğrayan, her zaman en zarif siparişi veren hanımefendi.', credit: C('Lady In Black Dress', 'aribb', 'https://sketchfab.com/chantinlong1103', 'CC BY-NC 4.0') },
     { id: 'glb_suit', file: 'suit.glb', name: 'Meneer Pak', title: 'Takım Elbiseli Adam', stature: 1.8, color: 0x475569, hide: [/floor/i], Fr: 0.2, desc: 'Zuidas\'taki ofisinden öğle arasında kaçan, kravatını hiç gevşetmeyen bir bankacı.', credit: C('Man In Suit', 'jetsu', 'https://sketchfab.com/3d-models/man-in-suit-7668c90721144544b3a929edf9eeac9c') },
     { id: 'glb_viking', file: 'viking.glb', name: 'Bjorn', title: 'Viking Savaşçı', stature: 1.9, color: 0x7f1d1d, Fr: 0.17, desc: 'Kalkanı ve baltasıyla gelen, ama kasada en kibar müşteri olan bir viking.', credit: C('Viking/Medieval Game Character', 'CGenesis', 'https://sketchfab.com/3d-models/vikingmedieval-game-character-a9e99a47d2a24957ab6c08c9e57ad48c') }
   ];
@@ -132,7 +132,12 @@
   function prepare(def, gltf) {
     const model = gltf.scene;
     model.traverse(o => {
-      if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if ((def.hide || []).some(re => re.test(o.name))) o.visible = false; }
+      if (o.isMesh) {
+        o.castShadow = true; o.frustumCulled = false; if ((def.hide || []).some(re => re.test(o.name))) o.visible = false;
+        // Sketchfab dışa aktarımları çoğu zaman tüm kıyafeti "saydam" işaretler → çizim sırası karışır, vücut kıyafetin
+        // içinden görünür. Saydamlığı alfa kesmeye çevir: opak yüzeyler doğru derinlikle çizilir, saç kenarları korunur.
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m && m.transparent) { m.transparent = false; m.alphaTest = 0.5; m.depthWrite = true; m.needsUpdate = true; } });
+      }
     });
     const wrap = new THREE.Group(); wrap.add(model); model.rotation.x = def.rotX || 0; model.rotation.y = def.rotY || 0;
     def.pose = choosePose(model, wrap);
@@ -191,16 +196,18 @@
     root.updateMatrixWorld(true);
     const bn = classifyBones(inner);
     const R = {};
-    for (const k of Object.keys(bn)) R[k] = boneCtl(bn[k], root);
-    if (R.upL && bn.foL) lowerArm(R.upL, bn.foL, root, 1);
-    if (R.upR && bn.foR) lowerArm(R.upR, bn.foR, root, -1);
+    // önce üst kolları T-pozdan indir, SONRA diğer kemiklerin eksenlerini hesapla (önkol/el eksenleri yeni poza göre)
+    if (bn.upL && bn.foL) lowerArm(boneCtl(bn.upL, root), bn.foL, root, 1);
     root.updateMatrixWorld(true);
+    if (bn.upR && bn.foR) lowerArm(boneCtl(bn.upR, root), bn.foR, root, -1);
+    root.updateMatrixWorld(true);
+    for (const k of Object.keys(bn)) R[k] = boneCtl(bn[k], root);
     R.hips = boneCtl(bn.thL.parent, root);
     const leg = (s) => {
       const hip = localPos(bn['th' + s], root), knee = localPos(bn['sh' + s], root), ank = localPos(bn['ft' + s], root);
       const L1 = hip.distanceTo(knee), L2 = knee.distanceTo(ank);
       const Hr = hip.y - ank.y, k = Hr / (L1 + L2);
-      return { th: R['th' + s], sh: R['sh' + s], ft: R['ft' + s], L1s: L1 * k, L2s: L2 * k, Hrest: Hr,
+      return { th: R['th' + s], sh: R['sh' + s], ft: R['ft' + s], L1s: L1 * k, L2s: L2 * k, Hrest: Hr, hipY: hip.y, ankY: ank.y,
         p1: pitchOf(knee.clone().sub(hip)), p2: pitchOf(ank.clone().sub(knee)), footLen: Math.max(0.12, def.stature * 0.13) };
     };
     const legs = { L: leg('L'), R: leg('R') };
@@ -221,7 +228,44 @@
       setRot(L.ft, (a2 - L.p2) - toeUp, 0, 0);
     }
 
+    const armSt = { L: { p: { x: 0, v: 0 }, f: { x: 0, v: 0 }, a: { x: 0, v: 0 } }, R: { p: { x: 0, v: 0 }, f: { x: 0, v: 0 }, a: { x: 0, v: 0 } } };
+    // Kol pozunu kritik sönümlü yaylarla hedefe götür (ani sıçrama yok)
+    function armTo(s, pitch, flex, abd, dt) {
+      if (!R['up' + s]) return;
+      const a = armSt[s], sg = s === 'L' ? 1 : -1, w = 9;
+      setRot(R['up' + s], crit(a.p, pitch, w, dt), 0, sg * crit(a.a, abd, w, dt));
+      if (R['fo' + s]) setRot(R['fo' + s], crit(a.f, flex, w, dt), 0, 0);
+    }
+    function syncArm(s, pitch, flex, abd) { const a = armSt[s]; a.p.x = pitch; a.f.x = flex; a.a.x = abd; a.p.v = a.f.v = a.a.v = 0; }
+    const kS = def.stature / 1.75;
+
+    function sit(st, dt, t) {
+      const hipY = (legs.L.hipY + legs.R.hipY) / 2, ankY = (legs.L.ankY + legs.R.ankY) / 2;
+      const hipT = st.seatY + 0.085 * kS;
+      st.motion.position.set(0, hipT - hipY, -0.05 * kS); st.motion.rotation.set(0, 0, 0);
+      for (const s of ['L', 'R']) solve(legs[s], legs[s].L1s * 0.9, -(hipT - ankY), 0);
+      setRot(R.hips, 0, 0, 0);
+      const bongLean = st.act === 'bong' ? 0.42 * st.actW : 0;
+      const sp = -0.05 + 0.012 * st.breath + bongLean;
+      if (R.spine) setRot(R.spine, sp, 0, 0);
+      if (R.chest) setRot(R.chest, 0.4 * bongLean + 0.015 * st.breath, 0, 0);
+      sacT -= dt; if (sacT <= 0) { sacT = 1.5 + Math.random() * 3; gazeY = (Math.random() * 2 - 1) * 0.5; gazeP = (Math.random() * 2 - 1) * 0.1; }
+      const hy = crit(gz.yaw, st.act === 'bong' ? 0 : gazeY, 5, dt), hp = crit(gz.pit, gazeP, 5, dt);
+      if (R.neck) setRot(R.neck, hp * 0.5 + 0.15 * bongLean, hy * 0.5, 0);
+      if (R.head) setRot(R.head, hp * 0.5 + 0.2 * bongLean, hy * 0.5, 0);
+      if (st.act === 'smoke') {
+        // el ağza: 9 s'lik döngü, ~2.4 s nefes; yükselme yumuşak (smoothstep)
+        const u = st.actT % 9, rise = u < 0.7 ? u / 0.7 : u < 2.4 ? 1 : u < 3.1 ? 1 - (u - 2.4) / 0.7 : 0;
+        const b = rise * rise * (3 - 2 * rise);
+        armTo('R', -0.12 - 0.42 * b, -1.05 - 1.15 * b, 0.1 + 0.25 * b, dt);
+        if (u >= 2.4 && st.puffAt !== Math.floor(st.actT / 9)) { st.puffAt = Math.floor(st.actT / 9); st.onPuff && st.onPuff(); }
+      } else if (st.act === 'bong') armTo('R', -0.75 * st.actW - 0.4, -0.7, 0.05, dt);
+      else armTo('R', -0.12, -1.05, 0.1, dt);
+      armTo('L', st.act === 'bong' ? -0.75 * st.actW - 0.4 : -0.12, st.act === 'bong' ? -0.55 : -1.05, 0.1, dt);
+    }
+
     return function step(st, dt, t) {
+      if (st.mode === 'sit') { sit(st, dt, t); return; }
       const { amp, phase, lean, bank, breath, S, beta } = st;
       const clearance = (0.1 + 0.04 * amp) * Hrest * Math.min(1, amp * 1.6);
       const feet = {};
@@ -269,6 +313,8 @@
         const th = osc(arm[s].st, target, arm[s].w, 0.45, dt);
         setRot(R['up' + s], th, 0, sg * (0.05 + 0.015 * breath));
         if (R['fo' + s]) setRot(R['fo' + s], -(0.1 + 0.3 * Math.max(0, -th) + 0.06 * amp), 0, 0);
+        if (st.carry === 'box') armTo(s, -0.38 + 0.03 * amp * Math.sin(phase * TAU), -1.15, -0.16, dt);
+        else syncArm(s, th, -(0.1 + 0.3 * Math.max(0, -th) + 0.06 * amp), 0.05);
       }
     };
   }
@@ -276,6 +322,7 @@
   // ---------------------------------------------------------------------------
   // KARAKTER KURUCU
   // ---------------------------------------------------------------------------
+  const _hA = new THREE.Vector3(), _hB = new THREE.Vector3();
   function build(id) {
     const def = DEFS.find(d => d.id === id), tpl = templates[id];
     if (!def || !tpl) return null;
@@ -292,6 +339,32 @@
 
     let gait = null;
     if (def.rigged) { try { gait = makeGait(inner, root, def); } catch (e) { console.warn('gait', id, e); } }
+    // Gerçek el kemiklerine tutucu: eşyalar (poşet, joint, şemsiye) elle birlikte hareket eder.
+    // Tutucu, kemiğin dünya dönüş/ölçeğini sıfırlar → eşyalar dik ve doğru boyda durur.
+    const hands = {};
+    if (gait) {
+      root.updateMatrixWorld(true);
+      const hb = classifyBones(inner);
+      for (const s of ['L', 'R']) {
+        const hand = hb['hd' + s] || hb['fo' + s]; if (!hand) continue;
+        const h = new THREE.Group(), ws = new THREE.Vector3();
+        h.quaternion.copy(relQuat(hand, root)).invert();
+        hand.getWorldScale(ws); h.scale.set(1 / ws.x, 1 / ws.y, 1 / ws.z);
+        h.position.set(0, 0, 0); hand.add(h); hands[s] = h;
+        // eski kod eşyayı "dirsek" grubuna ~0.34 m aşağı koyuyor; vekil grup bunu ele göre kaydırır
+        const proxy = new THREE.Group(); proxy.position.set(0, 0.22, 0); h.add(proxy);
+        (s === 'L' ? armL : armR).elbow = proxy;
+      }
+      if (hands.R) { armR.elbow.add(umbrella); umbrella.position.y = -0.27; }
+    }
+    // Kutu: iki elle göğüs önünde taşınan alışveriş kutusu
+    const box = new THREE.Group(); box.visible = false;
+    {
+      const bm = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.2, 0.24), new THREE.MeshStandardMaterial({ color: 0xb98b55, roughness: 0.9 }));
+      bm.castShadow = true; box.add(bm);
+      const tape = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.202, 0.242), new THREE.MeshStandardMaterial({ color: 0x0f5132, roughness: 0.6 })); box.add(tape);
+      box.position.set(0, def.stature * 0.6, 0.27 * def.stature / 1.75); motion.add(box);
+    }
     let mixer = null, dance = null;
     if (clips[id]) { mixer = new THREE.AnimationMixer(inner); dance = mixer.clipAction(clips[id]); }
 
@@ -301,7 +374,7 @@
     const ctrl = { mass, breathF: 0.26 * Math.pow(mass / 70, -0.25) };
     const vS = { x: 0, v: 0 };
     let phase = Math.random(), lastYaw = null, bank = 0, aF = 0, lastV = 0, still = 0, dancing = false;
-    const st = { motion };
+    const st = { motion, mode: 'walk', carry: null, act: null, actT: 0, actW: 0, seatY: 0.62 };
     function update(dt, sp, t) {
       dt = Math.min(dt, 0.05);
       const v = Math.max(0, crit(vS, sp, 6, dt));
@@ -318,8 +391,15 @@
       const breath = Math.sin(t * ctrl.breathF * TAU);
       const lean = 0.04 + 0.05 * Math.min(1, amp) + clamp(aF * 0.04, -0.08, 0.1);
       still = v < 0.04 ? still + dt : 0;
+      if (st.mode === 'sit') {
+        if (dancing) { dancing = false; dance.stop(); }
+        st.actT += dt; st.actW += ((st.act ? 1 : 0) - st.actW) * Math.min(1, dt * 3);
+        st.breath = Math.sin(t * ctrl.breathF * TAU);
+        if (gait) gait(st, dt, t); else { motion.position.set(0, -0.32 * def.stature / 1.75, 0); motion.rotation.set(0, 0, 0); }
+        return;
+      }
       if (dance) {
-        const want = still > 2.2;
+        const want = still > 2.2 && !st.carry;
         if (want && !dancing) { dancing = true; dance.reset().fadeIn(0.35).play(); }
         else if (!want && dancing) { dancing = false; dance.stop(); }
         if (dancing) { mixer.update(dt); motion.position.set(0, 0, 0); motion.rotation.set(0, 0, 0); return; }
@@ -327,6 +407,12 @@
       if (gait) {
         Object.assign(st, { v, amp: Math.min(1, amp), phase, lean, bank, breath, Fr, S, beta });
         gait(st, dt, t);
+        if (box.visible && hands.L && hands.R) {   // kutu iki avucun tam ortasında
+          root.updateMatrixWorld(true);
+          const a = hands.L.getWorldPosition(_hA), b = hands.R.getWorldPosition(_hB);
+          a.add(b).multiplyScalar(0.5); motion.worldToLocal(a);
+          box.position.set(a.x, a.y - 0.02, a.z + 0.02);
+        }
       } else {
         const ph = phase * TAU, a1 = Math.min(1, amp);
         motion.position.y = 0.045 * a1 * Math.abs(Math.sin(ph));
@@ -340,7 +426,16 @@
     return {
       group: root, stature: def.stature, baseHipY: legLen, pelvisPivot: motion, spinePivot: body, headPivot: body, torsoMesh: body,
       legL: dummyLeg(), legR: dummyLeg(), armL, armR, umbrella, _cType: id,
-      cast: { def: Object.assign({ loco: 'biped', math: mathNotes(def) }, def), ctx: null, ctrl, speed, update, _rig: !!gait }
+      cast: {
+        def: Object.assign({ loco: 'biped', math: mathNotes(def) }, def), ctx: null, ctrl, speed, update, _rig: !!gait,
+        canSit: !!gait, hands,
+        setCarry(kind) { st.carry = kind; box.visible = kind === 'box' && !!hands.R; },
+        sit(seatY, act) { st.mode = 'sit'; st.seatY = seatY; st.act = act || null; st.actT = Math.random() * 4; st.carry = null; box.visible = false; },
+        setAct(act) { st.act = act || null; st.actT = 0; },
+        stand() { st.mode = 'walk'; st.act = null; motion.position.set(0, 0, 0); },
+        onPuff(fn) { st.onPuff = fn; },
+        headWorld(v) { const hb = this._hb || (this._hb = classifyBones(inner)); return (hb.head || root).getWorldPosition(v || new THREE.Vector3()); }
+      }
     };
   }
   function mathNotes(def) {
@@ -350,8 +445,9 @@
       : ['İskeletsiz model: ters sarkaç zıplaması y = A·|sin φ|', 'Yanal yuvarlanma ve yatış φ = atan(v·ω/g)', cr];
   }
 
+  const reserved = new Set();
   function next() {
-    const ids = DEFS.filter(d => templates[d.id]).map(d => d.id);
+    const ids = DEFS.filter(d => templates[d.id] && !reserved.has(d.id)).map(d => d.id);
     if (!ids.length) return null;
     return build(ids[cursor++ % ids.length]);
   }
@@ -422,6 +518,7 @@
 
   window.ModelCast = {
     local, DEFS, PRODUCT, build, next, classifyBones,
+    reserve: (id) => reserved.add(id), has: (id) => !!templates[id],
     ready: () => readyFlag,
     onReady: (cb) => { if (readyFlag) cb(); else readyCbs.push(cb); },
     nug: () => (nugGeo ? { geo: nugGeo, mat: nugMat } : null),

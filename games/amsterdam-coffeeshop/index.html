@@ -11,6 +11,7 @@
 <script src="src/characters/cast-engine.js"></script>
 <script src="src/characters/model-cast.js"></script>
 <script src="src/gameplay/market-mode.js"></script>
+<script src="src/gameplay/lounge.js"></script>
 <style>
   :root {
     --bg-glass: rgba(10, 15, 22, 0.84);
@@ -4107,26 +4108,55 @@
 
     // NPCs & Cyclists with Mathematical Collision Resolution & Doorway Funneling
     const isRain = state.weather === 'Rain';
+    // Kapı önü bekleme sırası: kapının sağında, cephe boyunca (kapıyı tıkamaz)
+    const DOORS = [{ x: 0, z: -6.2, x0: -4.4, x1: 4.4, lane: 0.38 }].concat(window.__extraDoors || []);
+    const nowMs = performance.now();
+    const doorLine = npcs.filter(n => n.role === 'customer' && n.state === 'approach_door');
+    npcs.forEach(n => { if (n.role === 'customer' && n.state !== 'approach_door') n.lineT = 0; });
+    doorLine.forEach(n => { if (!n.lineT) n.lineT = nowMs + n.id; });
+    doorLine.sort((a, b) => a.lineT - b.lineT).forEach((n, k) => { n.targetX = 1.35 + k * 0.8; n.targetZ = -5.3; });
     npcs.forEach(n => {
       n.meshObj.umbrella.visible = isRain && n.z > -6.0;
       const dx = n.targetX - n.x, dz = n.targetZ - n.z, dist = Math.hypot(dx, dz);
       if (dist > 0.25) {
-        let vx = (dx / dist) * n.speed;
-        let vz = (dz / dist) * n.speed;
-        // Soft repulsion between NPCs to prevent overlapping
-        for (const other of npcs) {
-          if (other.id === n.id) continue;
-          const ox = n.x - other.x, oz = n.z - other.z;
-          const od = Math.hypot(ox, oz);
-          if (od > 0.01 && od < 0.72) {
-            const push = (0.72 - od) * 2.2;
-            vx += (ox / od) * push; vz += (oz / od) * push;
+        // Kapı geçidi: hedef cephenin öbür yanındaysa önce kendi şeridine hizalan, sonra düz geç
+        // (giriş sağ şerit, çıkış sol şerit — iki akış birbirine değmez)
+        let gx = n.targetX, gz = n.targetZ;
+        const door = n.role === 'customer' ? DOORS.find(d => n.x > d.x0 && n.x < d.x1) : null;
+        if (door) {
+          const outside = n.z > door.z, tOutside = n.targetZ > door.z;
+          if (outside !== tOutside) {
+            const lane = door.x + (outside ? door.lane : -door.lane), side = outside ? 1 : -1;
+            const aligned = Math.abs(n.x - lane) < 0.16;
+            if (!aligned && Math.abs(n.z - door.z) > 0.35) { gx = lane; gz = door.z + side * 0.75; }
+            else { gx = lane; gz = door.z - side * 0.8; }
+          }
+        }
+        const ex = gx - n.x, ez = gz - n.z, ed = Math.max(1e-4, Math.hypot(ex, ez));
+        let vx = (ex / ed) * n.speed;
+        let vz = (ez / ed) * n.speed;
+        // Yumuşak itme + karşılaşmada sağa kaçma; takılan kişi kısa süre "hayalet" geçer
+        n.ghostT = Math.max(0, (n.ghostT || 0) - dt);
+        if (n.ghostT <= 0) {
+          const hx = ex / ed, hz = ez / ed;
+          for (const other of npcs) {
+            if (other.id === n.id) continue;
+            const ox = n.x - other.x, oz = n.z - other.z;
+            const od = Math.hypot(ox, oz);
+            if (od > 0.01 && od < 0.72) {
+              const push = (0.72 - od) * 2.2;
+              vx += (ox / od) * push; vz += (oz / od) * push;
+              if (-(ox * hx + oz * hz) / od > 0.5) { vx += -hz * push * 0.8; vz += hx * push * 0.8; }
+            }
           }
         }
         const allowDoor = n.role === 'customer' && (n.state === 'entering' || n.state === 'exit_door');
         const colRes = resolvePlayerCollision(n.x + vx * dt, n.z + vz * dt, 0.32, allowDoor);
+        const moved = Math.hypot(colRes.x - n.x, colRes.z - n.z);
+        n.stuckT = moved < n.speed * dt * 0.25 ? (n.stuckT || 0) + dt : Math.max(0, (n.stuckT || 0) - dt * 2);
+        if (n.stuckT > 1.5) { n.stuckT = 0; n.ghostT = 1.4; }
         n.x = colRes.x; n.z = colRes.z;
-        n.meshObj.group.rotation.y = Math.atan2(dx, dz);
+        n.meshObj.group.rotation.y = Math.atan2(ex, ez);
         const stride = Math.max(0.6, 0.78 * n.meshObj.stature);
         n.phase += (n.speed / stride) * Math.PI * 2 * dt;
         animateRig(n.meshObj, n.phase, n.speed, elapsed, dt);
@@ -4169,12 +4199,12 @@
           }
         } else if (n.state === 'leaving') {
           n.state = 'exit_door';
-          n.targetX = 0.0;
-          n.targetZ = -4.8;
+          n.targetX = -0.38;
+          n.targetZ = -4.3;
         } else if (n.state === 'exit_door') {
           n.state = 'walk_away';
           n.targetX = (n.id % 2 === 0 ? -22 : 22);
-          n.targetZ = -4.8;
+          n.targetZ = -4.1;
         } else if (n.state === 'walk_away') {
           if (n.heldBag) { n.meshObj.armR.elbow.remove(n.heldBag); n.heldBag = null; }
           swapNpcCharacter(n);
@@ -4185,6 +4215,7 @@
       }
       let ny = 0;
       if (n.x > -4.5 && n.x < 4.5 && n.z < -6.2) ny = 0.16;
+      else if (n.x > -10.85 && n.x < -5.55 && n.z < -6.8 && window.Lounge && Lounge.vipReady()) ny = 0.13;
       else if ((n.z < -3.2 && n.z >= -6.2) || n.z > 29.2) ny = 0.12;
       n.meshObj.group.position.set(n.x, ny, n.z);
     });
@@ -4479,6 +4510,7 @@
       waterMat.uniforms.uTime.value = simElapsed;
       updateCamera();
       if (window.MarketMode && MarketMode.frame) MarketMode.frame(window.__gamePaused ? 0 : dt, simElapsed);
+      if (window.Lounge && Lounge.frame) Lounge.frame(window.__gamePaused ? 0 : dt, simElapsed);
 
       if (state.renderMode === 'basic') {
         // Uyumlu grafik: tek geçiş, ACES + sRGB doğrudan ekrana (zayıf GPU / mobil)
