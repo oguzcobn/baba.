@@ -2594,7 +2594,7 @@
       const bx = -0.7 + i * 1.3;
       rig.group.position.set(bx, 0.16, -16.15);
       scene.add(rig.group);
-      if (g) { rig.group.updateMatrixWorld(true); rig.cast.addApron(0x065f46); }
+
       staffEntities.push({ role: 'barista', x: bx, z: -16.15, homeX: bx, phase: i * 1.4, chillRoll: g ? null : chillRoll, smokePuffs: g ? null : smokePuffs, meshObj: rig });
     }
 
@@ -2618,7 +2618,7 @@
 
       rig.group.position.set(1.5, 0.16, -9.5 - i * 2.0);
       scene.add(rig.group);
-      if (g) { rig.group.updateMatrixWorld(true); rig.cast.addApron(0x0369a1); }
+
       staffEntities.push({ role: 'cleaner', x: 1.5, z: -9.5 - i * 2.0, wpIdx: 0, sweepTimer: 2.2, phase: i, meshObj: rig });
     }
 
@@ -2928,6 +2928,35 @@
     // Physical elevation + Kelvin + Airmass displayed above
     sound.updateAmbience();
   }
+
+  // ---- 60 FPS valisi: gerçek kare süresini ölç, çözünürlüğü ve gölgeleri otomatik ayarla ----
+  const perfGov = { last: 0, acc: 0, n: 0, dpr: null, cool: 0, shadowsOff: false, frame: 0 };
+  function perfGovern() {
+    const now = performance.now(), ms = perfGov.last ? now - perfGov.last : 16.7; perfGov.last = now;
+    perfGov.frame++;
+    // gölgeler iki karede bir güncellenir (statik sahne + yavaş karakterler: göze fark edilmez)
+    if (renderer.shadowMap.enabled) { renderer.shadowMap.autoUpdate = false; if (perfGov.frame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
+    if (ms > 250 || document.hidden) return;
+    perfGov.acc += ms; perfGov.n++;
+    if (perfGov.n < 45) return;
+    const avg = perfGov.acc / perfGov.n; perfGov.acc = 0; perfGov.n = 0;
+    const cap = Math.min(window.devicePixelRatio || 1, 1.75);
+    if (perfGov.dpr == null) perfGov.dpr = renderer.getPixelRatio();
+    let d = perfGov.dpr;
+    if (avg > 18.5) d = Math.max(0.55, d * (avg > 28 ? 0.8 : 0.9));
+    else if (avg < 14 && perfGov.cool <= 0) d = Math.min(cap, d * 1.06);
+    perfGov.cool--;
+    if (avg > 18.5 && perfGov.dpr <= 0.56 && !perfGov.shadowsOff) {   // en düşük çözünürlükte hâlâ yavaşsa gölgeleri kapat
+      perfGov.shadowsOff = true; renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
+    }
+    if (Math.abs(d - perfGov.dpr) > 0.02) {
+      if (d > perfGov.dpr) perfGov.cool = 3;
+      perfGov.dpr = d; renderer.setPixelRatio(d);
+      const c = document.getElementById('canvas-container');
+      if (typeof resizeRenderTargets === 'function') resizeRenderTargets(c.clientWidth, c.clientHeight, d);
+    }
+  }
+  window.__perfGov = perfGov;
 
   function applyQualityProfile(q) {
     state.quality = q;
@@ -4297,12 +4326,13 @@
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 320);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 820;
+    renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: 'high-performance', preserveDrawingBuffer: false });
+    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75);
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(dpr);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.outputEncoding = THREE.LinearEncoding; // Post-process composite handles ACES + sRGB gamma!
     container.appendChild(renderer.domElement);
 
@@ -4355,7 +4385,7 @@
     // Physical Sun + Hemisphere GI + Canal Bounce Light
     sunLight = new THREE.DirectionalLight(0xfff1dc, liveParams.sunIntensity);
     sunLight.position.set(28, 42, 22); sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.mapSize.set(1024, 1024);
     sunLight.shadow.camera.left = -35; sunLight.shadow.camera.right = 35;
     sunLight.shadow.camera.top = 35; sunLight.shadow.camera.bottom = -35;
     sunLight.shadow.bias = -0.0005;
@@ -4538,6 +4568,7 @@
       updateCamera();
       if (window.MarketMode && MarketMode.frame) MarketMode.frame(window.__gamePaused ? 0 : dt, simElapsed);
       if (window.Lounge && Lounge.frame) Lounge.frame(window.__gamePaused ? 0 : dt, simElapsed);
+      perfGovern();
 
       if (state.renderMode === 'basic') {
         // Uyumlu grafik: tek geçiş, ACES + sRGB doğrudan ekrana (zayıf GPU / mobil)

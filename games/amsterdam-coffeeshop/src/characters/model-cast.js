@@ -132,8 +132,7 @@
     model.traverse(o => {
       if (o.isMesh) {
         o.castShadow = true; if ((def.hide || []).some(re => re.test(o.name))) o.visible = false;
-        // görüş alanı dışındakiler çizilmesin: bağlama pozu küresini hareket payı için büyüt
-        o.geometry.computeBoundingSphere(); if (o.geometry.boundingSphere) o.geometry.boundingSphere.radius *= 1.8; o.frustumCulled = true;
+        o.frustumCulled = false;   // kırpma karakter düzeyinde yapılır (bkz. culled) — iskelet kutusu güvenilmez
         // Sketchfab dışa aktarımları çoğu zaman tüm kıyafeti "saydam" işaretler → çizim sırası karışır, vücut kıyafetin
         // içinden görünür. Saydamlığı alfa kesmeye çevir: opak yüzeyler doğru derinlikle çizilir, saç kenarları korunur.
         (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { if (m && m.transparent) { m.transparent = false; m.alphaTest = 0.5; m.depthWrite = true; m.needsUpdate = true; } });
@@ -481,6 +480,8 @@
   // KARAKTER KURUCU
   // ---------------------------------------------------------------------------
   const _hA = new THREE.Vector3(), _hB = new THREE.Vector3();
+  const FR = { f: new THREE.Frustum(), m: new THREE.Matrix4(), ok: false }, vSdummy = { x: 0, v: 0 };
+  function beginFrame(cam, scene) { if (!cam) return; FR.scene = scene; cam.updateMatrixWorld(); FR.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); FR.f.setFromProjectionMatrix(FR.m); FR.ok = true; }
   // ---------------------------------------------------------------------------
   // ÖNLÜK: Verlet kumaş simülasyonu
   //   xₙ₊₁ = xₙ + d·(xₙ − xₙ₋₁) + g·h²       (konum Verlet, d: hava sönümü)
@@ -649,8 +650,16 @@
     let phase = Math.random(), lastYaw = null, bank = 0, aF = 0, lastV = 0, still = 0, dancing = false;
     const st = { motion, mode: 'walk', carry: null, act: null, actT: 0, actW: 0, seatY: 0.62, yawOff: 0 };
     let visYaw = null; const yawV = { v: 0 };
+    const _cs = new THREE.Sphere(new THREE.Vector3(), def.stature * 0.8);
     function update(dt, sp, t) {
       dt = Math.min(dt, 0.05);
+      // karakter düzeyinde görüş kırpma: kamera görmüyorsa hiç çizme ve iskeleti hesaplama
+      if (FR.ok && root.parent === FR.scene) {
+        root.getWorldPosition(_cs.center); _cs.center.y += def.stature * 0.5;
+        const vis = FR.f.intersectsSphere(_cs);
+        if (root.visible !== vis) root.visible = vis;
+        if (!vis && st.mode !== 'sit') { phase = (phase + dt * 0.9) % 1; crit(vSdummy, sp, 6, dt); return; }
+      }
       // yumuşak dönüş: gövde yeni yöne kritik sönümlü yayla döner (ani "robot" dönüşü yok)
       { const ty = root.rotation.y; if (visYaw == null) visYaw = ty;
         let d = visYaw - ty; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU;
@@ -815,7 +824,7 @@
 
   window.ModelCast = {
     local, DEFS, PRODUCT, build, next, classifyBones,
-    reserve: (id) => reserved.add(id), has: (id) => !!templates[id], variantOpts,
+    beginFrame, reserve: (id) => reserved.add(id), has: (id) => !!templates[id], variantOpts,
     ready: () => readyFlag,
     onReady: (cb) => { if (readyFlag) cb(); else readyCbs.push(cb); },
     nug: () => (nugGeo ? { geo: nugGeo, mat: nugMat } : null),

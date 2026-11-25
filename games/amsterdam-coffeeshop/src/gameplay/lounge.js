@@ -271,7 +271,7 @@
     // önlük: garson olduğu belli olsun
     B.scene.add(rig.group);
     rig.group.position.set(STATION.x, 0.16, STATION.z); rig.group.updateMatrixWorld(true);
-    rig.cast.addApron && rig.cast.addApron(0x0f5132);   // kumaş fiziğiyle sallanan önlük
+
     lg.waiter = { rig, x: STATION.x, z: STATION.z, tx: STATION.x, tz: STATION.z, task: null, t: 0, yaw: Math.PI, speed: rig.cast.speed * 1.05 };
   }
   function waiterFrame(dt, el) {
@@ -446,6 +446,7 @@
   }
 
   function frame(dt, el) {
+    if (B && window.ModelCast && ModelCast.beginFrame) ModelCast.beginFrame(B.camera, B.scene);
     if (!B || !lg.ready) return;
     lg.t += dt;
     if (!lg.waiter && Math.floor(lg.t) % 2 === 0) makeWaiter();
