@@ -2931,31 +2931,50 @@
   }
 
   // ---- 60 FPS valisi: gerçek kare süresini ölç, çözünürlüğü ve gölgeleri otomatik ayarla ----
-  const perfGov = { last: 0, acc: 0, n: 0, dpr: null, cool: 0, shadowsOff: false, frame: 0 };
+  // Kalite: 'auto' (en az 45 FPS'e sabitler) ya da sabit 'low' | 'med' | 'high' | 'ultra' (otomatik düşmez)
+  const perfGov = { last: 0, acc: 0, n: 0, dpr: null, cool: 0, shadowsOff: false, frame: 0, mode: 'auto', fps: 0, shadowEvery: 2 };
+  const GFX_PRESETS = {
+    low:   { dpr: 0.75, shadows: false, map: 512,  every: 3, soft: false },
+    med:   { dpr: 1.0,  shadows: true,  map: 1024, every: 2, soft: false },
+    high:  { dpr: 1.5,  shadows: true,  map: 1024, every: 1, soft: false },
+    ultra: { dpr: 2.0,  shadows: true,  map: 2048, every: 1, soft: true }
+  };
+  function setShadows(on, map, soft) {
+    renderer.shadowMap.enabled = on; renderer.shadowMap.type = soft ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+    if (sunLight) { if (sunLight.shadow.map) { sunLight.shadow.map.dispose(); sunLight.shadow.map = null; } sunLight.shadow.mapSize.set(map, map); }
+    scene.traverse(o => { if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.needsUpdate = true); });
+  }
+  function setDpr(d) {
+    perfGov.dpr = d; renderer.setPixelRatio(d);
+    const c = document.getElementById('canvas-container');
+    if (typeof resizeRenderTargets === 'function') resizeRenderTargets(c.clientWidth, c.clientHeight, d);
+  }
+  window.setGfxQuality = function (q) {
+    perfGov.mode = q; perfGov.acc = perfGov.n = 0;
+    const p = GFX_PRESETS[q] || GFX_PRESETS.med;
+    if (q === 'auto') { perfGov.shadowsOff = false; perfGov.shadowEvery = 2; setShadows(true, 1024, false); setDpr(Math.min(window.devicePixelRatio || 1, 1.25)); return; }
+    perfGov.shadowEvery = p.every; setShadows(p.shadows, p.map, p.soft); setDpr(Math.min(window.devicePixelRatio || 1, p.dpr) || p.dpr);
+  };
   function perfGovern() {
     const now = performance.now(), ms = perfGov.last ? now - perfGov.last : 16.7; perfGov.last = now;
     perfGov.frame++;
-    // gölgeler iki karede bir güncellenir (statik sahne + yavaş karakterler: göze fark edilmez)
-    if (renderer.shadowMap.enabled) { renderer.shadowMap.autoUpdate = false; if (perfGov.frame % 2 === 0) renderer.shadowMap.needsUpdate = true; }
+    if (renderer.shadowMap.enabled) { renderer.shadowMap.autoUpdate = false; if (perfGov.frame % perfGov.shadowEvery === 0) renderer.shadowMap.needsUpdate = true; }
     if (ms > 250 || document.hidden) return;
     perfGov.acc += ms; perfGov.n++;
-    if (perfGov.n < 45) return;
-    const avg = perfGov.acc / perfGov.n; perfGov.acc = 0; perfGov.n = 0;
+    if (perfGov.n < 40) return;
+    const avg = perfGov.acc / perfGov.n; perfGov.acc = 0; perfGov.n = 0; perfGov.fps = 1000 / avg;
+    if (perfGov.mode !== 'auto') return;            // sabit kalite: asla otomatik düşmez
+    // OTOMATİK: 45 FPS tabanı (22.2 ms). Altına inerse çözünürlüğü düşür; bolca pay varsa yükselt
     const cap = Math.min(window.devicePixelRatio || 1, 1.75);
     if (perfGov.dpr == null) perfGov.dpr = renderer.getPixelRatio();
     let d = perfGov.dpr;
-    if (avg > 18.5) d = Math.max(0.55, d * (avg > 28 ? 0.8 : 0.9));
-    else if (avg < 14 && perfGov.cool <= 0) d = Math.min(cap, d * 1.06);
+    if (avg > 21.5) d = Math.max(0.5, d * (avg > 30 ? 0.8 : 0.9));
+    else if (avg < 16 && perfGov.cool <= 0) d = Math.min(cap, d * 1.06);
     perfGov.cool--;
-    if (avg > 18.5 && perfGov.dpr <= 0.56 && !perfGov.shadowsOff) {   // en düşük çözünürlükte hâlâ yavaşsa gölgeleri kapat
-      perfGov.shadowsOff = true; renderer.shadowMap.enabled = false; scene.traverse(o => { if (o.material) o.material.needsUpdate = true; });
+    if (avg > 21.5 && perfGov.dpr <= 0.52 && !perfGov.shadowsOff) {   // en düşük çözünürlükte hâlâ 45'in altındaysa gölgeleri kapat
+      perfGov.shadowsOff = true; setShadows(false, 512, false);
     }
-    if (Math.abs(d - perfGov.dpr) > 0.02) {
-      if (d > perfGov.dpr) perfGov.cool = 3;
-      perfGov.dpr = d; renderer.setPixelRatio(d);
-      const c = document.getElementById('canvas-container');
-      if (typeof resizeRenderTargets === 'function') resizeRenderTargets(c.clientWidth, c.clientHeight, d);
-    }
+    if (Math.abs(d - perfGov.dpr) > 0.02) { if (d > perfGov.dpr) perfGov.cool = 3; setDpr(d); }
   }
   window.__perfGov = perfGov;
 

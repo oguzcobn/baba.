@@ -61,7 +61,7 @@
     up: {}, unlocked: [], stats: null, totals: { served: 0, playerServed: 0, placed: 0, orders: 0 },
     tut: 0, tutSeenPrices: false, nextEntry: 0, cashierT: 0, stockerT: 0, saveT: 0, hudT: 0,
     target: null, co: null, emotes: [], reportShown: false, expectUnlock: false, defs: {},
-    settings: { gfx: 'hdr', sens: 1, day: 'normal', cam: 1 }, holdTimer: null, uid: 1
+    settings: { gfx: 'hdr', q: 'auto', sens: 1, day: 'normal', cam: 1 }, holdTimer: null, uid: 1
   };
   const newStats = () => ({ served: 0, lost: 0, items: 0, revenue: 0, xp: 0, missed: 0, repStart: S ? S.reputation : 50, idOk: 0, idBad: 0 });
 
@@ -1079,6 +1079,7 @@
   }
   function applySettings() {
     B.setRenderMode(mm.settings.gfx === 'basic' ? 'basic' : 'hdr');
+    if (window.setGfxQuality) window.setGfxQuality(mm.settings.q || 'auto');
     S.timeScale = { short: 84, normal: 60, long: 40 }[mm.settings.day] || 60;
     try { localStorage.setItem(SET_KEY, JSON.stringify(mm.settings)); } catch (e) {}
     renderSettings();
@@ -1086,7 +1087,9 @@
   function renderSettings() {
     const s = mm.settings, seg = (k, opts) => opts.map(([v, l]) => `<button class="mm-seg ${s[k] === v ? 'on' : ''}" data-set="${k}" data-v="${v}">${l}</button>`).join('');
     el('mm-settings-body').innerHTML = `
-      <label>Grafik</label><div class="mm-segs">${seg('gfx', [['hdr', 'Yüksek (HDR)'], ['basic', 'Uyumlu (hızlı)']])}</div>
+      <label>Grafik kalitesi</label><div class="mm-segs">${seg('q', [['auto', 'Otomatik'], ['low', 'Düşük'], ['med', 'Orta'], ['high', 'Yüksek'], ['ultra', 'Ultra']])}</div>
+      <p class="hint">Otomatik: oyun en az 45 FPS'te kalacak şekilde çözünürlüğü kendisi ayarlar. Diğer seçeneklerde kalite sabit kalır, otomatik düşmez.${window.__perfGov && window.__perfGov.fps ? ` Şu an ≈ <b>${Math.round(window.__perfGov.fps)} FPS</b>.` : ''}</p>
+      <label>Işık modu</label><div class="mm-segs">${seg('gfx', [['hdr', 'HDR'], ['basic', 'Uyumlu (hızlı)']])}</div>
       <p class="hint">Görüntü bozuk ya da takılıyorsa “Uyumlu” seç.</p>
       <label>Gün uzunluğu</label><div class="mm-segs">${seg('day', [['short', 'Kısa · 10 dk'], ['normal', 'Normal · 14 dk'], ['long', 'Uzun · 21 dk']])}</div>
       <label>Kamera</label><div class="mm-segs">${seg('cam', [[1, '1. şahıs'], [2, '3. şahıs']])}</div>
