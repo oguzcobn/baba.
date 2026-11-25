@@ -122,6 +122,7 @@
       <button type="button" data-cam="split" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Yarım Su Altı</button>
       <button type="button" data-cam="underwater" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Su Altı Kavite</button>
       <button type="button" data-cam="follow" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Cisim Takip</button>
+      <button type="button" data-cam="drive" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Araç</button>
       <button type="button" data-cam="aerial" class="cam-btn px-2 py-1 rounded-lg text-[10.5px] font-medium border border-transparent text-slate-300 hover:bg-slate-700/50 transition">Kuşbakışı</button>
     </div>
     <div class="glass rounded-xl p-1 flex items-center gap-1">
@@ -133,6 +134,11 @@
   </div>
 </div>
 
+<div id="lifeToast" class="fixed left-1/2 top-16 -translate-x-1/2 z-40 glass rounded-xl px-4 py-2 text-sm font-semibold text-sky-100 pointer-events-none transition-opacity duration-300" style="opacity:0"></div>
+<div id="drivePad" class="fixed z-30 bottom-14 left-3 grid grid-cols-3 gap-1.5" style="display:none">
+  <span></span><button type="button" data-pad="up" class="glass w-12 h-12 rounded-xl text-lg text-slate-100">▲</button><span></span>
+  <button type="button" data-pad="left" class="glass w-12 h-12 rounded-xl text-lg text-slate-100">◀</button><button type="button" data-pad="down" class="glass w-12 h-12 rounded-xl text-lg text-slate-100">▼</button><button type="button" data-pad="right" class="glass w-12 h-12 rounded-xl text-lg text-slate-100">▶</button>
+</div>
 <!-- Right 3-Tab Scientific Lab Panel -->
 <aside id="controlPanel" class="glass fixed top-3 right-3 bottom-3 z-30 w-[328px] max-w-[calc(100vw-24px)] rounded-2xl flex flex-col overflow-hidden transition-transform duration-200">
   <div class="px-3.5 pt-3 pb-2.5 border-b border-slate-700/50">
@@ -140,9 +146,10 @@
       <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">Hidrodinamik Laboratuvarı</h2>
       <button id="btnClosePanel" type="button" class="text-xs text-slate-400 hover:text-slate-200 px-1.5 py-0.5 rounded hover:bg-slate-800/70 transition">Gizle</button>
     </div>
-    <div class="grid grid-cols-3 gap-1 mt-2.5">
+    <div class="grid grid-cols-4 gap-1 mt-2.5">
       <button type="button" data-tab="drop" class="tab-btn active text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">Madde &amp; FSI</button>
       <button type="button" data-tab="env" class="tab-btn text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">Hava &amp; Deniz</button>
+      <button type="button" data-tab="life" class="tab-btn text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">Araç &amp; Yaşam</button>
       <button type="button" data-tab="lab" class="tab-btn text-[11px] font-medium py-1.5 rounded-lg border border-transparent text-slate-300 hover:bg-slate-800/60 transition">CFD &amp; Ölçüm</button>
     </div>
   </div>
@@ -277,6 +284,37 @@
       </div>
     </div>
 
+    <!-- TAB 4: ARAÇLAR & DENİZ YAŞAMI -->
+    <div id="tab-life" class="tab-content hidden space-y-3">
+      <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Suda sürülebilir araçlar</div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" data-veh="kano" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Kano</button>
+          <button type="button" data-veh="kayik" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Kayık (kürekli)</button>
+          <button type="button" data-veh="tekne" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Balıkçı Teknesi</button>
+          <button type="button" data-veh="bot" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Sürat Botu</button>
+          <button type="button" data-veh="yat" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Motor Yat</button>
+          <button type="button" data-veh="yelkenli" class="veh-btn preset-btn px-2 py-1.5 rounded-lg border border-slate-700/60 bg-slate-900/50 text-[11px] font-medium text-slate-200 transition">Yelkenli</button>
+        </div>
+        <button id="btnExitVeh" type="button" class="w-full mt-1.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-600/50 text-slate-300 text-[11px]">Araçtan in (serbest kamera)</button>
+        <p class="text-[10.5px] text-slate-400 mt-1.5 leading-relaxed">W/S veya ↑/↓ gaz, A/D veya ←/→ dümen. Fareyle sürükleyerek kamerayı çevir. Yelkenli rüzgâra göre hızlanır: rüzgârı yandan almak en hızlısı, rüzgâra karşı ilerlemez.</p>
+      </div>
+      <div class="pt-1 border-t border-slate-700/50">
+        <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Deniz yaşamı</div>
+        <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-300">
+          <label class="flex items-center gap-1.5"><input type="checkbox" data-life="fish" checked class="accent-sky-400" />Balık sürüsü</label>
+          <label class="flex items-center gap-1.5"><input type="checkbox" data-life="dolphins" checked class="accent-sky-400" />Yunuslar</label>
+          <label class="flex items-center gap-1.5"><input type="checkbox" data-life="whale" checked class="accent-sky-400" />Kambur balina</label>
+          <label class="flex items-center gap-1.5"><input type="checkbox" data-life="shark" checked class="accent-sky-400" />Köpekbalığı</label>
+        </div>
+        <div class="grid grid-cols-1 gap-1.5 mt-2">
+          <button id="btnBreach" type="button" class="py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/35 text-sky-200 text-[11px] font-medium">Balina atlayışını göster</button>
+          <button id="btnHunt" type="button" class="py-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 border border-rose-400/35 text-rose-200 text-[11px] font-medium">Köpekbalığı avını göster</button>
+          <button id="btnDolphins" type="button" class="py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-400/35 text-emerald-200 text-[11px] font-medium">Yunusları yanıma çağır</button>
+        </div>
+      </div>
+    </div>
+
     <!-- TAB 3: CFD SOLVER, DIMENSIONLESS NUMBERS & HONEST MODEL SCOPE -->
     <div id="tab-lab" class="tab-content hidden space-y-3">
       <div>
@@ -405,7 +443,9 @@
     panelOpen: true,
     fps: 60,
     cflNumber: 0.24,
-    meanEtaError: 0.0
+    meanEtaError: 0.0,
+    camFocus: { x: 0, z: 0 },
+    camYawOff: 0
   };
 
   function applyTimeOfDay(hours) {
@@ -491,7 +531,9 @@
   }
 
   // Inject volume displacement / momentum impulse directly into the coupled PDE grid
+  const pdeC = { x: 0, z: 0 };   // yerel PDE ızgarası odakla birlikte kayar
   function injectFluidImpulse(wx, wz, radius, dEtaCenter, radialPush, foamAdd) {
+    wx -= pdeC.x; wz -= pdeC.z;
     const gx = ((wx + PDE_SIZE * 0.5) / PDE_SIZE) * PDE_N;
     const gz = ((wz + PDE_SIZE * 0.5) / PDE_SIZE) * PDE_N;
     const cellR = Math.ceil((radius * 2.8) / PDE_DX);
@@ -522,6 +564,17 @@
     }
   }
 
+  // ızgarayı tam hücre adımlarıyla kaydır (yeni açılan kenarlar sakin su)
+  function shiftPDE(di, dj) {
+    const arrs = [pdeEta, pdeU, pdeV, pdeFoam];
+    for (const A of arrs) {
+      const B = new Float32Array(PDE_CELLS);
+      for (let z = 0; z < PDE_N; z++) { const sz = z + dj; if (sz < 0 || sz >= PDE_N) continue;
+        for (let x = 0; x < PDE_N; x++) { const sx = x + di; if (sx < 0 || sx >= PDE_N) continue; B[z * PDE_N + x] = A[sz * PDE_N + sx]; } }
+      A.set(B);
+    }
+    pdeC.x += di * PDE_DX; pdeC.z += dj * PDE_DX;
+  }
   function stepLocalPDE(dt) {
     // Effective shallow-water dispersion depth H_eff for realistic gravity wave celerity c = sqrt(g * H_eff)
     const hEff = Math.min(state.depth, 3.6);
@@ -602,6 +655,7 @@
 
   // Bilinear sampler for local PDE height & velocity (shared by FSI physics AND GPU shader!)
   function sampleLocalPDE(wx, wz) {
+    wx -= pdeC.x; wz -= pdeC.z;
     const u = (wx + PDE_SIZE * 0.5) / PDE_SIZE;
     const v = (wz + PDE_SIZE * 0.5) / PDE_SIZE;
     if (u <= 0.02 || u >= 0.98 || v <= 0.02 || v >= 0.98) return { eta: 0, vx: 0, vz: 0 };
@@ -676,8 +730,8 @@
       ? mass * (0.25 * R * R + (1.0 / 12.0) * len * len)
       : 0.4 * mass * R * R;
 
-    const wx = offsetX + (Math.random() - 0.5) * 1.8;
-    const wz = offsetZ + (Math.random() - 0.5) * 1.8;
+    const wx = state.camFocus.x + offsetX + (Math.random() - 0.5) * 1.8;
+    const wz = state.camFocus.z + offsetZ + (Math.random() - 0.5) * 1.8;
     const eta = sampleTotalWater(wx, wz).y;
 
     // Entry angle horizontal launch velocity if oblique entry is selected
@@ -1083,6 +1137,9 @@
       }
     }
 
+    LIFE.stepVehicle(dt);
+    LIFE.stepLife(dt, state.simTime);
+
     // 4. Advance Local 96x96 Coupled Fluid PDE Grid
     stepLocalPDE(dt);
   }
@@ -1311,6 +1368,8 @@
   uniform float uAmpScale;
   uniform sampler2D uLocalFluid;
   uniform float uPdeSize;
+  uniform vec2 uPdeCenter;
+  uniform vec2 uGridOffset;
 
   out vec3 vWorldPos;
   out vec3 vNormal;
@@ -1334,7 +1393,7 @@
   }
 
   void main() {
-    vec2 baseXZ = aGridXZ;
+    vec2 baseXZ = aGridXZ + uGridOffset;
     float r = length(baseXZ - uCamPos.xz);
     float distFade = 1.0 - smoothstep(140.0, 950.0, r) * 0.88;
     float detailFade = 1.0 - smoothstep(30.0, 150.0, r);
@@ -1363,7 +1422,7 @@
     float foamOut = clamp(1.0 - jacobian, 0.0, 1.0);
 
     // Seamless hybrid coupling with Local 96x96 Navier-Stokes/Shallow-Water PDE Grid!
-    vec2 pdeUv = (baseXZ + vec2(uPdeSize * 0.5)) / uPdeSize;
+    vec2 pdeUv = (baseXZ - uPdeCenter + vec2(uPdeSize * 0.5)) / uPdeSize;
     if (pdeUv.x > 0.01 && pdeUv.x < 0.99 && pdeUv.y > 0.01 && pdeUv.y < 0.99) {
       float edgeMask = smoothstep(0.01, 0.14, pdeUv.x) * (1.0 - smoothstep(0.86, 0.99, pdeUv.x))
                      * smoothstep(0.01, 0.14, pdeUv.y) * (1.0 - smoothstep(0.86, 0.99, pdeUv.y));
@@ -1408,6 +1467,7 @@
   uniform float uWaterIOR;
   uniform sampler2D uLocalFluid;
   uniform float uPdeSize;
+  uniform vec2 uPdeCenter;
 
   float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
   float noise2(vec2 p) {
@@ -1436,7 +1496,7 @@
     // Sample high-res local PDE slopes & turbulence foam per fragment too!
     vec3 N = normalize(vNormal);
     float pdeFoam = 0.0;
-    vec2 pdeUv = (vWorldPos.xz + vec2(uPdeSize * 0.5)) / uPdeSize;
+    vec2 pdeUv = (vWorldPos.xz - uPdeCenter + vec2(uPdeSize * 0.5)) / uPdeSize;
     if (pdeUv.x > 0.01 && pdeUv.x < 0.99 && pdeUv.y > 0.01 && pdeUv.y < 0.99) {
       float edgeMask = smoothstep(0.01, 0.12, pdeUv.x) * (1.0 - smoothstep(0.88, 0.99, pdeUv.x))
                      * smoothstep(0.01, 0.12, pdeUv.y) * (1.0 - smoothstep(0.88, 0.99, pdeUv.y));
@@ -1924,6 +1984,307 @@
     buoy:     buildBuoyMesh()
   };
 
+  // =========================================================================
+  // 5b. SÜRÜLEBİLİR SU ARAÇLARI & DENİZ YAŞAMI
+  //     Kano · Kayık · Tekne · Bot (RIB) · Yat · Yelkenli — dalga üstünde yüzerlik,
+  //     sürüklenme, iz dalgası (yerel PDE'ye enjeksiyon). Balık sürüsü + sıçrayan balıklar,
+  //     yunus sürüsü (porpoising), kambur balina breach, köpekbalığı avı (fok).
+  // =========================================================================
+  const LIFE = (() => {
+    const box = (() => { const P = [], N = []; const v = (x, y, z) => [x, y, z];
+      const f = (a, b, c, d) => { pushTriFlat(P, N, a, b, c); pushTriFlat(P, N, a, c, d); };
+      const p = [v(-1,-1,-1), v(1,-1,-1), v(1,1,-1), v(-1,1,-1), v(-1,-1,1), v(1,-1,1), v(1,1,1), v(-1,1,1)];
+      f(p[4], p[5], p[6], p[7]); f(p[1], p[0], p[3], p[2]); f(p[0], p[4], p[7], p[3]); f(p[5], p[1], p[2], p[6]); f(p[3], p[7], p[6], p[2]); f(p[0], p[1], p[5], p[4]);
+      return makeBodyVao(P, N); })();
+    // ince üçgen yüzgeç / yelken (yerel: taban z∈[-1,0], tepe y=1)
+    const fin = (() => { const P = [], N = []; const t = 0.06;
+      const A = [0, 0, 0], B = [0, 0, -1], C = [0, 1, -0.55];
+      const a1 = [t, 0, 0], b1 = [t, 0, -1], c1 = [t * 0.3, 1, -0.55], a2 = [-t, 0, 0], b2 = [-t, 0, -1], c2 = [-t * 0.3, 1, -0.55];
+      pushTriFlat(P, N, a1, b1, c1); pushTriFlat(P, N, a2, c2, b2); pushTriFlat(P, N, a1, c1, c2); pushTriFlat(P, N, a1, c2, a2); pushTriFlat(P, N, b1, b2, c2); pushTriFlat(P, N, b1, c2, c1);
+      return makeBodyVao(P, N); })();
+    // tekne gövdesi: pruva sivri, kıç küt (yerel z: kıç -1 → pruva +1), üst açık
+    function buildHull(bowSharp, vee) {
+      const P = [], N = [], NU = 24, NV = 10;
+      const pt = (u, v) => { const z = -1 + 2 * u; const az = Math.abs(z);
+        const w = z > 0 ? Math.pow(Math.max(0, 1 - Math.pow(z, bowSharp)), 0.55) : Math.pow(Math.max(0, 1 - Math.pow(az, 6)), 0.35);
+        const a = v * Math.PI; const x = Math.cos(a) * w, y0 = -Math.sin(a);
+        const keel = vee * (1 - Math.abs(Math.cos(a)));
+        return [x, (y0 * (0.55 + 0.45 * w) - keel * 0.3) + (z > 0.6 ? (z - 0.6) * 0.5 : 0), z]; };
+      for (let i = 0; i < NU; i++) for (let j = 0; j < NV; j++) {
+        const a = pt(i / NU, j / NV), b = pt((i + 1) / NU, j / NV), c = pt((i + 1) / NU, (j + 1) / NV), d = pt(i / NU, (j + 1) / NV);
+        pushTriFlat(P, N, a, c, b); pushTriFlat(P, N, a, d, c);
+      }
+      // kıç aynası
+      for (let j = 0; j < NV; j++) { const a = pt(0, j / NV), b = pt(0, (j + 1) / NV); pushTriFlat(P, N, [0, 0.05, -1], a, b); }
+      return makeBodyVao(P, N);
+    }
+    const hullCanoe = buildHull(1.6, 0.6), hullRow = buildHull(2.2, 0.4), hullMotor = buildHull(2.6, 0.9), hullYacht = buildHull(3.0, 0.8), hullSail = buildHull(2.4, 1.0);
+    const sph = SHAPE_MESHES.sphere;
+
+    // ---------- matris yardımcıları ----------
+    function trs(x, y, z, yaw, pitch, roll, sx, sy, sz) {
+      const cy = Math.cos(yaw), sy_ = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch), cr = Math.cos(roll), sr = Math.sin(roll);
+      // R = Ry * Rx * Rz
+      const r00 = cy * cr + sy_ * sp * sr, r01 = -cy * sr + sy_ * sp * cr, r02 = sy_ * cp;
+      const r10 = cp * sr, r11 = cp * cr, r12 = -sp;
+      const r20 = -sy_ * cr + cy * sp * sr, r21 = sy_ * sr + cy * sp * cr, r22 = cy * cp;
+      return new Float32Array([r00 * sx, r10 * sx, r20 * sx, 0, r01 * sy, r11 * sy, r21 * sy, 0, r02 * sz, r12 * sz, r22 * sz, 0, x, y, z, 1]);
+    }
+    const P_ = (mesh, col, x, y, z, sx, sy, sz, o = {}) => ({ mesh, col, x, y, z, sx, sy, sz, yaw: o.yaw || 0, pitch: o.pitch || 0, roll: o.roll || 0, rough: o.rough ?? 0.5, metal: o.metal ?? 0.02, name: o.name });
+
+    // ---------- ARAÇLAR ----------
+    const C = (r, g, b) => [r, g, b];
+    const VEH = {
+      kano:     { label: 'Kano',      L: 4.6, W: 0.42, D: 0.30, draft: 0.12, maxV: 3.2, acc: 1.2, turn: 1.1, wake: 0.5, hull: hullCanoe, col: C(0.78, 0.16, 0.10), crew: 'paddle' },
+      kayik:    { label: 'Kayık',     L: 4.0, W: 0.80, D: 0.45, draft: 0.18, maxV: 2.6, acc: 0.9, turn: 0.9, wake: 0.6, hull: hullRow, col: C(0.46, 0.28, 0.14), crew: 'oars' },
+      tekne:    { label: 'Balıkçı Teknesi', L: 7.5, W: 1.35, D: 0.80, draft: 0.35, maxV: 8.5, acc: 1.6, turn: 0.55, wake: 1.0, hull: hullMotor, col: C(0.8, 0.8, 0.77), crew: 'cabin' },
+      bot:      { label: 'Sürat Botu', L: 5.6, W: 1.15, D: 0.55, draft: 0.22, maxV: 16, acc: 3.6, turn: 0.75, wake: 1.25, hull: hullMotor, col: C(0.95, 0.42, 0.10), crew: 'rib', planing: true },
+      yat:      { label: 'Motor Yat', L: 16, W: 2.7, D: 1.5, draft: 0.8, maxV: 11, acc: 1.1, turn: 0.28, wake: 2.0, hull: hullYacht, col: C(0.82, 0.83, 0.85), crew: 'yacht', planing: true },
+      yelkenli: { label: 'Yelkenli',  L: 9, W: 1.7, D: 0.9, draft: 0.45, maxV: 7.5, acc: 0.8, turn: 0.5, wake: 0.9, hull: hullSail, col: C(0.12, 0.2, 0.36), crew: 'sail', sail: true }
+    };
+    const veh = { key: null, x: 0, y: 0, z: 0, yaw: 0, v: 0, pitch: 0, roll: 0, heel: 0, paddle: 0, boom: 0, wakeT: 0, sprayT: 0 };
+    const input = { up: false, down: false, left: false, right: false };
+    function enter(key) {
+      const s = VEH[key]; if (!s) return;
+      veh.key = key; veh.x = state.camFocus.x; veh.z = state.camFocus.z; veh.v = 0; veh.yaw = (state.windDirDeg + 90) * Math.PI / 180; veh.y = sampleTotalWater(veh.x, veh.z).y + s.D - s.draft;
+      state.camMode = 'drive'; state.camPitch = 0.22; state.camDist = Math.max(9, s.L * 1.6); state.camYawOff = 0;
+      document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', b.dataset.cam === 'drive'));
+      toast(s.label + ' — W/S gaz, A/D dümen' + (s.sail ? ' · rüzgârı yandan al (apaz) en hızlısı' : ''));
+      $('drivePad').style.display = '';
+    }
+    function exit() { veh.key = null; state.camMode = 'free'; $('drivePad').style.display = 'none'; document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', b.dataset.cam === 'free')); }
+    function sailPolar(twa) { const d = twa * 180 / Math.PI; if (d < 35) return 0.05; if (d < 50) return 0.05 + (d - 35) / 15 * 0.55; if (d < 100) return 0.6 + (d - 50) / 50 * 0.4; return 1.0 - (d - 100) / 80 * 0.18; }
+    function stepVehicle(dt) {
+      if (!veh.key) return;
+      const s = VEH[veh.key];
+      const thr = (input.up ? 1 : 0) - (input.down ? 0.45 : 0), steer = (input.left ? 1 : 0) - (input.right ? 1 : 0);
+      let maxV = s.maxV, twa = 0;
+      const windRad = state.windDirDeg * Math.PI / 180, fromX = -Math.cos(windRad), fromZ = -Math.sin(windRad);
+      if (s.sail) { const hx = Math.sin(veh.yaw), hz = Math.cos(veh.yaw); twa = Math.acos(Math.max(-1, Math.min(1, hx * fromX + hz * fromZ))); maxV = s.maxV * sailPolar(twa) * Math.min(1.4, Math.max(0.25, state.windSpeed / 8)); }
+      const target = s.sail ? (thr > 0 ? maxV : thr < 0 ? -0.6 : maxV * 0.35) : thr * maxV;
+      veh.v += (target - veh.v) * Math.min(1, dt * s.acc * (Math.abs(target) > Math.abs(veh.v) ? 0.5 : 0.8));
+      const turnK = Math.min(1, Math.abs(veh.v) / (s.maxV * 0.25) + 0.15) * Math.sign(veh.v || 1);
+      veh.yaw += steer * s.turn * turnK * dt;
+      veh.x += Math.sin(veh.yaw) * veh.v * dt; veh.z += Math.cos(veh.yaw) * veh.v * dt;
+      // 4 noktadan dalga örnekle → yükseklik, baş-kıç ve yan yatış
+      const hx = Math.sin(veh.yaw), hz = Math.cos(veh.yaw), px = hz, pz = -hx, l = s.L * 0.35, w = s.W * 0.8;
+      const hb = sampleTotalWater(veh.x + hx * l, veh.z + hz * l).y, hs = sampleTotalWater(veh.x - hx * l, veh.z - hz * l).y;
+      const hp = sampleTotalWater(veh.x + px * w, veh.z + pz * w).y, hstb = sampleTotalWater(veh.x - px * w, veh.z - pz * w).y;
+      const plane = s.planing ? Math.min(1, Math.max(0, veh.v / s.maxV)) : 0;
+      const yT = (hb + hs + hp + hstb) * 0.25 - s.draft + s.D + plane * s.D * 0.25;   // köken = küpeşte; omurga su altında 'draft' kadar
+      veh.y += (yT - veh.y) * Math.min(1, dt * 6);
+      const pitchT = -Math.atan2(hb - hs, 2 * l) - plane * 0.09 * Math.sin(Math.min(1, plane * 1.6) * Math.PI);
+      const rollT = Math.atan2(hp - hstb, 2 * w) * 0.8 - steer * veh.v / s.maxV * 0.12 + (s.sail ? veh.heel : 0);
+      veh.pitch += (pitchT - veh.pitch) * Math.min(1, dt * 4); veh.roll += (rollT - veh.roll) * Math.min(1, dt * 3);
+      if (s.sail) { const side = Math.sign(hx * fromZ - hz * fromX) || 1; const heelT = -side * Math.min(0.32, Math.sin(Math.min(twa, 1.7)) * state.windSpeed / 45) * (thr >= 0 ? 1 : 0.3); veh.heel += (heelT - veh.heel) * dt; veh.boom += ((-side) * Math.max(0.15, Math.min(1.35, twa * 0.55)) - veh.boom) * Math.min(1, dt * 2); }
+      veh.paddle += dt * (2.2 + Math.abs(veh.v) * 0.8) * (Math.abs(thr) > 0 || Math.abs(steer) > 0 ? 1 : 0.15);
+      // iz dalgası: kıçtan PDE'ye hacim/ivme enjeksiyonu + pruvada sıçrama
+      veh.wakeT += dt;
+      const sp = Math.abs(veh.v);
+      if (sp > 0.4 && veh.wakeT > 0.05) {
+        veh.wakeT = 0;
+        injectFluidImpulse(veh.x - hx * s.L * 0.45, veh.z - hz * s.L * 0.45, s.W * 0.7, -Math.min(0.12, 0.006 * sp * s.wake), Math.min(1.6, 0.06 * sp * s.wake), Math.min(0.5, 0.025 * sp * s.wake));
+        injectFluidImpulse(veh.x + hx * s.L * 0.3, veh.z + hz * s.L * 0.3, s.W * 0.6, Math.min(0.05, 0.002 * sp * s.wake), Math.min(1.0, 0.04 * sp), 0.01 * sp);
+      }
+      veh.sprayT += dt;
+      if (sp > 4 && veh.sprayT > 0.03) { veh.sprayT = 0; for (const sg of [1, -1]) emitDrop(veh.x + hx * s.L * 0.3 + px * s.W * 0.55 * sg, veh.y + 0.1, veh.z + hz * s.L * 0.3 + pz * s.W * 0.55 * sg, px * sg * (1 + sp * 0.12) + hx * sp * 0.4, 1.2 + sp * 0.18, pz * sg * (1 + sp * 0.12) + hz * sp * 0.4, 0.04 + Math.random() * 0.03, 1.2, 0); }
+    }
+    function vehicleParts() {
+      if (!veh.key) return [];
+      const s = VEH[veh.key], L = s.L / 2, W = s.W, D = s.D, out = [];
+      out.push(P_(s.hull, s.col, 0, 0, 0, W, D, L, { rough: 0.35 }));
+      // iç taban: su hattının biraz üstünde → teknenin içinden deniz görünmesin
+      const fl = -(D - s.draft) + Math.max(0.12, D * 0.28), floorCol = s.crew === 'paddle' || s.crew === 'oars' ? C(0.5, 0.33, 0.18) : C(0.6, 0.45, 0.3);
+      out.push(P_(sph, floorCol, 0, fl, -L * 0.05, W * 0.9, 0.03, L * 0.86, { rough: 0.8 }));
+      out.push(P_(sph, floorCol, 0, fl + 0.01, -L * 0.45, W * 0.86, 0.03, L * 0.5, { rough: 0.8 }));
+      const skin = C(0.86, 0.62, 0.48), shirt = C(0.15, 0.35, 0.62), wood = C(0.52, 0.34, 0.18);
+      const person = (x, y, z, col, yaw = 0) => { out.push(P_(box, col, x, y + 0.32, z, 0.17, 0.26, 0.11, { yaw })); out.push(P_(sph, skin, x, y + 0.7, z, 0.1, 0.12, 0.1)); out.push(P_(box, C(0.15, 0.15, 0.18), x, y + 0.05, z + 0.12, 0.15, 0.08, 0.2, { yaw })); };
+      if (s.crew === 'paddle') {
+        person(0, -0.05, -0.3, C(0.95, 0.75, 0.15));
+        const a = Math.sin(veh.paddle * 2), side = Math.sign(Math.sin(veh.paddle)) || 1;
+        out.push(P_(box, C(0.2, 0.2, 0.22), 0, 0.55, -0.15, 0.025, 0.025, 1.1, { yaw: Math.PI / 2 + a * 0.5, roll: side * 0.5 }));
+      } else if (s.crew === 'oars') {
+        out.push(P_(box, wood, 0, 0.05, 0, W * 0.9, 0.04, 0.15)); person(0, 0.02, -0.1, C(0.7, 0.2, 0.2), Math.PI);
+        const a = Math.sin(veh.paddle * 1.6) * 0.55;
+        for (const sg of [1, -1]) out.push(P_(box, wood, sg * W * 0.9, 0.2, -0.1 + Math.sin(a) * 0.3, 1.1, 0.025, 0.04, { yaw: sg * a, roll: sg * 0.25 }));
+      } else if (s.crew === 'cabin') {
+        out.push(P_(box, C(0.92, 0.92, 0.9), 0, D * 0.55, L * 0.1, W * 0.6, D * 0.5, L * 0.22));
+        out.push(P_(box, C(0.1, 0.2, 0.3), 0, D * 0.75, L * 0.1 + L * 0.2, W * 0.55, D * 0.18, 0.02, { metal: 0.6, rough: 0.1 }));
+        out.push(P_(box, C(0.13, 0.33, 0.55), 0, D * 1.08, L * 0.1, W * 0.66, 0.04, L * 0.26));
+        out.push(P_(box, C(0.25, 0.25, 0.25), 0, D * 0.1, -L * 0.98, 0.18, 0.3, 0.18, { metal: 0.5 }));
+        person(W * 0.3, 0.1, -L * 0.45, shirt);
+      } else if (s.crew === 'rib') {
+        for (const sg of [1, -1]) out.push(P_(sph, C(0.2, 0.2, 0.22), sg * W * 0.82, D * 0.15, 0, 0.28, 0.28, L * 0.95, { rough: 0.6 }));
+        out.push(P_(box, C(0.85, 0.85, 0.85), 0, D * 0.4, L * 0.05, W * 0.35, 0.28, 0.25)); out.push(P_(box, C(0.12, 0.2, 0.3), 0, D * 0.75, L * 0.18, W * 0.35, 0.12, 0.02, { metal: 0.5 }));
+        out.push(P_(box, C(0.15, 0.15, 0.15), 0, D * 0.1, -L * 1.0, 0.2, 0.35, 0.2, { metal: 0.6 }));
+        person(0, 0.05, -L * 0.1, C(0.9, 0.9, 0.9));
+      } else if (s.crew === 'yacht') {
+        out.push(P_(box, C(0.97, 0.97, 0.97), 0, D * 0.55, -L * 0.05, W * 0.75, D * 0.45, L * 0.55));
+        out.push(P_(box, C(0.08, 0.12, 0.18), 0, D * 0.62, -L * 0.05, W * 0.77, D * 0.16, L * 0.5, { metal: 0.7, rough: 0.08 }));
+        out.push(P_(box, C(0.97, 0.97, 0.97), 0, D * 1.15, -L * 0.15, W * 0.55, D * 0.25, L * 0.33));
+        out.push(P_(box, C(0.08, 0.12, 0.18), 0, D * 1.18, -L * 0.15, W * 0.57, D * 0.1, L * 0.3, { metal: 0.7, rough: 0.08 }));
+        out.push(P_(box, C(0.55, 0.38, 0.22), 0, D * 0.12, -L * 0.8, W * 0.8, 0.04, L * 0.18));
+        out.push(P_(box, C(0.85, 0.85, 0.88), 0, D * 1.6, -L * 0.25, 0.05, 0.4, 0.05, { metal: 0.8 }));
+        person(0.6, D * 0.12, -L * 0.75, C(0.95, 0.95, 0.95));
+      } else if (s.crew === 'sail') {
+        const mastH = s.L * 1.25, mz = L * 0.25;
+        out.push(P_(box, C(0.82, 0.84, 0.86), 0, mastH / 2, mz, 0.05, mastH / 2, 0.05, { metal: 0.8, rough: 0.3 }));
+        out.push(P_(fin, C(0.97, 0.97, 0.94), 0, 0.45, mz - 0.05, 1, mastH * 0.92, L * 1.0, { yaw: veh.boom, rough: 0.7 }));   // ana yelken
+        out.push(P_(fin, C(0.95, 0.95, 0.92), 0, 0.4, L * 0.98, 1, mastH * 0.8, L * 0.7, { yaw: veh.boom * 0.6, rough: 0.7 }));  // flok
+        out.push(P_(box, C(0.7, 0.72, 0.75), Math.sin(veh.boom) * -L * 0.5, 0.5, mz + Math.cos(veh.boom) * -L * 0.5, 0.04, 0.04, L * 0.5, { yaw: veh.boom, metal: 0.7 }));
+        out.push(P_(box, C(0.6, 0.45, 0.3), 0, D * 0.1, -L * 0.3, W * 0.75, 0.05, L * 0.55));
+        person(0.3, 0.1, -L * 0.75, C(0.1, 0.4, 0.75));
+      }
+      const M = trs(veh.x, veh.y, veh.z, veh.yaw, veh.pitch, veh.roll, 1, 1, 1);
+      return out.map(p => ({ p, M }));
+    }
+
+    // ---------- DENİZ YAŞAMI ----------
+    const life = { fish: true, dolphins: true, whale: true, shark: true };
+    const fishes = [], school = { x: 8, z: 6, a: 0 };
+    for (let i = 0; i < 34; i++) fishes.push({ a: Math.random() * 6.28, r: 1 + Math.random() * 3.5, h: -1.2 - Math.random() * 2.5, sp: 0.6 + Math.random() * 0.5, jump: null, x: 0, y: -2, z: 0, vx: 0, vy: 0, vz: 0, col: Math.random() < 0.5 ? C(0.62, 0.68, 0.72) : C(0.75, 0.7, 0.45), size: 0.22 + Math.random() * 0.14 });
+    const dolphins = []; for (let i = 0; i < 4; i++) dolphins.push({ ph: i * 0.9, off: (i - 1.5) * 2.2, lag: i * 0.35, x: 0, y: 0, z: 0, yaw: 0, pitch: 0, prevY: 0 });
+    const pod = { a: 0, R: 22 };
+    const whale = { x: 30, y: -9, z: -20, yaw: 0, pitch: 0, roll: 0, phase: 'swim', t: 0, a: 0, blowT: 0, vy: 0 };
+    const shark = { x: 0, y: -1.1, z: 12, yaw: 0, pitch: 0, roll: 0, a: 0, phase: 'circle', t: 0, vx: 0, vy: 0, vz: 0 };
+    const seal = { x: 10, z: 10, y: 0, alive: true, t: 0, carried: false };
+    let fishJumpT = 2, whaleT = 22, sharkT = 18, blood = 0;
+
+    const splash = (x, z, n, sp, rad, big = 0) => {
+      const y = sampleTotalWater(x, z).y;
+      for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, s = sp * (0.4 + Math.random() * 0.8); emitDrop(x + Math.cos(a) * rad * 0.5, y + 0.05, z + Math.sin(a) * rad * 0.5, Math.cos(a) * s * 0.5, s * (0.8 + Math.random()), Math.sin(a) * s * 0.5, 0.04 + Math.random() * (0.05 + big * 0.06), 1.8, 0); }
+      injectFluidImpulse(x, z, rad, -Math.min(0.9, 0.05 + big * 0.5), 0.4 + big * 2.5, 0.25 + big * 0.5);
+    };
+    function focus() { return state.camFocus; }
+    function viewDir() { const c = state.smoothCam || [0, 0, 1], t = state.smoothTarget || [0, 0, 0]; let x = t[0] - c[0], z = t[2] - c[2]; const l = Math.hypot(x, z) || 1; return { x: x / l, z: z / l }; }
+    function stepLife(dt, t) {
+      const F = focus();
+      // balık sürüsü: odak çevresinde dolaşan merkez + girdap; ara sıra biri sıçrar
+      school.a += dt * 0.12; school.x += ((F.x + Math.cos(school.a) * 12) - school.x) * dt * 0.3; school.z += ((F.z + Math.sin(school.a) * 12) - school.z) * dt * 0.3;
+      fishJumpT -= dt;
+      for (const f of fishes) {
+        if (f.jump) {
+          f.vy -= 9.81 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt;
+          const wy = sampleTotalWater(f.x, f.z).y;
+          if (f.jump === 'up' && f.y > wy) { f.jump = 'air'; splash(f.x, f.z, 10, 2.2, 0.4); }
+          if (f.jump === 'air' && f.y < wy && f.vy < 0) { f.jump = null; splash(f.x, f.z, 14, 2.6, 0.5); }
+          continue;
+        }
+        f.a += dt * f.sp; const tx = school.x + Math.cos(f.a) * f.r, tz = school.z + Math.sin(f.a) * f.r * 0.6, ty = f.h + Math.sin(t * 1.3 + f.r) * 0.2;
+        f.vx = (tx - f.x) * 2; f.vy = (ty - f.y) * 2; f.vz = (tz - f.z) * 2; f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt;
+      }
+      if (life.fish && fishJumpT <= 0) { fishJumpT = 1.2 + Math.random() * 2.5; const f = fishes[(Math.random() * fishes.length) | 0]; if (!f.jump) { const a = Math.random() * 6.28; f.jump = 'up'; f.vx = Math.cos(a) * 2.2; f.vz = Math.sin(a) * 2.2; f.vy = 5.5 + Math.random() * 2.5; } }
+      // yunuslar: odak çevresinde daire, yunus yüzüşü (porpoising) — her nefes alışta yay çizip sıçrar
+      if (life.dolphins) {
+        pod.a += dt * 6.5 / pod.R;
+        for (const d of dolphins) {
+          const a = pod.a - d.lag * 0.12, R = pod.R + d.off;
+          const nx = F.x + Math.cos(a) * R, nz = F.z + Math.sin(a) * R;
+          const ph = t * 2.4 + d.ph, s = Math.sin(ph);
+          const ny = s > 0 ? s * (1.4 + 0.4 * Math.sin(d.ph * 3)) - 0.3 : s * 1.1 - 0.3;
+          const vx = nx - d.x, vz = nz - d.z, vy = ny - d.y;
+          d.yaw = Math.atan2(vx, vz); d.pitch = -Math.atan2(vy, Math.hypot(vx, vz) + 1e-4) * 0.9;
+          const wy = sampleTotalWater(nx, nz).y;
+          if (d.prevY < wy && ny >= wy) splash(nx, nz, 12, 2.6, 0.6);
+          if (d.prevY > wy && ny <= wy) splash(nx, nz, 18, 3.2, 0.7);
+          d.prevY = ny; d.x = nx; d.y = ny; d.z = nz;
+        }
+      }
+      // balina: yavaş yüzer, ara sıra püskürtür; zamanı gelince ya da düğmeyle breach (atlayış)
+      if (life.whale) {
+        whale.t += dt; whaleT -= dt;
+        if (whale.phase === 'swim') {
+          whale.a += dt * 1.8 / 38; const nx = F.x + Math.cos(whale.a) * 38, nz = F.z + Math.sin(whale.a) * 38;
+          whale.yaw = Math.atan2(nx - whale.x, nz - whale.z); whale.x = nx; whale.z = nz;
+          whale.y += ((Math.sin(whale.t * 0.15) > 0.6 ? -0.6 : -7) - whale.y) * dt * 0.4; whale.pitch = 0; whale.roll *= 0.98;
+          if (whale.y > -1.2) { whale.blowT -= dt; if (whale.blowT <= 0) { whale.blowT = 4; for (let i = 0; i < 70; i++) emitDrop(whale.x + Math.sin(whale.yaw) * 3, sampleTotalWater(whale.x, whale.z).y + 0.3, whale.z + Math.cos(whale.yaw) * 3, (Math.random() - 0.5) * 0.8, 6 + Math.random() * 3, (Math.random() - 0.5) * 0.8, 0.035, 2.4, 0); } }
+          if (whaleT <= 0) breach();
+        } else if (whale.phase === 'rise') {
+          whale.vy -= 9.81 * 0.35 * dt; whale.y += whale.vy * dt; whale.pitch += (-1.35 - whale.pitch) * dt * 2; whale.roll += dt * 1.4;
+          const wy = sampleTotalWater(whale.x, whale.z).y;
+          if (!whale.broke && whale.y > wy - 6) { whale.broke = true; splash(whale.x, whale.z, 160, 7, 3.5, 0.8); }
+          if (whale.vy < 0) { whale.phase = 'fall'; }
+        } else if (whale.phase === 'fall') {
+          whale.vy -= 9.81 * 0.55 * dt; whale.y += whale.vy * dt; whale.pitch += (0.1 - whale.pitch) * dt * 1.6; whale.roll += (1.6 - whale.roll) * dt * 1.8;
+          if (whale.y < -1 && !whale.slam) { whale.slam = true; splash(whale.x, whale.z, 320, 11, 6, 1); splash(whale.x + Math.sin(whale.yaw) * 6, whale.z + Math.cos(whale.yaw) * 6, 160, 8, 4, 0.8); toast('Kambur balina atlayışı! ~30 ton su yüzeyini yardı'); }
+          if (whale.y < -8) { whale.phase = 'swim'; whale.vy = 0; whale.roll = 0; whaleT = 35 + Math.random() * 20; }
+        }
+      }
+      // köpekbalığı: yüzgeci suyun üstünde daire çizer; av zamanı fok'un altından dikey saldırı (Seal Island breach)
+      if (life.shark) {
+        shark.t += dt; sharkT -= dt;
+        seal.t += dt; if (seal.alive && !seal.carried) { seal.y = sampleTotalWater(seal.x, seal.z).y - 0.12; seal.x += Math.sin(seal.t * 0.4) * dt * 0.5; }
+        if (shark.phase === 'circle') {
+          shark.a += dt * 3.2 / 13; const nx = F.x + Math.cos(-shark.a) * 13, nz = F.z + Math.sin(-shark.a) * 13;
+          shark.yaw = Math.atan2(nx - shark.x, nz - shark.z); shark.x = nx; shark.z = nz; shark.y += (-0.95 - shark.y) * dt; shark.pitch = 0; shark.roll = Math.sin(shark.t * 2) * 0.08;
+          if (sharkT <= 0) hunt();
+        } else if (shark.phase === 'stalk') {
+          const tx = seal.x, tz = seal.z, dx = tx - shark.x, dz = tz - shark.z, d = Math.hypot(dx, dz);
+          shark.yaw = Math.atan2(dx, dz); shark.x += dx / (d + 1e-3) * Math.min(d, 4 * dt); shark.z += dz / (d + 1e-3) * Math.min(d, 4 * dt);
+          shark.y += (-9 - shark.y) * dt * 0.8; shark.pitch += (0.25 - shark.pitch) * dt;
+          if (d < 2.2 && shark.y < -7) { shark.phase = 'strike'; shark.vy = 12; shark.vx = 0; shark.vz = 0; }
+        } else if (shark.phase === 'strike') {
+          shark.vy -= 9.81 * 0.5 * dt; shark.y += shark.vy * dt; shark.pitch += (-1.25 - shark.pitch) * dt * 4; shark.roll += dt * 2;
+          const wy = sampleTotalWater(shark.x, shark.z).y;
+          if (!seal.carried && shark.y > wy - 1.2) { seal.carried = true; splash(shark.x, shark.z, 140, 6, 1.6, 0.6); blood = 1; toast('Büyük beyaz köpekbalığı aşağıdan saldırdı ve foku yakaladı!'); }
+          if (seal.carried) { seal.x = shark.x; seal.z = shark.z; seal.y = shark.y + 1.6; }
+          if (shark.vy < -2 && shark.y < wy) { splash(shark.x, shark.z, 120, 5, 1.8, 0.5); shark.phase = 'dive'; seal.alive = false; seal.carried = false; }
+        } else if (shark.phase === 'dive') {
+          shark.y += (-5 - shark.y) * dt; shark.pitch += (0.3 - shark.pitch) * dt * 2; shark.roll *= 0.95;
+          if (shark.y < -4.5) { shark.phase = 'circle'; sharkT = 28 + Math.random() * 15; setTimeout(() => respawnSeal(), 6000); }
+        }
+      }
+      blood = Math.max(0, blood - dt * 0.15);
+    }
+    function respawnSeal() { const F = focus(), a = Math.random() * 6.28; seal.x = F.x + Math.cos(a) * 11; seal.z = F.z + Math.sin(a) * 11; seal.alive = true; seal.carried = false; }
+    function breach() { if (whale.phase !== 'swim') return; const F = focus(), dv = viewDir(); whale.x = F.x + dv.x * 24 + dv.z * (Math.random() - 0.5) * 8; whale.z = F.z + dv.z * 24 - dv.x * (Math.random() - 0.5) * 8; whale.yaw = Math.atan2(-dv.z, dv.x); whale.y = -16; whale.vy = 13.5; whale.phase = 'rise'; whale.broke = false; whale.slam = false; whale.pitch = -1.3; whale.roll = 0; toast('Balina yükseliyor…'); }
+    function hunt() { if (shark.phase !== 'circle') return; if (!seal.alive) respawnSeal(); const F = focus(); if (Math.hypot(seal.x - F.x, seal.z - F.z) > 25) respawnSeal(); shark.phase = 'stalk'; toast('Köpekbalığı derine indi, fokun altına sokuluyor…'); }
+    function callDolphins() { const dv = viewDir(); pod.a = Math.atan2(dv.z, dv.x) - 0.5; toast('Yunus sürüsü yanında yüzüyor'); }
+
+    function lifeParts(t) {
+      const out = [];
+      const push = (parts, M) => parts.forEach(p => out.push({ p, M }));
+      if (life.fish) for (const f of fishes) {
+        const yaw = Math.atan2(f.vx, f.vz), pitch = -Math.atan2(f.vy, Math.hypot(f.vx, f.vz) + 1e-3), s = f.size, wag = Math.sin(t * 14 + f.r * 5) * 0.5;
+        push([P_(sph, f.col, 0, 0, 0, s * 0.35, s * 0.5, s, { metal: 0.6, rough: 0.25 }), P_(fin, f.col, 0, 0, -s * 0.85, 1, s * 0.7, s * 0.6, { yaw: wag, roll: Math.PI / 2, metal: 0.5 }), P_(fin, f.col, 0, -0.0, -s * 0.85, 1, s * 0.7, s * 0.6, { yaw: wag, roll: -Math.PI / 2, metal: 0.5 })], trs(f.x, f.y, f.z, yaw, pitch, 0, 1, 1, 1));
+      }
+      if (life.dolphins) for (const d of dolphins) {
+        const g = C(0.2, 0.24, 0.29), b = C(0.75, 0.77, 0.8), k = Math.sin(t * 6 + d.ph) * 0.25;
+        push([P_(sph, g, 0, 0, 0, 0.42, 0.45, 1.25, { rough: 0.2 }), P_(sph, b, 0, -0.18, 0.1, 0.33, 0.28, 1.0, { rough: 0.25 }), P_(sph, g, 0, -0.02, 1.35, 0.11, 0.1, 0.35),
+          P_(fin, g, 0, 0.35, 0.15, 1, 0.5, 0.55), P_(fin, g, 0, 0, -1.25, 1, 0.55, 0.45, { roll: Math.PI / 2, pitch: k }), P_(fin, g, 0, 0, -1.25, 1, 0.55, 0.45, { roll: -Math.PI / 2, pitch: k }),
+          P_(fin, g, 0.3, -0.2, 0.5, 1, 0.35, 0.4, { roll: 2.2 }), P_(fin, g, -0.3, -0.2, 0.5, 1, 0.35, 0.4, { roll: -2.2 })], trs(d.x, d.y, d.z, d.yaw, d.pitch, 0, 1, 1, 1));
+      }
+      if (life.whale) {
+        const g = C(0.045, 0.055, 0.07), b = C(0.62, 0.64, 0.66), k = Math.sin(t * 1.3) * 0.2;
+        push([P_(sph, g, 0, 0, 0, 2.1, 2.0, 7.5, { rough: 0.45 }), P_(sph, b, 0, -1.05, 1.4, 1.3, 1.0, 4.6, { rough: 0.5 }), P_(sph, g, 0, -0.2, 6.2, 1.5, 1.3, 2.4),
+          P_(box, g, 3.1, -0.9, 2.4, 2.6, 0.12, 0.5, { yaw: 0.35, roll: -0.35 }), P_(box, b, -3.1, -0.9, 2.4, 2.6, 0.12, 0.5, { yaw: -0.35, roll: 0.35 }),
+          P_(fin, g, 0, 1.6, -3.2, 1, 0.5, 0.9), P_(box, g, 0, 0, -8.2, 3.0, 0.12, 0.9, { pitch: k }), P_(sph, g, 0, 0, -7.2, 0.7, 0.6, 1.4)], trs(whale.x, whale.y, whale.z, whale.yaw, whale.pitch, whale.roll, 1, 1, 1));
+      }
+      if (life.shark) {
+        const g = C(0.16, 0.18, 0.2), b = C(0.8, 0.8, 0.8), k = Math.sin(t * (shark.phase === 'circle' ? 4 : 9)) * 0.3;
+        push([P_(sph, g, 0, 0, 0, 0.62, 0.7, 2.3, { rough: 0.35 }), P_(sph, b, 0, -0.3, 0.3, 0.5, 0.4, 1.8), P_(sph, g, 0, -0.05, 2.25, 0.4, 0.38, 0.55),
+          P_(fin, g, 0, 0.55, 0.45, 1, 1.15, 0.85), P_(fin, g, 0, 0, -2.2, 1, 1.05, 0.75, { yaw: k }), P_(fin, g, 0, 0, -2.2, 1, 0.6, 0.6, { yaw: k, roll: Math.PI }),
+          P_(fin, g, 0.5, -0.35, 0.9, 1, 0.9, 0.6, { roll: 2.0 }), P_(fin, g, -0.5, -0.35, 0.9, 1, 0.9, 0.6, { roll: -2.0 })], trs(shark.x, shark.y, shark.z, shark.yaw, shark.pitch, shark.roll, 1, 1, 1));
+        if (seal.alive) { const c = C(0.33, 0.27, 0.22); push([P_(sph, c, 0, 0, 0, 0.42, 0.32, 0.9, { rough: 0.3 }), P_(sph, c, 0, 0.12, 0.85, 0.25, 0.23, 0.3), P_(fin, c, 0, 0, -0.85, 1, 0.3, 0.3, { roll: Math.PI / 2 })], trs(seal.x, seal.y, seal.z, seal.t * 0.2, 0, 0, 1, 1, 1)); }
+      }
+      return out;
+    }
+    function drawAll(t, vp, sunDir, camPos) {
+      const list = vehicleParts().concat(lifeParts(t));
+      if (!list.length) return;
+      gl.useProgram(bodyProg);
+      gl.uniformMatrix4fv(bdLoc.vp, false, vp); gl.uniform3fv(bdLoc.camPos, camPos); gl.uniform3fv(bdLoc.sunDir, sunDir);
+      gl.uniform1f(bdLoc.mie, state.mieScale); gl.uniform1f(bdLoc.exp, state.exposure); gl.uniform1f(bdLoc.shapeType, 0);
+      for (const { p, M } of list) {
+        const L = trs(p.x, p.y, p.z, p.yaw, p.pitch, p.roll, p.sx, p.sy, p.sz);
+        gl.uniformMatrix4fv(bdLoc.model, false, mat4Mul(M, L));
+        gl.uniform3fv(bdLoc.color, p.col); gl.uniform1f(bdLoc.rough, p.rough); gl.uniform1f(bdLoc.metal, p.metal);
+        gl.bindVertexArray(p.mesh.vao); gl.drawArrays(gl.TRIANGLES, 0, p.mesh.count);
+      }
+    }
+    return { VEH, veh, input, enter, exit, stepVehicle, stepLife, drawAll, life, breach, hunt, callDolphins, whale, shark, get blood() { return blood; } };
+  })();
+
   // Dynamic GPU Buffer for 3D Refractive Liquid Meshes (Crown Sheet, Subsurface Cavity, Worthington Jet)
   const MAX_LIQ_VERTS = 16000;
   const liqPosArr = new Float32Array(MAX_LIQ_VERTS * 3);
@@ -2074,7 +2435,7 @@
   canvas.addEventListener('pointerdown', (e) => { dragging = true; lastX = e.clientX; lastY = e.clientY; canvas.setPointerCapture(e.pointerId); });
   canvas.addEventListener('pointermove', (e) => {
     if (!dragging) return;
-    state.camYaw -= (e.clientX - lastX) * 0.0055;
+    if (state.camMode === 'drive') state.camYawOff -= (e.clientX - lastX) * 0.0055; else state.camYaw -= (e.clientX - lastX) * 0.0055;
     state.camPitch = Math.max(-0.55, Math.min(1.38, state.camPitch + (e.clientY - lastY) * 0.0045));
     lastX = e.clientX; lastY = e.clientY;
   });
@@ -2085,7 +2446,11 @@
     state.camDist = Math.max(5.5, Math.min(110.0, state.camDist * (1.0 + e.deltaY * 0.001)));
   }, { passive: false });
 
+  const KEYMAP = { KeyW: 'up', ArrowUp: 'up', KeyS: 'down', ArrowDown: 'down', KeyA: 'left', ArrowLeft: 'left', KeyD: 'right', ArrowRight: 'right' };
+  window.addEventListener('keyup', (e) => { if (KEYMAP[e.code]) LIFE.input[KEYMAP[e.code]] = false; });
+  window.addEventListener('blur', () => { for (const k in LIFE.input) LIFE.input[k] = false; });
   window.addEventListener('keydown', (e) => {
+    if (KEYMAP[e.code] && document.activeElement.tagName !== 'INPUT') { LIFE.input[KEYMAP[e.code]] = true; if (e.code.startsWith('Arrow')) e.preventDefault(); }
     if (document.activeElement.tagName === 'INPUT') return;
     if (e.code === 'Space') { e.preventDefault(); togglePause(); }
     if (e.code === 'Period') { state.paused = true; state.stepOnce = true; $('btnPause').textContent = 'Devam'; }
@@ -2150,6 +2515,15 @@
     $('stState').textContent = 'Hazır'; $('stImp').textContent = '--'; $('stSub').textContent = '-- %'; $('stCav').textContent = '--';
   });
 
+  let toastTimer = 0;
+  function toast(t) { const el = document.getElementById('lifeToast'); el.textContent = t; el.style.opacity = '1'; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3800); }
+  document.querySelectorAll('.veh-btn').forEach((btn) => btn.addEventListener('click', () => { document.querySelectorAll('.veh-btn').forEach(b => b.classList.toggle('active', b === btn)); LIFE.enter(btn.dataset.veh); if (window.innerWidth < 768 && state.panelOpen) togglePanel(); }));
+  $('btnExitVeh').addEventListener('click', () => { document.querySelectorAll('.veh-btn').forEach(b => b.classList.remove('active')); LIFE.exit(); });
+  document.querySelectorAll('[data-life]').forEach((c) => c.addEventListener('change', () => { LIFE.life[c.dataset.life] = c.checked; }));
+  $('btnBreach').addEventListener('click', () => { LIFE.life.whale = true; document.querySelector('[data-life=whale]').checked = true; LIFE.breach(); });
+  $('btnHunt').addEventListener('click', () => { LIFE.life.shark = true; document.querySelector('[data-life=shark]').checked = true; LIFE.hunt(); });
+  $('btnDolphins').addEventListener('click', () => { LIFE.life.dolphins = true; document.querySelector('[data-life=dolphins]').checked = true; LIFE.callDolphins(); });
+  document.querySelectorAll('[data-pad]').forEach((b) => { const k = b.dataset.pad; b.addEventListener('pointerdown', (e) => { e.preventDefault(); LIFE.input[k] = true; }); ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, () => { LIFE.input[k] = false; })); });
   document.querySelectorAll('.tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
@@ -2215,6 +2589,7 @@
   document.querySelectorAll('.cam-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       state.camMode = btn.dataset.cam;
+      if (state.camMode === 'drive' && !LIFE.veh.key) { LIFE.enter('kano'); return; }
       document.querySelectorAll('.cam-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       if (state.camMode === 'grazing') { state.camPitch = 0.08; state.camDist = 14.0; }
@@ -2250,7 +2625,8 @@
     clouds: gl.getUniformLocation(oceanProg, 'uCloudCover'), exp: gl.getUniformLocation(oceanProg, 'uExposure'),
     rain: gl.getUniformLocation(oceanProg, 'uRainIntensity'), lightning: gl.getUniformLocation(oceanProg, 'uLightning'),
     ior: gl.getUniformLocation(oceanProg, 'uWaterIOR'), localFluid: gl.getUniformLocation(oceanProg, 'uLocalFluid'),
-    pdeSize: gl.getUniformLocation(oceanProg, 'uPdeSize')
+    pdeSize: gl.getUniformLocation(oceanProg, 'uPdeSize'),
+    pdeCenter: gl.getUniformLocation(oceanProg, 'uPdeCenter'), gridOff: gl.getUniformLocation(oceanProg, 'uGridOffset')
   };
   const liqLoc = {
     vp: gl.getUniformLocation(liquidProg, 'uViewProj'), camPos: gl.getUniformLocation(liquidProg, 'uCamPos'),
@@ -2349,7 +2725,11 @@
     }
 
     // Camera computation (supports Above Water, Split Over/Under, Underwater Cavity & Body Follow!)
-    let tgtX = 0, tgtY = 1.2, tgtZ = 0;
+    if (LIFE.veh.key) { state.camFocus.x = LIFE.veh.x; state.camFocus.z = LIFE.veh.z; }
+    { const dx = Math.round((state.camFocus.x - pdeC.x) / PDE_DX), dz = Math.round((state.camFocus.z - pdeC.z) / PDE_DX); if (Math.abs(dx) > 9 || Math.abs(dz) > 9) shiftPDE(dx, dz); }
+    let tgtX = state.camFocus.x, tgtY = 1.2, tgtZ = state.camFocus.z;
+    let camYawEff = state.camYaw;
+    if (state.camMode === 'drive' && LIFE.veh.key) { tgtX = LIFE.veh.x; tgtY = LIFE.veh.y + 1.4; tgtZ = LIFE.veh.z; camYawEff = LIFE.veh.yaw + Math.PI + state.camYawOff; }
     if ((state.camMode === 'free' || state.camMode === 'grazing') && latestBody && !latestBody.hitWater) {
       tgtX = latestBody.x * 0.5; tgtY = Math.min(latestBody.y * 0.55, 10.0); tgtZ = latestBody.z * 0.5;   // düşen cismi kadrajda tut
     } else if (state.camMode === 'follow' && latestBody) {
@@ -2359,16 +2739,16 @@
     } else if (state.camMode === 'split') {
       tgtY = -0.12;
     }
-    const desCamX = tgtX + Math.sin(state.camYaw) * Math.cos(state.camPitch) * state.camDist;
+    const desCamX = tgtX + Math.sin(camYawEff) * Math.cos(state.camPitch) * state.camDist;
     let desCamY = tgtY + Math.sin(state.camPitch) * state.camDist;
-    if (state.camMode === 'free' || state.camMode === 'grazing' || state.camMode === 'aerial') {
+    if (state.camMode === 'free' || state.camMode === 'grazing' || state.camMode === 'aerial' || state.camMode === 'drive') {
       desCamY = Math.max(1.2, desCamY);
     } else if (state.camMode === 'underwater') {
       desCamY = Math.min(-0.9, desCamY);
     } else if (state.camMode === 'split') {
       desCamY = -0.04;
     }
-    const desCamZ = tgtZ + Math.cos(state.camYaw) * Math.cos(state.camPitch) * state.camDist;
+    const desCamZ = tgtZ + Math.cos(camYawEff) * Math.cos(state.camPitch) * state.camDist;
     const lerpF = 1.0 - Math.exp(-rawDt * 9.0);
     if (!state.smoothCam) {
       state.smoothCam = [desCamX, desCamY, desCamZ];
@@ -2428,6 +2808,8 @@
     gl.uniform1f(ocLoc.lightning, state.lightningFlash);
     gl.uniform1f(ocLoc.ior, PHYS.water.n);
     gl.uniform1f(ocLoc.pdeSize, PDE_SIZE);
+    gl.uniform2f(ocLoc.pdeCenter, pdeC.x, pdeC.z);
+    gl.uniform2f(ocLoc.gridOff, state.smoothCam[0], state.smoothCam[2]);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, pdeTex);
     gl.uniform1i(ocLoc.localFluid, 0);
@@ -2455,6 +2837,8 @@
         gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
       }
     }
+
+    LIFE.drawAll(state.simTime, vp, sunDir, state.smoothCam);
 
     // PASS 4: 3D Refractive Liquid Meshes (Ejecta Crown Sheet, Subsurface Air Cavity & Worthington Jet!)
     gl.enable(gl.BLEND);

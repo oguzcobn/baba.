@@ -162,7 +162,7 @@ const App = (() => {
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
-    { id: 'pelagos', name: ['PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'], tags: [['Fizik', 'Physics'], ['Akışkan', 'Fluid'], ['WebGL2', 'WebGL2']], best: () => T('5 cisim · 6 hava', '5 bodies · 6 weathers') },
+    { id: 'pelagos', name: ['PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'], tags: [['Fizik', 'Physics'], ['Akışkan', 'Fluid'], ['WebGL2', 'WebGL2']], best: () => T('6 araç · balina, yunus, köpekbalığı', '6 boats · whale, dolphins, shark') },
     { id: 'serpentia', name: ['SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'], tags: [['Simülasyon', 'Simulation'], ['Doğa', 'Nature'], ['3D', '3D']], best: () => T('10 tür · 4 doğa', '10 species · 4 habitats') },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
@@ -530,10 +530,10 @@ const App = (() => {
   function pelagosGame() {
     openEmbeddedGame({
       title: T('PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'),
-      url: 'games/pelagos/index.html?v=1',
+      url: 'games/pelagos/index.html?v=2',
       tag: T('BABA. PELAGOS. · Akışkan fiziği · WebGL2', 'BABA. PELAGOS. · Fluid physics · WebGL2'),
       lead: T('Çelik küre, granit, meşe kütüğü, buz ve şamandırayı denize bırak: taç sıçraması, hava kavitesi, Worthington jeti ve dalga girişimini ağır çekimde izle.', 'Drop a steel sphere, granite, an oak log, ice or a buoy into the sea: watch the crown splash, air cavity, Worthington jet and wave interference in slow motion.'),
-      tip: T('F ile bırak, fareyle sürükleyerek kamerayı döndür, tekerlekle yaklaş. Space duraklatır, nokta (.) kare kare ilerletir, H paneli gizler. 0.1× ve 0.02× ağır çekimi dene.', 'F to drop, drag to orbit, wheel to zoom. Space pauses, period (.) steps a frame, H hides the panel. Try 0.1× and 0.02× slow motion.')
+      tip: T('Araç & Yaşam sekmesinden kano, kayık, tekne, sürat botu, yat ya da yelkenliye bin (W/S gaz, A/D dümen); balina atlayışını, köpekbalığı avını ve yunusları izle. F ile cisim bırak, fareyle sürükleyerek kamerayı döndür, tekerlekle yaklaş. Space duraklatır, nokta (.) kare kare ilerletir, H paneli gizler. 0.1× ve 0.02× ağır çekimi dene.', 'F to drop, drag to orbit, wheel to zoom. Space pauses, period (.) steps a frame, H hides the panel. Try 0.1× and 0.02× slow motion.')
     });
   }
 
