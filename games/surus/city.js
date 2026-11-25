@@ -1,3 +1,4 @@
+import {buildingLots} from './lots.js';
 // One road graph supplies both visible pavement and tyre surface queries.
 export function buildCity(pose,length) {
   const segments=[];
@@ -30,5 +31,5 @@ export function buildCity(pose,length) {
       return Math.hypot(x-e.a.x-t*e.dx,y-e.a.y-t*e.dy)<=e.width;
     });
   }
-  return {segments,paved};
+  return {segments,paved,buildings:buildingLots(pose,length,segments)};
 }

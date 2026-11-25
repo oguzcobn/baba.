@@ -1,5 +1,6 @@
-import { buildCity } from './city.js';
-import { fresh, advance } from './dynamics.js?v=5';
+import {collideBuildings} from './walls.js';
+import { buildCity } from './city.js?v=7';
+import { fresh, advance } from './dynamics.js?v=7';
 import { route } from './route.js';
 
 const byId = id => document.getElementById(id);
@@ -68,6 +69,7 @@ function update(dt) {
     const paved=city.paved(car.x,car.y);
     const grip=paved ? (weather.value==='rain'?.60:.94) : (weather.value==='rain'?.35:.56);
     advance(car,Number(input.has('gas')),Number(input.has('brake')),turn,grip,1/120,paved);
+    collideBuildings(car,city.buildings);
     accumulator -= 1/120;
   }
   vehicle.style.setProperty('--steering', (car.steer*700)+'deg');
@@ -295,7 +297,7 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=6').then(async ({createCoast}) => {
+import('./scene.js?v=7').then(async ({createCoast}) => {
   coast = await createCoast(coastView,pose,length,city);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;

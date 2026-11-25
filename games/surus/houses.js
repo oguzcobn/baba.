@@ -1,3 +1,4 @@
+import {widths,depths} from './lots.js';
 import * as T from '../../js/vendor/three.module.min.js';
 
 // Each facade is generated floor by floor, with recessed windows, timber trim and a stone plinth.
@@ -32,23 +33,12 @@ export function buildHouses(scene,pose,length,roads){
   const roof=new T.BufferGeometry();
   const a=[-.5,0,-.5],b=[.5,0,-.5],c=[.5,0,.5],d=[-.5,0,.5],e=[0,1,-.27],f=[0,1,.27];
   roof.setAttribute('position',new T.Float32BufferAttribute([a,e,b,b,e,f,b,f,c,c,f,d,d,f,e,d,e,a].flat(),3));roof.computeVertexNormals();
-  const blocks=[],bins=new Map(),box=new T.BoxGeometry(),dummy=new T.Object3D();
+  const box=new T.BoxGeometry(),dummy=new T.Object3D();
   const tile=new T.MeshStandardMaterial({color:0x964a32,side:T.DoubleSide}),stone=new T.MeshStandardMaterial({color:0xc4b7a0});
   for(let theme=0;theme<3;theme++){
-    const floors=[2,4,3][theme],h=floors*2.85,w=[8.6,11.6,10.2][theme],dep=[10,13,11][theme];
+    const floors=[2,4,3][theme],h=floors*2.85,w=widths[theme],dep=depths[theme];
     const walls=facade(theme,floors),items=[];
-    for(let i=0,distance=18;distance<length-16;i++,distance+=24){
-      for(const [j,side] of [-25,-105,-178].entries()){
-        if((i+j)%3!==theme)continue;
-        const p=pose(distance,side),radius=Math.hypot(w/2+1.6,dep/2+1);
-        if(roads.segments.some(s=>{
-          const t=Math.min(1,Math.max(0,((p.x-s.a.x)*s.dx+(p.y-s.a.y)*s.dy)/s.squared));
-          return Math.hypot(p.x-s.a.x-t*s.dx,p.y-s.a.y-t*s.dy)<radius+s.width+1;
-        }))continue;
-        if(blocks.some(q=>Math.hypot(p.x-q.x,p.y-q.y)<radius+q.radius))continue;
-        blocks.push({...p,radius});items.push(p);
-      }
-    }
+    items.push(...roads.buildings.filter(lot=>lot.theme===theme));
     function batch(geo,mat,parts){
       const mesh=new T.InstancedMesh(geo,mat,items.length*parts.length);let k=0;
       for(const p of items)for(const [x,y,z,sx,sy,sz] of parts){

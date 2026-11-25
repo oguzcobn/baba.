@@ -1,5 +1,5 @@
 import {coastalLife} from './life.js';
-import {buildHouses} from './houses.js?v=6';
+import {buildHouses} from './houses.js?v=7';
 import {steeringRig} from './hands.js';
 import * as T from '../../js/vendor/three.module.min.js';
 

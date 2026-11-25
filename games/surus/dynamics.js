@@ -11,8 +11,10 @@ function lateralForce(slip, stiffness, capacity, longitudinal) {
 }
 export function advance(s,gas,brake,steer,grip,dt,paved=true) {
   const u=s.speed;
-  const target=steer*Math.min(.55,Math.atan(wheelbase*grip*8/Math.max(1,u*u)));
-  s.steer+=clamp(target-s.steer,-1.35*dt,1.35*dt);
+  // Outer front tyre path for a 10.76 m curb-to-curb circle.
+  const lock=Math.atan(wheelbase/(Math.sqrt(5.38**2-wheelbase**2)-.79));
+  const target=steer*Math.min(lock,Math.atan(wheelbase*grip*gravity*1.45/Math.max(1,u*u)));
+  s.steer+=clamp(target-s.steer,-2.35*dt,2.35*dt);
   if (u<0 || (u===0 && brake && !gas)) {
     s.speed=clamp(u+dt*(gas?6:brake?-2.3:1.15),-5,0);
     s.yawRate=s.speed*Math.tan(s.steer)/wheelbase;
@@ -51,7 +53,8 @@ export function advance(s,gas,brake,steer,grip,dt,paved=true) {
     s.lateral+=dt*(ay-u*s.yawRate);
     s.yawRate+=dt*(frontArm*frontBodyY-rearArm*rearY)/2450;
     // Stability control limits excessive sideslip and yaw overshoot.
-    const neutral=u*Math.tan(s.steer)/wheelbase;
+    const yawLimit=grip*gravity/Math.max(2,u);
+    const neutral=clamp(u*Math.tan(s.steer)/wheelbase,-yawLimit,yawLimit);
     s.yawRate+=(neutral-s.yawRate)*(1-Math.exp(-3*dt));
     s.lateral*=Math.exp(-2.6*dt);
   }
