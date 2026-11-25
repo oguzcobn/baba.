@@ -530,7 +530,7 @@ const App = (() => {
   function pelagosGame() {
     openEmbeddedGame({
       title: T('PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'),
-      url: 'games/pelagos/index.html?v=2',
+      url: 'games/pelagos/index.html?v=3',
       tag: T('BABA. PELAGOS. · Akışkan fiziği · WebGL2', 'BABA. PELAGOS. · Fluid physics · WebGL2'),
       lead: T('Çelik küre, granit, meşe kütüğü, buz ve şamandırayı denize bırak: taç sıçraması, hava kavitesi, Worthington jeti ve dalga girişimini ağır çekimde izle.', 'Drop a steel sphere, granite, an oak log, ice or a buoy into the sea: watch the crown splash, air cavity, Worthington jet and wave interference in slow motion.'),
       tip: T('Araç & Yaşam sekmesinden kano, kayık, tekne, sürat botu, yat ya da yelkenliye bin (W/S gaz, A/D dümen); balina atlayışını, köpekbalığı avını ve yunusları izle. F ile cisim bırak, fareyle sürükleyerek kamerayı döndür, tekerlekle yaklaş. Space duraklatır, nokta (.) kare kare ilerletir, H paneli gizler. 0.1× ve 0.02× ağır çekimi dene.', 'F to drop, drag to orbit, wheel to zoom. Space pauses, period (.) steps a frame, H hides the panel. Try 0.1× and 0.02× slow motion.')

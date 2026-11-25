@@ -900,7 +900,7 @@
         };
         b.cavStruct = struct;
         liquidStructures.push(struct);
-        if (liquidStructures.length > 6) liquidStructures.shift();
+        if (liquidStructures.length > 12) liquidStructures.shift();
       }
 
       // Two-way FSI: inject exact displaced volume rate dV/dt into the local Navier-Stokes/SW PDE grid!
@@ -2046,7 +2046,7 @@
     const input = { up: false, down: false, left: false, right: false };
     function enter(key) {
       const s = VEH[key]; if (!s) return;
-      veh.key = key; veh.x = state.camFocus.x; veh.z = state.camFocus.z; veh.v = 0; veh.yaw = (state.windDirDeg + 90) * Math.PI / 180; veh.y = sampleTotalWater(veh.x, veh.z).y + s.D - s.draft;
+      veh.key = key; veh.x = state.camFocus.x; veh.z = state.camFocus.z; veh.v = 0; veh.yaw = (state.windDirDeg + 90) * Math.PI / 180; veh.y = sampleTotalWater(veh.x, veh.z).y + s.D - s.draft + Math.min(6, 2 + s.L * 0.2); veh.vy = 0; veh.airborne = true;   // vinçten suya indirilir: giriş fiziği
       state.camMode = 'drive'; state.camPitch = 0.22; state.camDist = Math.max(9, s.L * 1.6); state.camYawOff = 0;
       document.querySelectorAll('.cam-btn').forEach(b => b.classList.toggle('active', b.dataset.cam === 'drive'));
       toast(s.label + ' — W/S gaz, A/D dümen' + (s.sail ? ' · rüzgârı yandan al (apaz) en hızlısı' : ''));
@@ -2072,7 +2072,19 @@
       const hp = sampleTotalWater(veh.x + px * w, veh.z + pz * w).y, hstb = sampleTotalWater(veh.x - px * w, veh.z - pz * w).y;
       const plane = s.planing ? Math.min(1, Math.max(0, veh.v / s.maxV)) : 0;
       const yT = (hb + hs + hp + hstb) * 0.25 - s.draft + s.D + plane * s.D * 0.25;   // köken = küpeşte; omurga su altında 'draft' kadar
-      veh.y += (yT - veh.y) * Math.min(1, dt * 6);
+      // dikey dinamik: suda kaldırma kuvveti yayı + sönüm, havadaysa serbest düşüş; suya çarpışta cisimlerle aynı giriş fiziği
+      if (veh.y > yT + 0.08) { veh.vy -= 9.81 * dt; if (!veh.airborne && veh.vy > 0.5) veh.airborne = true; }
+      else {
+        if (veh.airborne && veh.vy < -1.2) {
+          const vI = -veh.vy, R = s.W * 0.85, ox = Math.sin(veh.yaw) * s.L * 0.25, oz = Math.cos(veh.yaw) * s.L * 0.25;
+          waterEntry(veh.x, veh.z, R, vI, Math.sin(veh.yaw) * veh.v, Math.cos(veh.yaw) * veh.v, () => veh.y - s.D, { rho: 500, wet: 90, crownK: 1, asym: 0.35, massK: 1 + s.L / 8, name: s.label });
+          if (s.L > 5) { waterEntry(veh.x + ox, veh.z + oz, R * 0.8, vI * 0.9, 0, 0, () => veh.y - s.D, { rho: 500, wet: 90, crownK: 0.9 }); waterEntry(veh.x - ox, veh.z - oz, R * 0.8, vI * 0.9, 0, 0, () => veh.y - s.D, { rho: 500, wet: 90, crownK: 0.9 }); }
+          splash(veh.x, veh.z, 30 + s.L * 4, 2 + vI * 0.6, s.W, Math.min(1, vI / 10));
+        }
+        veh.airborne = false;
+        veh.vy += ((yT - veh.y) * 28 - 7 * veh.vy) * dt;
+      }
+      veh.y += (veh.vy || 0) * dt;
       const pitchT = -Math.atan2(hb - hs, 2 * l) - plane * 0.09 * Math.sin(Math.min(1, plane * 1.6) * Math.PI);
       const rollT = Math.atan2(hp - hstb, 2 * w) * 0.8 - steer * veh.v / s.maxV * 0.12 + (s.sail ? veh.heel : 0);
       veh.pitch += (pitchT - veh.pitch) * Math.min(1, dt * 4); veh.roll += (rollT - veh.roll) * Math.min(1, dt * 3);
@@ -2150,6 +2162,26 @@
     const seal = { x: 10, z: 10, y: 0, alive: true, t: 0, carried: false };
     let fishJumpT = 2, whaleT = 22, sharkT = 18, blood = 0;
 
+    // Cisim düşüşündeki fiziğin aynısı: We/Fr/Bo'dan kavite kararı, taç tabakası, hava kavitesi,
+    // pinch-off ve Worthington jeti, PDE'ye hacim enjeksiyonu. getY: canlı/aracın anlık yüksekliği (kavite derinliği için)
+    const latestBodyInfo = (name, v, we, fr, cav) => { if (!name) return; $('stState').textContent = name + ' suya girdi'; $('stImp').textContent = v.toFixed(1) + ' m/s'; $('stCav').textContent = cav ? 'Hava kavitesi + jet' : 'Kavite yok'; $('ndWe').textContent = we.toFixed(0); $('ndFr').textContent = fr.toFixed(2); };
+    function waterEntry(x, z, R, vImp, vx, vz, getY, o = {}) {
+      if (vImp < 0.8) return null;
+      const rhoW = PHYS.water.rho, water = sampleTotalWater(x, z), charL = 2 * R;
+      const we = (rhoW * vImp * vImp * charL) / PHYS.water.sigma, fr = vImp / Math.sqrt(PHYS.g * charL), rho = o.rho || 1030;
+      const exit = !!o.exit, wet = o.wet ?? 95;
+      const formsCavity = !exit && we > 45 && fr > 1.15 && (vImp > 3.8 || wet > 85);
+      const tPinch = formsCavity ? Math.min(o.maxPinch || 0.52, Math.max(0.18, 1.55 * Math.sqrt(R / PHYS.g) * Math.pow(Math.max(fr, 1.0), 0.14))) : -1.0;
+      const k = o.crownK || 1;
+      const st = { body: { get y() { return getY(); }, fr, rho }, x, z, y0: water.y, r0: R, vImp, vxImp: vx, vzImp: vz, asym: o.asym ?? 0.18, seed: Math.random() * 100.0, age: 0.0,
+        formsCavity, tPinch, pinched: false, cavDepth: 0.0, cavMaxRadius: R * (1.15 + Math.min(0.9, fr * 0.045)) * (o.cavK || 1),
+        crownH: 0.05, crownVy: vImp * 0.42 * k, crownR: R * 1.05, crownVr: vImp * 0.24 * k, crownAlive: true, dropShedTimer: 0.0,
+        jetActive: false, jetH: 0.0, jetVy: 0.0, jetR: R * 0.34, jetAge: 0.0, jetShedTimer: 0.0 };
+      liquidStructures.push(st); if (liquidStructures.length > 12) liquidStructures.shift();
+      injectFluidImpulse(x, z, R * 1.3, (exit ? 0.25 : -1) * Math.min(1.4, 0.04 * vImp * Math.sqrt(R) * (o.massK || 1)), Math.min(3.5, 0.28 * vImp), Math.min(0.9, 0.08 * vImp));
+      if (latestBodyInfo) latestBodyInfo(o.name || '', vImp, we, fr, formsCavity);
+      return st;
+    }
     const splash = (x, z, n, sp, rad, big = 0) => {
       const y = sampleTotalWater(x, z).y;
       for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, s = sp * (0.4 + Math.random() * 0.8); emitDrop(x + Math.cos(a) * rad * 0.5, y + 0.05, z + Math.sin(a) * rad * 0.5, Math.cos(a) * s * 0.5, s * (0.8 + Math.random()), Math.sin(a) * s * 0.5, 0.04 + Math.random() * (0.05 + big * 0.06), 1.8, 0); }
@@ -2166,8 +2198,8 @@
         if (f.jump) {
           f.vy -= 9.81 * dt; f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt;
           const wy = sampleTotalWater(f.x, f.z).y;
-          if (f.jump === 'up' && f.y > wy) { f.jump = 'air'; splash(f.x, f.z, 10, 2.2, 0.4); }
-          if (f.jump === 'air' && f.y < wy && f.vy < 0) { f.jump = null; splash(f.x, f.z, 14, 2.6, 0.5); }
+          if (f.jump === 'up' && f.y > wy) { f.jump = 'air'; splash(f.x, f.z, 6, 2.2, 0.4); waterEntry(f.x, f.z, f.size * 0.45, f.vy, f.vx, f.vz, () => f.y, { exit: true, wet: 60, crownK: 0.7 }); }
+          if (f.jump === 'air' && f.y < wy && f.vy < 0) { f.jump = null; splash(f.x, f.z, 6, 2.6, 0.5); waterEntry(f.x, f.z, f.size * 0.45, Math.hypot(f.vx, f.vy, f.vz), f.vx, f.vz, () => f.y, { wet: 60, name: 'Balık' }); }
           continue;
         }
         f.a += dt * f.sp; const tx = school.x + Math.cos(f.a) * f.r, tz = school.z + Math.sin(f.a) * f.r * 0.6, ty = f.h + Math.sin(t * 1.3 + f.r) * 0.2;
@@ -2185,8 +2217,9 @@
           const vx = nx - d.x, vz = nz - d.z, vy = ny - d.y;
           d.yaw = Math.atan2(vx, vz); d.pitch = -Math.atan2(vy, Math.hypot(vx, vz) + 1e-4) * 0.9;
           const wy = sampleTotalWater(nx, nz).y;
-          if (d.prevY < wy && ny >= wy) splash(nx, nz, 12, 2.6, 0.6);
-          if (d.prevY > wy && ny <= wy) splash(nx, nz, 18, 3.2, 0.7);
+          const dvy = (ny - d.prevY) / Math.max(dt, 1e-3), dvx = (nx - d.x) / Math.max(dt, 1e-3), dvz = (nz - d.z) / Math.max(dt, 1e-3);
+          if (d.prevY < wy && ny >= wy) { splash(nx, nz, 6, 2.6, 0.6); waterEntry(nx, nz, 0.45, Math.hypot(dvx, dvy, dvz) * 0.7, dvx, dvz, () => d.y, { exit: true, crownK: 0.8 }); }
+          if (d.prevY > wy && ny <= wy) { splash(nx, nz, 8, 3.2, 0.7); waterEntry(nx, nz, 0.45, Math.hypot(dvx, dvy, dvz), dvx, dvz, () => d.y, { wet: 80, name: 'Yunus' }); }
           d.prevY = ny; d.x = nx; d.y = ny; d.z = nz;
         }
       }
@@ -2200,14 +2233,20 @@
           if (whale.y > -1.2) { whale.blowT -= dt; if (whale.blowT <= 0) { whale.blowT = 4; for (let i = 0; i < 70; i++) emitDrop(whale.x + Math.sin(whale.yaw) * 3, sampleTotalWater(whale.x, whale.z).y + 0.3, whale.z + Math.cos(whale.yaw) * 3, (Math.random() - 0.5) * 0.8, 6 + Math.random() * 3, (Math.random() - 0.5) * 0.8, 0.035, 2.4, 0); } }
           if (whaleT <= 0) breach();
         } else if (whale.phase === 'rise') {
-          whale.vy -= 9.81 * 0.35 * dt; whale.y += whale.vy * dt; whale.pitch += (-1.35 - whale.pitch) * dt * 2; whale.roll += dt * 1.4;
+          { const wyN = sampleTotalWater(whale.x, whale.z).y; whale.vy -= (whale.y > wyN ? 9.81 : 1.6) * dt; }   // suda kaldırma/itki, havada tam yerçekimi
+          whale.y += whale.vy * dt; whale.pitch += (-1.35 - whale.pitch) * dt * 3; whale.roll += dt * 1.6;
           const wy = sampleTotalWater(whale.x, whale.z).y;
-          if (!whale.broke && whale.y > wy - 6) { whale.broke = true; splash(whale.x, whale.z, 160, 7, 3.5, 0.8); }
+          if (!whale.broke && whale.y > wy - 6) { whale.broke = true; splash(whale.x, whale.z, 120, 7, 3.5, 0.8); waterEntry(whale.x, whale.z, 2.3, whale.vy, 0, 0, () => whale.y, { exit: true, crownK: 1.8, asym: 0.3, massK: 3 }); }
           if (whale.vy < 0) { whale.phase = 'fall'; }
         } else if (whale.phase === 'fall') {
-          whale.vy -= 9.81 * 0.55 * dt; whale.y += whale.vy * dt; whale.pitch += (0.1 - whale.pitch) * dt * 1.6; whale.roll += (1.6 - whale.roll) * dt * 1.8;
-          if (whale.y < -1 && !whale.slam) { whale.slam = true; splash(whale.x, whale.z, 320, 11, 6, 1); splash(whale.x + Math.sin(whale.yaw) * 6, whale.z + Math.cos(whale.yaw) * 6, 160, 8, 4, 0.8); toast('Kambur balina atlayışı! ~30 ton su yüzeyini yardı'); }
-          if (whale.y < -8) { whale.phase = 'swim'; whale.vy = 0; whale.roll = 0; whaleT = 35 + Math.random() * 20; }
+          whale.vy -= (whale.slam ? -whale.vy * 2.5 : 9.81) * dt; whale.y += whale.vy * dt; whale.pitch += (0.1 - whale.pitch) * dt * 3; whale.roll += (1.6 - whale.roll) * dt * 3;
+          if (whale.y < -1 && !whale.slam) { whale.slam = true; splash(whale.x, whale.z, 240, 11, 6, 1); splash(whale.x + Math.sin(whale.yaw) * 6, whale.z + Math.cos(whale.yaw) * 6, 120, 8, 4, 0.8);
+            // balinaya özel giriş: ~30 t, R≈2.6 m gövde yan yatarak çarpar → dev taç, geniş-sığ kavite, kalın jet; kuyruk ve baş ayrı çarpar
+            const vI = Math.max(6, -whale.vy), fx = Math.sin(whale.yaw), fz = Math.cos(whale.yaw);
+            waterEntry(whale.x, whale.z, 2.6, vI, fx * 2, fz * 2, () => whale.y, { rho: 1020, crownK: 2.1, cavK: 1.6, asym: 0.45, massK: 4, maxPinch: 0.9, name: 'Kambur balina' });
+            waterEntry(whale.x - fx * 6, whale.z - fz * 6, 1.4, vI * 0.9, 0, 0, () => whale.y, { rho: 1020, crownK: 1.7, asym: 0.3, massK: 2 });
+            waterEntry(whale.x + fx * 5, whale.z + fz * 5, 1.6, vI * 0.85, 0, 0, () => whale.y, { rho: 1020, crownK: 1.7, asym: 0.3, massK: 2 }); toast('Kambur balina atlayışı! ~30 ton su yüzeyini yardı'); }
+          if (whale.y < -8 || (whale.slam && whale.vy > -0.6)) { whale.phase = 'swim'; whale.vy = 0; whale.roll = 0; whaleT = 35 + Math.random() * 20; }
         }
       }
       // köpekbalığı: yüzgeci suyun üstünde daire çizer; av zamanı fok'un altından dikey saldırı (Seal Island breach)
@@ -2226,9 +2265,9 @@
         } else if (shark.phase === 'strike') {
           shark.vy -= 9.81 * 0.5 * dt; shark.y += shark.vy * dt; shark.pitch += (-1.25 - shark.pitch) * dt * 4; shark.roll += dt * 2;
           const wy = sampleTotalWater(shark.x, shark.z).y;
-          if (!seal.carried && shark.y > wy - 1.2) { seal.carried = true; splash(shark.x, shark.z, 140, 6, 1.6, 0.6); blood = 1; toast('Büyük beyaz köpekbalığı aşağıdan saldırdı ve foku yakaladı!'); }
+          if (!seal.carried && shark.y > wy - 1.2) { seal.carried = true; splash(shark.x, shark.z, 90, 6, 1.6, 0.6); waterEntry(shark.x, shark.z, 0.75, shark.vy, 0, 0, () => shark.y, { exit: true, crownK: 1.1, asym: 0.35 }); blood = 1; toast('Büyük beyaz köpekbalığı aşağıdan saldırdı ve foku yakaladı!'); }
           if (seal.carried) { seal.x = shark.x; seal.z = shark.z; seal.y = shark.y + 1.6; }
-          if (shark.vy < -2 && shark.y < wy) { splash(shark.x, shark.z, 120, 5, 1.8, 0.5); shark.phase = 'dive'; seal.alive = false; seal.carried = false; }
+          if (shark.vy < -2 && shark.y < wy) { splash(shark.x, shark.z, 70, 5, 1.8, 0.5); waterEntry(shark.x, shark.z, 0.8, -shark.vy, 0, 0, () => shark.y, { wet: 90, name: 'Köpekbalığı' }); shark.phase = 'dive'; seal.alive = false; seal.carried = false; }
         } else if (shark.phase === 'dive') {
           shark.y += (-5 - shark.y) * dt; shark.pitch += (0.3 - shark.pitch) * dt * 2; shark.roll *= 0.95;
           if (shark.y < -4.5) { shark.phase = 'circle'; sharkT = 28 + Math.random() * 15; setTimeout(() => respawnSeal(), 6000); }
@@ -2237,7 +2276,7 @@
       blood = Math.max(0, blood - dt * 0.15);
     }
     function respawnSeal() { const F = focus(), a = Math.random() * 6.28; seal.x = F.x + Math.cos(a) * 11; seal.z = F.z + Math.sin(a) * 11; seal.alive = true; seal.carried = false; }
-    function breach() { if (whale.phase !== 'swim') return; const F = focus(), dv = viewDir(); whale.x = F.x + dv.x * 24 + dv.z * (Math.random() - 0.5) * 8; whale.z = F.z + dv.z * 24 - dv.x * (Math.random() - 0.5) * 8; whale.yaw = Math.atan2(-dv.z, dv.x); whale.y = -16; whale.vy = 13.5; whale.phase = 'rise'; whale.broke = false; whale.slam = false; whale.pitch = -1.3; whale.roll = 0; toast('Balina yükseliyor…'); }
+    function breach() { if (whale.phase !== 'swim') return; const F = focus(), dv = viewDir(); whale.x = F.x + dv.x * 11 + dv.z * (Math.random() - 0.5) * 4; whale.z = F.z + dv.z * 11 - dv.x * (Math.random() - 0.5) * 4; /* yerel akışkan ızgarasının içinde */ whale.yaw = Math.atan2(-dv.z, dv.x); whale.y = -13; whale.vy = 11.5; whale.phase = 'rise'; whale.broke = false; whale.slam = false; whale.pitch = -1.3; whale.roll = 0; toast('Balina yükseliyor…'); }
     function hunt() { if (shark.phase !== 'circle') return; if (!seal.alive) respawnSeal(); const F = focus(); if (Math.hypot(seal.x - F.x, seal.z - F.z) > 25) respawnSeal(); shark.phase = 'stalk'; toast('Köpekbalığı derine indi, fokun altına sokuluyor…'); }
     function callDolphins() { const dv = viewDir(); pod.a = Math.atan2(dv.z, dv.x) - 0.5; toast('Yunus sürüsü yanında yüzüyor'); }
 
