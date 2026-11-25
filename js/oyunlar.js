@@ -6,7 +6,7 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["subterra","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
+  const IMPORTED_ARCADE = new Set(["element","subterra","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
   const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
