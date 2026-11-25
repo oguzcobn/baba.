@@ -118,6 +118,36 @@
       border-color: rgba(56, 189, 248, 0.75);
       color: #ffffff;
     }
+
+    /* ---- Yarış modu ---- */
+    .rc-card { background: rgba(8,18,30,0.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(160,210,255,0.2); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.45); color: #e6f0f8; }
+    #rc-setup { position: fixed; z-index: 40; left: 50%; top: 50%; transform: translate(-50%,-50%); width: min(420px, calc(100vw - 24px)); padding: 16px; }
+    #rc-setup h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
+    #rc-setup p { margin: 0 0 12px; font-size: 11px; color: rgba(186,230,253,0.75); line-height: 1.45; }
+    .rc-row { margin-bottom: 10px; } .rc-row > span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: rgba(125,211,252,0.85); font-weight: 600; margin-bottom: 5px; }
+    .rc-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+    .rc-opts button { flex: 1; min-width: 70px; padding: 8px 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); color: #e0f2fe; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+    .rc-opts button.on { background: rgba(56,189,248,0.28); border-color: rgba(56,189,248,0.8); color: #fff; }
+    .rc-actions { display: flex; gap: 8px; margin-top: 12px; }
+    .rc-actions button { flex: 1; padding: 10px; border-radius: 12px; font-weight: 700; font-size: 12.5px; cursor: pointer; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06); color: #e0f2fe; }
+    .rc-actions button.go { background: linear-gradient(135deg,#0ea5e9,#10b981); border-color: transparent; color: #fff; }
+    #rc-hud { position: fixed; z-index: 21; top: 64px; left: 50%; transform: translateX(-50%); width: min(560px, calc(100vw - 24px)); padding: 8px 10px; display: flex; gap: 10px; align-items: center; }
+    #rc-map { width: 96px; height: 96px; border-radius: 12px; flex: none; }
+    .rc-main { flex: 1; min-width: 0; font-size: 11.5px; }
+    .rc-top { display: flex; align-items: center; gap: 10px; font-family: 'JetBrains Mono', monospace; }
+    .rc-top b { font-size: 18px; color: #fff; } .rc-pos { padding: 2px 7px; border-radius: 8px; background: rgba(56,189,248,0.25); color: #fff; font-weight: 700; }
+    #rc-arrow { display: inline-block; font-size: 18px; color: #34d399; transition: transform .15s linear; }
+    #rc-leg { font-weight: 600; color: #f0f9ff; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rc-sub { color: rgba(186,230,253,0.8); font-size: 10.5px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .rc-msg { margin-top: 4px; font-size: 11px; padding: 3px 7px; border-radius: 8px; background: rgba(255,255,255,0.06); min-height: 1.6em; }
+    .rc-msg.warn { background: rgba(244,63,94,0.22); color: #fecdd3; } .rc-msg.ok { background: rgba(16,185,129,0.22); color: #bbf7d0; }
+    #rc-quit { position: absolute; right: 8px; top: 6px; font-size: 10px; padding: 3px 7px; border-radius: 7px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #e0f2fe; cursor: pointer; }
+    #rc-result { position: fixed; z-index: 41; left: 50%; top: 50%; transform: translate(-50%,-50%); width: min(440px, calc(100vw - 24px)); padding: 16px; }
+    #rc-result h2 { margin: 0; font-size: 20px; } #rc-result-sub { font-size: 11px; color: rgba(186,230,253,0.8); margin: 4px 0 10px; }
+    #rc-result table { width: 100%; border-collapse: collapse; font-size: 12px; } #rc-result td { padding: 5px 4px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    #rc-result tr.me td { color: #7dd3fc; font-weight: 700; }
+    .rc-help { font-size: 10.5px; color: rgba(186,230,253,0.75); line-height: 1.5; margin: 6px 0 0; padding-left: 14px; }
+    @media (max-width: 640px) { #rc-hud { top: 58px; } #rc-map { width: 72px; height: 72px; } }
     .cam-btn.active {
       background: rgba(56, 189, 248, 0.25);
       border-color: rgba(56, 189, 248, 0.7);
@@ -146,7 +176,7 @@
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <h1 id="hud-boat-title" class="text-[13px] font-semibold tracking-tight text-white truncate">Optimist TUR 482</h1>
-          <span id="hud-char-badge" class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-white/10 text-sky-200 truncate">Ege</span>
+          <span id="hud-char-badge" class="text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-white/10 text-sky-200 truncate">Rıza Reis</span>
         </div>
         <div class="flex items-center gap-2 text-[11px] text-sky-200/80 font-mono-tech mt-0.5">
           <span id="hud-speed" class="text-white font-semibold">4.2 kn</span>
@@ -167,6 +197,10 @@
       <svg id="icon-audio-off" class="w-4 h-4 text-sky-300/80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
       <svg id="icon-audio-on" class="w-4 h-4 text-emerald-300 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
     </button>
+    <button id="btn-race" title="Yarış" class="glass rounded-xl px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500/25 transition flex items-center gap-1.5">
+      <svg class="w-4 h-4 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22V4"/><path d="M4 4h12l-2 4 2 4H4"/></svg>
+      <span class="hidden sm:inline">Yarış</span>
+    </button>
     <button id="btn-fleet-toggle" class="glass rounded-xl px-3 py-2 text-xs font-semibold text-white hover:bg-sky-500/20 border-sky-400/30 transition flex items-center gap-1.5">
       <svg class="w-4 h-4 text-sky-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
       <span class="hidden sm:inline">Tekne &amp; Karakter</span>
@@ -182,7 +216,7 @@
     <div class="flex items-center justify-between px-3.5 pt-3 pb-2 border-b border-white/10 shrink-0">
       <div class="flex gap-1 bg-black/25 p-1 rounded-xl flex-1 mr-2">
         <button class="fleet-tab active flex-1 text-[11px] font-semibold py-1.5 rounded-lg bg-sky-500/25 text-white transition" data-ftab="boats">5 Yelkenli</button>
-        <button class="fleet-tab flex-1 text-[11px] font-semibold py-1.5 rounded-lg text-sky-200/70 hover:text-white transition" data-ftab="chars">15 Karakter</button>
+        <button class="fleet-tab flex-1 text-[11px] font-semibold py-1.5 rounded-lg text-sky-200/70 hover:text-white transition" data-ftab="chars">5 Karakter</button>
       </div>
       <button id="btn-fleet-close" class="w-7 h-7 rounded-lg hover:bg-white/10 text-sky-200/70 hover:text-white flex items-center justify-center text-sm">✕</button>
     </div>
@@ -395,6 +429,40 @@
     </div>
   </div>
 
+
+  <!-- Yarış: kurulum, canlı panel, sonuç -->
+  <div id="rc-setup" class="rc-card hidden">
+    <h2>Yelken Yarışı</h2>
+    <p>Rakiplerle aynı rotada yarış. Start hattının gerisinden başla, dubaları <b>iskeleden</b> (solunda bırakarak) dön, finiş hattını rüzgarüstüne geç.</p>
+    <div class="rc-row"><span>Zorluk</span><div class="rc-opts">
+      <button data-g="diff" data-v="kolay">Kolay</button><button data-g="diff" data-v="orta" class="on">Orta</button><button data-g="diff" data-v="zor">Zor</button></div></div>
+    <div class="rc-row"><span>Parkur</span><div class="rc-opts">
+      <button data-g="course" data-v="kisa" class="on">Kısa W–L</button><button data-g="course" data-v="iki">2 tur W–L</button><button data-g="course" data-v="ucgen">Olimpik üçgen</button></div></div>
+    <div class="rc-row"><span>Rakip sayısı</span><div class="rc-opts">
+      <button data-g="n" data-v="3">3</button><button data-g="n" data-v="4" class="on">4</button><button data-g="n" data-v="5">5</button></div></div>
+    <ul class="rc-help">
+      <li>Start: uyarı (−1:15) · hazırlık P bayrağı (−1:00) · son dakika uzun ses (−0:15) · start (0). Erken geçersen <b>OCS</b>: geri dön.</li>
+      <li>Kural 10: iskele kontra, sancak kontraya yol verir. Kural 11: rüzgarüstü tekne uzak durur. Kural 12: arkadan gelen uzak durur.</li>
+      <li>Dubaya değmek 1, kural ihlali 2 dönüş cezası; her dönüş 1 orsa + 1 kavança. Rakiplerin rüzgaraltında rüzgar gölgesi var.</li>
+    </ul>
+    <div class="rc-actions"><button id="rc-cancel">Vazgeç</button><button id="rc-go" class="go">Yarışı başlat</button></div>
+  </div>
+  <div id="rc-hud" class="rc-card hidden">
+    <canvas id="rc-map" width="192" height="192"></canvas>
+    <div class="rc-main">
+      <div class="rc-top"><b id="rc-time">0:00</b><span class="rc-pos" id="rc-pos">1/5</span><span id="rc-arrow">⬆</span><span id="rc-dist">0 m</span></div>
+      <div id="rc-leg">—</div>
+      <div class="rc-sub"><span id="rc-tack"></span><span id="rc-pen" style="color:#fda4af"></span></div>
+      <div id="rc-msg" class="rc-msg"></div>
+    </div>
+    <button id="rc-quit">Yarıştan çık</button>
+  </div>
+  <div id="rc-result" class="rc-card hidden">
+    <h2 id="rc-result-title">—</h2>
+    <div id="rc-result-sub"></div>
+    <table><thead><tr><td>#</td><td>Yelken</td><td>Denizci</td><td>Süre</td><td>Ceza</td></tr></thead><tbody id="rc-result-rows"></tbody></table>
+    <div class="rc-actions"><button id="rc-close">Kapat</button><button id="rc-again" class="go">Tekrar yarış</button></div>
+  </div>
   <!-- Bottom Sailing & Camera Control Bar -->
   <div class="fixed bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
     <!-- Camera Modes -->
@@ -615,29 +683,19 @@
         }
       ];
 
-      // 15 Distinct Sailor Characters (distinct PFD, wetsuit, skin, hat/helmet/visor & shades)
+      // 5 gerçekçi karakter (modeller 8b bölümünde)
       const CHARACTERS = [
-        { id: 'ege',    name: 'Ege',    role: 'Optimist Çaylağı',  pfd: '#f97316', suit: '#162436', skin: '#e6b89c', hat: '#f8fafc', hatType: 'sunhat', shades: false },
-        { id: 'defne',  name: 'Defne',  role: 'Akdeniz Yarışçısı', pfd: '#f43f5e', suit: '#1e1b4b', skin: '#f0c4a8', hat: '#ffffff', hatType: 'visor',  shades: true  },
-        { id: 'kaan',   name: 'Kaan',   role: 'Rüzgar Avcısı',     pfd: '#eab308', suit: '#1e293b', skin: '#d9a482', hat: '#0284c7', hatType: 'beanie', shades: false },
-        { id: 'zeynep', name: 'Zeynep', role: 'Olimpik Aday',      pfd: '#06b6d4', suit: '#0f172a', skin: '#ecc0a2', hat: '#1e293b', hatType: 'helmet', shades: true  },
-        { id: 'mert',   name: 'Mert',   role: 'Kaptan Dümen',      pfd: '#dc2626', suit: '#334155', skin: '#cfa07e', hat: '#1e3a8a', hatType: 'cap',    shades: true  },
-        { id: 'selin',  name: 'Selin',  role: 'Meltem Ustası',     pfd: '#a855f7', suit: '#1e293b', skin: '#f3ccb0', hat: '#fef08a', hatType: 'sunhat', shades: true  },
-        { id: 'arda',   name: 'Arda',   role: 'Fırtına Kâşifi',    pfd: '#22c55e', suit: '#18181b', skin: '#d29973', hat: '#111827', hatType: 'helmet', shades: true  },
-        { id: 'elif',   name: 'Elif',   role: 'Ege Rüzgarı',       pfd: '#f59e0b', suit: '#1e3a5f', skin: '#f1c7aa', hat: '#fde68a', hatType: 'sunhat', shades: false },
-        { id: 'bora',   name: 'Bora',   role: 'Poyraz Şampiyonu',  pfd: '#2563eb', suit: '#0f172a', skin: '#c68d68', hat: '#ef4444', hatType: 'beanie', shades: true  },
-        { id: 'maya',   name: 'Maya',   role: 'Açık Denizci',      pfd: '#be123c', suit: '#27272a', skin: '#e8b694', hat: '#0f172a', hatType: 'beanie', shades: false },
-        { id: 'emre',   name: 'Emre',   role: 'Hız Tutkunu',       pfd: '#94a3b8', suit: '#991b1b', skin: '#dfb090', hat: '#e2e8f0', hatType: 'helmet', shades: true  },
-        { id: 'deniz',  name: 'Deniz',  role: 'Klasik Denizci',    pfd: '#ef4444', suit: '#1d4ed8', skin: '#ecc2a6', hat: '#f8fafc', hatType: 'cap',    shades: false },
-        { id: 'tuna',   name: 'Tuna',   role: 'Dalga Sörfçüsü',    pfd: '#10b981', suit: '#0c4a6e', skin: '#c4865e', hat: '#fb923c', hatType: 'visor',  shades: true  },
-        { id: 'irem',   name: 'İrem',   role: 'Güneş Yolcusu',     pfd: '#c084fc', suit: '#374151', skin: '#f2c9ae', hat: '#f5f5f4', hatType: 'visor',  shades: true  },
-        { id: 'kuzey',  name: 'Kuzey',  role: 'Kutup Kaptanı',     pfd: '#ea580c', suit: '#09090b', skin: '#e5b89b', hat: '#f8fafc', hatType: 'helmet', shades: true  }
+        { id: 'balikci', name: 'Rıza Reis', role: 'Balıkçı',        pfd: '#facc15', suit: '#1f2937', skin: '#c98e6b', hat: '#eab308' },
+        { id: 'alkolik', name: 'Cemil',     role: 'Bira Kaptanı',   pfd: '#7c2d12', suit: '#334155', skin: '#d79c82', hat: '#b91c1c' },
+        { id: 'sporcu',  name: 'Arda',      role: 'Olimpik Sporcu', pfd: '#0ea5e9', suit: '#0f172a', skin: '#c58a63', hat: '#f8fafc' },
+        { id: 'teyze',   name: 'Nazmiye',   role: 'Yaşlı Teyze',    pfd: '#f97316', suit: '#7c3aed', skin: '#e3b49a', hat: '#be185d' },
+        { id: 'sarisin', name: 'Elin',      role: 'Ege Yelkencisi', pfd: '#1e3a8a', suit: '#f8fafc', skin: '#f1c7ad', hat: '#facc15' }
       ];
 
       const state = {
         presetKey: 'noon',
         boatId: 'optimist',
-        charId: 'ege',
+        charId: 'balikci',
         fleetOpen: false,
         sunElevation: 42,
         sunAzimuth: 138,
@@ -2440,30 +2498,7 @@
       function applyCharacter(charId) {
         const ch = CHARACTERS.find(c => c.id === charId) || CHARACTERS[0];
         state.charId = ch.id;
-        pfdMat.color.set(ch.pfd);
-        suitMat.color.set(ch.suit);
-        skinMat.color.set(ch.skin);
-        hatMat.color.set(ch.hat);
-        sailorShades.visible = !!ch.shades;
-
-        // Morph headgear style (sunhat, visor, beanie, helmet, cap)
-        if (ch.hatType === 'sunhat') {
-          capBrim.visible = true; capBrim.scale.set(1.05, 1, 1.05); capBrim.position.set(0, 0.14, 0.01);
-          capTop.visible = true; capTop.scale.set(1.0, 1.0, 1.0);
-        } else if (ch.hatType === 'visor') {
-          capBrim.visible = true; capBrim.scale.set(0.85, 1, 1.15); capBrim.position.set(0, 0.14, 0.06);
-          capTop.visible = false;
-        } else if (ch.hatType === 'beanie') {
-          capBrim.visible = false;
-          capTop.visible = true; capTop.scale.set(1.06, 1.28, 1.06);
-        } else if (ch.hatType === 'helmet') {
-          capBrim.visible = false;
-          capTop.visible = true; capTop.scale.set(1.18, 1.15, 1.18);
-        } else { // cap
-          capBrim.visible = true; capBrim.scale.set(0.82, 1, 1.18); capBrim.position.set(0, 0.135, 0.065);
-          capTop.visible = true; capTop.scale.set(1.02, 0.96, 1.02);
-        }
-
+        CK.show(ch.id);
         document.getElementById('hud-char-badge').textContent = ch.name;
         renderFleetUI();
       }
@@ -2484,6 +2519,632 @@
       sailorGroup.traverse((obj) => { if (obj.isMesh) obj.renderOrder = 3; });
       sailorGroup.position.set(-0.56, 0.34, -0.34);
       boatHullGroup.add(sailorGroup);
+
+      // =========================================================================
+      // 8b. 5 GERÇEKÇİ KARAKTER — anatomik gövde, yüz, IK kollar ve ikincil hareket fiziği
+      //  • Verlet zincirleri: saç/at kuyruğu, yazma uçları, sallanan bira şişeleri, olta misinası, düdük ipi
+      //  • Yay-sönüm sistemleri: baş ataleti, göbek, olta ucu bükülmesi, sarhoş salınımı
+      //  • Güvertede yuvarlanan şişeler: teknenin yatış/ivmesine göre yerçekimi + sürtünme + çarpma
+      // =========================================================================
+      // eski basit model parçalarını gizle (animasyon pivotları korunur)
+      [legs, lowerLegs, torso, head, capBrim, capTop, sailorShades, sheetArm, tillerArm].forEach(m => { m.visible = false; });
+
+      const CK = (() => {
+        const V3 = THREE.Vector3, tmpA = new V3(), tmpB = new V3(), tmpC = new V3(), tmpQ = new THREE.Quaternion(), UP = new V3(0, 1, 0);
+        const worldFx = new THREE.Group(); scene.add(worldFx);           // dünya uzayındaki fizik nesneleri (saç, şişe, misina)
+        // ---------- dokular ----------
+        function canvasTex(w, h, draw, rep = 1) {
+          const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+          const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep); t.anisotropy = 4; return t;
+        }
+        function fabric(color, kind = 'weave', rep = 3) {
+          return canvasTex(128, 128, (g, w, h) => {
+            g.fillStyle = color; g.fillRect(0, 0, w, h);
+            if (kind === 'knit') { for (let x = 0; x < w; x += 8) { g.fillStyle = 'rgba(0,0,0,0.16)'; g.fillRect(x, 0, 2, h); g.fillStyle = 'rgba(255,255,255,0.07)'; g.fillRect(x + 4, 0, 2, h); } }
+            else if (kind === 'denim') { for (let i = -h; i < w; i += 4) { g.strokeStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.moveTo(i, 0); g.lineTo(i + h, h); g.stroke(); } }
+            else if (kind === 'floral') {
+              for (let i = 0; i < 26; i++) {
+                const x = (i * 37) % w, y = (i * 53) % h, cols = ['#fde68a', '#f9a8d4', '#ffffff', '#86efac'];
+                g.fillStyle = cols[i % 4]; for (let p = 0; p < 5; p++) { const a = p / 5 * 6.28; g.beginPath(); g.arc(x + Math.cos(a) * 4, y + Math.sin(a) * 4, 3, 0, 7); g.fill(); }
+                g.fillStyle = '#7c2d12'; g.beginPath(); g.arc(x, y, 2, 0, 7); g.fill();
+              }
+            } else if (kind === 'plaid') {
+              g.fillStyle = 'rgba(0,0,0,0.25)'; for (let x = 0; x < w; x += 32) { g.fillRect(x, 0, 10, h); g.fillRect(0, x, w, 10); }
+              g.fillStyle = 'rgba(255,255,255,0.12)'; for (let x = 16; x < w; x += 32) { g.fillRect(x, 0, 2, h); g.fillRect(0, x, w, 2); }
+            } else { for (let y = 0; y < h; y += 2) { g.fillStyle = `rgba(0,0,0,${0.04 + (y % 4 ? 0.03 : 0)})`; g.fillRect(0, y, w, 1); } }
+            const d = g.getImageData(0, 0, w, h); for (let i = 0; i < d.data.length; i += 4) { const n = (Math.random() - 0.5) * 14; d.data[i] += n; d.data[i + 1] += n; d.data[i + 2] += n; } g.putImageData(d, 0, 0);
+          }, rep);
+        }
+        const lin = (c) => new THREE.Color(c).convertSRGBToLinear();
+        const mat = (color, o = {}) => { if (o.emissive != null) o.emissive = lin(o.emissive); return new THREE.MeshStandardMaterial(Object.assign({ color: lin(color), roughness: 0.8 }, o)); };
+        const clothMat = (color, kind, rep, o = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: 0xffffff, map: fabric(color, kind, rep), roughness: 0.88 }, o));
+        // ---------- geometri yardımcıları ----------
+        // yuvarlak uçlu, kas kabarıklıklı uzuv (0..len arası eklem merkezleri)
+        function limbGeo(r0, r1, len, bulge = 0.12, seg = 14) {
+          const pts = [];
+          for (let i = 0; i <= 6; i++) { const a = -Math.PI / 2 + i / 6 * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r0, Math.sin(a) * r0)); }
+          for (let i = 1; i < 10; i++) { const t = i / 10, r = THREE.MathUtils.lerp(r0, r1, t) * (1 + bulge * Math.pow(Math.sin(Math.PI * Math.min(1, t * 1.4)), 2)); pts.push(new THREE.Vector2(r, t * len)); }
+          for (let i = 0; i <= 6; i++) { const a = i / 6 * Math.PI / 2; pts.push(new THREE.Vector2(Math.cos(a) * r1, len + Math.sin(a) * r1)); }
+          return new THREE.LatheGeometry(pts, seg);
+        }
+        function placeBetween(mesh, a, b, len) { mesh.position.copy(a); tmpA.subVectors(b, a); const d = tmpA.length(); mesh.quaternion.setFromUnitVectors(UP, tmpA.multiplyScalar(1 / Math.max(d, 1e-5))); if (len) mesh.scale.set(1, d / len, 1); }
+        function shadowAll(o) { o.traverse(m => { if (m.isMesh) { m.castShadow = true; m.renderOrder = 3; } }); return o; }
+        // gövde: omuz/göğüs/bel profili (X genişlik, Z derinlik), göbek kabarıklığı
+        function torsoGeo(o) {
+          const prof = [[0.0, -0.05], [0.118, -0.04], [0.135, 0.02], [0.13, 0.08], [0.118 * o.waist, 0.15], [0.128, 0.22], [0.145, 0.29], [0.15 * o.shoulder, 0.345], [0.142 * o.shoulder, 0.385], [0.11, 0.42], [0.06, 0.45], [0.048, 0.47], [0.0, 0.475]];
+          const g = new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), 28);
+          const p = g.attributes.position;
+          for (let i = 0; i < p.count; i++) {
+            let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+            z *= 0.7;                                   // göğüs kafesi derinliği < genişlik
+            if (z > 0) z += o.belly * Math.exp(-Math.pow((y - 0.1) / 0.085, 2)) * (z / 0.1);
+            if (z < 0 && y > 0.22) z *= 0.92;           // kürek kemikleri düzlüğü
+            x *= 1.12 * (o.shoulderW || 1);
+            p.setXYZ(i, x, y, z);
+          }
+          g.computeVertexNormals(); return g;
+        }
+        // yüz: küre deformasyonu (çene, burun, kaş kemeri, elmacık, göz çukurları) + köşe renkleri
+        function headGeo(o) {
+          const g = new THREE.SphereGeometry(0.1, 40, 30), p = g.attributes.position, n = new V3(), cols = [];
+          const base = lin(o.skin), red = lin(0xb4322c), dark = lin(0x2b1d14), cheek = lin(0xd9685c);
+          const G = (dx, dy, sx, sy) => Math.exp(-(dx * dx) / (sx * sx) - (dy * dy) / (sy * sy));
+          for (let i = 0; i < p.count; i++) {
+            n.set(p.getX(i), p.getY(i), p.getZ(i)).normalize();
+            let r = 0.1;
+            const front = Math.max(0, n.z);
+            r += 0.024 * o.nose * G(n.x, n.y + 0.1, 0.11, 0.2) * Math.pow(front, 6);                 // burun
+            r += 0.006 * G(n.x, n.y - 0.2, 0.45, 0.06) * front;                                    // kaş kemeri
+            r -= 0.009 * (G(n.x - 0.32, n.y - 0.1, 0.12, 0.08) + G(n.x + 0.32, n.y - 0.1, 0.12, 0.08)) * front; // göz çukuru
+            r += 0.006 * (G(n.x - 0.55, n.y + 0.08, 0.15, 0.12) + G(n.x + 0.55, n.y + 0.08, 0.15, 0.12)) * front; // elmacık
+            r += 0.01 * G(n.x, n.y + 0.72, 0.18, 0.12) * front * o.chin;                            // çene ucu
+            if (n.z < -0.2 && n.y > -0.2) r += 0.008 * (-n.z);                                     // art kafa
+            let x = n.x * r * 0.86, y = n.y * r * 1.13, z = n.z * r * 0.98;
+            if (n.y < -0.15) x *= 1 - (o.jaw || 0.2) * (-n.y - 0.15);                               // çene hattı daralır
+            if (n.y < -0.35 && n.z < 0.3) y *= 0.92;                                               // çene altı → boyun
+            p.setXYZ(i, x, y, z);
+            const c = base.clone();
+            c.lerp(cheek, (o.blush || 0) * (G(n.x - 0.5, n.y + 0.12, 0.2, 0.16) + G(n.x + 0.5, n.y + 0.12, 0.2, 0.16)) * front);
+            c.lerp(red, (o.redNose || 0) * G(n.x, n.y + 0.1, 0.13, 0.15) * Math.pow(front, 4));
+            if (o.stubble) c.lerp(dark, o.stubble * (n.y < -0.12 ? Math.min(1, (-n.y - 0.12) * 4) : 0) * (n.z > -0.3 ? 1 : 0) * (1 - G(n.x, n.y + 0.42, 0.14, 0.09) * 0.7));
+            if (o.age) c.lerp(lin(0x8a5a4a), o.age * (G(n.x - 0.33, n.y + 0.02, 0.12, 0.05) + G(n.x + 0.33, n.y + 0.02, 0.12, 0.05)) * front);
+            cols.push(c.r, c.g, c.b);
+          }
+          g.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3));
+          g.computeVertexNormals(); return g;
+        }
+        // ---------- Verlet zinciri (dünya uzayı) ----------
+        class Chain {
+          constructor(anchor, off, n, seg, o = {}) {
+            this.anchor = anchor; this.off = off.clone(); this.n = n; this.seg = seg; this.o = Object.assign({ damp: 0.985, grav: 9.8, wind: 0.0, iters: 6, stiff: 0 }, o);
+            this.p = []; this.q = []; for (let i = 0; i <= n; i++) { this.p.push(new V3()); this.q.push(new V3()); }
+            this.meshes = []; this.inited = false; this.colliders = [];
+          }
+          anchorPos(out) { return out.copy(this.off).applyMatrix4(this.anchor.matrixWorld); }
+          reset() { this.inited = false; }
+          step(dt, windV) {
+            const s = this.anchor.getWorldScale(tmpC).x, L = this.seg * s, a0 = this.anchorPos(tmpB);
+            const restDir = this.o.restDir ? tmpA.copy(this.o.restDir).transformDirection(this.anchor.matrixWorld) : tmpA.set(0, -1, 0);
+            if (!this.inited) { for (let i = 0; i <= this.n; i++) { this.p[i].copy(a0).addScaledVector(restDir, L * i); this.q[i].copy(this.p[i]); } this.inited = true; }
+            const rd = restDir.clone();
+            const g = this.o.grav * dt * dt, w = this.o.wind * dt * dt;
+            this.p[0].copy(a0); this.q[0].copy(a0);
+            for (let i = 1; i <= this.n; i++) {
+              const p = this.p[i], q = this.q[i];
+              const vx = (p.x - q.x) * this.o.damp, vy = (p.y - q.y) * this.o.damp, vz = (p.z - q.z) * this.o.damp;
+              q.copy(p);
+              p.x += vx + windV.x * w; p.y += vy - g + windV.y * w; p.z += vz + windV.z * w;
+              if (this.o.water) {                                 // şamandıra/misina: su yüzeyinde kalır, sürüklenir
+                const wh = sampleOceanHeightAndNormal(p.x, p.z, this.o.timeRef()).height;
+                if (p.y < wh) { p.y = wh; q.x = THREE.MathUtils.lerp(q.x, p.x, 0.35); q.z = THREE.MathUtils.lerp(q.z, p.z, 0.35); q.y = p.y; }
+              }
+            }
+            for (let it = 0; it < this.o.iters; it++) {
+              this.p[0].copy(a0);
+              for (let i = 0; i < this.n; i++) {
+                const A = this.p[i], B = this.p[i + 1]; tmpA.subVectors(B, A); const d = tmpA.length() || 1e-6, diff = (d - L) / d;
+                if (i === 0) B.addScaledVector(tmpA, -diff); else { A.addScaledVector(tmpA, diff * 0.5); B.addScaledVector(tmpA, -diff * 0.5); }
+              }
+              if (this.o.stiff) for (let i = 1; i <= this.n; i++) {   // şekil hafızası (saç kökü dik durur)
+                const k = this.o.stiff * Math.pow(1 - (i - 1) / this.n, 2);
+                tmpA.copy(this.p[i - 1]).addScaledVector(rd, L); this.p[i].lerp(tmpA, k);
+              }
+              for (const c of this.colliders) {                       // küre çarpışmaları (baş, gövde, direk)
+                const cp = c.obj.localToWorld(tmpC.copy(c.off)), R = c.r * s;
+                for (let i = 1; i <= this.n; i++) { tmpA.subVectors(this.p[i], cp); const d = tmpA.length(); if (d < R) this.p[i].copy(cp).addScaledVector(tmpA, R / Math.max(d, 1e-5)); }
+              }
+            }
+          }
+          render() {
+            for (let i = 0; i < this.meshes.length; i++) { const m = this.meshes[i]; if (!m) continue; placeBetween(m, this.p[i], this.p[i + 1], m.userData.len); m.scale.x = m.scale.z = this.anchor.getWorldScale(tmpC).x; }
+          }
+          addSegMeshes(makeSeg) { for (let i = 0; i < this.n; i++) { const m = makeSeg(i); if (m) { m.userData.len = m.userData.len || this.seg; worldFx.add(shadowAll(m)); } this.meshes.push(m); } }
+          setVisible(v) { this.meshes.forEach(m => m && (m.visible = v)); }
+        }
+        // ---------- karakter iskeleti ----------
+        const skel = {};
+        skel.sway = new THREE.Group(); sailorTorsoPivot.add(skel.sway);         // ikincil salınım (yay)
+        skel.yaw = new THREE.Group(); skel.sway.add(skel.yaw);                   // gövde yönü (içeri-ileri bakar)
+        skel.posture = new THREE.Group(); skel.yaw.add(skel.posture);            // duruş (kambur vb.)
+        skel.legYaw = new THREE.Group(); sailorGroup.add(skel.legYaw);
+        skel.armRoot = new THREE.Group(); sailorGroup.add(skel.armRoot);
+        skel.neck = new THREE.Group(); skel.neck.position.set(0, 0.455, 0.01); skel.posture.add(skel.neck);
+        skel.headRot = new THREE.Group(); skel.neck.add(skel.headRot);
+        skel.shL = new THREE.Object3D(); skel.shL.position.set(0.17, 0.375, -0.005); skel.posture.add(skel.shL);
+        skel.shR = new THREE.Object3D(); skel.shR.position.set(-0.17, 0.375, -0.005); skel.posture.add(skel.shR);
+        const extrasRoot = new THREE.Group(); boatHullGroup.add(extrasRoot);
+
+        function buildKit(spec) {
+          const kit = { spec, groups: [], chains: [], upd: [], torsoRefObj: spec.torsoRefObj }; const fx0 = worldFx.children.length;
+          const G = (parent) => { const g = new THREE.Group(); parent.add(g); kit.groups.push(g); return g; };
+          const torsoG = G(skel.posture), legG = G(skel.legYaw), headG = G(skel.headRot), armG = G(skel.armRoot), extraG = G(extrasRoot);
+          const skin = new THREE.MeshStandardMaterial({ color: 0xffffff, vertexColors: true, roughness: 0.52 });
+          const skinFlat = mat(spec.skin, { roughness: 0.55 });
+          const topM = spec.topMat, pantsM = spec.pantsMat;
+          // ---- gövde + pelvis ----
+          const torsoMesh = new THREE.Mesh(torsoGeo(spec.body), topM); torsoG.add(torsoMesh);
+          const neck = new THREE.Mesh(limbGeo(0.046, 0.042, 0.1, 0.02), skinFlat); neck.position.set(0, 0.4, 0.01); torsoG.add(neck);
+          if (spec.collar) { const col = new THREE.Mesh(new THREE.TorusGeometry(0.058, 0.016, 8, 20), spec.collar); col.rotation.x = Math.PI / 2; col.position.set(0, 0.44, 0.005); torsoG.add(col); }
+          const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 14), pantsM); pelvis.scale.set(1.5, 0.85, 1.12); pelvis.position.set(0, 0.2, 0.04); legG.add(pelvis);
+          // ---- can yeleği / dış giyim katmanı ----
+          if (spec.vest) {
+            const vg = torsoGeo(Object.assign({}, spec.body, { belly: spec.body.belly * 1.05 }));
+            const vest = new THREE.Mesh(vg, spec.vest.mat); vest.scale.set(1.09, 0.62, 1.16); vest.position.y = 0.13; torsoG.add(vest);
+            const zip = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.2, 0.006), mat(0x111827, { metalness: 0.6, roughness: 0.35 }));
+            zip.position.set(0, 0.25, 0.115 + spec.body.belly * 0.5); torsoG.add(zip);
+            for (let i = 0; i < 0; i++) { const rb = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.009, 6, 26), spec.vest.mat); rb.scale.set(1.2 * (spec.body.shoulderW || 1), 0.8, 1); rb.rotation.x = Math.PI / 2; rb.position.y = 0.18 + i * 0.055; torsoG.add(rb); }
+            if (spec.vest.collar) { const hc = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.038, 10, 22), spec.vest.mat); hc.rotation.x = Math.PI / 2 - 0.25; hc.position.set(0, 0.425, 0.02); torsoG.add(hc); }
+            const strap = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.022, 0.25), mat(0x111827)); strap.position.set(0, 0.17, 0.0); strap.scale.set(1.05 * (spec.body.shoulderW || 1), 1, 1.02 + spec.body.belly * 2); torsoG.add(strap);
+          }
+          (spec.torsoExtras || []).forEach(f => f(torsoG, kit));
+          // ---- bacaklar ----
+          const thighG = limbGeo(0.072, 0.054, 0.42, 0.1), shinG = limbGeo(0.052, 0.036, 0.4, 0.16);
+          for (const sx of [1, -1]) {
+            const hip = new V3(0.085 * sx, 0.2, 0.03), knee = new V3(0.1 * sx, 0.2, 0.44), ank = new V3(0.105 * sx, -0.19, 0.5);
+            const th = new THREE.Mesh(thighG, pantsM); placeBetween(th, hip, knee); legG.add(th);
+            const sh = new THREE.Mesh(shinG, spec.shinMat || pantsM); placeBetween(sh, knee, ank); legG.add(sh);
+            const kn = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), pantsM); kn.position.copy(knee); legG.add(kn);
+            const foot = spec.foot(); foot.position.set(ank.x, ank.y - 0.03, ank.z + 0.06); legG.add(foot);
+            (spec.legExtras || []).forEach(f => f(legG, hip, knee, ank, sx));
+          }
+          // ---- baş ----
+          const hd = spec.head;
+          const headMesh = new THREE.Mesh(headGeo(Object.assign({ skin: spec.skin }, hd)), skin); headMesh.position.y = 0.09; headG.add(headMesh);
+          const face = new THREE.Group(); face.position.y = 0.09; headG.add(face);
+          const eyeW = mat(0xf8fafc, { roughness: 0.25 }), irisM = mat(hd.eye || 0x3b2f22, { roughness: 0.2 }), pupilM = mat(0x050505, { roughness: 0.1 });
+          const lidM = mat(spec.skin, { roughness: 0.55 }), browM = mat(hd.brow || 0x3b2a1e, { roughness: 0.95 });
+          for (const sx of [1, -1]) {
+            const e = new THREE.Group(); e.position.set(0.033 * sx, 0.014, 0.079); face.add(e);
+            e.add(new THREE.Mesh(new THREE.SphereGeometry(0.0148, 14, 10), eyeW));
+            const ir = new THREE.Mesh(new THREE.CircleGeometry(0.0076, 16), irisM); ir.position.z = 0.0146; e.add(ir);
+            const pu = new THREE.Mesh(new THREE.CircleGeometry(0.0034, 12), pupilM); pu.position.z = 0.0148; e.add(pu);
+            const lid = new THREE.Mesh(new THREE.SphereGeometry(0.0158, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), lidM); lid.rotation.x = hd.lid || 0.35; e.add(lid);
+            e.userData.lid = lid; (kit.eyes = kit.eyes || []).push(e);
+            const br = new THREE.Mesh(new THREE.BoxGeometry(0.034, 0.0065, 0.01), browM); br.position.set(0.036 * sx, 0.04, 0.088); br.scale.y = hd.browScale || 1; br.rotation.z = -sx * (hd.browTilt || 0.12); face.add(br);
+            const ear = new THREE.Mesh(new THREE.SphereGeometry(0.024, 12, 10), lidM); ear.scale.set(0.42, 1, 0.72); ear.position.set(0.087 * sx, 0.002, -0.006); face.add(ear);
+          }
+          const lips = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.0048, 6, 16, Math.PI), mat(hd.lips || 0xb8695f, { roughness: 0.45 }));
+          lips.rotation.z = Math.PI; lips.scale.set(1, 0.42, 0.8); lips.position.set(0, -0.046, 0.083); face.add(lips);
+          const lip2 = lips.clone(); lip2.rotation.z = 0; lip2.scale.set(1, 0.3, 0.8); lip2.position.y = -0.05; face.add(lip2);
+          (spec.headExtras || []).forEach(f => f(headG, face, kit));
+          // ---- kollar (IK ile her karede yerleştirilir) ----
+          const upL = 0.28, foL = 0.26, sleeve = spec.sleeveMat || topM;
+          const arm = (handMat) => {
+            const up = new THREE.Mesh(limbGeo(0.05, 0.04, upL, 0.14), sleeve), fo = new THREE.Mesh(limbGeo(0.04, 0.03, foL, 0.12), spec.foreMat || sleeve);
+            const elbow = new THREE.Mesh(new THREE.SphereGeometry(0.041, 12, 10), sleeve);
+            const hand = new THREE.Group();
+            const palm = new THREE.Mesh(new THREE.SphereGeometry(0.034, 14, 10), handMat); palm.scale.set(0.75, 0.55, 1.25); palm.position.z = 0.03; hand.add(palm);
+            const fing = new THREE.Mesh(new THREE.TorusGeometry(0.024, 0.012, 8, 12, Math.PI * 1.2), handMat); fing.rotation.set(0, Math.PI / 2, 0); fing.position.set(0, -0.004, 0.06); hand.add(fing);
+            const thumb = new THREE.Mesh(limbGeo(0.011, 0.009, 0.04, 0), handMat); thumb.rotation.set(1.2, 0, 0.6); thumb.position.set(0.02, 0.004, 0.03); hand.add(thumb);
+            [up, fo, elbow, hand].forEach(m => armG.add(m));
+            return { up, fo, elbow, hand };
+          };
+          const handMat = spec.gloveMat || skinFlat;
+          kit.arms = [arm(handMat), arm(handMat)];
+          (spec.handExtras || []).forEach(f => f(kit));
+          (spec.boatExtras || []).forEach(f => f(extraG, kit));
+          kit.groups.forEach(shadowAll);
+          kit.worldObjs = worldFx.children.slice(fx0);
+          return kit;
+        }
+        // ---------- ortak parçalar ----------
+        const shoe = (color, h = 0.05, boot = 0) => () => {
+          const g = new THREE.Group(), m = mat(color, { roughness: 0.6 });
+          const s = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 10), m); s.scale.set(0.8, h / 0.06 * 0.6, 1.95); s.position.z = 0.03; g.add(s);
+          const sole = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.018, 0.22), mat(0xf1f5f9, { roughness: 0.9 })); sole.position.set(0, -0.025, 0.03); g.add(sole);
+          if (boot) { const b = new THREE.Mesh(limbGeo(0.058, 0.064, boot, 0), m); b.position.set(0, -0.01, -0.02); g.add(b); }
+          return g;
+        };
+        const bottleGeo = (() => {
+          const pts = [[0, 0], [0.032, 0], [0.034, 0.006], [0.034, 0.12], [0.03, 0.15], [0.016, 0.18], [0.013, 0.215], [0.015, 0.222], [0.0, 0.224]].map(p => new THREE.Vector2(p[0], p[1]));
+          return new THREE.LatheGeometry(pts, 18);
+        })();
+        const glassM = new THREE.MeshStandardMaterial({ color: 0x6b3410, roughness: 0.08, metalness: 0.15, transparent: true, opacity: 0.86 });
+        const labelTex = canvasTex(128, 64, (g, w, h) => { g.fillStyle = '#f5f0e1'; g.fillRect(0, 0, w, h); g.fillStyle = '#166534'; g.fillRect(0, 8, w, 6); g.fillRect(0, h - 14, w, 6); g.fillStyle = '#7f1d1d'; g.font = 'bold 26px serif'; g.textAlign = 'center'; g.fillText('BİRA', w / 2, 44); });
+        const labelM = new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.7 });
+        const capM = mat(0xd4af37, { metalness: 0.8, roughness: 0.3 });
+        function makeBottle(empty) {
+          const g = new THREE.Group();
+          g.add(new THREE.Mesh(bottleGeo, glassM));
+          const lb = new THREE.Mesh(new THREE.CylinderGeometry(0.0345, 0.0345, 0.06, 18, 1, true), labelM); lb.position.y = 0.07; g.add(lb);
+          if (!empty) { const c = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.01, 12), capM); c.position.y = 0.222; g.add(c); }
+          return g;
+        }
+        // ======================= 1) BALIKÇI =======================
+        const fisher = {
+          id: 'balikci', skin: '#c98e6b',
+          body: { waist: 1.05, shoulder: 1.04, shoulderW: 1.06, belly: 0.012 },
+          topMat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#eab308', 'weave', 4), roughness: 0.38, metalness: 0.02 }),   // muşamba
+          sleeveMat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#eab308', 'weave', 4), roughness: 0.38 }),
+          pantsMat: clothMat('#1f3b2d', 'weave', 4, { roughness: 0.5 }),
+          shinMat: mat(0x14532d, { roughness: 0.35 }),
+          foot: shoe(0x14532d, 0.06, 0.12),
+          posture: 0.08,
+          head: { nose: 1.25, chin: 0.6, jaw: 0.12, eye: 0x4b5563, brow: 0xd6d3d1, browTilt: 0.05, lid: 0.55, lips: 0x9f5a50, stubble: 0, age: 0.5 },
+          torsoExtras: [
+            (g) => { for (let i = 0; i < 4; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 6), mat(0x111827)); b.position.set(0, 0.16 + i * 0.07, 0.108); g.add(b); }
+                     const hood = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.03, 8, 18, Math.PI), fisher.topMat); hood.position.set(0, 0.42, -0.06); hood.rotation.set(0.9, 0, 0); g.add(hood); }
+          ],
+          headExtras: [
+            (h, f) => {
+              const beardM = mat(0xcbd5e1, { roughness: 1 });
+              const beard = new THREE.Mesh(new THREE.SphereGeometry(0.095, 24, 16, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45), beardM);
+              beard.scale.set(0.92, 1.05, 1.0); beard.position.set(0, 0.08, 0.012); h.add(beard);
+              const must = new THREE.Mesh(new THREE.TorusGeometry(0.022, 0.008, 6, 14, Math.PI), beardM); must.rotation.z = Math.PI; must.scale.set(1.2, 0.5, 1); must.position.set(0, -0.032, 0.088); f.add(must);
+              const hairSide = new THREE.Mesh(new THREE.SphereGeometry(0.104, 20, 12, Math.PI * 0.8, Math.PI * 1.4, Math.PI * 0.3, Math.PI * 0.28), beardM); hairSide.scale.set(0.88, 1.1, 0.98); hairSide.position.y = 0.09; h.add(hairSide);
+              // güneşlik (sou'wester)
+              const yel = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.35, side: THREE.DoubleSide });
+              const crown = new THREE.Mesh(new THREE.SphereGeometry(0.112, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), yel); crown.scale.set(0.95, 0.8, 1.02); crown.position.set(0, 0.125, -0.005); h.add(crown);
+              const brimPts = []; for (let i = 0; i <= 8; i++) { const t = i / 8; brimPts.push(new THREE.Vector2(0.1 + t * 0.07, -t * t * 0.03)); }
+              const brim = new THREE.Mesh(new THREE.LatheGeometry(brimPts, 28), yel); brim.scale.set(1, 1, 1.25); brim.position.set(0, 0.13, -0.022); brim.rotation.x = 0.12; h.add(brim);
+            }
+          ],
+          handExtras: [],
+          boatExtras: [
+            (g, kit) => {
+              // kova + balık
+              const buck = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.09, 0.18, 18, 1, true), new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5, side: THREE.DoubleSide }));
+              buck.position.set(0.18, 0.18, 0.25); g.add(buck);
+              const water = new THREE.Mesh(new THREE.CircleGeometry(0.1, 18), new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.05, metalness: 0.3 })); water.rotation.x = -Math.PI / 2; water.position.set(0.18, 0.24, 0.25); g.add(water);
+              const fishM = mat(0x94a3b8, { metalness: 0.6, roughness: 0.25 });
+              const fish = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 8), fishM); fish.scale.set(0.35, 0.6, 1.6); fish.position.set(0.17, 0.27, 0.27); fish.rotation.x = -1.1; g.add(fish);
+              const tail = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.05, 4), fishM); tail.scale.set(0.3, 1, 1); tail.position.set(0.17, 0.33, 0.33); tail.rotation.x = 0.4; g.add(tail);
+              kit.fishTail = tail;
+              // olta: kıç aynalığında kamış, yaylı uç, misina + şamandıra (su yüzeyinde sürüklenir)
+              const rodBase = new THREE.Object3D(); rodBase.position.set(0.5, 0.42, -1.3); g.add(rodBase);
+              const holder = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.16, 10), mat(0x475569, { metalness: 0.7, roughness: 0.3 })); holder.position.set(0.5, 0.38, -1.3); holder.rotation.x = -0.6; g.add(holder);
+              const rodM = mat(0x1f2937, { roughness: 0.4 }), rodSegs = [];
+              for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.012 - i * 0.0016, 0.013 - i * 0.0016, 1, 8), i === 0 ? mat(0x7c2d12) : rodM); g.add(m); rodSegs.push(m); }
+              const reel = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.035, 14), mat(0x9ca3af, { metalness: 0.8, roughness: 0.25 })); reel.rotation.z = Math.PI / 2; g.add(reel);
+              const tip = new THREE.Object3D(); g.add(tip);
+              const rod = { b: 0, v: 0, base: rodBase, segs: rodSegs, tip, reel };
+              const line = new Chain(tip, new V3(), 14, 0.34, { damp: 0.99, iters: 4, water: true, timeRef: () => CK.time });
+              line.addSegMeshes((i) => new THREE.Mesh(new THREE.CylinderGeometry(0.0022, 0.0022, 0.34, 4), new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.75 })));
+              const bob = new THREE.Group(); const b1 = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10), mat(0xdc2626, { roughness: 0.35 })); bob.add(b1);
+              const b2 = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xf8fafc)); b2.position.y = 0.001; bob.add(b2);
+              const b3 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.08, 6), mat(0xf8fafc)); b3.position.y = 0.06; bob.add(b3);
+              worldFx.add(bob); line.bob = bob;
+              kit.chains.push(line);
+              kit.upd.push((dt, ctx) => {
+                // kamış ucu: kütle-yay (teknenin düşey ivmesi + misina gerginliği ucu büker)
+                const accY = ctx.accLocal.y, tension = Math.max(0, line.p[1].distanceTo(line.p[0]) - line.seg * ctx.s) * 6;
+                rod.v += (-60 * rod.b - 5.5 * rod.v - accY * 0.035 + tension * 0.6) * dt; rod.b = THREE.MathUtils.clamp(rod.b + rod.v * dt, -0.15, 0.45);
+                const base = rodBase.position, dir = new V3(0.35, 0.72, -0.6).normalize(), down = new V3(0, -1, 0), L = 1.55;
+                let prev = base.clone();
+                for (let i = 0; i < 6; i++) {
+                  const t = (i + 1) / 6, p = base.clone().addScaledVector(dir, L * t).addScaledVector(down, (0.12 + rod.b) * t * t * L * 0.5);
+                  placeBetween(rod.segs[i], prev, p, 1); prev = p;
+                }
+                rod.tip.position.copy(prev); rod.reel.position.copy(base).addScaledVector(dir, 0.16).add(new V3(0, -0.035, 0));
+                rod.tip.updateMatrixWorld(true);
+                const last = line.p[line.n]; bob.position.copy(last); bob.scale.setScalar(ctx.s);
+                if (kit.fishTail) kit.fishTail.rotation.z = Math.sin(ctx.t * 7) * 0.5 * (Math.sin(ctx.t * 0.6) > 0.6 ? 1 : 0.1);
+              });
+            }
+          ]
+        };
+        // ======================= 2) ALKOLİK (bira kaptanı) =======================
+        const drunk = {
+          id: 'alkolik', skin: '#d79c82',
+          body: { waist: 1.22, shoulder: 0.96, shoulderW: 1.02, belly: 0.06 },
+          topMat: clothMat('#9a3412', 'plaid', 3),            // ekose gömlek
+          pantsMat: clothMat('#334e68', 'denim', 5),
+          sleeveMat: clothMat('#9a3412', 'plaid', 2),
+          foreMat: new THREE.MeshStandardMaterial({ color: 0xd79c82, roughness: 0.55 }),   // kollar sıvalı
+          foot: () => { const g = new THREE.Group(); const s = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.014, 0.23), mat(0x1e293b)); s.position.z = 0.03; s.position.y = -0.03; g.add(s);
+                        const st = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.006, 6, 10, Math.PI), mat(0x1e293b)); st.position.set(0, -0.025, 0.07); g.add(st);
+                        const toes = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), mat('#d79c82', { roughness: 0.55 })); toes.scale.set(0.95, 0.42, 1.9); toes.position.set(0, -0.012, 0.04); g.add(toes); return g; },
+          posture: 0.12,
+          head: { nose: 1.45, chin: 0.2, jaw: 0.06, eye: 0x5b4636, brow: 0x3f2d20, browTilt: -0.1, lid: 0.9, lips: 0xa3524a, stubble: 0.45, redNose: 0.75, blush: 0.55 },
+          vest: { mat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#b45309', 'weave', 3), roughness: 0.9 }), ribs: 0 },
+          headExtras: [
+            (h) => {
+              const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.11, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.52), clothMat('#b91c1c', 'knit', 3));
+              beanie.scale.set(0.93, 1.05, 1.02); beanie.position.set(0, 0.118, -0.01); beanie.rotation.z = 0.12; h.add(beanie);
+              const fold = new THREE.Mesh(new THREE.TorusGeometry(0.096, 0.016, 8, 26), clothMat('#991b1b', 'knit', 4)); fold.rotation.x = Math.PI / 2; fold.rotation.y = 0.12; fold.scale.set(0.95, 1.05, 1); fold.position.set(0, 0.12, -0.005); h.add(fold);
+              const hair = mat(0x4b3a2a, { roughness: 1 });
+              for (let i = 0; i < 7; i++) { const tuft = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.05, 5), hair); const a = -1.2 + i * 0.4; tuft.position.set(Math.sin(a) * 0.095, 0.085, Math.cos(a) * 0.08 - 0.03); tuft.rotation.set(0.4, 0, -a * 0.6 + Math.PI); h.add(tuft); }
+            }
+          ],
+          handExtras: [(kit) => { const b = makeBottle(true); b.rotation.x = Math.PI / 2 + 0.3; b.position.set(0, -0.06, 0.04); kit.arms[0].hand.add(b); kit.handBottle = b; }],
+          boatExtras: [
+            (g, kit) => {
+              // direğe iple asılı şişeler (sarkaç zinciri) + güvertede yuvarlanan şişeler + kasa
+              const hook = new THREE.Object3D(); hook.position.set(0, 1.42, 0.98); g.add(hook);
+              const ring = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.008, 6, 16), mat(0x78350f)); ring.position.copy(hook.position); ring.rotation.x = Math.PI / 2; g.add(ring);
+              const offs = [[0.055, 0, 0], [-0.04, 0, 0.04], [-0.02, 0, -0.055]];
+              kit.hung = [];
+              offs.forEach((o, i) => {
+                const ch = new Chain(hook, new V3(o[0], 0, o[2]), 3, 0.11 + i * 0.03, { damp: 0.994, iters: 5 });
+                ch.colliders.push({ obj: hook, off: new V3(0, -0.15, 0), r: 0.045 });   // direğe çarpar
+                ch.addSegMeshes(() => new THREE.Mesh(new THREE.CylinderGeometry(0.0035, 0.0035, 0.11 + i * 0.03, 5), mat(0xd6c7a1)));
+                const bt = makeBottle(false); worldFx.add(shadowAll(bt)); ch.bottle = bt; kit.chains.push(ch); kit.hung.push(ch);
+              });
+              const crate = new THREE.Group(); const cm = mat(0x9a3412, { roughness: 0.85 });
+              const cb = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.12, 0.22), cm); crate.add(cb);
+              for (let i = 0; i < 6; i++) { const bt = makeBottle(false); bt.scale.setScalar(0.9); bt.position.set(-0.1 + (i % 3) * 0.1, -0.02, -0.05 + Math.floor(i / 3) * 0.1); crate.add(bt); }
+              crate.position.set(0.25, 0.14, 0.55); g.add(crate);
+              kit.loose = [];
+              for (let i = 0; i < 3; i++) { const bt = makeBottle(true); bt.rotation.x = Math.PI / 2; const holder = new THREE.Group(); holder.add(bt); bt.position.z = -0.11; holder.position.set(-0.2 + i * 0.18, 0.11, -0.05 + i * 0.22); g.add(holder); kit.loose.push({ g: holder, b: bt, x: holder.position.x, z: holder.position.z, vx: 0, vz: 0, roll: 0, yaw: i * 0.7 }); }
+              kit.upd.push((dt, ctx) => {
+                for (const ch of kit.hung) {
+                  const a = ch.p[ch.n - 1], b = ch.p[ch.n]; ch.bottle.position.copy(b); tmpA.subVectors(a, b).normalize(); ch.bottle.quaternion.setFromUnitVectors(UP, tmpA); ch.bottle.scale.setScalar(ctx.s);
+                }
+                // şişe-şişe çarpışması → tıngırtı
+                for (let i = 0; i < kit.hung.length; i++) for (let j = i + 1; j < kit.hung.length; j++) {
+                  const A = kit.hung[i], B = kit.hung[j], pa = A.p[A.n], pb = B.p[B.n]; tmpA.subVectors(pb, pa); const d = tmpA.length(), R = 0.07 * ctx.s;
+                  if (d < R && d > 1e-5) { const push = (R - d) / d * 0.5; pa.addScaledVector(tmpA, -push); pb.addScaledVector(tmpA, push);
+                    const rv = tmpB.subVectors(pa, A.q[A.n]).sub(tmpC.subVectors(pb, B.q[B.n])).length() / Math.max(dt, 1e-3);
+                    if (rv > 0.5 && ctx.t - (kit.clinkT || 0) > 0.18) { kit.clinkT = ctx.t; clink(); } }
+                }
+                // güvertedeki şişeler: tekne çerçevesinde yerçekimi + atalet + sürtünme, kenarlarda sekme
+                for (const L of kit.loose) {
+                  const ax = ctx.gLocal.x - ctx.accLocal.x, az = ctx.gLocal.z - ctx.accLocal.z;
+                  L.vx += ax * dt * 0.55; L.vz += az * dt * 0.2;
+                  L.vx *= Math.pow(0.55, dt); L.vz *= Math.pow(0.2, dt);
+                  L.x += L.vx * dt; L.z += L.vz * dt;
+                  if (Math.abs(L.x) > 0.42) { L.x = Math.sign(L.x) * 0.42; if (Math.abs(L.vx) > 0.25 && ctx.t - (kit.clinkT || 0) > 0.25) { kit.clinkT = ctx.t; clink(0.6); } L.vx *= -0.35; }
+                  if (L.z < -0.8 || L.z > 0.45) { L.z = THREE.MathUtils.clamp(L.z, -0.8, 0.45); L.vz *= -0.3; }
+                  L.roll -= L.vx * dt / 0.034;
+                  L.g.position.set(L.x, 0.11, L.z); L.g.rotation.set(0, L.yaw, 0); L.b.rotation.set(Math.PI / 2, L.roll, 0);
+                }
+              });
+            }
+          ]
+        };
+        // ======================= 3) SPORCU =======================
+        const athlete = {
+          id: 'sporcu', skin: '#c58a63',
+          body: { waist: 0.86, shoulder: 1.1, shoulderW: 1.12, belly: 0 },
+          topMat: clothMat('#0f172a', 'weave', 6, { roughness: 0.45 }),       // likra
+          sleeveMat: clothMat('#0f172a', 'weave', 6, { roughness: 0.45 }),
+          pantsMat: clothMat('#111827', 'weave', 5, { roughness: 0.5 }),
+          gloveMat: mat(0x111827, { roughness: 0.6 }),
+          foot: shoe(0x0f172a, 0.055, 0.07),
+          posture: -0.02, hike: 1.35,
+          head: { nose: 1.0, chin: 1.0, jaw: 0.28, eye: 0x3f2a1c, brow: 0x1c1917, browTilt: 0.15, lid: 0.3, lips: 0xa86458, stubble: 0.12 },
+          vest: { mat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#0ea5e9', 'weave', 5), roughness: 0.55 }), ribs: 3 },
+          legExtras: [(g, hip, knee) => { const pad = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.03, 0.3), mat(0x334155, { roughness: 0.5 })); placeBetween(pad, hip.clone().lerp(knee, 0.2).add(new V3(0, 0.055, 0)), knee.clone().add(new V3(0, 0.055, 0))); pad.scale.set(1, 0.9, 1); pad.rotation.x += 0; g.add(pad); }],
+          torsoExtras: [
+            (g, kit) => {
+              const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.13, 14), mat(0x22c55e, { roughness: 0.3 })); bottle.position.set(0.07, 0.24, 0.112); bottle.rotation.x = 0.05; g.add(bottle);
+              const num = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.06), new THREE.MeshStandardMaterial({ map: canvasTex(128, 80, (c, w, h) => { c.fillStyle = '#fff'; c.fillRect(0, 0, w, h); c.fillStyle = '#c81e2b'; c.font = 'bold 54px Inter, sans-serif'; c.textAlign = 'center'; c.fillText('TUR', w / 2, 60); }) }));
+              num.position.set(0, 0.34, -0.12); num.rotation.y = Math.PI; g.add(num);
+              const whistleAnchor = new THREE.Object3D(); whistleAnchor.position.set(-0.03, 0.4, 0.09); g.add(whistleAnchor);
+              const ch = new Chain(whistleAnchor, new V3(), 4, 0.03, { damp: 0.97, iters: 4 });
+              ch.colliders.push({ obj: g, off: new V3(0, 0.3, 0.0), r: 0.14 });
+              ch.addSegMeshes(() => new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.03, 4), mat(0xfacc15)));
+              const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.04, 10), mat(0xf97316, { roughness: 0.3 })); wh.rotation.z = Math.PI / 2; const whG = new THREE.Group(); whG.add(wh); worldFx.add(shadowAll(whG));
+              kit.chains.push(ch);
+              kit.upd.push((dt, ctx) => { whG.position.copy(ch.p[ch.n]); whG.scale.setScalar(ctx.s); });
+            }
+          ],
+          handExtras: [(kit) => { const watch = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.012, 16), mat(0x0f172a, { metalness: 0.6, roughness: 0.25 })); const face = new THREE.Mesh(new THREE.CircleGeometry(0.018, 16), mat(0x22d3ee, { emissive: 0x0e7490, emissiveIntensity: 0.6 })); face.position.y = 0.0065; face.rotation.x = -Math.PI / 2; watch.add(face); watch.position.set(0, 0.03, -0.02); kit.arms[1].hand.add(watch); }],
+          headExtras: [
+            (h) => {
+              const hM = mat(0xf8fafc, { roughness: 0.25, metalness: 0.05 });
+              const shell = new THREE.Mesh(new THREE.SphereGeometry(0.118, 26, 14, 0, Math.PI * 2, 0, Math.PI * 0.56), hM); shell.scale.set(0.93, 0.9, 1.04); shell.position.set(0, 0.11, -0.008); h.add(shell);
+              for (let i = -2; i <= 2; i++) { const v = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.006, 0.09), mat(0x0f172a)); v.position.set(i * 0.03, 0.212, -0.01); h.add(v); }
+              const cam = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.03, 0.045), mat(0x111827, { roughness: 0.35 })); cam.position.set(0, 0.225, 0.045); h.add(cam);
+              const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.01, 12), mat(0x1e3a8a, { metalness: 0.8, roughness: 0.1 })); lens.rotation.x = Math.PI / 2; lens.position.set(0, 0.225, 0.07); h.add(lens);
+              const strapM = mat(0x111827);
+              for (const sx of [1, -1]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.12, 0.012), strapM); s.position.set(0.082 * sx, 0.03, 0.01); s.rotation.z = sx * 0.12; h.add(s); }
+              const chinS = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.005, 6, 16, Math.PI), strapM); chinS.rotation.set(0, 0, Math.PI); chinS.position.set(0, -0.02, 0.025); h.add(chinS);
+              const shades = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.034, 0.03), new THREE.MeshStandardMaterial({ color: 0x0c4a6e, roughness: 0.05, metalness: 0.9 })); shades.position.set(0, 0.105, 0.088); h.add(shades);
+            }
+          ],
+          boatExtras: [(g) => { const cmp = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.06), mat(0x111827)); cmp.position.set(0, 0.55, 0.9); g.add(cmp); const scr = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.04), mat(0x84cc16, { emissive: 0x365314, emissiveIntensity: 0.6 })); scr.position.set(0, 0.55, 0.869); scr.rotation.y = Math.PI; g.add(scr); }]
+        };
+        // ======================= 4) YAŞLI TEYZE =======================
+        const auntie = {
+          id: 'teyze', skin: '#e3b49a',
+          body: { waist: 1.25, shoulder: 0.9, shoulderW: 0.94, belly: 0.045 },
+          topMat: clothMat('#6d28d9', 'knit', 4),            // örgü hırka
+          sleeveMat: clothMat('#6d28d9', 'knit', 3),
+          pantsMat: clothMat('#7f1d1d', 'floral', 3),        // çiçekli şalvar
+          foot: () => { const g = new THREE.Group(); const sl = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.02, 0.22), mat(0x1f2937)); sl.position.set(0, -0.03, 0.03); g.add(sl);
+                        const band = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.03, 0.06), mat(0x0f172a)); band.position.set(0, -0.012, 0.07); g.add(band);
+                        const sock = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), clothMat('#e7e5e4', 'knit', 2)); sock.scale.set(0.85, 0.5, 1.9); sock.position.set(0, -0.01, 0.03); g.add(sock); return g; },
+          posture: 0.26,
+          head: { nose: 1.05, chin: 0.5, jaw: 0.1, eye: 0x57534e, brow: 0x9ca3af, browTilt: -0.08, lid: 0.6, lips: 0xb0756c, blush: 0.4, age: 0.7 },
+          vest: { mat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#f97316', 'weave', 3), roughness: 0.6 }), ribs: 0, collar: true },
+          headExtras: [
+            (h, f, kit) => {
+              const grey = mat(0xd6d3d1, { roughness: 1 });
+              const fringe = new THREE.Mesh(new THREE.SphereGeometry(0.104, 20, 10, -1.2, 2.4, Math.PI * 0.3, Math.PI * 0.14), grey); fringe.position.y = 0.09; h.add(fringe);
+              const scarfM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#be185d', 'floral', 2), roughness: 0.85, side: THREE.DoubleSide });
+              const scarfTop = new THREE.Mesh(new THREE.SphereGeometry(0.118, 26, 8, 0, Math.PI * 2, 0, Math.PI * 0.3), scarfM); scarfTop.scale.set(0.94, 1.04, 1.04); scarfTop.position.y = 0.092; h.add(scarfTop);
+              const scarf = new THREE.Mesh(new THREE.SphereGeometry(0.117, 26, 16, Math.PI * 0.8, Math.PI * 1.4, 0, Math.PI * 0.72), scarfM); scarf.scale.set(0.94, 1.04, 1.04); scarf.position.y = 0.092; h.add(scarf);
+              const knot = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 8), scarfM); knot.position.set(0, -0.045, -0.02); knot.scale.set(1.2, 0.8, 1); h.add(knot);
+              const glassesM = mat(0x92400e, { roughness: 0.3, metalness: 0.4 }), lensM = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.35 });
+              for (const sx of [1, -1]) { const rim = new THREE.Mesh(new THREE.TorusGeometry(0.019, 0.0028, 6, 20), glassesM); rim.position.set(0.034 * sx, 0.011, 0.094); rim.scale.y = 0.82; f.add(rim);
+                const ln = new THREE.Mesh(new THREE.CircleGeometry(0.019, 18), lensM); ln.position.copy(rim.position); ln.scale.y = 0.82; f.add(ln);
+                const arm = new THREE.Mesh(new THREE.BoxGeometry(0.003, 0.003, 0.09), glassesM); arm.position.set(0.084 * sx, 0.014, 0.05); f.add(arm); }
+              const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.003, 0.003), glassesM); bridge.position.set(0, 0.016, 0.097); f.add(bridge);
+              // yazma uçları: başın arkasından rüzgarda dalgalanan iki kumaş zinciri
+              for (const sx of [1, -1]) {
+                const a = new THREE.Object3D(); a.position.set(0.02 * sx, 0.04, -0.1); h.add(a);
+                const ch = new Chain(a, new V3(), 4, 0.045, { damp: 0.95, iters: 5, wind: 1.6 });
+                ch.colliders.push({ obj: h, off: new V3(0, 0.08, 0), r: 0.105 }, { obj: kit.torsoRefObj || h, off: new V3(0, -0.18, -0.02), r: 0.13 });
+                ch.addSegMeshes((i) => { const m = new THREE.Mesh(new THREE.BoxGeometry(0.05 - i * 0.008, 0.045, 0.004), scarfM); m.geometry.translate(0, 0.0225, 0); m.userData.len = 0.045; return m; });
+                kit.chains.push(ch);
+              }
+            }
+          ],
+          boatExtras: [
+            (g) => {
+              // termos + ince belli çay bardağı + örgü sepeti
+              const th = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.26, 16), mat(0x991b1b, { roughness: 0.35, metalness: 0.3 })); th.position.set(0.25, 0.22, 0.35); g.add(th);
+              const tc = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.05, 16), mat(0xd1d5db, { metalness: 0.8, roughness: 0.2 })); tc.position.set(0.25, 0.375, 0.35); g.add(tc);
+              const glassPts = [[0, 0], [0.024, 0], [0.026, 0.01], [0.019, 0.045], [0.026, 0.085], [0.027, 0.09]].map(p => new THREE.Vector2(p[0], p[1]));
+              const gl = new THREE.Mesh(new THREE.LatheGeometry(glassPts, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.4, roughness: 0.05, side: THREE.DoubleSide })); gl.position.set(0.15, 0.1, 0.42); g.add(gl);
+              const tea = new THREE.Mesh(new THREE.LatheGeometry(glassPts.slice(0, 5).map(p => new THREE.Vector2(p.x * 0.92, p.y * 0.92)), 16), mat(0x9a3412, { roughness: 0.1, transparent: true, opacity: 0.9 })); tea.position.set(0.15, 0.102, 0.42); g.add(tea);
+              const sau = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.04, 0.008, 18), mat(0xf8fafc, { roughness: 0.3 })); sau.position.set(0.15, 0.098, 0.42); g.add(sau);
+              const bas = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.08, 0.1, 16, 1, true), new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#a16207', 'denim', 3), roughness: 0.95, side: THREE.DoubleSide })); bas.position.set(-0.05, 0.14, 0.62); g.add(bas);
+              const yarn = new THREE.Mesh(new THREE.SphereGeometry(0.05, 14, 10), clothMat('#db2777', 'knit', 2)); yarn.position.set(-0.03, 0.18, 0.62); g.add(yarn);
+              const n1 = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.25, 6), mat(0xcbd5e1, { metalness: 0.8 })); n1.position.set(-0.06, 0.22, 0.6); n1.rotation.z = 0.7; g.add(n1);
+            }
+          ]
+        };
+        // ======================= 5) SARIŞIN YELKENCİ =======================
+        const blonde = {
+          id: 'sarisin', skin: '#f1c7ad',
+          body: { waist: 0.8, shoulder: 0.9, shoulderW: 0.9, belly: 0 },
+          topMat: clothMat('#f8fafc', 'weave', 5),            // beyaz uzun kollu gömlek
+          sleeveMat: clothMat('#f8fafc', 'weave', 4),
+          pantsMat: clothMat('#1e3a5f', 'weave', 5),
+          foot: shoe(0xa16207, 0.045, 0),
+          posture: 0.02,
+          head: { nose: 0.82, chin: 0.75, jaw: 0.34, eye: 0x2563eb, brow: 0xa16207, browScale: 0.55, browTilt: 0.06, lid: 0.28, lips: 0xc2575b, blush: 0.35 },
+          vest: { mat: new THREE.MeshStandardMaterial({ color: 0xffffff, map: fabric('#1e3a8a', 'weave', 5), roughness: 0.55 }), ribs: 2 },
+          headExtras: [
+            (h, f, kit) => {
+              const hairM = new THREE.MeshStandardMaterial({ color: 0xffffff, map: canvasTex(64, 128, (c, w, hh) => { const gr = c.createLinearGradient(0, 0, 0, hh); gr.addColorStop(0, '#d9a441'); gr.addColorStop(1, '#f6dc8c'); c.fillStyle = gr; c.fillRect(0, 0, w, hh); for (let x = 0; x < w; x += 2) { c.fillStyle = `rgba(${x % 4 ? 255 : 120},${x % 4 ? 240 : 80},${x % 4 ? 180 : 20},0.25)`; c.fillRect(x, 0, 1, hh); } }, 1), roughness: 0.45, metalness: 0.05, side: THREE.DoubleSide });
+              const cap = new THREE.Mesh(new THREE.SphereGeometry(0.106, 30, 18, 0, Math.PI * 2, 0, Math.PI * 0.31), hairM); cap.scale.set(0.9, 1.08, 1.02); cap.position.set(0, 0.098, -0.006); h.add(cap);
+              const back = new THREE.Mesh(new THREE.SphereGeometry(0.104, 24, 14, Math.PI * 0.75, Math.PI * 1.5, Math.PI * 0.4, Math.PI * 0.32), hairM); back.scale.set(0.9, 1.1, 1.02); back.position.set(0, 0.095, -0.006); h.add(back);
+              for (const sx of [1, -1]) { const bang = new THREE.Mesh(new THREE.SphereGeometry(0.06, 14, 10, 0, Math.PI, 0, Math.PI), hairM); bang.scale.set(0.5, 1.25, 0.6); bang.position.set(0.08 * sx, 0.07, 0.0); bang.rotation.y = sx * 1.3; h.add(bang); }
+              // güneş gözlüğü başın üstünde
+              // küpeler (minik sarkaç)
+              for (const sx of [1, -1]) { const ea = new THREE.Object3D(); ea.position.set(0.088 * sx, 0.06, 0.0); h.add(ea);
+                const ch = new Chain(ea, new V3(), 2, 0.012, { damp: 0.96, iters: 3 }); ch.addSegMeshes((i) => i === 1 ? new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 6), mat(0xfbbf24, { metalness: 1, roughness: 0.2 })) : new THREE.Mesh(new THREE.CylinderGeometry(0.0015, 0.0015, 0.012, 4), mat(0xfbbf24, { metalness: 1 }))); kit.chains.push(ch); }
+              // at kuyruğu: 7 parçalı Verlet zinciri, başa ve sırta çarpar, rüzgarda savrulur
+              const tieA = new THREE.Object3D(); tieA.position.set(0, 0.16, -0.085); h.add(tieA);
+              const scr = new THREE.Mesh(new THREE.TorusGeometry(0.018, 0.008, 8, 14), mat(0x1e3a8a)); scr.position.copy(tieA.position); scr.rotation.x = 0.4; h.add(scr);
+              const ch = new Chain(tieA, new V3(), 7, 0.042, { damp: 0.975, iters: 7, wind: 1.1, stiff: 0.06, restDir: new V3(0, -0.55, -0.85).normalize() });
+              ch.colliders.push({ obj: h, off: new V3(0, 0.09, 0), r: 0.11 }, { obj: kit.torsoRefObj || h, off: new V3(0, -0.2, -0.03), r: 0.135 });
+              ch.addSegMeshes((i) => { const r0 = 0.03 * (1 - i / 9), r1 = 0.03 * (1 - (i + 1) / 9); const m = new THREE.Mesh(limbGeo(Math.max(r0, 0.006), Math.max(r1, 0.004), 0.042, 0.25, 10), hairM); m.userData.len = 0.042; return m; });
+              kit.chains.push(ch);
+            }
+          ],
+          boatExtras: []
+        };
+        const SPECS = { balikci: fisher, alkolik: drunk, sporcu: athlete, teyze: auntie, sarisin: blonde };
+        const kits = {};
+        // gövdeye çarpışma referansı (saç/yazma sırta çarpar)
+        const torsoRef = new THREE.Object3D(); torsoRef.position.set(0, 0.0, 0); skel.neck.add(torsoRef);
+        let active = null;
+        function show(id) {
+          if (!kits[id]) { SPECS[id].torsoRefObj = torsoRef; kits[id] = buildKit(SPECS[id]); kits[id].spec.torsoRefObj = torsoRef; }
+          for (const k of Object.values(kits)) { const on = k === kits[id]; k.groups.forEach(g => g.visible = on); k.worldObjs.forEach(o => o.visible = on); k.chains.forEach(c => c.reset()); }
+          active = kits[id];
+          skel.posture.rotation.x = active.spec.posture || 0;
+        }
+        // ---------- tıngırtı sesi ----------
+        function clink(vol = 1) {
+          if (!state.audioEnabled || typeof audioCtx === 'undefined' || !audioCtx) return;
+          const t = audioCtx.currentTime;
+          for (const f of [2350, 3420, 4980]) { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.type = 'sine'; o.frequency.value = f * (0.95 + Math.random() * 0.1); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.05 * vol, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35); o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t + 0.4); }
+        }
+        // ---------- iki kemikli IK ----------
+        const ikTmp = { d: new V3(), p: new V3(), e: new V3() };
+        function solveArm(armObj, S, T, pole, a, b) {
+          const d = ikTmp.d.subVectors(T, S); let L = d.length(); const maxL = (a + b) * 0.995, minL = Math.abs(a - b) + 0.01;
+          const Lc = THREE.MathUtils.clamp(L, minL, maxL); d.multiplyScalar(1 / Math.max(L, 1e-5));
+          const cosA = (a * a + Lc * Lc - b * b) / (2 * a * Lc), sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
+          const p = ikTmp.p.copy(pole).addScaledVector(d, -pole.dot(d)).normalize();
+          const E = ikTmp.e.copy(S).addScaledVector(d, a * cosA).addScaledVector(p, a * sinA);
+          const Tc = tmpC.copy(S).addScaledVector(d, Lc);
+          placeBetween(armObj.up, S, E); placeBetween(armObj.fo, E, Tc); armObj.elbow.position.copy(E);
+          armObj.hand.position.copy(Tc); tmpA.subVectors(Tc, E).normalize(); armObj.hand.quaternion.setFromUnitVectors(new V3(0, 0, 1), tmpA);
+        }
+        // ---------- her kare ----------
+        const prevPos = new V3(), prevVel = new V3(), acc = new V3(), accLocal = new V3(), gLocal = new V3(), qInv = new THREE.Quaternion();
+        const spring = { hx: 0, hvx: 0, hz: 0, hvz: 0, bx: 0, bvx: 0, bz: 0, bvz: 0 };
+        let first = true, blinkT = 2;
+        const api = { time: 0, show };
+        api.update = function (dt, t, sideSign) {
+          if (!active) return;
+          dt = Math.min(dt, 1 / 20); api.time = t;
+          const sp = active.spec;
+          // gövde yönü: iç tarafa ve pruvaya dönük
+          const yaw = sideSign > 0 ? 1.0 : Math.PI - 1.0;
+          skel.yaw.rotation.y = yaw; skel.legYaw.rotation.y = yaw;
+          sailorGroup.updateWorldMatrix(true, true);
+          // teknenin ivmesi (tekne çerçevesinde) → ikincil hareket
+          const wp = sailorGroup.getWorldPosition(tmpA);
+          if (first) { prevPos.copy(wp); prevVel.set(0, 0, 0); first = false; }
+          const vel = tmpB.subVectors(wp, prevPos).multiplyScalar(1 / Math.max(dt, 1e-4)); prevPos.copy(wp);
+          acc.subVectors(vel, prevVel).multiplyScalar(1 / Math.max(dt, 1e-4)).clampLength(0, 25); prevVel.copy(vel);
+          boatHullGroup.getWorldQuaternion(qInv); qInv.invert();
+          accLocal.copy(acc).applyQuaternion(qInv); gLocal.set(0, -9.8, 0).applyQuaternion(qInv);
+          // baş ataleti ve gövde yayları (kütle-yay-sönüm)
+          const k = 70, c = 9;
+          spring.hvx += (-k * spring.hx - c * spring.hvx - accLocal.y * 0.004 + accLocal.z * 0.002) * dt; spring.hx += spring.hvx * dt;
+          spring.hvz += (-k * spring.hz - c * spring.hvz + accLocal.x * 0.003) * dt; spring.hz += spring.hvz * dt;
+          let swayX = 0, swayZ = 0;
+          if (sp.id === 'alkolik') { swayX = Math.sin(t * 0.9) * 0.06 + Math.sin(t * 2.3) * 0.02; swayZ = Math.sin(t * 0.63 + 1) * 0.08; if ((t % 9) < 0.25) swayX += Math.sin((t % 9) / 0.25 * Math.PI) * 0.08; }   // sarhoş salınımı + hıçkırık
+          if (sp.id === 'teyze') swayX += Math.sin(t * 1.4) * 0.01;
+          const hikeExtra = sp.hike ? (sp.hike - 1) * Math.min(0.45, Math.abs(state.heelAngle) * 1.6) : 0;
+          spring.bvx += (-40 * (spring.bx - swayX) - 6 * spring.bvx - accLocal.z * 0.003) * dt; spring.bx += spring.bvx * dt;
+          spring.bvz += (-40 * (spring.bz - swayZ - hikeExtra) - 6 * spring.bvz + accLocal.x * 0.004) * dt; spring.bz += spring.bvz * dt;
+          skel.sway.rotation.set(spring.bx, 0, spring.bz);
+          if (sp.body.belly > 0.03) { active.groups[0].children[0].scale.y = 1 + spring.hx * 0.6; }
+          // baş: ufka göre dengelenir, pruvaya / yelkene bakar, yaylı atalet
+          skel.neck.updateWorldMatrix(true, false);
+          const nq = skel.neck.getWorldQuaternion(tmpQ).invert();
+          const upL = tmpA.set(0, 1, 0).applyQuaternion(nq);
+          const qLevel = new THREE.Quaternion().setFromUnitVectors(UP, upL);
+          const fwdBoat = tmpB.set(0, 0, 1).transformDirection(boatHullGroup.matrixWorld).applyQuaternion(nq);
+          let look = Math.atan2(fwdBoat.x, fwdBoat.z) * 0.75 + Math.sin(t * 0.37) * 0.25;
+          if (sp.id === 'balikci' && Math.sin(t * 0.21) > 0.3) look = Math.atan2(-fwdBoat.x, -fwdBoat.z) * 0.6;   // ara sıra oltasına bakar
+          look = THREE.MathUtils.clamp(look, -1.2, 1.2);
+          const qLook = new THREE.Quaternion().setFromEuler(new THREE.Euler(spring.hx + (sp.id === 'alkolik' ? 0.12 : 0) - (sp.posture || 0) * 0.8 - Math.max(0, Math.sin(t * 0.29)) * 0.15, look, spring.hz, 'YXZ'));
+          skel.headRot.quaternion.identity().slerp(qLevel, 0.7).multiply(qLook);
+          // göz kırpma
+          blinkT -= dt; const blink = blinkT < 0.12; if (blinkT < 0) blinkT = 2 + Math.random() * 3.5;
+          (active.eyes || []).forEach(e => { e.userData.lid.rotation.x = blink ? 1.5 : (sp.head.lid || 0.35); });
+          // kollar: dümen eli dümen yekesinin uzatmasını, diğeri iskota halatını tutar
+          sailorGroup.updateWorldMatrix(true, true);
+          const sL = skel.shL.getWorldPosition(new V3()), sR = skel.shR.getWorldPosition(new V3());
+          const hullP = (x, y, z) => boatHullGroup.localToWorld(new V3(x, y, z));
+          const tillerW = tillerExt.localToWorld(new V3(0, 0.18, 0));
+          const sheetW = skel.posture.localToWorld(new V3(-0.05, 0.12, 0.3));   // göğüs önünde, iskota elde
+          if (sp.id === 'alkolik' && Math.sin(t * 0.5) > 0.82) sheetW.lerp(skel.headRot.localToWorld(new V3(0, 0.03, 0.1)), 0.85);   // arada bir şişeden yudum
+          if (sp.id === 'teyze' || sp.id === 'balikci') sheetW.add(new V3(0, Math.sin(t * 1.7) * 0.01, 0));
+          const aftIsL = boatHullGroup.worldToLocal(sL.clone()).z < boatHullGroup.worldToLocal(sR.clone()).z;
+          const sTill = aftIsL ? sL : sR, sSheet = aftIsL ? sR : sL;
+          const inv = new THREE.Matrix4().copy(sailorGroup.matrixWorld).invert(), scl = sailorGroup.getWorldScale(new V3()).x;
+          const toL = (v) => v.applyMatrix4(inv);
+          toL(sTill); toL(sSheet); toL(tillerW); toL(sheetW);
+          const down = new V3(0, -1, 0), outward = new V3(-1, -0.8, 0).normalize();
+          const armT = active.arms[aftIsL ? 1 : 0], armS = active.arms[aftIsL ? 0 : 1];
+          solveArm(armT, sTill, tillerW, outward, 0.28, 0.26);
+          solveArm(armS, sSheet, sheetW, down.clone().add(new V3(-0.4, 0, 0)).normalize(), 0.28, 0.26);
+          const hb = boatHullGroup.worldToLocal(armS.hand.getWorldPosition(new V3()));
+          sheetLinePts[3] = hb.x; sheetLinePts[4] = hb.y; sheetLinePts[5] = hb.z; sheetLineGeo.attributes.position.needsUpdate = true;
+          if (active.handBottle) { active.handBottle.parent !== armS.hand && armS.hand.add(active.handBottle); }
+          // fizik zincirleri
+          const w = THREE.MathUtils.degToRad(state.windDirDeg), wms = state.windKnots * 0.5144;
+          const windV = new V3(-Math.sin(w) * wms, 0, -Math.cos(w) * wms).sub(vel.clone().multiplyScalar(1));   // görünür rüzgar
+          windV.y += (Math.random() - 0.5) * wms * 0.4;
+          const ctx = { t, s: scl, accLocal, gLocal };
+          const sub = 2;
+          for (const ch of active.chains) { for (let i = 0; i < sub; i++) ch.step(dt / sub, windV.clone().multiplyScalar(ch.o.wind ? 1 : 0)); ch.render(); }
+          active.upd.forEach(f => f(dt, ctx));
+        };
+        api.debug = () => ({ active: active && active.spec.id, chains: active ? active.chains.length : 0 });
+        return api;
+      })();
 
       // Optional Cabin Coachroof (visible on 7.8m Aegean 26 & 11.5m Bosphorus 38 yachts)
       const cabinGroup = new THREE.Group();
@@ -3493,7 +4154,7 @@
 
         // Effective instantaneous true wind including live gusts
         const effWindDirDeg = state.windDirDeg + state.gustDirOffset;
-        const effWindKnots  = Math.max(2.0, state.windKnots + state.gustSpeedOffset);
+        const effWindKnots  = Math.max(2.0, (state.windKnots + state.gustSpeedOffset) * (race.active ? race.playerWindK : 1));   // yarışta rüzgar gölgesi
         const twFromRad = THREE.MathUtils.degToRad(effWindDirDeg);
         const twSpeedMs = effWindKnots * 0.514444;
         const twBlowX = -Math.sin(twFromRad);
@@ -3770,6 +4431,7 @@
         sheetLinePts[0] = boomMidLocal.x; sheetLinePts[1] = boomMidLocal.y; sheetLinePts[2] = boomMidLocal.z;
         sheetLinePts[3] = handLocal.x;    sheetLinePts[4] = handLocal.y;    sheetLinePts[5] = handLocal.z;
         sheetLineGeo.attributes.position.needsUpdate = true;
+        CK.update(dt, elapsed, sideSign);
 
         // Masthead burgee points into Apparent Wind; sail puffs to the LEEWARD side (+X=Port, -X=Stbd)
         burgee.rotation.y = -awaRad;
@@ -3887,6 +4549,7 @@
           sg.pR.rotation.z = -flap;
         }
         oceanUniforms.uBoatPos.value.copy(boatRoot.position);
+        if (race.active) updateRace(dt, elapsed, twFromRad, twSpeedMs, twaRad, bScale);
         oceanUniforms.uBoatFwd.value.set(fwd.x, fwd.z);
         oceanUniforms.uBoatSpeed.value = state.boatSpeed;
 
@@ -3968,6 +4631,7 @@
         syncViewportSize();
 
         // Render frame
+        if (window.__camOverride) window.__camOverride(camera);
         renderer.render(scene, camera);
 
         // HUD & Probe updates (throttled to ~6 Hz for clean DOM performance)
@@ -4122,13 +4786,527 @@
         }
       }
 
+      // =========================================================================
+      // 16. YARIŞ MODU — Yelken Yarış Kuralları (RRS 2025–2028, sadeleştirilmiş)
+      //  • Start: kısaltılmış 5-4-1-0 dizisi (uyarı / hazırlık P / 1 dk uzun ses / start), 4× hızlı.
+      //    Startta hattın parkur tarafındaysan OCS → X bayrağı, hattın gerisine dönüp yeniden startla.
+      //  • Dubalar iskeleden (solda bırakarak) dönülür; dubaya değmek = 1 dönüş cezası (kural 31/44.2).
+      //  • Çarpışma: zıt kontra → iskele kontra kusurlu (kural 10); aynı kontra bindirmeli → rüzgarüstü
+      //    (kural 11); bindirmesiz → arkadan gelen (kural 12). Ceza: 2 dönüş, her dönüş 1 orsa + 1 kavança.
+      //  • Rüzgar gölgesi: rüzgaraltında, hafif havada ~10, sert havada ~5 boy boyunca rüzgar azalır.
+      //  • Rakipler: kutup eğrisi + VMG ile kontra seçimi (rüzgar dönüşlerinde orsa dönüşü), ~45° orsa açısı.
+      // =========================================================================
+      const RC_DIFF = {
+        kolay: { k: 0.80, margin: 0.22, minTack: 9, late: 9, jitter: 6, label: 'Kolay' },
+        orta:  { k: 0.91, margin: 0.10, minTack: 6, late: 3, jitter: 3, label: 'Orta' },
+        zor:   { k: 1.00, margin: 0.035, minTack: 3.5, late: 0.6, jitter: 1, label: 'Zor' }
+      };
+      const RC_COURSES = {
+        kisa:   { label: 'Kısa rüzgarüstü–rüzgaraltı', seq: ['W', 'L'] },
+        iki:    { label: '2 tur rüzgarüstü–rüzgaraltı', seq: ['W', 'L', 'W', 'L'] },
+        ucgen:  { label: 'Olimpik üçgen', seq: ['W', 'G', 'L'] }
+      };
+      const RC_RIVALS = [
+        { name: 'Deniz', num: '112', hull: 0xf8fafc, sail: 0xfef3c7 }, { name: 'Bora', num: '207', hull: 0x1e3a8a, sail: 0xe0f2fe },
+        { name: 'Selin', num: '318', hull: 0xbe123c, sail: 0xffe4e6 }, { name: 'Kaan', num: '45', hull: 0x166534, sail: 0xdcfce7 },
+        { name: 'Elif', num: '529', hull: 0xf59e0b, sail: 0xfffbeb }
+      ];
+      const race = { active: false, phase: 'idle', boats: [], marks: [], seq: [], playerWindK: 1, msgT: 0 };
+      const rcGroup = new THREE.Group(); scene.add(rcGroup);
+      const wrapA = (a) => Math.atan2(Math.sin(a), Math.cos(a));
+      let rcAudio = null;
+      function horn(len = 0.35, f = 220) {
+        try {
+          rcAudio = rcAudio || new (window.AudioContext || window.webkitAudioContext)();
+          const o = rcAudio.createOscillator(), g = rcAudio.createGain(), t = rcAudio.currentTime;
+          o.type = 'sawtooth'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.03);
+          g.gain.setValueAtTime(0.16, t + len); g.gain.exponentialRampToValueAtTime(0.0001, t + len + 0.12);
+          o.connect(g).connect(rcAudio.destination); o.start(t); o.stop(t + len + 0.15);
+        } catch (e) {}
+      }
+      // ---- 3D nesneler: duba, start teknesi, rakip tekne ----
+      function makeBuoy(color) {
+        const g = new THREE.Group();
+        const m = new THREE.MeshStandardMaterial({ color, roughness: 0.42, emissive: color, emissiveIntensity: 0.08 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.7, 1.5, 20), m); body.position.y = 0.55; g.add(body);
+        const top = new THREE.Mesh(new THREE.SphereGeometry(0.62, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), m); top.position.y = 1.3; g.add(top);
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(0.71, 0.71, 0.12, 20), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5 })); band.position.y = 0.45; g.add(band);
+        g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.renderOrder = 3; } });
+        return g;
+      }
+      function makeBeacon() {
+        const g = new THREE.Group();
+        const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 14, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.45, depthWrite: false }));
+        beam.position.y = 8.5; g.add(beam);
+        const ring = new THREE.Mesh(new THREE.RingGeometry(2.6, 2.9, 40), new THREE.MeshBasicMaterial({ color: 0x34d399, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }));
+        ring.rotation.x = -Math.PI / 2; ring.position.y = 0.15; g.add(ring);
+        g.traverse(o => { if (o.isMesh) o.renderOrder = 5; });
+        return g;
+      }
+      function makeCommitteeBoat() {
+        const g = new THREE.Group();
+        const white = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35 });
+        const h = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.2, 7.5), white); h.position.y = 0.3; g.add(h);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.3, 2.6), white); cab.position.set(0, 1.4, -0.6); g.add(cab);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 4.2, 8), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.7, roughness: 0.3 })); pole.position.set(0, 3.6, 0.8); g.add(pole);
+        const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.7), new THREE.MeshStandardMaterial({ color: 0xf97316, side: THREE.DoubleSide })); flag.position.set(0.5, 5.3, 0.8); g.add(flag);
+        g.userData.flag = flag;
+        g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.renderOrder = 3; } });
+        return g;
+      }
+      function sailNumberTexture(num, color) {
+        const c = document.createElement('canvas'); c.width = 256; c.height = 256; const x = c.getContext('2d');
+        x.fillStyle = '#' + new THREE.Color(color).getHexString(); x.fillRect(0, 0, 256, 256);
+        x.fillStyle = '#0c2340'; x.font = 'bold 74px Inter, sans-serif'; x.textAlign = 'center'; x.fillText('TUR', 128, 104); x.fillStyle = '#c81e2b'; x.fillText(num, 128, 190);
+        const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+      }
+      function makeRivalBoat(spec) {
+        const root = new THREE.Group(), tilt = new THREE.Group(); root.add(tilt);
+        const hullM = new THREE.MeshStandardMaterial({ color: spec.hull, roughness: 0.18, metalness: 0.05 });
+        const S = 1.28;
+        const hull = new THREE.Mesh(new THREE.BoxGeometry(1.36 * S * 0.9, 0.42, 2.3 * S), hullM); hull.position.y = 0.2; tilt.add(hull);
+        const bow = new THREE.Mesh(new THREE.BoxGeometry(0.8 * S, 0.36, 0.3), hullM); bow.position.set(0, 0.28, 1.47 * S); tilt.add(bow);
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(1.2 * S * 0.9, 0.04, 2.1 * S), new THREE.MeshStandardMaterial({ color: 0xdce8f2 })); deck.position.y = 0.42; tilt.add(deck);
+        const alu = new THREE.MeshStandardMaterial({ color: 0xd8e0e8, metalness: 0.85, roughness: 0.28 });
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.032, 3.15, 10), alu); mast.position.set(0, 1.7, 0.98); tilt.add(mast);
+        const rig = new THREE.Group(); rig.position.set(0, 0.76, 0.98); tilt.add(rig);
+        const boom = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 2.48, 8), alu); boom.rotation.x = Math.PI / 2; boom.position.z = -1.24; rig.add(boom);
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.04, -0.03, 0, 0.04, -2.42, 0, 2.28, -0.03, 0, 2.75, -2.02], 3));
+        sg.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 0, 1, 1, 1], 2));
+        sg.setIndex([0, 1, 2, 2, 1, 3]); sg.computeVertexNormals();
+        const sail = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ map: sailNumberTexture(spec.num, spec.sail), side: THREE.DoubleSide, roughness: 0.6 })); rig.add(sail);
+        // dümendeki denizci: ağırlığını yatışa karşı rüzgarüstüne verir
+        const sailor = new THREE.Group(); sailor.position.set(0, 0.42, -0.4); tilt.add(sailor);
+        const pfd = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.12, 0.44, 10), new THREE.MeshStandardMaterial({ color: spec.hull === 0xf8fafc ? 0xf97316 : spec.hull })); pfd.position.y = 0.36; sailor.add(pfd);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 12, 10), new THREE.MeshStandardMaterial({ color: 0xe2b495 })); head.position.y = 0.68; sailor.add(head);
+        root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.renderOrder = 3; } });
+        root.userData = { tilt, rig, sailor };
+        return root;
+      }
+      // ---- kutup eğrisi: gerçek rüzgar açısına (derece) göre hız oranı ----
+      function polar(twaDeg) {
+        const t = Math.abs(twaDeg);
+        if (t < 34) return 0;
+        if (t < 45) return THREE.MathUtils.lerp(0, 0.62, (t - 34) / 11);
+        if (t < 95) return THREE.MathUtils.lerp(0.62, 1.0, (t - 45) / 50);
+        if (t < 140) return THREE.MathUtils.lerp(1.0, 0.92, (t - 95) / 45);
+        return THREE.MathUtils.lerp(0.92, 0.80, (t - 140) / 40);
+      }
+      const CLOSE = THREE.MathUtils.degToRad(45);   // Optimist ~90° kontra değiştirme açısı → 45° orsa
+      // ---- rüzgar gölgesi faktörü (diğer teknelerin rüzgaraltında kalınca) ----
+      function shadowFactor(px, pz, self, blowX, blowZ, windKn, hull) {
+        const Lsh = THREE.MathUtils.lerp(10, 5, THREE.MathUtils.clamp((windKn - 6) / 14, 0, 1)) * hull;   // hafif hava 10 boy, sert 5 boy
+        let k = 1;
+        const others = race.boats.filter(b => b !== self);
+        for (const b of others) {
+          const rx = px - b.x, rz = pz - b.z, along = rx * blowX + rz * blowZ;
+          if (along <= 0.5 || along > Lsh) continue;
+          const lat = Math.abs(rx * -blowZ + rz * blowX);
+          const width = hull * (1.2 + along / hull * 0.12);
+          if (lat > width) continue;
+          const depth = THREE.MathUtils.lerp(0.5, 0.8, THREE.MathUtils.clamp((windKn - 6) / 14, 0, 1));   // hafif havada rüzgarın yarısı kalabilir
+          k = Math.min(k, 1 - (1 - depth) * (1 - along / Lsh) * (1 - lat / width));
+        }
+        return k;
+      }
+      // ---- parkur kurulumu ----
+      function setupRace(diffKey, courseKey, nRivals) {
+        clearRace();
+        const bc = getActiveBoat(), bs = bc.scale, hull = 2.95 * bs;
+        const w = THREE.MathUtils.degToRad(state.windDirDeg);
+        const u = new THREE.Vector2(Math.sin(w), Math.cos(w));          // rüzgarın geldiği yön (rüzgarüstü)
+        const port = new THREE.Vector2(u.y, -u.x);                       // rüzgarüstüne bakarken sol taraf
+        const D = 170 * Math.sqrt(bs), L = 46 * Math.sqrt(bs) + nRivals * 4 * bs;
+        let S = new THREE.Vector2(state.boatPos.x, state.boatPos.z).addScaledVector(u, 24);
+        const pts = () => ({ W: S.clone().addScaledVector(u, D), L: S.clone().addScaledVector(u, -38 * Math.sqrt(bs)), G: S.clone().addScaledVector(u, D * 0.5).addScaledVector(port, D * 0.55) });
+        let P = pts(); const minZ = Math.min(P.W.y, P.L.y, P.G.y, S.y);
+        if (minZ < -120) { S.y += -120 - minZ; P = pts(); }
+        race.diff = RC_DIFF[diffKey]; race.courseKey = courseKey; race.hull = hull; race.bs = bs;
+        race.u = u; race.port = port; race.S = S; race.L = L; race.wFrom = w;
+        race.marks = {};
+        const mk = (key, pos, color, label) => { const m = makeBuoy(color); m.scale.setScalar(Math.sqrt(bs)); m.position.set(pos.x, 0, pos.y); rcGroup.add(m); race.marks[key] = { key, pos, mesh: m, label }; };
+        mk('W', P.W, 0xf97316, 'rüzgarüstü dubası');
+        mk('L', P.L, 0xf97316, 'rüzgaraltı dubası');
+        if (courseKey === 'ucgen') mk('G', P.G, 0xf97316, 'kanat dubası');
+        // start/finiş hattı: sancak ucunda komite teknesi, iskele ucunda sarı pin dubası
+        const stb = S.clone().addScaledVector(port, -L / 2), pin = S.clone().addScaledVector(port, L / 2);
+        const cb = makeCommitteeBoat(); cb.position.set(stb.x, 0, stb.y); cb.rotation.y = w; rcGroup.add(cb);
+        const pinB = makeBuoy(0xfacc15); pinB.scale.setScalar(Math.sqrt(bs) * 0.85); pinB.position.set(pin.x, 0, pin.y); rcGroup.add(pinB);
+        race.committee = cb; race.pin = { pos: pin, mesh: pinB }; race.stbEnd = stb;
+        race.beacon = makeBeacon(); race.beacon.scale.setScalar(Math.sqrt(bs)); rcGroup.add(race.beacon);
+        race.seq = RC_COURSES[courseKey].seq.slice();
+        // tekneler
+        race.boats = [];
+        const player = { isPlayer: true, name: 'Sen', num: '482', x: 0, z: 0, leg: -1, started: false, ocs: false, sweep: 0, aPrev: null, finished: false, pen: 0, penTack: false, penGybe: false, lastTwa: 0, penalties: 0, hitT: 0 };
+        race.boats.push(player); race.player = player;
+        const behind = S.clone().addScaledVector(u, -22 * Math.sqrt(bs));
+        state.boatPos.set(behind.x, 0, behind.y);
+        state.boatHeading = w + 1.25; state.boatSpeed = 0.8; state.leewaySpeed = 0; state.yawRate = 0; state.heelAngle = 0.05; state.heelVel = 0; state.rudderAngle = 0;
+        player.x = behind.x; player.z = behind.y;
+        for (let i = 0; i < nRivals; i++) {
+          const spec = RC_RIVALS[i], mesh = makeRivalBoat(spec); mesh.scale.setScalar(bs); rcGroup.add(mesh);
+          const slot = (i + 1) / (nRivals + 1) - 0.5, hp = S.clone().addScaledVector(port, slot * L * 0.9).addScaledVector(u, -(14 + (i % 2) * 8) * Math.sqrt(bs));
+          race.boats.push({ isPlayer: false, name: spec.name, num: spec.num, mesh, x: hp.x, z: hp.y, h: w + 1.3, v: 0.6, hold: hp.clone(), leg: -1, started: false, ocs: false,
+            sweep: 0, aPrev: null, finished: false, tackSign: 1, lastTack: -99, pen: 0, penT: 0, penalties: 0, wp: [], slot, goT: (i % 3) * 1.2, hitT: 0, heel: 0 });
+        }
+        race.t = -75; race.signals = { warn: false, prep: false, one: false, start: false };
+        race.active = true; race.phase = 'pre'; race.results = null; race.finishOrder = [];
+        race.pairCool = new Map();
+        document.getElementById('rc-hud').classList.remove('hidden');
+        setMsg('Uyarı işareti — sınıf bayrağı çekildi. Start hattının gerisinde kal!', 4);
+        horn(0.35); race.signals.warn = true;
+      }
+      function clearRace() {
+        while (rcGroup.children.length) rcGroup.remove(rcGroup.children[0]);
+        race.active = false; race.phase = 'idle'; race.boats = []; race.marks = {}; race.playerWindK = 1;
+        document.getElementById('rc-hud').classList.add('hidden');
+      }
+      function setMsg(t, sec = 3, cls = '') { race.msg = t; race.msgT = sec; race.msgCls = cls; }
+      // hedef işaretin anahtarı (leg = -1: start, 0..n-1: dubalar, n: finiş)
+      function targetOf(b) {
+        if (!b.started) return null;
+        if (b.leg < race.seq.length) return race.marks[race.seq[b.leg]];
+        return null;
+      }
+      function lineSide(x, z) { return (x - race.S.x) * race.u.x + (z - race.S.y) * race.u.y; }   // >0: parkur tarafı
+      function lineLat(x, z) { return (x - race.S.x) * race.port.x + (z - race.S.y) * race.port.y; }
+      // dönüş algılama: işaret etrafında süpürülen açı (iskeleden dönüşte açı artar)
+      function trackRounding(b, m) {
+        const dx = b.x - m.pos.x, dz = b.z - m.pos.y, d = Math.hypot(dx, dz), R = 26 * Math.sqrt(race.bs);
+        if (d > R) { b.sweep = 0; b.aPrev = null; return false; }
+        const a = Math.atan2(dx, dz);
+        if (b.aPrev != null) b.sweep += wrapA(a - b.aPrev);
+        b.aPrev = a;
+        if (b.sweep < -1.0 && b.isPlayer && !b.wrongWarned) { b.wrongWarned = true; setMsg('Yanlış taraf! Dubayı iskeleden (solunda bırakarak) dön.', 3, 'warn'); }
+        if (b.sweep > 1.2) { b.sweep = 0; b.aPrev = null; b.wrongWarned = false; return true; }
+        return false;
+      }
+      function startLineCross(b, prevSide, side) {
+        return prevSide <= 0 && side > 0 && Math.abs(lineLat(b.x, b.z)) <= race.L / 2 + 2;
+      }
+      function rankBoats() {
+        const prog = (b) => {
+          if (b.finished) return 1e7 - b.finishTime;
+          const t = targetOf(b);
+          const dist = t ? Math.hypot(b.x - t.pos.x, b.z - t.pos.y) : Math.abs(lineSide(b.x, b.z));
+          return (b.started ? b.leg + 1 : 0) * 1e4 - dist;
+        };
+        return race.boats.slice().sort((a, c) => prog(c) - prog(a));
+      }
+      // ---- rakip yapay zekâ ----
+      function aiSteer(b, dt, w, windMs, blowX, blowZ) {
+        const D = race.diff;
+        let tx, tz;
+        if (race.phase === 'pre' || !b.started) {
+          const tToGun = -race.t;
+          const distLine = Math.max(0, -lineSide(b.x, b.z));
+          const goNow = race.t > -60 && (tToGun <= distLine / Math.max(0.8, windMs * 0.33) + D.late + b.goT || b.ocs || race.t > 0);
+          if (b.ocs || (race.t > 0 && lineSide(b.x, b.z) > 0)) { const back = race.S.clone().addScaledVector(race.port, b.slot * race.L * 0.9).addScaledVector(race.u, -8); tx = back.x; tz = back.y; }
+          else if (goNow) { const p = race.S.clone().addScaledVector(race.port, b.slot * race.L * 0.9).addScaledVector(race.u, 30); tx = p.x; tz = p.y; }
+          else { tx = b.hold.x; tz = b.hold.y; if (Math.hypot(b.x - tx, b.z - tz) < 6) { b.h += wrapA(w - b.h) * Math.min(1, dt * 0.8); return 'luff'; } }
+        } else if (b.leg >= race.seq.length) { const p = race.S.clone().addScaledVector(race.port, b.slot * race.L * 0.6).addScaledVector(race.u, 6); tx = p.x; tz = p.y; }
+        else {
+          const m = targetOf(b), nextKey = race.seq[b.leg + 1];
+          const nxt = nextKey ? race.marks[nextKey].pos : race.S;
+          // iskeleden dönüş için yaklaşma noktası (dubanın sancağından geç, iskelede bırak)
+          const dIn = new THREE.Vector2(m.pos.x - b.x, m.pos.y - b.z), dl = dIn.length(); dIn.normalize();
+          const stbIn = new THREE.Vector2(-dIn.y, dIn.x), dOut = nxt.clone().sub(m.pos).normalize(), stbOut = new THREE.Vector2(-dOut.y, dOut.x);
+          const r = 5.5 * Math.sqrt(race.bs);
+          let aim;
+          if (dl > r * 2.2 && !b.roundingOut) aim = m.pos.clone().addScaledVector(stbIn, r);
+          else {
+            // iskeleden dönüş: dubanın etrafında saat yönünün tersine (açı artarak) çember üzerinde ilerle
+            b.roundingOut = true;
+            const exit = m.pos.clone().addScaledVector(stbOut, r).addScaledVector(dOut, r);
+            const a = Math.atan2(b.x - m.pos.x, b.z - m.pos.y), aE = Math.atan2(exit.x - m.pos.x, exit.y - m.pos.y);
+            const left = wrapA(aE - a);
+            if (left > 0 && left < 0.8) aim = exit.addScaledVector(dOut, r * 2);
+            else { const aa = a + 0.8, rr = r * 1.15; aim = new THREE.Vector2(m.pos.x + Math.sin(aa) * rr, m.pos.y + Math.cos(aa) * rr); }
+          }
+          tx = aim.x; tz = aim.y;
+        }
+        const bearing = Math.atan2(tx - b.x, tz - b.z);
+        const twaDirect = wrapA(bearing - w);
+        let want;
+        if (Math.abs(twaDirect) >= CLOSE + 0.04) want = bearing;
+        else {
+          // hedef "yasak bölge"de: iki kontradan VMG'si yüksek olanı seç (rüzgar dönüşleri ve laylinelar kendiliğinden)
+          const hS = w + CLOSE, hP = w - CLOSE;
+          const vS = Math.cos(hS - bearing), vP = Math.cos(hP - bearing);
+          const cur = b.tackSign > 0 ? vS : vP, oth = b.tackSign > 0 ? vP : vS;
+          if (oth > cur + D.margin && race.t - b.lastTack > D.minTack) { b.tackSign *= -1; b.lastTack = race.t; }
+          want = w + b.tackSign * CLOSE;
+        }
+        // kural 10: iskele kontradaysa, karşıdan gelen sancak kontraya yol ver (rüzgaraltına kaç)
+        const myTwa = wrapA(b.h - w);
+        if (b.avoidT > 0) { b.avoidT -= dt; want = w - (CLOSE + 0.7); }
+        else for (const o of race.boats) {
+          if (o === b) continue;
+          const ox = (o.isPlayer ? state.boatPos.x : o.x) - b.x, oz = (o.isPlayer ? state.boatPos.z : o.z) - b.z, od = Math.hypot(ox, oz);
+          if (od > 9 * Math.sqrt(race.bs) || od < 0.01) continue;
+          const oh = o.isPlayer ? state.boatHeading : o.h, oTwa = wrapA(oh - w);
+          const ahead = (ox * Math.sin(b.h) + oz * Math.cos(b.h)) / od;
+          if (ahead > 0.3 && myTwa < 0 && oTwa > 0 && !o.finished) { want = w - (CLOSE + 0.7); b.avoidT = 2.5; break; }   // iskele kontra: rüzgaraltına kaç (bear away)
+          if (ahead > 0.6 && Math.sign(myTwa) === Math.sign(oTwa) && od < 5 * race.bs) { want += Math.sign(myTwa) * 0.25; }
+        }
+        const turnRate = 1.0;   // rad/s
+        b.h = wrapA(b.h + THREE.MathUtils.clamp(wrapA(want - b.h), -turnRate * dt, turnRate * dt));
+        return 'sail';
+      }
+      function updateRival(b, dt, elapsed, w, windKn, blowX, blowZ) {
+        const windMs = windKn * 0.5144;
+        if (b.penT > 0) {   // ceza dönüşü: aynı yöne bir tam tur (orsa + kavança)
+          b.penT -= dt; b.h += 1.15 * dt; b.v *= Math.pow(0.7, dt);
+          if (b.penT <= 0) b.pen = 0;
+        } else if (!b.finished) aiSteer(b, dt, w, windMs, blowX, blowZ);
+        const twa = wrapA(b.h - w);
+        const sh = shadowFactor(b.x, b.z, b, blowX, blowZ, windKn, race.hull);
+        const vt = b.finished ? 0.3 : windMs * 0.5 * polar(THREE.MathUtils.radToDeg(twa)) * race.diff.k * sh * Math.pow(race.bs, 0.35);
+        b.v += (vt - b.v) * Math.min(1, dt * (vt > b.v ? 0.55 : 0.9));
+        const prevSide = lineSide(b.x, b.z);
+        b.x += Math.sin(b.h) * b.v * 1.28 * dt; b.z += Math.cos(b.h) * b.v * 1.28 * dt;
+        progressBoat(b, prevSide);
+        // görsel: dalga üstünde, rüzgaraltına yatış, bumba rüzgaraltında
+        const wh = sampleOceanHeightAndNormal(b.x, b.z, elapsed).height;
+        const m = b.mesh, ud = m.userData;
+        m.position.set(b.x, wh - 0.05 * race.bs, b.z); m.rotation.y = b.h;
+        const heelT = -Math.sign(twa) * THREE.MathUtils.clamp(polar(THREE.MathUtils.radToDeg(twa)) * windKn / 60, 0, 0.32);
+        b.heel += (heelT - b.heel) * Math.min(1, dt * 1.5);
+        ud.tilt.rotation.z = b.heel + Math.sin(elapsed * 1.3 + b.slot * 5) * 0.03;
+        ud.tilt.rotation.x = Math.sin(elapsed * 1.1 + b.slot * 3) * 0.025;
+        const absT = Math.abs(THREE.MathUtils.radToDeg(twa));
+        const boomAbs = absT < 34 ? 0 : THREE.MathUtils.degToRad(THREE.MathUtils.clamp(absT - 22, 6, 86));
+        const boomT = -Math.sign(twa) * boomAbs + (absT < 34 ? Math.sin(elapsed * 9) * 0.12 : 0);   // yapraklanma: orsa dönüşünde çırpınır
+        ud.rig.rotation.y += wrapA(boomT - ud.rig.rotation.y) * Math.min(1, dt * 4);
+        ud.sailor.position.x += ((twa > 0 ? -0.5 : 0.5) - ud.sailor.position.x) * Math.min(1, dt * 2);
+        ud.sailor.rotation.z = (twa > 0 ? 1 : -1) * 0.35;
+      }
+      // start, dubalar, finiş ilerlemesi (oyuncu + rakipler aynı kurallar)
+      function progressBoat(b, prevSide) {
+        const side = lineSide(b.x, b.z);
+        if (race.phase === 'pre') return;
+        if (!b.started) {
+          if (b.ocs) { if (side < -0.5) { b.ocs = false; if (b.isPlayer) setMsg('Hattın gerisine döndün — şimdi doğru startla.', 3); } return; }
+          if (startLineCross(b, prevSide, side)) { b.started = true; b.leg = 0; b.sweep = 0; b.aPrev = null; if (b.isPlayer) { setMsg('Start! Rüzgarüstü dubasına çık.', 3, 'ok'); } }
+          return;
+        }
+        if (b.finished) return;
+        if (b.leg < race.seq.length) {
+          const m = targetOf(b);
+          if (trackRounding(b, m)) {
+            b.leg++; b.roundingOut = false;
+            if (b.isPlayer) { horn(0.12, 520); setMsg(b.leg < race.seq.length ? `Duba döndün ✓ Sıradaki: ${targetOf(b).label}` : 'Son duba ✓ — finiş hattına (start hattı) rüzgarüstüne geç!', 3, 'ok'); }
+          }
+        } else if (startLineCross(b, prevSide, side)) {
+          b.finished = true; b.finishTime = race.t; race.finishOrder.push(b);
+          if (b.isPlayer) { horn(0.6, 330); finishRace(); }
+        }
+      }
+      // ---- çarpışmalar ve kural kusuru ----
+      function boatState(b) { return b.isPlayer ? { x: state.boatPos.x, z: state.boatPos.z, h: state.boatHeading } : { x: b.x, z: b.z, h: b.h }; }
+      function faultOf(A, B, w) {
+        const a = boatState(A), b = boatState(B), ta = wrapA(a.h - w), tb = wrapA(b.h - w);
+        if (Math.sign(ta) !== Math.sign(tb)) return { who: ta < 0 ? A : B, rule: 'Kural 10 — iskele kontra, sancak kontraya yol vermeli' };
+        // aynı kontra: biri diğerinin tam arkasında mı? (kural 12) değilse rüzgarüstü tekne (kural 11)
+        const fa = { x: Math.sin(a.h), z: Math.cos(a.h) }, rel = (b.x - a.x) * fa.x + (b.z - a.z) * fa.z, L = race.hull;
+        if (rel > L * 0.9) return { who: A, rule: 'Kural 12 — arkadan gelen tekne uzak durmalı' };
+        if (rel < -L * 0.9) return { who: B, rule: 'Kural 12 — arkadan gelen tekne uzak durmalı' };
+        const ua = a.x * race.u.x + a.z * race.u.y, ub = b.x * race.u.x + b.z * race.u.y;
+        return { who: ua > ub ? A : B, rule: 'Kural 11 — rüzgarüstündeki tekne, rüzgaraltındakinden uzak durmalı' };
+      }
+      function givePenalty(b, turns, why) {
+        b.penalties++;
+        if (b.isPlayer) { b.pen = Math.max(b.pen, turns); b.penTack = false; b.penGybe = false; setMsg(`${why} → ${turns} dönüş cezası (her dönüşte 1 orsa + 1 kavança)`, 5, 'warn'); horn(0.2, 160); }
+        else { b.pen = turns; b.penT = 5.5 * turns; }
+      }
+      function collisions(dt, w) {
+        const R = race.hull * 0.46, all = race.boats;
+        for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+          const A = all[i], B = all[j], a = boatState(A), b = boatState(B);
+          const dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
+          if (d > R * 2 || d < 1e-4) continue;
+          const push = (R * 2 - d) * 0.5, nx = dx / d, nz = dz / d;
+          const key = A.num + '-' + B.num, cool = race.pairCool.get(key) || -99, fresh = race.t - cool > 4;
+          const mv = (B2, s) => { if (B2.isPlayer) { state.boatPos.x += nx * push * s; state.boatPos.z += nz * push * s; if (fresh) state.boatSpeed *= 0.55; } else { B2.x += nx * push * s; B2.z += nz * push * s; if (fresh) B2.v *= 0.55; } };
+          mv(A, -1); mv(B, 1);
+          if (fresh) race.pairCool.set(key, race.t);
+          if (fresh && race.t > -60) {
+            const f = faultOf(A, B, w);
+            if (A.isPlayer || B.isPlayer || Math.random() < 0.5) givePenalty(f.who, 2, f.rule);
+            if ((A.isPlayer || B.isPlayer) && f.who !== race.player) setMsg(`Çarpışma: ${f.rule}. Kusurlu: ${f.who.name} — ceza dönüşü atacak.`, 4);
+          }
+        }
+        // dubalara değme (kural 31) — 1 dönüş
+        const markList = Object.values(race.marks).map(m => m.pos).concat([race.pin.pos, race.stbEnd]);
+        for (const B of all) {
+          const s = boatState(B);
+          for (const p of markList) {
+            const dx = s.x - p.x, dz = s.z - p.y, d = Math.hypot(dx, dz), rr = 0.7 * Math.sqrt(race.bs) + R * 0.75;
+            if (d < rr && d > 1e-4) {
+              const k = (rr - d) / d;
+              const damp = Math.pow(0.4, dt);
+              if (B.isPlayer) { state.boatPos.x += dx * k; state.boatPos.z += dz * k; state.boatSpeed *= damp; } else { B.x += dx * k; B.z += dz * k; B.v *= damp; }
+              if (race.t - (B.hitT || -99) > 4 && race.t > -60) { B.hitT = race.t; if (B.isPlayer || Math.random() < 0.6) givePenalty(B, 1, 'Kural 31 — dubaya değdin'); }
+            }
+          }
+        }
+      }
+      // ---- her kare ----
+      function updateRace(dt, elapsed, twFromRad, twSpeedMs, twaRad, bScale) {
+        if (!race.active) return;
+        race.t += dt;
+        const w = twFromRad, windKn = twSpeedMs / 0.5144, blowX = -Math.sin(w), blowZ = -Math.cos(w);
+        const P = race.player;
+        // start işaretleri (5-4-1-0 dizisinin 4× hızlı hâli: 75 / 60 / 15 / 0 sn)
+        const sg = race.signals;
+        if (!sg.prep && race.t >= -60) { sg.prep = true; horn(0.35); setMsg('Hazırlık işareti — P bayrağı çekildi. Artık yarıştasın: kurallar geçerli.', 4); }
+        if (!sg.one && race.t >= -15) { sg.one = true; horn(1.1); setMsg('Son dakika — P bayrağı indi (uzun ses). Hattı geçme!', 3, 'warn'); }
+        if (race.phase === 'pre' && race.t >= -5 && race.t < 0 && Math.floor(race.t * 1) !== race.lastBeep) { race.lastBeep = Math.floor(race.t); horn(0.08, 660); }
+        if (race.phase === 'pre' && race.t >= 0) {
+          race.phase = 'race'; horn(0.5, 300);
+          let ocsList = [];
+          for (const b of race.boats) {
+            const s = boatState(b);
+            if (lineSide(s.x, s.z) > 0) { b.ocs = true; ocsList.push(b.name); }
+          }
+          if (ocsList.length) setMsg(`START! X bayrağı (bireysel geri çağırma): ${ocsList.join(', ')} erken çıktı — hattın gerisine dönmeli.`, 5, P.ocs ? 'warn' : '');
+          else setMsg('START! Temiz start — rüzgarüstü dubasına!', 3, 'ok');
+          race.committee.userData.flag.material.color.set(ocsList.length ? 0x1d4ed8 : 0x16a34a);
+        }
+        // rakipler
+        for (const b of race.boats) if (!b.isPlayer) updateRival(b, dt, elapsed, w, windKn, blowX, blowZ);
+        // oyuncu: konum + ilerleme + ceza dönüşü (orsa ve kavança algılama)
+        const prevSide = lineSide(P.x, P.z);
+        P.x = state.boatPos.x; P.z = state.boatPos.z;
+        progressBoat(P, prevSide);
+        if (P.pen > 0) {
+          const tw = twaRad;
+          if (Math.sign(tw) !== Math.sign(P.lastTwa) && P.lastTwa !== 0) { if (Math.abs(tw) < Math.PI / 2) P.penTack = true; else P.penGybe = true; }
+          if (P.penTack && P.penGybe) { P.pen--; P.penTack = P.penGybe = false; setMsg(P.pen ? 'Bir dönüş tamam — bir tane daha!' : 'Ceza tamamlandı ✓', 3, 'ok'); }
+        }
+        P.lastTwa = twaRad;
+        collisions(dt, w);
+        // oyuncunun rüzgar gölgesi (fizik motoruna bir sonraki karede uygulanır)
+        race.playerWindK = shadowFactor(state.boatPos.x, state.boatPos.z, P, blowX, blowZ, windKn, race.hull);
+        // sonraki dubada işaret ışığı
+        const tgt = targetOf(P);
+        if (tgt) { race.beacon.visible = true; race.beacon.position.set(tgt.pos.x, sampleOceanHeightAndNormal(tgt.pos.x, tgt.pos.y, elapsed).height, tgt.pos.y); }
+        else { race.beacon.visible = !P.finished; race.beacon.position.set(race.S.x, 0, race.S.y); }
+        for (const m of Object.values(race.marks).concat([race.pin])) {
+          const h = sampleOceanHeightAndNormal(m.pos.x, m.pos.y, elapsed).height;
+          m.mesh.position.y = h - 0.2; m.mesh.rotation.z = Math.sin(elapsed * 1.4 + m.pos.x) * 0.08;
+        }
+        race.committee.position.y = sampleOceanHeightAndNormal(race.stbEnd.x, race.stbEnd.y, elapsed).height - 0.1;
+        // rakipler biterse ya da çok uzarsa (oyuncu hâlâ yarışıyor) devam; oyuncu bitirince sonuç
+        race.msgT -= dt;
+        race.hudT = (race.hudT || 0) + dt;
+        if (race.hudT > 0.15) { race.hudT = 0; renderRaceHud(w, twaRad); }
+      }
+      function fmtT(t) { const s = Math.max(0, t); return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`; }
+      function ruleHint(w, twaRad) {
+        const P = race.player, myTwa = twaRad;
+        for (const o of race.boats) {
+          if (o.isPlayer) continue;
+          const dx = o.x - state.boatPos.x, dz = o.z - state.boatPos.z, d = Math.hypot(dx, dz);
+          if (d > 14 * Math.sqrt(race.bs)) continue;
+          const oTwa = wrapA(o.h - w);
+          if (Math.sign(oTwa) !== Math.sign(myTwa)) return myTwa < 0 ? `⚠ Kural 10: iskele kontradasın — sancak kontradaki tekneye (${o.name}) yol ver` : `Sancak kontradasın — yol hakkı sende (${o.name} kaçmalı)`;
+          const ahead = (dx * Math.sin(state.boatHeading) + dz * Math.cos(state.boatHeading));
+          if (Math.abs(ahead) < race.hull) {
+            const meUp = state.boatPos.x * race.u.x + state.boatPos.z * race.u.y > o.x * race.u.x + o.z * race.u.y;
+            return meUp ? `⚠ Kural 11: bindirmelisin (${o.name}), rüzgarüstündesin — uzak dur` : `Kural 11: rüzgaraltındasın — ${o.name} senden uzak durmalı`;
+          }
+          if (ahead > 0) return `⚠ Kural 12: arkadan geliyorsun (önde ${o.name}) — çarpma`;
+        }
+        const t = targetOf(P);
+        if (t && Math.hypot(t.pos.x - state.boatPos.x, t.pos.y - state.boatPos.z) < race.hull * 3) return 'Kural 18: 3 boyluk bölgedesin — içteki tekneye dönüş alanı ver';
+        return '';
+      }
+      function renderRaceHud(w, twaRad) {
+        const P = race.player, el = (id) => document.getElementById(id);
+        const rank = rankBoats(), pos = rank.indexOf(P) + 1;
+        el('rc-time').textContent = race.phase === 'pre' ? '−' + fmtT(-race.t) : fmtT(race.t);
+        el('rc-pos').textContent = `${pos}/${race.boats.length}`;
+        let leg, tx, tz;
+        const t = targetOf(P);
+        if (race.phase === 'pre') { leg = 'Start öncesi — hattın gerisinde kal'; tx = race.S.x; tz = race.S.y; }
+        else if (!P.started) { leg = P.ocs ? 'OCS! Hattın gerisine dön, yeniden startla' : 'Start hattını rüzgarüstüne geç'; tx = race.S.x; tz = race.S.y; }
+        else if (t) { leg = `Ayak ${P.leg + 1}/${race.seq.length + 1}: ${t.label} (iskeleden dön)`; tx = t.pos.x; tz = t.pos.y; }
+        else { leg = P.finished ? 'Bitirdin!' : 'Finiş: start hattını rüzgarüstüne geç'; tx = race.S.x; tz = race.S.y; }
+        el('rc-leg').textContent = leg;
+        const dx = tx - state.boatPos.x, dz = tz - state.boatPos.z;
+        el('rc-dist').textContent = Math.round(Math.hypot(dx, dz)) + ' m';
+        const rel = wrapA(Math.atan2(dx, dz) - state.boatHeading);
+        el('rc-arrow').style.transform = `rotate(${(-rel * 180 / Math.PI).toFixed(0)}deg)`;
+        const tackTxt = twaRad >= 0 ? 'Sancak kontra' : 'İskele kontra';
+        const shade = race.playerWindK < 0.97 ? ` · Rüzgar gölgesi −${Math.round((1 - race.playerWindK) * 100)}%` : '';
+        el('rc-tack').textContent = tackTxt + shade;
+        el('rc-pen').textContent = P.pen > 0 ? `Ceza: ${P.pen} dönüş (orsa ${P.penTack ? '✓' : '·'} kavança ${P.penGybe ? '✓' : '·'})` : '';
+        const hint = ruleHint(w, twaRad);
+        const msg = race.msgT > 0 ? race.msg : hint;
+        const mEl = el('rc-msg'); mEl.textContent = msg; mEl.className = 'rc-msg ' + (race.msgT > 0 ? race.msgCls : (hint.startsWith('⚠') ? 'warn' : ''));
+        drawRaceMap();
+      }
+      function drawRaceMap() {
+        const cv = document.getElementById('rc-map'), g = cv.getContext('2d'), W = cv.width, H = cv.height;
+        g.clearRect(0, 0, W, H); g.fillStyle = 'rgba(4,20,34,0.85)'; g.fillRect(0, 0, W, H);
+        // harita: rüzgarüstü yukarıda
+        const cx = race.S.x + race.u.x * 70 * Math.sqrt(race.bs), cz = race.S.y + race.u.y * 70 * Math.sqrt(race.bs), sc = (H * 0.42) / (130 * Math.sqrt(race.bs));
+        const toM = (x, z) => { const ax = (x - cx) * race.port.x + (z - cz) * race.port.y, ay = (x - cx) * race.u.x + (z - cz) * race.u.y; return [W / 2 - ax * sc, H / 2 - ay * sc]; };
+        g.strokeStyle = 'rgba(250,204,21,0.8)'; g.setLineDash([3, 3]); g.beginPath();
+        let p = toM(race.stbEnd.x, race.stbEnd.y); g.moveTo(...p); p = toM(race.pin.pos.x, race.pin.pos.y); g.lineTo(...p); g.stroke(); g.setLineDash([]);
+        const tgt = targetOf(race.player);
+        for (const m of Object.values(race.marks)) { const q = toM(m.pos.x, m.pos.y); g.fillStyle = m === tgt ? '#34d399' : '#f97316'; g.beginPath(); g.arc(q[0], q[1], 4, 0, 7); g.fill(); }
+        for (const b of race.boats) {
+          const s = boatState(b), q = toM(s.x, s.z), a = wrapA(s.h - race.wFrom);
+          g.save(); g.translate(q[0], q[1]); g.rotate(a); g.fillStyle = b.isPlayer ? '#38bdf8' : '#e2e8f0';
+          g.beginPath(); g.moveTo(0, -5); g.lineTo(3, 4); g.lineTo(-3, 4); g.closePath(); g.fill(); g.restore();
+        }
+        g.fillStyle = 'rgba(186,230,253,0.8)'; g.font = '9px Inter'; g.fillText('↓ rüzgar', 4, 11);
+      }
+      function finishRace() {
+        race.phase = 'done';
+        const P = race.player, order = rankBoats();
+        const rows = order.map((b, i) => {
+          const time = b.finished ? fmtT(b.finishTime) + (b.isPlayer && b.pen ? ` (+${b.pen * 30} sn ceza)` : '') : 'yarışta';
+          return `<tr class="${b.isPlayer ? 'me' : ''}"><td>${i + 1}</td><td>TUR ${b.num}</td><td>${b.name}</td><td>${time}</td><td>${b.penalties || 0}</td></tr>`;
+        }).join('');
+        const pos = order.indexOf(P) + 1;
+        document.getElementById('rc-result-title').textContent = pos === 1 ? '🏆 Birincisin!' : `${pos}. oldun`;
+        document.getElementById('rc-result-sub').textContent = `${RC_COURSES[race.courseKey].label} · ${race.diff.label} · ${fmtT(P.finishTime)}` + (P.pen ? ' · yapılmamış ceza dönüşü: gerçek yarışta DSQ olurdun' : '');
+        document.getElementById('rc-result-rows').innerHTML = rows;
+        document.getElementById('rc-result').classList.remove('hidden');
+      }
+      // ---- arayüz ----
+      document.getElementById('btn-race').addEventListener('click', () => document.getElementById('rc-setup').classList.toggle('hidden'));
+      document.getElementById('rc-cancel').addEventListener('click', () => document.getElementById('rc-setup').classList.add('hidden'));
+      document.querySelectorAll('#rc-setup [data-g]').forEach(btn => btn.addEventListener('click', () => {
+        document.querySelectorAll(`#rc-setup [data-g="${btn.dataset.g}"]`).forEach(b => b.classList.toggle('on', b === btn));
+      }));
+      const rcPick = (g) => document.querySelector(`#rc-setup [data-g="${g}"].on`).dataset.v;
+      document.getElementById('rc-go').addEventListener('click', () => {
+        document.getElementById('rc-setup').classList.add('hidden');
+        setupRace(rcPick('diff'), rcPick('course'), parseInt(rcPick('n'), 10));
+      });
+      document.getElementById('rc-quit').addEventListener('click', () => { clearRace(); document.getElementById('rc-result').classList.add('hidden'); });
+      document.getElementById('rc-again').addEventListener('click', () => {
+        document.getElementById('rc-result').classList.add('hidden');
+        setupRace(rcPick('diff'), rcPick('course'), parseInt(rcPick('n'), 10));
+      });
+      document.getElementById('rc-close').addEventListener('click', () => { document.getElementById('rc-result').classList.add('hidden'); clearRace(); });
+      window.__race = race;
+      window.__yk = { applyCharacter, sailorGroup, CK, state };
+      window.__raceState = state;
+      window.__raceSim = (sec) => { const w = THREE.MathUtils.degToRad(state.windDirDeg); for (let t = 0; t < sec; t += 1 / 30) updateRace(1 / 30, performance.now() / 1000 + t, w, state.windKnots * 0.5144, 0.6, getActiveBoat().scale); };
+
       let appBooted = false;
       function bootApp() {
         if (appBooted) return;
         appBooted = true;
         syncViewportSize();
         applyBoatClass('optimist');
-        applyCharacter('ege');
+        applyCharacter('balikci');
         updateAtmosphereAndLights(true);
         animate();
       }

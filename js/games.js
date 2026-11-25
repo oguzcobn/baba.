@@ -161,7 +161,7 @@ const App = (() => {
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
-    { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('5 tekne · 15 denizci', '5 boats · 15 sailors') },
+    { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['Market simülasyonu', 'Store sim'], ['3D birinci şahıs', '3D first person'], ['39 karakter', '39 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
@@ -530,7 +530,7 @@ const App = (() => {
   function yelken() {
     openEmbeddedGame({
       title: T('YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'),
-      url: 'games/yelken/index.html?v=2',
+      url: 'games/yelken/index.html?v=3',
       tag: T('BABA. YELKEN. · Trabzon Körfezi · 3D', 'BABA. SAIL. · Trabzon Bay · 3D'),
       lead: T('Trabzon kıyısında Optimist’ten 11,5 m maxi yata beş tekne: gerçek rüzgâr ve zahiri rüzgâr, yelken kaldırma/sürükleme, dalga üstünde yüzerlik, yatış ve iz dalgası.', 'Five boats from an Optimist to an 11.5 m maxi off the Trabzon coast: true and apparent wind, sail lift and drag, buoyancy on the waves, heel and wake.'),
       tip: T('A/D ya da ← → dümen, W/S yelkeni çevirir. “Oto” ideal yelken açısını tutar. Pusuladaki yeşil çizgi doğru bumba açısını gösterir.', 'A/D or ← → steer, W/S trims the sail. “Oto” holds the ideal sail angle. The green line on the compass shows the right boom angle.')
