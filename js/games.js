@@ -552,7 +552,7 @@ const App = (() => {
   function amsterdamCoffeeshop() {
     openEmbeddedGame({
       title: T('AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'),
-      url: 'games/amsterdam-coffeeshop/index.html?v=10',
+      url: 'games/amsterdam-coffeeshop/index.html?v=11',
       tag: T('BABA. ÖZEL · Yalnız sahibine açık · Market simülasyonu', 'BABA. PRIVATE · Owner only · Store simulator'),
       lead: T('Market simülasyonu: tabletten toptan sipariş ver, kutuları vitrine diz, fiyatları belirle, tabelayı çevirip dükkânı aç; kasada ürün okut, kimlik kontrol et, para üstü ver. Seviye atla, lisans ve personel aç.', 'Store simulator: order stock on the tablet, shelve the boxes, set prices, flip the sign to open; scan items at the till, check IDs, give change. Level up to unlock licenses and staff.'),
       tip: T('WASD yürü, fareyle bak (ekrana tıkla), Tık/E etkileşim, Tab tablet, G kutuyu bırak, Esc menü. Telefonda sağ alttaki Etkileşim düğmesini kullan.', 'WASD to walk, mouse to look (click the screen), Click/E to interact, Tab for the tablet, G to drop a box, Esc for the menu. On phones use the Interact button.')
