@@ -56,7 +56,7 @@ const BABALibrary = (() => {
   function render(o) {
     const { root, games, isExternal, T, esc, P, isOwner, covers } = o;
     const localGames = games.filter(g => !isExternal(g.id));
-    const featured = SPOTLIGHT.filter(id => !isExternal(id));
+    const featured = SPOTLIGHT.filter(id => !isExternal(id) && games.some(g => g.id === id));
     const L = id => games.find(g => g.id === id);
     const m = id => ({ ...(META[id] || { cat: 'arc', accent: '#c8ff3a', time: ['', ''], blurb: ['', ''] }), ...(isExternal(id) ? { cat: 'web' } : {}) });
     const name = g => P(g.name), bl = id => T(...m(id).blurb), tags = g => g.tags.map(t => P(t));

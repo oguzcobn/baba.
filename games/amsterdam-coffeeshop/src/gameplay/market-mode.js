@@ -1036,7 +1036,7 @@
     if (name === 'pause' || name === 'report' || name === 'settings' || name === 'help' || name === 'confirm') setPaused(true);
   }
   function closeUI() {
-    const was = mm.ui; mm.ui = null;
+    const was = mm.ui; mm.ui = null; clearKeys();
     ['mm-tablet', 'mm-pause', 'mm-settings', 'mm-help', 'mm-report', 'mm-confirm'].forEach(id => el(id).classList.remove('open'));
     if (mm.menu) { el('mm-menu').classList.add('open'); return; }
     if (was === 'settings' || was === 'help') { if (mm.started) { openUI('pause'); return; } }
@@ -1071,9 +1071,18 @@
       <label>Gün uzunluğu</label><div class="mm-segs">${seg('day', [['short', 'Kısa · 10 dk'], ['normal', 'Normal · 14 dk'], ['long', 'Uzun · 21 dk']])}</div>
       <label>Kamera</label><div class="mm-segs">${seg('cam', [[1, '1. şahıs'], [2, '3. şahıs']])}</div>
       <label>Fare hassasiyeti <b>${s.sens.toFixed(1)}×</b></label><input type="range" min="0.3" max="2.5" step="0.1" value="${s.sens}" id="mm-sens">
-      <label>Ses</label><div class="mm-segs"><button class="mm-seg ${S.audioEnabled ? 'on' : ''}" id="mm-snd">${S.audioEnabled ? 'Açık' : 'Kapalı'}</button></div>`;
+      <label>Ses</label><div class="mm-segs"><button class="mm-seg ${S.audioEnabled ? 'on' : ''}" id="mm-snd">${S.audioEnabled ? 'Açık' : 'Kapalı'}</button></div>
+      ${window.ModelCast && ModelCast.local ? `<label>Kendi modellerin</label><div class="mm-local" id="mm-local-list">Yükleniyor…</div>
+      <div class="mm-local-add"><input id="mm-local-name" maxlength="28" placeholder="Karakter adı (isteğe bağlı)"><label class="mm-btn pri sm">GLB ekle<input type="file" accept=".glb" id="mm-local-file" hidden></label></div>
+      <p class="hint">Dosya yalnızca bu cihazın tarayıcısında saklanır, hiçbir yere yüklenmez. Eklenen karakter müşterilere ve galeriye katılır. İskeletli (rigged) modeller kol ve bacaklarıyla yürür.</p>` : ''}`;
+    refreshLocal();
   }
 
+  async function refreshLocal() {
+    const box = el('mm-local-list'); if (!box || !window.ModelCast) return;
+    const list = await ModelCast.local.list();
+    box.innerHTML = list.length ? list.map(m => `<div class="row"><span>${m.name.replace(/[<>&]/g, '')} <small>${(m.size / 1048576).toFixed(1)} MB · ${m.rigged ? 'iskeletli' : 'iskeletsiz'}</small></span><button class="mm-btn sm" data-ldel="${m.id}">Sil</button></div>`).join('') : '<small>Henüz eklenmedi.</small>';
+  }
   function hud(force) {
     if (!mm.started) return;
     const now = performance.now(); if (!force && now - mm.hudT < 150) { crosshair(); return; } mm.hudT = now;
@@ -1245,8 +1254,18 @@
     el('mm-settings').addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.set) { const k = b.dataset.set; mm.settings[k] = k === 'cam' ? +b.dataset.v : b.dataset.v; if (k === 'cam' && mm.started) B.setCameraMode(mm.settings.cam); applySettings(); }
+      if (b.dataset.ldel) { ModelCast.local.remove(+b.dataset.ldel).then(refreshLocal); return; }
       if (b.id === 'mm-snd') { const ab = el('btn-audio'); if (ab) ab.click(); setTimeout(renderSettings, 50); }
       if (b.dataset.close) closeUI();
+    });
+    el('mm-settings').addEventListener('change', async (e) => {
+      if (e.target.id !== 'mm-local-file' || !e.target.files.length) return;
+      const f = e.target.files[0], nm = (el('mm-local-name') || {}).value || '';
+      if (f.size > 60 * 1048576) { toast('Dosya çok büyük (60 MB üstü). Sketchfab\'de 1k dokulu GLB seç.'); return; }
+      el('mm-local-list').textContent = 'Model okunuyor…';
+      try { const d = await ModelCast.local.add(f, nm); toast(`${d.name} eklendi — ${d.rigged ? 'iskeletli, kol-bacakla yürüyecek' : 'iskeletsiz, gövde salınımıyla yürüyecek'}.`); }
+      catch (err) { toast('Eklenemedi: ' + err.message); }
+      e.target.value = ''; refreshLocal();
     });
     el('mm-settings').addEventListener('input', (e) => { if (e.target.id === 'mm-sens') { mm.settings.sens = +e.target.value; applySettings(); } });
     el('mm-help').addEventListener('click', (e) => { if (e.target.closest('button[data-close]')) closeUI(); });
@@ -1396,6 +1415,9 @@
     .mm-seg { font:inherit; font-size:12.5px; font-weight:700; color:#cbd5e1; background:rgba(255,255,255,.05); border:1px solid rgba(148,163,184,.22); border-radius:9px; padding:8px 12px; cursor:pointer; }
     .mm-seg.on { background:#10b981; color:#03140d; border-color:#10b981; }
     #mm-sens { width:100%; accent-color:#10b981; }
+    .mm-local { display:flex; flex-direction:column; gap:6px; font-size:13px; } .mm-local small { color:#94a3b8; margin-left:6px; }
+    .mm-local-add { display:flex; gap:8px; margin-top:8px; } .mm-local-add input { flex:1; min-width:0; font:inherit; font-size:13px; color:#fff; background:rgba(255,255,255,.06); border:1px solid rgba(148,163,184,.25); border-radius:9px; padding:7px 10px; }
+    #mm-settings-body .mm-local-add label { cursor:pointer; display:inline-flex; align-items:center; margin:0; text-transform:none; letter-spacing:0; color:#03140d; font-size:12.5px; }
     .mm-help-list { display:flex; flex-direction:column; gap:9px; font-size:13px; line-height:1.45; color:#cbd5e1; }
     .mm-help-list b { color:#fff; } .mm-help-list .n { display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:#10b981; color:#03140d; font-weight:900; font-size:12px; margin-right:8px; }
     .mm-keys { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:12.5px; margin-top:14px; color:#cbd5e1; }

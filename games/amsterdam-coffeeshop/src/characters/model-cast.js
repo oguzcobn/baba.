@@ -51,6 +51,14 @@
       if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; if (def.hide.some(re => re.test(o.name))) o.visible = false; }
     });
     const wrap = new THREE.Group(); wrap.add(model); model.rotation.x = def.rotX || 0;
+    if (def.local) {   // yerel model: Z-yukarı dışa aktarımı yakala, iskeleti tanı
+      const bones = classifyBones(model); def.rigged = !!(bones.thL && bones.thR && bones.shL && bones.shR);
+      const bb = new THREE.Box3().setFromObject(model), sz = bb.getSize(new THREE.Vector3());
+      if (sz.z > sz.y * 1.35) {
+        model.rotation.x = -Math.PI / 2; wrap.updateMatrixWorld(true);
+        if (bones.head && bones.ftL && bones.head.getWorldPosition(new THREE.Vector3()).y < bones.ftL.getWorldPosition(new THREE.Vector3()).y) model.rotation.x = Math.PI / 2;
+      }
+    }
     const fit = () => {
       wrap.updateMatrixWorld(true); const b = new THREE.Box3();
       wrap.traverse(o => {
@@ -87,6 +95,24 @@
   const _q = new THREE.Quaternion();
   function rot(ctl, ax, ang, extra) { _q.setFromAxisAngle(ax, ang); ctl.bone.quaternion.copy(ctl.rest).premultiply(_q); if (extra) ctl.bone.quaternion.premultiply(extra); }
 
+  // Kemik adı sınıflandırıcı: Mixamo (LeftUpLeg), Blender (thigh.l / femur.l / bicep.l), Unreal (thigh_l / calf_l)
+  function classifyBones(root) {
+    const out = {};
+    root.traverse(o => {
+      if (!o.isBone) return;
+      let n = o.name.toLowerCase().replace(/mixamorig:?/, '').replace(/_?\d+$/, '');
+      if (/twist|roll|^ik|ik$|pole|target|nub|_end$|end$|toe|finger|thumb|index|pinky|ring|middle|^ears?|earbase|eye|jaw|tail|breast/.test(n)) return;
+      const side = /left/.test(n) ? 'L' : /right/.test(n) ? 'R' : /[._]l$/.test(n) || (/[a-z]l$/.test(n) && !/head|spinel?$/.test(n)) ? 'L' : /[._]r$/.test(n) || /[a-z]r$/.test(n) ? 'R' : '';
+      const b = n.replace(/left|right/, '').replace(/[._]?[lr]$/, '').replace(/[._]/g, '');
+      const part = /forearm|lowerarm/.test(b) ? 'fo' : /upleg|thigh|femur|upperleg/.test(b) ? 'th' : (/shin|calf|lowerleg|knee/.test(b) || b === 'leg') ? 'sh'
+        : /foot|ankle/.test(b) ? 'ft' : (/bicep|upperarm/.test(b) || b === 'arm') ? 'up' : /^(spine1|spinemid|spine|chest)$/.test(b) ? 'spine' : /^head$/.test(b) ? 'head' : null;
+      if (!part) return;
+      const key = (part === 'spine' || part === 'head') ? part : part + side;
+      if ((part === 'spine' || part === 'head' || side) && !out[key]) out[key] = o;
+    });
+    return out;
+  }
+
   function build(id) {
     const def = DEFS.find(d => d.id === id), tpl = templates[id];
     if (!def || !tpl) return null;
@@ -106,15 +132,7 @@
     let rig = null;
     if (def.rigged) {
       root.updateMatrixWorld(true);
-      const find = (re) => { let f = null; inner.traverse(o => { if (!f && o.isBone && re.test(o.name)) f = o; }); return f; };
-      const bn = {
-        thL: find(/^(thigh|femur)\.?l|LeftUpLeg/i), thR: find(/^(thigh|femur)\.?r|RightUpLeg/i),
-        shL: find(/^shin\.?l|LeftLeg_/i), shR: find(/^shin\.?r|RightLeg_/i),
-        ftL: find(/^foot\.?l|LeftFoot/i), ftR: find(/^foot\.?r|RightFoot/i),
-        upL: find(/^bicep\.?l|LeftArm_/i), upR: find(/^bicep\.?r|RightArm_/i),
-        foL: find(/^forearm\.?l|LeftForeArm/i), foR: find(/^forearm\.?r|RightForeArm/i),
-        spine: find(/^spine_mid|Spine1/i), head: find(/^head_|Head_/i)
-      };
+      const bn = classifyBones(inner);
       if (bn.thL && bn.thR && bn.shL && bn.shR) {
         rig = {};
         for (const k of Object.keys(bn)) if (bn[k]) rig[k] = boneCtl(bn[k], root);
@@ -196,21 +214,56 @@
     const L = new THREE.GLTFLoader();
     const jobs = DEFS.map(def => new Promise(res => L.load(BASE + def.file, g => { try { prepare(def, g); } catch (e) { console.warn('ModelCast', def.id, e); } res(); }, undefined, (e) => { console.warn('ModelCast yüklenemedi', def.file, e); res(); })));
     jobs.push(new Promise(res => L.load(BASE + PRODUCT.file, g => { try { preparedNug(g); } catch (e) {} res(); }, undefined, () => res())));
+    jobs.push(local.loadAll());
     Promise.all(jobs).then(() => {
       readyFlag = true;
       // galeriye ekle
-      if (window.CastEngine) for (const d of DEFS) if (templates[d.id] && !CastEngine.CAST.some(c => c.id === d.id)) CastEngine.CAST.unshift(Object.assign({ loco: 'biped', math: mathNotes(d), factory: () => build(d.id) }, d));
+      for (const d of DEFS) if (templates[d.id]) addToGallery(d);
       readyCbs.splice(0).forEach(cb => { try { cb(); } catch (e) { console.warn(e); } });
       window.dispatchEvent(new Event('models-ready'));
     });
   }
 
+  // ---- Kendi modellerin: yalnız bu cihazın tarayıcısında (IndexedDB), hiçbir yere yüklenmez ----
+  const DBN = 'amsterdam-models', ST = 'files';
+  const db = () => new Promise((res, rej) => { const r = indexedDB.open(DBN, 1); r.onupgradeneeded = () => r.result.createObjectStore(ST, { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const tx = async (mode, fn) => { const d = await db(); return new Promise((res, rej) => { const t = d.transaction(ST, mode), st = t.objectStore(ST), out = fn(st); t.oncomplete = () => res(out && out.result !== undefined ? out.result : out); t.onerror = () => rej(t.error); }); };
+  const PALETTE = [0x0ea5e9, 0xf97316, 0x22c55e, 0xa855f7, 0xeab308, 0xec4899, 0x14b8a6];
+  function registerLocal(rec) {
+    return new Promise((res) => {
+      const def = { id: 'local_' + rec.id, local: true, name: rec.name, title: 'Kendi modelin', stature: rec.stature || 1.75, color: PALETTE[rec.id % PALETTE.length], hide: [], rigged: false, Fr: 0.22,
+        desc: 'Bu cihazdan eklendi; yalnızca burada görünür, yayınlanmaz.', credit: { title: rec.name, author: '—', url: '', license: 'Yalnız bu cihazda' } };
+      rec.blob.arrayBuffer().then(buf => new THREE.GLTFLoader().parse(buf, '', (g) => {
+        try { prepare(def, g); DEFS.push(def); addToGallery(def); res(def); } catch (e) { console.warn('yerel model', e); res(null); }
+      }, (e) => { console.warn('yerel model okunamadı', e); res(null); }));
+    });
+  }
+  function addToGallery(d) { if (window.CastEngine && !CastEngine.CAST.some(c => c.id === d.id)) CastEngine.CAST.unshift(Object.assign({ loco: 'biped', math: mathNotes(d), factory: () => build(d.id) }, d)); }
+  const local = {
+    async list() { try { return (await tx('readonly', st => st.getAll())).map(r => ({ id: r.id, name: r.name, size: r.size, rigged: !!(DEFS.find(d => d.id === 'local_' + r.id) || {}).rigged })); } catch (e) { return []; } },
+    async add(file, name) {
+      if (!/\.glb$/i.test(file.name)) throw new Error('Yalnızca .glb dosyası');
+      const rec = { id: Date.now() % 1e9, name: (name || file.name.replace(/\.glb$/i, '')).slice(0, 28), size: file.size, blob: file, added: Date.now() };
+      const def = await registerLocal(rec);
+      if (!def) throw new Error('Model okunamadı (bozuk ya da desteklenmeyen dosya)');
+      await tx('readwrite', st => st.put(rec));
+      return def;
+    },
+    async remove(id) {
+      await tx('readwrite', st => st.delete(id));
+      const k = 'local_' + id, i = DEFS.findIndex(d => d.id === k); if (i >= 0) DEFS.splice(i, 1); delete templates[k];
+      if (window.CastEngine) { const j = CastEngine.CAST.findIndex(c => c.id === k); if (j >= 0) CastEngine.CAST.splice(j, 1); }
+    },
+    async loadAll() { let recs = []; try { recs = await tx('readonly', st => st.getAll()); } catch (e) {} for (const r of recs) await registerLocal(r); }
+  };
+
   window.ModelCast = {
+    local,
     DEFS, PRODUCT, build, next,
     ready: () => readyFlag,
     onReady: (cb) => { if (readyFlag) cb(); else readyCbs.push(cb); },
     nug: () => (nugGeo ? { geo: nugGeo, mat: nugMat } : null),
-    credits: () => [...DEFS.map(d => d.credit), PRODUCT.credit]
+    credits: () => [...DEFS.filter(d => !d.local).map(d => d.credit), PRODUCT.credit]
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
 })();

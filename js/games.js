@@ -41,7 +41,9 @@ const App = (() => {
     } else if (manFor) { manFor = ''; setManifest(null); }
   }
   const isOwner = () => unlocked, isGuest = () => !unlocked && !!guest, canIn = () => unlocked || !!guest;
-  const OWNER_ONLY = ['is', 'erisim', 'ts'];
+  const OWNER_ONLY = ['is', 'erisim', 'ts', 'amsterdam-coffeeshop'];
+  const OWNER_GAMES = ['amsterdam-coffeeshop'];   // yalnız sahibin görüp oynayabildiği oyunlar
+  const visibleGames = () => isOwner() ? GAMES : GAMES.filter(g => !OWNER_GAMES.includes(g.id));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const root = () => document.getElementById('view');
   let cleanup = [];
@@ -253,9 +255,9 @@ const App = (() => {
   });
   function menu() {
     // Oyun kütüphanesi (js/oyunlar.js): hero video, vitrin, filtrelenebilir kütüphane, kategoriler
-    onLeave(BABALibrary.render({ root: root(), games: GAMES, isExternal: id => Object.hasOwn(EXTERNAL_GAME_URLS, id), T, esc, P, isOwner, covers: GAME_COVERS }));
+    onLeave(BABALibrary.render({ root: root(), games: visibleGames(), isExternal: id => Object.hasOwn(EXTERNAL_GAME_URLS, id), T, esc, P, isOwner, covers: GAME_COVERS }));
     if (typeof BABACovers !== 'undefined') onLeave(BABACovers.mount({
-      container: root(), games: GAMES.map(g => ({ id: g.id, name: P(g.name) })),
+      container: root(), games: visibleGames().map(g => ({ id: g.id, name: P(g.name) })),
       defaults: GAME_COVERS, isOwner: () => isOwner()
     }));
     window.scrollTo(0, 0);
@@ -524,7 +526,7 @@ const App = (() => {
     openEmbeddedGame({
       title: T('AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'),
       url: 'games/amsterdam-coffeeshop/index.html?v=3',
-      tag: T('BABA. SİMÜLASYON · 3D Açık Dünya İşletme · +18', 'BABA. SIMULATION · 3D Open-World Business · 18+'),
+      tag: T('BABA. ÖZEL · Yalnız sahibine açık · Market simülasyonu', 'BABA. PRIVATE · Owner only · Store simulator'),
       lead: T('Market simülasyonu: tabletten toptan sipariş ver, kutuları vitrine diz, fiyatları belirle, tabelayı çevirip dükkânı aç; kasada ürün okut, kimlik kontrol et, para üstü ver. Seviye atla, lisans ve personel aç.', 'Store simulator: order stock on the tablet, shelve the boxes, set prices, flip the sign to open; scan items at the till, check IDs, give change. Level up to unlock licenses and staff.'),
       tip: T('WASD yürü, fareyle bak (ekrana tıkla), Tık/E etkileşim, Tab tablet, G kutuyu bırak, Esc menü. Telefonda sağ alttaki Etkileşim düğmesini kullan.', 'WASD to walk, mouse to look (click the screen), Click/E to interact, Tab for the tablet, G to drop a box, Esc for the menu. On phones use the Interact button.')
     });
