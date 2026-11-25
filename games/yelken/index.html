@@ -120,6 +120,7 @@
     }
 
     /* ---- Yarış modu ---- */
+    #rc-hud.hidden, #rc-setup.hidden, #rc-result.hidden { display: none !important; }
     .rc-card { background: rgba(8,18,30,0.86); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(160,210,255,0.2); border-radius: 18px; box-shadow: 0 16px 40px rgba(0,0,0,0.45); color: #e6f0f8; }
     #rc-setup { position: fixed; z-index: 40; left: 50%; top: 50%; transform: translate(-50%,-50%); width: min(420px, calc(100vw - 24px)); padding: 16px; }
     #rc-setup h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; }
@@ -5279,6 +5280,7 @@
         document.getElementById('rc-result').classList.remove('hidden');
       }
       // ---- arayüz ----
+      document.querySelectorAll('#btn-race, #rc-setup button, #rc-hud button, #rc-result button').forEach(b => b.addEventListener('click', () => b.blur()));   // Space/Enter dümen tuşlarıyla tekrar tetiklenmesin
       document.getElementById('btn-race').addEventListener('click', () => document.getElementById('rc-setup').classList.toggle('hidden'));
       document.getElementById('rc-cancel').addEventListener('click', () => document.getElementById('rc-setup').classList.add('hidden'));
       document.querySelectorAll('#rc-setup [data-g]').forEach(btn => btn.addEventListener('click', () => {
