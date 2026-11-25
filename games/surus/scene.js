@@ -1,3 +1,5 @@
+import {buildHouses} from './houses.js';
+import {steeringRig} from './hands.js';
 import * as T from '../../js/vendor/three.module.min.js';
 
 const material = (color, extra = {}) => new T.MeshStandardMaterial({ color, roughness: .72, ...extra });
@@ -81,7 +83,7 @@ export async function createCoast(container, pose, length, city) {
     g.setIndex(faces); g.computeVertexNormals();
     const mesh=new T.Mesh(g,material(color,{side:T.DoubleSide}));mesh.receiveShadow=true;scene.add(mesh);
   }
-  strip(-235,-7,-.21,0x7d8467,5);
+
   strip(-7,-3.7,-.035,0xb4aa98);
   strip(-3.7,3.7,0,0x34393b);
   strip(3.7,9,-.035,0xc4b5a1);
@@ -108,24 +110,16 @@ export async function createCoast(container, pose, length, city) {
   const markings=[], buildings=[], windows=[], trunks=[], crowns=[];
   for (let d=4;d<length-4;d+=8) markings.push([d,0,.011,.105,.014,3]);
   for (let d=12;d<length-20;d+=23) {
-    const variation = Math.sin(d*.81);
-    const h=9+(variation+1)*8, w=10+(variation+1)*3;
-    if(city.paved(pose(d,-24).x,pose(d,-24).y) || Math.abs(((d-90+270)%180)-90)<14) continue;
-    for(const side of [-108,-180]) buildings.push([d,side,h/2,w,h,15]);
-    buildings.push([d,-24,h/2,w,h,15]);
-    for (let y=2;y<h-1;y+=2.65) {
-      for (const along of [-4,0,4]) windows.push([d+along,-24+w/2+.07,y,.14,1.13,1.5]);
-    }
     trunks.push([d,8.1,1.65,.22,3.3,.22],[d+8,-9,1.45,.26,2.9,.26]);
     crowns.push([d,8.1,3.55,1.8,.82,1.5],[d+8,-9,3.1,2.15,2.05,2.1]);
   }
   const cube=new T.BoxGeometry(1,1,1);
   instances(cube,material(0xe8dfc3),markings);
-  instances(cube,material(0xbfb29a),buildings);
-  instances(cube,material(0x3d535c,{roughness:.4}),windows);
+  buildHouses(scene,pose,length,city);
   instances(new T.CylinderGeometry(.5,.63,1,8),material(0x6e5741),trunks);
   instances(new T.IcosahedronGeometry(.71,1),material(0x526c40),crowns);
   const model = await loadMercedes(scene);
+  const moveHands=steeringRig(model.body);
   const streetVertices=[];
   for(const e of city.segments.filter(e=>e.city)){
     const nx=e.dy/Math.sqrt(e.squared)*e.width, ny=-e.dx/Math.sqrt(e.squared)*e.width;
@@ -137,7 +131,16 @@ export async function createCoast(container, pose, length, city) {
   streets.setAttribute('position',new T.Float32BufferAttribute(streetVertices,3));streets.computeVertexNormals();
   const pavement=material(0x404344,{side:T.DoubleSide});
   const cityMesh=new T.Mesh(streets,pavement);cityMesh.receiveShadow=true;scene.add(cityMesh);
-  strip(-1200,-234,-.27,0x8a9167,12);
+  // Close the shoreline on the inland side without sweeping a wide ribbon around tight bends.
+  const shore=new T.Shape(),first=pose(0,42),last=pose(length,42);
+  const dx=last.x-first.x,dy=last.y-first.y,span=Math.hypot(dx,dy);
+  const inlandX=-dy/span*4200,inlandY=dx/span*4200;
+  shore.moveTo(first.x,first.y);
+  for(let d=5;d<length;d+=5){const p=pose(d,42);shore.lineTo(p.x,p.y);}
+  shore.lineTo(last.x,last.y);shore.lineTo(last.x+inlandX,last.y+inlandY);
+  shore.lineTo(first.x+inlandX,first.y+inlandY);shore.closePath();
+  const land=new T.Mesh(new T.ShapeGeometry(shore),material(0x859371,{side:T.DoubleSide}));
+  land.rotation.x=-Math.PI/2;land.position.y=-.22;scene.add(land);
   const rainGeometry=new T.BufferGeometry(), drops=[];
   for(let i=0;i<750;i++){
     const x=Math.random()*48-24,y=Math.random()*20,z=Math.random()*48-24;
@@ -181,6 +184,7 @@ export async function createCoast(container, pose, length, city) {
       model.car.position.set(p.x,0,-p.y);
       model.car.rotation.y = -p.heading;
       model.car.visible = true;
+      moveHands(car.steer);
       model.body.rotation.z = car.roll;
       model.body.rotation.x = car.pitch;
       for (const wheel of model.wheels) wheel.rotation.x = -car.spin;

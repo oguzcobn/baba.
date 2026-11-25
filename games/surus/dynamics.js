@@ -11,8 +11,16 @@ function lateralForce(slip, stiffness, capacity, longitudinal) {
 }
 export function advance(s,gas,brake,steer,grip,dt,paved=true) {
   const u=s.speed;
-  const target=steer*.55/(1+.005*u*u);
+  const target=steer*Math.min(.55,Math.atan(wheelbase*grip*8/Math.max(1,u*u)));
   s.steer+=clamp(target-s.steer,-1.35*dt,1.35*dt);
+  if (u<0 || (u===0 && brake && !gas)) {
+    s.speed=clamp(u+dt*(gas?6:brake?-2.3:1.15),-5,0);
+    s.yawRate=s.speed*Math.tan(s.steer)/wheelbase;
+    s.lateral=0;s.angle+=dt*s.yawRate;s.x+=dt*s.speed*Math.sin(s.angle);s.y+=dt*s.speed*Math.cos(s.angle);
+    s.spin+=dt*s.speed/radius;s.distance+=dt*Math.abs(s.speed);
+    s.gear=0;s.rpm=850+Math.abs(s.speed)*240;s.accel=0;s.roll*=Math.exp(-8*dt);s.pitch*=Math.exp(-8*dt);
+    return;
+  }
   const wheelRpm=u/radius*60/(2*Math.PI);
   const shaft=wheelRpm*differential;
   s.shiftTime=Math.max(0,s.shiftTime-dt);
@@ -42,6 +50,10 @@ export function advance(s,gas,brake,steer,grip,dt,paved=true) {
   } else {
     s.lateral+=dt*(ay-u*s.yawRate);
     s.yawRate+=dt*(frontArm*frontBodyY-rearArm*rearY)/2450;
+    // Stability control limits excessive sideslip and yaw overshoot.
+    const neutral=u*Math.tan(s.steer)/wheelbase;
+    s.yawRate+=(neutral-s.yawRate)*(1-Math.exp(-3*dt));
+    s.lateral*=Math.exp(-2.6*dt);
   }
   s.angle+=dt*s.yawRate;
   s.x+=dt*(s.speed*Math.sin(s.angle)+s.lateral*Math.cos(s.angle));

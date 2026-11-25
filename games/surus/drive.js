@@ -1,5 +1,5 @@
 import { buildCity } from './city.js';
-import { fresh, advance } from './dynamics.js';
+import { fresh, advance } from './dynamics.js?v=5';
 import { route } from './route.js';
 
 const byId = id => document.getElementById(id);
@@ -71,10 +71,10 @@ function update(dt) {
     accumulator -= 1/120;
   }
   vehicle.style.setProperty('--steering', (car.steer*700)+'deg');
-  byId('motor').textContent = (car.gear+1)+' · '+Math.round(car.rpm/50)*50+' d/d';
-  byId('speed-needle').setAttribute('transform','rotate('+(-115+Math.min(180,car.speed*3.6)*230/180)+' 349 438)');
+  byId('motor').textContent = (car.speed<0?'R':car.gear+1)+' · '+Math.round(car.rpm/50)*50+' d/d';
+  byId('speed-needle').setAttribute('transform','rotate('+(-115+Math.min(180,Math.abs(car.speed)*3.6)*230/180)+' 349 438)');
   byId('rpm-needle').setAttribute('transform','rotate('+(-115+car.rpm*230/7000)+' 453 438)');
-  byId('speed').value = Math.round(car.speed * 3.6);
+  byId('speed').value = Math.round(Math.abs(car.speed) * 3.6);
   byId('distance').textContent = (car.distance/1000).toFixed(2)+' km';
 }
 
@@ -270,11 +270,11 @@ function frame(now) {
   
   update(Math.min((now - lastTime) / 1000, 0.15));
   lastTime = now;
-  if (actionEnds && (car.speed > 0 || now >= actionEnds)) {
+  if (actionEnds && (car.speed !== 0 || now >= actionEnds)) {
     cancelAction();
     updateStatus();
   }
-  for (const button of driverButtons) button.disabled = car.speed > 0 || Boolean(actionEnds);
+  for (const button of driverButtons) button.disabled = car.speed !== 0 || Boolean(actionEnds);
 
   if (mapFailed || (viewer && elevation === undefined && now > coverageDeadline)) {
     closeMap();
@@ -295,7 +295,7 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=4').then(async ({createCoast}) => {
+import('./scene.js?v=5').then(async ({createCoast}) => {
   coast = await createCoast(coastView,pose,length,city);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;
