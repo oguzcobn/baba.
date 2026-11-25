@@ -42,6 +42,20 @@ function makeKartal(scene) {
   car.add(body);
   shell(body, [[-2.1,.39,.67,.72,.74,.72],[-1.92,.37,.77,.82,.81,.79],[-.83,.36,.83,.86,.83,.8],[1.94,.36,.84,.86,.82,.79],[2.09,.4,.78,.81,.77,.75]], coat);
   shell(body, [[-.82,.83,.85,.86,.78,.76],[-.27,.84,.91,1.40,.76,.65],[1.78,.84,.91,1.39,.77,.65],[2.02,.84,.9,1.29,.75,.64]], glass);
+  glass.transparent=true; glass.opacity=.52; glass.depthWrite=false;
+  const fabric=material(0x474740), plastic=material(0x292b29);
+  for(const side of [-1,1]) {
+    box(body,fabric,side*.36,.65,.02,.48,.13,.48);
+    box(body,fabric,side*.36,.88,.23,.47,.50,.12).rotation.x=.12;
+    box(body,fabric,side*.36,1.17,.26,.25,.15,.11);
+  }
+  box(body,fabric,0,.79,1.08,1.18,.39,.17);
+  box(body,plastic,0,.93,-.57,1.42,.18,.28);
+  const steeringRing=new T.Mesh(new T.TorusGeometry(.17,.019,8,36),rubber);
+  steeringRing.position.set(-.36,.98,-.35); steeringRing.rotation.x=-.35;
+  body.add(steeringRing);
+  box(body,plastic,-.36,.98,-.35,.28,.047,.04);
+  box(body,plastic,0,.71,-.10,.035,.19,.035);
   box(body, coat, 0,1.41,.73,1.32,.065,2.13);
   for (const side of [-1,1]) {
     for (const [z, angle] of [[-.56,-.79],[.43,0],[1.34,0],[1.90,.54]]) {
@@ -59,7 +73,7 @@ function makeKartal(scene) {
     box(body, white, side*.604,.685,-2.105,.29,.12,.041);
     for (const z of [-1.24,1.25]) {
       const pivot = new T.Group(), wheel = new T.Group();
-      pivot.position.set(side*.77,.298,z);
+      pivot.position.set(side*(z<0?.693:.6635),.298,z);
       car.add(pivot); pivot.add(wheel);
       const tire = new T.Mesh(new T.CylinderGeometry(.298,.298,.177,36), rubber);
       tire.rotation.z = Math.PI/2;
@@ -91,6 +105,7 @@ function makeKartal(scene) {
   texture.colorSpace = T.SRGBColorSpace;
   box(body, material(0xffffff,{map:texture}),0,.59,2.12,.36,.09,.018);
   box(body, trim, -.37,.895,2.025,.68,.025,.02).rotation.z = -.15;
+  body.scale.z=4.396/4.35;
   return { car, body, wheels, steering };
 }
 
@@ -103,6 +118,25 @@ export function createCoast(container, pose, length) {
   renderer.toneMapping = T.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.17;
   container.append(renderer.domElement);
+  // Linear HDR sky and horizon for directional reflections in paint and glass.
+  const environmentScene = new T.Scene();
+  const dome = new T.Mesh(new T.SphereGeometry(20,48,24),new T.ShaderMaterial({
+    side:T.BackSide,
+    vertexShader:'varying vec3 ray; void main(){ray=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`varying vec3 ray;
+      void main(){
+        vec3 d=normalize(ray);
+        vec3 sky=mix(vec3(1.32,1.36,1.39),vec3(.23,.49,.89),sqrt(max(d.y,0.)));
+        float sun=pow(max(dot(d,normalize(vec3(.7,.9,-.45))),0.),350.);
+        vec3 c=mix(vec3(.14,.13,.11),sky,smoothstep(-.09,.03,d.y))+sun*vec3(9.,7.,4.);
+        gl_FragColor=vec4(c,1.);
+      }`
+  }));
+  environmentScene.add(dome);
+  const pmrem=new T.PMREMGenerator(renderer);
+  const reflection=pmrem.fromScene(environmentScene);
+  scene.environment=reflection.texture;
+  pmrem.dispose(); dome.geometry.dispose(); dome.material.dispose();
   const camera = new T.PerspectiveCamera(60,1,.12,1700);
   scene.add(new T.HemisphereLight(0xcbe6ff,0x746451,2.05));
   const sun = new T.DirectionalLight(0xffe2b3,2.55);
@@ -183,13 +217,19 @@ export function createCoast(container, pose, length) {
   resize();
   return {
     draw(car, chase, steering) {
-      const p = pose(car.distance,car.offset), vx=Math.sin(p.heading), vz=-Math.cos(p.heading);
+      const p = pose(car.distance,car.offset);
+      p.heading+=car.angle;
+      const vx=Math.sin(p.heading), vz=-Math.cos(p.heading);
       model.car.position.set(p.x,0,-p.y);
       model.car.rotation.y = -p.heading;
       model.car.visible = chase;
-      model.body.rotation.z = -steering * car.speed * .0017;
-      for (const wheel of model.wheels) wheel.rotation.x = -car.distance/.298;
-      for (const pivot of model.steering) pivot.rotation.y = -steering*.23;
+      model.body.rotation.z = car.roll;
+      model.body.rotation.x = car.pitch;
+      for (const wheel of model.wheels) wheel.rotation.x = -car.spin;
+      for (const pivot of model.steering) {
+        const tangent=Math.tan(car.steer);
+        pivot.rotation.y=-Math.atan(tangent/(1-pivot.position.x*tangent/2.49));
+      }
       shadow.position.set(p.x,.012,-p.y);
       shadow.rotation.z = -p.heading;
       shadow.visible = chase;

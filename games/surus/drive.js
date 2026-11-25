@@ -1,3 +1,4 @@
+import { fresh, advance } from './dynamics.js';
 import { route } from './route.js';
 
 const byId = id => document.getElementById(id);
@@ -27,8 +28,8 @@ const points = route.map(([lon, lat], index) => {
   }
   return { x: (lon - longitude) * metersEast, y: (lat - latitude) * metersNorth, distance: length };
 });
-const car = { distance: 0, offset: 1.5, speed: 0 };
-const maxSpeed = 80 / 3.6;
+const car = fresh();
+let accumulator = 0;
 let viewer;
 let tiles;
 let elevation;
@@ -57,15 +58,19 @@ function pose(distance, offset = 0) {
 
 function update(dt) {
   const input = new Set(controls.values());
-  const drag = 0.45 + car.speed * car.speed * 0.006;
-  const acceleration = (input.has('gas') ? 3.6 : 0) - (input.has('brake') ? 8 : 0) - drag;
-  car.speed = clamp(car.speed + acceleration * dt, 0, maxSpeed);
-  const steering = Number(input.has('right')) - Number(input.has('left'));
-  turn = steering;
-  vehicle.style.setProperty('--steering', (steering * 25) + 'deg');
-  car.offset = clamp(car.offset + steering * car.speed * dt * 0.26, -2.8, 2.8);
-  car.distance = Math.min(length, car.distance + car.speed * dt);
-  if (car.distance >= length) car.speed = 0;
+  turn = Number(input.has('right')) - Number(input.has('left'));
+  accumulator += dt;
+  const delta = pose(car.distance+1).heading-pose(car.distance-1).heading;
+  const curvature = Math.atan2(Math.sin(delta),Math.cos(delta))/2;
+  while (accumulator >= 1/120) {
+    if (car.distance < length) advance(car,Number(input.has('gas')),Number(input.has('brake')),turn,curvature,1/120);
+    accumulator -= 1/120;
+  }
+  if (car.distance >= length) { car.distance=length; car.speed=0; }
+  vehicle.style.setProperty('--steering', (car.steer*700)+'deg');
+  byId('motor').textContent = (car.gear+1)+' · '+Math.round(car.rpm/50)*50+' d/d';
+  byId('speed-needle').setAttribute('transform','rotate('+(-115+Math.min(180,car.speed*3.6)*230/180)+' 349 438)');
+  byId('rpm-needle').setAttribute('transform','rotate('+(-115+car.rpm*230/7000)+' 453 438)');
   byId('speed').value = Math.round(car.speed * 3.6);
   byId('distance').value = car.distance / length;
 }
@@ -82,7 +87,7 @@ function drawPreview() {
     camera.x -= Math.sin(camera.heading) * 7;
     camera.y -= Math.cos(camera.heading) * 7;
   }
-  const heading = camera.heading;
+  const heading = camera.heading + car.angle;
   const sin = Math.sin(heading), cos = Math.cos(heading);
   const focal = width * 0.73;
   function project(distance, side) {
@@ -109,9 +114,8 @@ function drawPreview() {
 }
 
 function reset() {
-  car.distance = 0;
-  car.offset = 1.5;
-  car.speed = 0;
+  Object.assign(car,fresh());
+  accumulator=0;
   lastSample = -Infinity;
   elevation = undefined;
   controls.clear();
@@ -263,6 +267,7 @@ function drawMap() {
     }
   }
   const height = elevation === undefined ? 38 : elevation + 1.65;
+  p.heading += car.angle;
   const follow = chase ? 7 : 0;
   viewer.camera.setView({
     destination: C.Cartesian3.fromDegrees(
@@ -276,7 +281,7 @@ function drawMap() {
 
 function frame(now) {
   const finished = car.distance >= length;
-  update(Math.min((now - lastTime) / 1000, 0.05));
+  update(Math.min((now - lastTime) / 1000, 0.15));
   lastTime = now;
   if (actionEnds && (car.speed > 0 || now >= actionEnds)) {
     cancelAction();
@@ -303,7 +308,7 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=2').then(({createCoast}) => {
+import('./scene.js?v=3').then(({createCoast}) => {
   coast = createCoast(coastView,pose,length);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;
