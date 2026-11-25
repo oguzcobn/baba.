@@ -18,6 +18,13 @@ function facade(theme,floors) {
     }
   }
   c.fillStyle='#584639';c.fillRect(218,H-69,42,69);
+  if(theme===1){
+    c.fillStyle='#223e42';c.fillRect(0,H-85,512,85);
+    c.fillStyle='#b9d3d0';for(let x=12;x<512;x+=82)c.fillRect(x,H-48,72,43);
+    c.fillStyle='#962f27';c.fillRect(0,H-88,512,34);
+    c.fillStyle='#fff2d6';c.font='bold 26px sans-serif';c.textAlign='center';c.fillText('AKDENİZ MARKET',256,H-62);
+    for(let i=0;i<24;i++){c.fillStyle=['#bc9038','#729248','#ce7141'][i%3];c.fillRect(15+i*20,H-18,12,10);}
+  }
   const texture=new T.CanvasTexture(canvas);texture.colorSpace=T.SRGBColorSpace;texture.anisotropy=4;
   return new T.MeshStandardMaterial({map:texture});
 }

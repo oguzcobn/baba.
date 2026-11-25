@@ -295,7 +295,7 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=5').then(async ({createCoast}) => {
+import('./scene.js?v=6').then(async ({createCoast}) => {
   coast = await createCoast(coastView,pose,length,city);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;

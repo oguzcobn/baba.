@@ -1,4 +1,5 @@
-import {buildHouses} from './houses.js';
+import {coastalLife} from './life.js';
+import {buildHouses} from './houses.js?v=6';
 import {steeringRig} from './hands.js';
 import * as T from '../../js/vendor/three.module.min.js';
 
@@ -110,14 +111,22 @@ export async function createCoast(container, pose, length, city) {
   const markings=[], buildings=[], windows=[], trunks=[], crowns=[];
   for (let d=4;d<length-4;d+=8) markings.push([d,0,.011,.105,.014,3]);
   for (let d=12;d<length-20;d+=23) {
-    trunks.push([d,8.1,1.65,.22,3.3,.22],[d+8,-9,1.45,.26,2.9,.26]);
-    crowns.push([d,8.1,3.55,1.8,.82,1.5],[d+8,-9,3.1,2.15,2.05,2.1]);
+    for(const [along,side] of [[d,8.1],[d+8,-9]]){
+      const p=pose(along,side);
+      const blocked=city.segments.some(e=>{
+        const t=Math.min(1,Math.max(0,((p.x-e.a.x)*e.dx+(p.y-e.a.y)*e.dy)/e.squared));
+        return Math.hypot(p.x-e.a.x-t*e.dx,p.y-e.a.y-t*e.dy)<e.width+2.2;
+      });
+      if(blocked)continue;
+      trunks.push([along,side,1.6,.23,3.2,.23]);crowns.push([along,side,3.54,1.9,1.2,1.65]);
+    }
   }
   const cube=new T.BoxGeometry(1,1,1);
   instances(cube,material(0xe8dfc3),markings);
   buildHouses(scene,pose,length,city);
   instances(new T.CylinderGeometry(.5,.63,1,8),material(0x6e5741),trunks);
   instances(new T.IcosahedronGeometry(.71,1),material(0x526c40),crowns);
+  const updateLife=coastalLife(scene,pose,length);
   const model = await loadMercedes(scene);
   const moveHands=steeringRig(model.body);
   const streetVertices=[];
@@ -204,6 +213,7 @@ export async function createCoast(container, pose, length, city) {
         camera.quaternion.copy(model.body.getWorldQuaternion(camera.quaternion));
         camera.rotateX(-.06);
       }
+      updateLife(car);
       renderer.render(scene,camera);
     }
   };
