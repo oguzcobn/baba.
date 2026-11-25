@@ -159,6 +159,7 @@ const App = (() => {
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
+    { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('5 tekne · 15 denizci', '5 boats · 15 sailors') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['Market simülasyonu', 'Store sim'], ['3D birinci şahıs', '3D first person'], ['39 karakter', '39 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
@@ -242,6 +243,7 @@ const App = (() => {
     'kafa-topu': 'img/library/kafa-topu-1280.webp',
     'living-island': 'img/library/living-island-1280.svg',
     'koy': 'img/library/koy-1280.webp',
+    'simitci': 'img/library/simitci-1280.webp',
     'yelken': 'img/library/yelken-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'amsterdam-coffeeshop': 'img/library/amsterdam-coffeeshop-1280.webp',
@@ -510,6 +512,17 @@ const App = (() => {
     });
     const page = root().querySelector('.game-page');
     if (page) page.classList.add('koy-page');
+  }
+
+  /* ==================== SİMİTÇİ. / TRABZON UZUN SOKAK TYCOON ==================== */
+  function simitci() {
+    openEmbeddedGame({
+      title: T('SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'),
+      url: 'games/simitci/index.html?v=1',
+      tag: T('BABA. SİMİTÇİ. · Trabzon Ortahisar · 2.5D', 'BABA. SIMIT. · Trabzon Ortahisar · 2.5D'),
+      lead: T('Trabzon Uzun Sokak’ta taş fırından sıcak kel simit, semaverden demli çay ve tereyağlı kaşarlı sat; masa aç, çırak ve komi tut, maç günü taraftar korteji geçerken kazancını katla.', 'Sell hot simit, brewed tea and buttery kaşarlı on Trabzon’s Uzun Sokak; open tables, hire an apprentice and a busboy, and cash in when the matchday fan march passes.'),
+      tip: T('WASD/ok tuşları ya da sürükleyerek yürü. Tezgaha yaklaşınca ürün alırsın, masaya gidince servis edersin. Parlak karelerin üstünde durunca para yatırıp yeni masa ve tezgah açarsın. Yağmurda kazanç +%25.', 'Walk with WASD/arrows or drag. Stand by a counter to pick up, go to a table to serve. Stand on glowing pads to pay in and open tables and counters. Rain pays +25%.')
+    });
   }
 
   /* ==================== YELKEN. / OPTIMIST SAILING SIMULATOR ==================== */
@@ -880,6 +893,7 @@ const App = (() => {
     else if (r === 'living-island') livingIsland();
     else if (r === 'koy') koy();
     else if (r === 'yelken') yelken();
+    else if (r === 'simitci') simitci();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
     else if (r === '2048') g2048();
