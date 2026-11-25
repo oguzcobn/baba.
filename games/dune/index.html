@@ -170,8 +170,9 @@
     </div>
     <div class="panel top-right">
       <select class="ctrl-select" id="selTime" title="Time of Day">
+        <option value="afternoon" selected>Öğleden Sonra (Referans)</option>
         <option value="midday">Midday Sun</option>
-        <option value="sunset" selected>Golden Sunset</option>
+        <option value="sunset">Golden Sunset</option>
         <option value="sunrise">Desert Sunrise</option>
         <option value="night">Starlit Night</option>
       </select>
@@ -181,7 +182,7 @@
         <option value="sandstorm">Sandstorm</option>
         <option value="wet">Desert Rain (Wet Sand)</option>
       </select>
-      <button class="btn" id="btnCamMode" title="Cycle Camera Mode (C)">360° Cam</button>
+      <button class="btn" id="btnCamMode" title="Cycle Camera Mode (C)">Chase</button>
       <button class="btn primary" id="btnGarage">Garage (10)</button>
       <button class="btn" id="btnTouch">Touch</button>
       <button class="btn" id="btnDev" title="Developer Performance & Physics Tests">Dev</button>
@@ -399,7 +400,7 @@
     }
   ];
 
-  const PAINTS = ['#e11d48', '#f59e0b', '#2563eb', '#10b981', '#d6c3a5', '#334155', '#ea580c', '#f8fafc'];
+  const PAINTS = ['#b23a26', '#e11d48', '#f59e0b', '#2563eb', '#10b981', '#d6c3a5', '#334155', '#ea580c', '#f8fafc'];
 
   // =========================================================================
   // 2. DETERMINISTIC PROCEDURAL DESERT WORLD & SOIL TERRAMECHANICS
@@ -1011,7 +1012,8 @@
     uZenith: { value: new THREE.Color(0x1d4e89) },
     uHorizon: { value: new THREE.Color(0xe6b47c) },
     uSunColor: { value: new THREE.Color(0xfff2cc) },
-    uTime: { value: 0 }
+    uTime: { value: 0 },
+    uCloud: { value: 1 }
   };
   const skyMat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
@@ -1031,18 +1033,40 @@
       uniform vec3 uHorizon;
       uniform vec3 uSunColor;
       uniform float uTime;
+      uniform float uCloud;
       varying vec3 vWorldDir;
+      float h21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+      float vn(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(h21(i), h21(i + vec2(1.0, 0.0)), f.x), mix(h21(i + vec2(0.0, 1.0)), h21(i + vec2(1.0, 1.0)), f.x), f.y); }
+      float fbm(vec2 p) { float v = 0.0, a = 0.5; mat2 m = mat2(0.8, 0.6, -0.6, 0.8); for (int i = 0; i < 5; i++) { v += a * vn(p); p = m * p * 2.03 + 7.1; a *= 0.5; } return v; }
       void main() {
         vec3 d = normalize(vWorldDir);
+        vec3 S = normalize(uSunDir);
         float h = clamp(d.y, 0.0, 1.0);
-        vec3 col = mix(uHorizon, uZenith, pow(h, 0.52));
-        float sunDot = max(dot(d, normalize(uSunDir)), 0.0);
-        // Mie scattering halo + solar disc
-        col += uSunColor * pow(sunDot, 10.0) * 0.38;
-        col += uSunColor * pow(sunDot, 220.0) * 1.4;
-        // Subtle wispy desert clouds
-        float cloud = sin(d.x * 9.0 + uTime * 0.02) * cos(d.z * 7.0 - uTime * 0.015);
-        col = mix(col, uHorizon * 1.15, smoothstep(0.35, 0.85, cloud) * smoothstep(0.05, 0.4, h) * 0.14);
+        // Rayleigh benzeri gradyan: ufukta soluk, gri-mavi; zirvede doygun mavi
+        vec3 col = mix(uHorizon, uZenith, pow(h, 0.42));
+        float mu = max(dot(d, S), 0.0);
+        col += uSunColor * (pow(mu, 6.0) * 0.16 + pow(mu, 40.0) * 0.32);   // Mie hale
+        if (d.y > 0.0) {
+          vec2 uv = d.xz / (d.y + 0.06);                                       // bulut düzlemi (perspektifle ufka yakınsar)
+          float t = uTime * 0.004;
+          // sirrus: rüzgâr yönünde uzamış ince lifler (ufukta bir noktaya yakınsayan çizgiler)
+          vec2 cu = vec2(uv.x * 0.55 + uv.y * 0.25, uv.y * 0.55 - uv.x * 0.25);
+          float ci = fbm(vec2(cu.x * 0.6, cu.y * 7.0) + vec2(t, 0.0));
+          float cir = smoothstep(0.52, 0.85, ci) * smoothstep(0.02, 0.25, d.y) * 0.55;
+          // altokümülüs: küçük kabarık hücreler, geniş yamalar hâlinde
+          float pch = smoothstep(0.42, 0.7, fbm(uv * 0.35 + vec2(t * 2.0, 3.0)));
+          float cell = fbm(uv * 3.2 + vec2(t * 6.0, 1.0));
+          float ac = smoothstep(0.55 - pch * 0.12, 0.72, cell) * pch * smoothstep(0.03, 0.2, d.y);
+          float lit = 0.75 + 0.35 * smoothstep(0.4, 0.9, fbm(uv * 3.2 + S.xz * 0.15 + vec2(t * 6.0, 1.0)));   // güneşe bakan kenarlar parlak
+          vec3 cloudCol = mix(vec3(0.62, 0.62, 0.66), vec3(0.98, 0.95, 0.9), lit) * (0.92 + 0.25 * pow(mu, 4.0));
+          col = mix(col, vec3(0.88, 0.89, 0.92), cir * uCloud);
+          col = mix(col, cloudCol, clamp(ac * 1.25, 0.0, 0.95) * uCloud);
+        }
+        // güneş diski + lens parlaması (kameraya ışık vurduğunda beyaza doygunlaşır)
+        col += uSunColor * smoothstep(0.9993, 0.99975, mu) * 2.5;
+        col += vec3(1.0, 0.97, 0.9) * pow(mu, 180.0) * 0.9;
+        col = mix(col, uHorizon * 1.02, smoothstep(0.05, -0.02, d.y));
         gl_FragColor = vec4(col, 1.0);
       }
     `
@@ -1064,11 +1088,15 @@
     uDefMidOrigin: { value: new THREE.Vector2(l1OrigX, l1OrigZ) },
     uDefMidSize: { value: L1_SIZE },
     uMoisture: { value: 0.02 },
+    uSandTint: { value: new THREE.Vector3(1, 1, 1) },
+    uSandLevels: { value: new THREE.Vector3(1, 1, 1) },
     uTime: { value: 0.0 },
     uVehPos: { value: new THREE.Vector3() }
   };
 
+  Object.assign(terrainUniforms, THREE.UniformsUtils.clone(THREE.UniformsLib.lights));   // gölge haritası uniformları
   const terrainMat = new THREE.ShaderMaterial({
+    lights: true,
     uniforms: terrainUniforms,
     vertexShader: `
       uniform sampler2D uDefNearTex;
@@ -1080,6 +1108,8 @@
       varying vec3 vWorldPos;
       varying vec3 vNormal;
       varying float vFogDepth;
+      #include <common>
+      #include <shadowmap_pars_vertex>
       void main() {
         vec4 wp = modelMatrix * vec4(position, 1.0);
         vec2 uv0 = (wp.xz - uDefNearOrigin) / uDefNearSize;
@@ -1096,9 +1126,17 @@
         vec4 mv = viewMatrix * wp;
         vFogDepth = -mv.z;
         gl_Position = projectionMatrix * mv;
+        vec4 worldPosition = wp;
+        vec3 transformedNormal = normalMatrix * normal;
+        #include <shadowmap_vertex>
       }
     `,
     fragmentShader: `
+      #include <common>
+      #include <packing>
+      #include <lights_pars_begin>
+      #include <shadowmap_pars_fragment>
+      #include <shadowmask_pars_fragment>
       uniform sampler2D uDefNearTex;
       uniform vec2 uDefNearOrigin;
       uniform float uDefNearSize;
@@ -1111,6 +1149,8 @@
       uniform vec3 uFogColor;
       uniform float uFogDensity;
       uniform float uMoisture;
+      uniform vec3 uSandTint;
+      uniform vec3 uSandLevels;
       uniform float uTime;
       uniform vec3 uVehPos;
       varying vec3 vWorldPos;
@@ -1120,6 +1160,7 @@
       float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123); }
 
       void main() {
+        float sunShadow = getShadowMask();
         vec2 p = vWorldPos.xz;
         vec3 N = normalize(vNormal);
         float baseSlope = 1.0 - clamp(N.y, 0.0, 1.0);
@@ -1148,7 +1189,7 @@
             vec4 dU = texture2D(uDefNearTex, uv0 + vec2(0.0, tex));
             float hR = -dR.r * 0.45 + dR.g * 0.35;
             float hU = -dU.r * 0.45 + dU.g * 0.35;
-            N = normalize(N + vec3((hC - hR) * 7.5, 0.0, (hC - hU) * 7.5));
+            N = normalize(N + vec3((hC - hR) * 11.0, 0.0, (hC - hU) * 11.0));
           }
         } else if (uv1.x > 0.02 && uv1.x < 0.98 && uv1.y > 0.02 && uv1.y < 0.98) {
           def = texture2D(uDefMidTex, uv1);
@@ -1172,6 +1213,9 @@
         float r1 = sin(phase1);
         float r2 = sin(p.x * 16.0 + p.y * 6.8 + warp * 1.4) * nearDetail;
         float ripGrad = ((cos(phase1) + 0.32 * sin(2.0 * phase1)) * 0.14 * midDetail + r2 * 0.055) * sandMask * slipSmooth * rutErase;
+        // referansta dalgacıklar yamalı ve sığ: düşük frekanslı maske ile çoğu yüzey pürüzsüz
+        float ripMask = mix(0.12, 0.75, smoothstep(0.35, 0.8, 0.5 + 0.5 * sin(p.x * 0.043 + sin(p.y * 0.031) * 2.2) * cos(p.y * 0.052 - p.x * 0.017)));
+        ripGrad *= ripMask * 0.55;
         N = normalize(N + vec3(ripGrad, 0.0, ripGrad * 0.43));
 
         // Micro-silica grain bump near camera
@@ -1187,7 +1231,8 @@
         vec3 sandCrest = mix(mix(yellowQuartz, redFeldspar, m1 * 0.65), paleCarb, m2 * 0.25);
         vec3 sandSlip  = vec3(0.73, 0.50, 0.31);
         vec3 albedo = mix(sandCrest, sandSlip, smoothstep(0.07, 0.26, baseSlope));
-        albedo *= (1.0 - (0.5 - 0.5 * r1) * 0.10 * midDetail * sandMask * slipSmooth * rutErase);
+        albedo = mix(albedo, uSandTint * (0.93 + 0.07 * m1) * mix(1.0, 0.86, smoothstep(0.07, 0.26, baseSlope)), uSandTint.x < 0.999 ? 0.88 : 0.0);   // referans: soluk bej kuvars
+        albedo *= (1.0 - (0.5 - 0.5 * r1) * 0.10 * midDetail * sandMask * slipSmooth * rutErase * ripMask);
 
         // Biome blends
         vec3 canyonCol = mix(vec3(0.58, 0.30, 0.20), vec3(0.37, 0.18, 0.13), smoothstep(0.07, 0.34, baseSlope));
@@ -1236,8 +1281,8 @@
         float dVeh = length(vWorldPos.xz - uVehPos.xz);
         float vehAO = mix(0.44, 1.0, smoothstep(0.95, 3.6, dVeh));
 
-        vec3 color = albedo * (uAmbient * 0.52 + warmBounce + uSunColor * (oren * 1.24)) * vehAO
-                   + uSunColor * spec * max(NdotL, 0.12);
+        vec3 color = albedo * (uAmbient * 0.52 * uSandLevels.x + warmBounce + uSunColor * (oren * 1.24 * uSandLevels.y) * sunShadow) * vehAO
+                   + uSunColor * spec * max(NdotL, 0.12) * sunShadow;
 
         float fogFactor = 1.0 - exp(-pow(vFogDepth * uFogDensity, 2.0));
         color = mix(color, uFogColor, clamp(fogFactor, 0.0, 1.0));
@@ -1758,7 +1803,7 @@
       void main() {
         vColor = color;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = clamp(aSize * (340.0 / max(-mv.z, 1.0)), 0.0, 14.0);
+        gl_PointSize = clamp(aSize * (220.0 / max(-mv.z, 1.0)), 0.0, 4.5);
         gl_Position = projectionMatrix * mv;
       }
     `,
@@ -1784,7 +1829,7 @@
   scene.add(grainPoints);
 
   // Layer B: 1,000 Fine Airborne Desert Dust Plumes
-  const MAX_DUST = 280;
+  const MAX_DUST = 520;
   const pPos = new Float32Array(MAX_DUST * 3);
   const pVel = new Float32Array(MAX_DUST * 3);
   const pLife = new Float32Array(MAX_DUST);
@@ -1807,7 +1852,7 @@
       void main() {
         vColor = color;
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = clamp(aSize * (270.0 / max(-mv.z, 1.0)), 1.0, 52.0);
+        gl_PointSize = clamp(aSize * (520.0 / max(-mv.z, 1.0)), 1.0, 170.0);
         gl_Position = projectionMatrix * mv;
       }
     `,
@@ -1817,7 +1862,7 @@
         vec2 c = gl_PointCoord - vec2(0.5);
         float r = dot(c, c);
         if (r > 0.25) discard;
-        float alpha = smoothstep(0.25, 0.02, r) * 0.34;
+        float alpha = pow(smoothstep(0.25, 0.0, r), 1.6) * 0.2;
         gl_FragColor = vec4(vColor, alpha);
       }
     `
@@ -1834,7 +1879,7 @@
       pVel[i * 3] = vx; pVel[i * 3 + 1] = vy; pVel[i * 3 + 2] = vz;
       pLife[i] = life;
       pSize[i] = size;
-      pCol[i * 3] = 0.88; pCol[i * 3 + 1] = 0.73; pCol[i * 3 + 2] = 0.52;
+      pCol[i * 3] = 0.84; pCol[i * 3 + 1] = 0.76; pCol[i * 3 + 2] = 0.64;
     } else {
       const i = gCursor;
       gCursor = (gCursor + 1) % MAX_GRAINS;
@@ -2060,13 +2105,14 @@
     unlocked: ['trophy', 'sport_atv', 'mx_bike', 'utv', 'pickup'],
     vehicleId: 'trophy',
     upgrades: { eng: 1, susp: 1, tire: 1 },
-    paint: '#e11d48'
+    paint: '#b23a26'
   };
   try {
     const raw = localStorage.getItem('dune_sim_save_v1');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.credits === 'number') Object.assign(saveState, parsed);
+      if (saveState.paint === '#e11d48') saveState.paint = '#b23a26';   // referans: tuğla kırmızısı
     }
   } catch (e) {}
   function persistSave() {
@@ -2104,10 +2150,10 @@
     manualTrans: false,
     assist: true,
     weather: 'clear',
-    timeOfDay: 'sunset',
-    camMode: 0, // 0: 2.5D Top-Down, 1: 2.5D Low Chase, 2: Free Orbit
+    timeOfDay: 'afternoon',
+    camMode: 1, // 0: 360° orbit, 1: alçak takip (referans), 2: üstten
     camYaw: 0.45,
-    camElevDeg: 16,
+    camElevDeg: 7,
     camDist: 17,
     photoMode: false
   };
@@ -2447,7 +2493,7 @@
 
           // Layer 3: FPS-independent fine dust plume emission (suppressed on wet sand)
           if (soil.moisture < 0.48) {
-            const dustPerSec = clamp((wheelMotion * 1.6 + Math.abs(slip) * 14.0) * (1 - soil.moisture * 1.8), 0, 22);
+            const dustPerSec = clamp((wheelMotion * 2.4 + Math.abs(slip) * 16.0) * (1 - soil.moisture * 1.8), 0, 30);
             ws.dustAcc += dustPerSec * dt;
             while (ws.dustAcc >= 1.0) {
               ws.dustAcc -= 1.0;
@@ -2456,8 +2502,8 @@
                 -wFwdX * 1.1 + (Math.random() - 0.5) * 1.5,
                 0.75 + Math.random() * 1.15,
                 -wFwdZ * 1.1 + (Math.random() - 0.5) * 1.5,
-                1.9 + Math.random() * 1.5,
-                1.3 + Math.random() * 1.3,
+                2.2 + Math.random() * 1.8,
+                2.6 + Math.random() * 2.4,   // referans: arkada uzun süre asılı kalan toz bulutu
                 true
               );
             }
@@ -2668,6 +2714,8 @@
   // 10. TIME OF DAY & WEATHER ATMOSPHERE SYSTEM
   // =========================================================================
   const TIME_PRESETS = {
+    // Referans video kalibrasyonu: alçak öğleden sonra güneşi (~17°), soluk bej kum, gri-mavi ufuk, sirrus + altokümülüs
+    afternoon: { sunDir: [0.55, 0.30, 0.78], zenith: 0x5d84bd, horizon: 0xb4aeae, sunCol: 0xfff1d8, amb: 0xc9cfe0, fog: 0xaaa29e, sunInt: 2.4, exp: 1.04, sand: [0.93, 0.81, 0.66], cloud: 1, fogMul: 2.0, ambGain: 0.95, sunGain: 0.93, hemiInt: 0.55, fillInt: 0.3 },
     sunrise: { sunDir: [0.85, 0.22, 0.45], zenith: 0x264673, horizon: 0xf09c67, sunCol: 0xffcfa1, amb: 0x8b6248, fog: 0xe6a77a, sunInt: 1.85, exp: 1.05 },
     midday:  { sunDir: [0.35, 0.88, -0.32], zenith: 0x1a65b0, horizon: 0xdfcba8, sunCol: 0xfffaf0, amb: 0x9b8064, fog: 0xdcc7a4, sunInt: 2.35, exp: 1.02 },
     sunset:  { sunDir: [-0.82, 0.26, -0.52], zenith: 0x1c3766, horizon: 0xe8985e, sunCol: 0xffd29d, amb: 0x7a5038, fog: 0xd8a274, sunInt: 2.1, exp: 1.10 },
@@ -2687,15 +2735,20 @@
     terrainUniforms.uSunColor.value.setHex(tp.sunCol);
     terrainUniforms.uAmbient.value.setHex(tp.amb);
     terrainUniforms.uFogColor.value.setHex(simSettings.weather === 'sandstorm' ? 0xc2935b : tp.fog);
-    terrainUniforms.uFogDensity.value = wp.fogDensity;
+    terrainUniforms.uFogDensity.value = wp.fogDensity * (tp.fogMul || 1);
     terrainUniforms.uMoisture.value = wp.moisture;
+    if (tp.sand) { terrainUniforms.uSandTint.value.set(tp.sand[0], tp.sand[1], tp.sand[2]); } else terrainUniforms.uSandTint.value.set(1, 1, 1);
+    terrainUniforms.uSandLevels.value.set(tp.ambGain || 1, tp.sunGain || 1, 1);
+    skyUniforms.uCloud.value = (tp.cloud ?? 0.6) * (simSettings.weather === 'sandstorm' ? 0.2 : 1);
 
     sunLight.color.setHex(tp.sunCol);
     sunLight.intensity = tp.sunInt * (simSettings.weather === 'sandstorm' ? 0.68 : 1.0);
     hemiLight.color.setHex(tp.horizon);
     hemiLight.groundColor.setHex(tp.amb);
+    hemiLight.intensity = tp.hemiInt ?? 1.15;
+    fillLight.intensity = tp.fillInt ?? 0.75;
     scene.fog.color.copy(terrainUniforms.uFogColor.value);
-    scene.fog.density = wp.fogDensity;
+    scene.fog.density = wp.fogDensity * (tp.fogMul || 1);
     renderer.toneMappingExposure = tp.exp;
   }
 
@@ -3288,6 +3341,7 @@
   window.addEventListener('load', () => {
     buildVehicleMesh(currentSpec, saveState.paint);
     resetVehicleAt(36, 18, 0.45);
+  window.__dune = { terrainUniforms, skyUniforms, simSettings, renderer, applyAtmosphere, TIME_PRESETS };
     applyAtmosphere();
     updateLocalTerrainMesh(36, 18);
     document.getElementById('hudCredits').textContent = saveState.credits.toLocaleString();

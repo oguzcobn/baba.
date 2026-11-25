@@ -550,7 +550,7 @@ const App = (() => {
   function duneGame() {
     openEmbeddedGame({
       title: T('DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'),
-      url: 'games/dune/index.html?v=1',
+      url: 'games/dune/index.html?v=2',
       tag: T('BABA. DUNE. · Açık dünya sürüş · 2.5D', 'BABA. DUNE. · Open-world driving · 2.5D'),
       lead: T('Kum tepelerinde 4×4: lastik basıncı, diferansiyel kilidi, vinç, garaj yükseltmeleri ve günbatımı çölünde serbest sürüş.', '4×4 across the dunes: tyre pressure, diff lock, winch, garage upgrades and free roam in a sunset desert.'),
       tip: T('W/S gaz-fren, A/D direksiyon, Space el freni. L diferansiyel kilidi, R vinç, C kamera, P fotoğraf modu. Yumuşak kumda lastik basıncını düşür.', 'W/S throttle-brake, A/D steer, Space handbrake. L diff lock, R winch, C camera, P photo mode. Lower tyre pressure in soft sand.')
