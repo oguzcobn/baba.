@@ -1493,7 +1493,7 @@
       <button class="mm-mb" data-m="new">Yeni oyun<small>Jordaan'da küçük bir dükkânla başla</small></button>
       <button class="mm-mb" data-m="help">Nasıl oynanır</button>
       <button class="mm-mb" data-m="settings">Ayarlar</button>
-      <button class="mm-mb" data-m="cast">Karakterler<small>41 karakter · 16 model</small></button>
+      <button class="mm-mb" data-m="cast">Karakterler<small>39 karakter · 14 model</small></button>
     </div><div class="mm-ver">BABA. Oyunlar · Market modu v1</div></div>
 
     <div class="mm-ov" id="mm-pause"><div class="mm-panel"><h2>Duraklatıldı</h2><div class="mm-pause-list">

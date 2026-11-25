@@ -6,8 +6,6 @@ Oyundaki aşağıdaki 3D modeller Sketchfab'dan alınmış ve web için optimize
 | Oyundaki adı | Model | Yazar | Lisans | Kaynak |
 |---|---|---|---|---|
 | Otter-Chan (Tamirci Su Samuru) | Otter-Chan | AKM | CC BY 4.0 | https://sketchfab.com/3d-models/otter-chan-3b3800d3fe4143c882dde553f9005666 |
-| Meneer Pak (Takım Elbiseli Adam) | Man In Suit | jetsu | CC BY 4.0 | https://sketchfab.com/3d-models/man-in-suit-7668c90721144544b3a929edf9eeac9c |
-| Bjorn (Viking Savaşçı) | Viking/Medieval Game Character | CGenesis | CC BY 4.0 | https://sketchfab.com/3d-models/vikingmedieval-game-character-a9e99a47d2a24957ab6c08c9e57ad48c |
 | Pieter (Paltolu Beyefendi) | Man In Coat - Human Rigged Model | Saitam | CC BY 4.0 | https://sketchfab.com/saitam_ha |
 | Dr. Visser (Nöbet Çıkışı Doktor) | Doctor - Sketchfab Weekly | BrushDip | CC BY 4.0 | https://sketchfab.com/BrushDip |
 | Henk (Motorcu) | Biker | user1145 | CC BY 4.0 | https://sketchfab.com/user1145 |

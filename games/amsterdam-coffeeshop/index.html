@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>AMSTERDAM: Coffeeshop Empire — AAA PBR &amp; Mathematical Calibration Engine</title>
-<script src="src/owner-gate.js"></script>
 <script src="vendor/three.min.js"></script>
 <script src="vendor/GLTFLoader.js"></script>
 <script src="vendor/SkeletonUtils.js"></script>
@@ -2550,18 +2549,30 @@
   // =========================================================================
   // VISIBLY WORKING 3D STAFF CHARACTERS (Barista, Cleaner, Stocker, Security)
   // =========================================================================
+  // Personel: yüklendiyse gerçek iskeletli modeller (biyomekanik yürüyüş, kumaş önlük), yoksa eski çizim
+  const STAFF_GLB = { barista: ['glb_estudiante', 0x9ee0b8, 'Barista'], cleaner: ['glb_boy', 0xa7c8ff, 'Temizlik'], stocker: ['glb_coat', 0xe8b98a, 'Depo'], security: ['glb_balthazar', 0x555555, 'Güvenlik'] };
+  function glbStaff(role) {
+    const d = STAFF_GLB[role]; if (!d || !window.ModelCast || !ModelCast.has || !ModelCast.has(d[0])) return null;
+    const v = ModelCast.variantOpts(d[0]); const rig = ModelCast.build(d[0], { tint: d[1], name: v.name, title: d[2] });
+    return rig && rig.cast && rig.cast._rig ? rig : null;
+  }
+  function staffAnim(st, phase, speed, elapsed) {
+    if (st.meshObj.cast) st.meshObj.cast.update(lastStaffDt, speed, elapsed); else applyBiomechanicalGait(st.meshObj, phase, speed, elapsed);
+  }
+  let lastStaffDt = 0.016;
   function syncStaffEntities() {
     staffEntities.forEach(st => scene.remove(st.meshObj.group));
     staffEntities = [];
 
     // 1. Cute Baristas working behind counter with green apron & barista cap
     for (let i = 0; i < Math.min(3, state.staffCount); i++) {
-      const rig = createAnatomicalHuman({
+      const g = glbStaff('barista');
+      const rig = g || createAnatomicalHuman({
         skin: 0xf4c7a6, shirt: 0x059669, pants: 0x1e293b,
         hair: 0x4b2e1b, hairStyle: 'cap', capColor: 0x064e3b
       });
-      const apron = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.42, 0.04), new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.75 }));
-      apron.position.set(0, 0.16, 0.185); rig.spinePivot.add(apron);
+      if (!g) { const apron = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.42, 0.04), new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.75 }));
+      apron.position.set(0, 0.16, 0.185); rig.spinePivot.add(apron); }
       // Tiny fictional chill roll in right hand (visible only during idle break when no customers are waiting)
       const chillRoll = new THREE.Group();
       const paper = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.012, 0.11, 8), new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.85 }));
@@ -2569,7 +2580,7 @@
       const ember = new THREE.Mesh(new THREE.SphereGeometry(0.011, 6, 6), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
       ember.position.set(0, -0.20, 0.118); chillRoll.add(ember);
       chillRoll.visible = false;
-      rig.armR.elbow.add(chillRoll);
+      if (!g) rig.armR.elbow.add(chillRoll);
 
       // Soft rising cartoon smoke puffs for idle break
       const smokePuffs = [];
@@ -2583,12 +2594,14 @@
       const bx = -0.7 + i * 1.3;
       rig.group.position.set(bx, 0.16, -16.15);
       scene.add(rig.group);
-      staffEntities.push({ role: 'barista', x: bx, z: -16.15, homeX: bx, phase: i * 1.4, chillRoll, smokePuffs, meshObj: rig });
+      if (g) { rig.group.updateMatrixWorld(true); rig.cast.addApron(0x065f46); }
+      staffEntities.push({ role: 'barista', x: bx, z: -16.15, homeX: bx, phase: i * 1.4, chillRoll: g ? null : chillRoll, smokePuffs: g ? null : smokePuffs, meshObj: rig });
     }
 
     // 2. Cute Cleaner with UNIFIED BROOM (stick + bristles in ONE child group attached cleanly to right hand!)
     for (let i = 0; i < Math.min(2, state.roles.cleaner); i++) {
-      const rig = createAnatomicalHuman({
+      const g = glbStaff('cleaner');
+      const rig = g || createAnatomicalHuman({
         skin: 0xf1c2a0, shirt: 0x0284c7, pants: 0x334155,
         hair: 0x3b2618, hairStyle: 'cap', capColor: 0xf59e0b
       });
@@ -2605,17 +2618,20 @@
 
       rig.group.position.set(1.5, 0.16, -9.5 - i * 2.0);
       scene.add(rig.group);
+      if (g) { rig.group.updateMatrixWorld(true); rig.cast.addApron(0x0369a1); }
       staffEntities.push({ role: 'cleaner', x: 1.5, z: -9.5 - i * 2.0, wpIdx: 0, sweepTimer: 2.2, phase: i, meshObj: rig });
     }
 
     // 3. Cute Stocker carrying a wooden crate cleanly in front of torso
     for (let i = 0; i < Math.min(2, state.roles.stocker); i++) {
-      const rig = createAnatomicalHuman({
+      const g = glbStaff('stocker');
+      const rig = g || createAnatomicalHuman({
         skin: 0xdca580, shirt: 0xd97706, pants: 0x1e293b,
         hair: 0x29170b, hairStyle: 'cap', capColor: 0x9a3412
       });
-      const crate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.28), new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.82 }));
-      crate.position.set(0, 0.22, 0.30); crate.castShadow = true; rig.spinePivot.add(crate);
+      if (g) rig.cast.setCarry('box');
+      else { const crate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.28), new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.82 }));
+      crate.position.set(0, 0.22, 0.30); crate.castShadow = true; rig.spinePivot.add(crate); }
       rig.group.position.set(3.2, 0.16, -15.6);
       scene.add(rig.group);
       staffEntities.push({ role: 'stocker', x: 3.2, z: -15.6, dir: -1, pauseTimer: 1.5, phase: i, meshObj: rig });
@@ -2623,17 +2639,19 @@
 
     // 4. Cute Muscular Security Guard with glossy dark sunglasses at entrance
     for (let i = 0; i < Math.min(2, state.roles.security); i++) {
-      const rig = createAnatomicalHuman({
+      const g = glbStaff('security');
+      const rig = g || createAnatomicalHuman({
         skin: 0x8d5534, shirt: 0x0f172a, pants: 0x090d16,
         hair: 0x090d16, hairStyle: 'short'
       });
-      rig.group.scale.set(1.12, 1.10, 1.12);
+      if (!g) { rig.group.scale.set(1.12, 1.10, 1.12);
       const shades = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.04), new THREE.MeshStandardMaterial({ color: 0x020617, metalness: 0.92, roughness: 0.08 }));
-      shades.position.set(0, 0.21, 0.205); rig.headPivot.add(shades);
-      const sx = i === 0 ? -1.45 : 1.45;
-      rig.group.position.set(sx, 0.16, -7.2);
+      shades.position.set(0, 0.21, 0.205); rig.headPivot.add(shades); }
+      // kapının sağında, teslimat alanının (kapının solu) dışında dururlar
+      const sx = i === 0 ? 1.25 : 2.55, sz = i === 0 ? -7.4 : -7.8;
+      rig.group.position.set(sx, 0.16, sz);
       scene.add(rig.group);
-      staffEntities.push({ role: 'security', x: sx, z: -7.2, phase: i, meshObj: rig });
+      staffEntities.push({ role: 'security', x: sx, z: sz, phase: i, meshObj: rig });
     }
   }
 
@@ -3942,11 +3960,12 @@
     if (window._shopCeilingFan) window._shopCeilingFan.rotation.y += 2.2 * dt;
     const cleanerWps = [[1.4, -8.8], [1.6, -12.6], [-1.6, -12.6], [-1.6, -8.8]];
     const hasCustomerWaiting = npcs.some(n => n.role === 'customer' && (n.state === 'queued' || n.state === 'entering'));
+    lastStaffDt = dt;
     staffEntities.forEach(st => {
       if (st.role === 'barista') {
         st.meshObj.group.position.set(st.homeX, 0.16, st.z);
         st.meshObj.group.rotation.y = 0; // Stay stationed behind counter facing guests!
-        applyBiomechanicalGait(st.meshObj, 0, 0, elapsed);
+        staffAnim(st, 0, 0, elapsed);
 
         if (hasCustomerWaiting) {
           // Actively working at register & espresso machine!
@@ -3988,11 +4007,11 @@
           st.x += (dx / dist) * 1.05 * dt; st.z += (dz / dist) * 1.05 * dt;
           st.meshObj.group.rotation.y = Math.atan2(dx, dz);
           st.phase += 4.0 * dt;
-          applyBiomechanicalGait(st.meshObj, st.phase, 1.05, elapsed);
+          staffAnim(st, st.phase, 1.05, elapsed);
           st.meshObj.armR.shoulder.rotation.x = -0.45;
         } else {
           // Stop in place and sweep cleanly for 2.6 seconds!
-          applyBiomechanicalGait(st.meshObj, 0, 0, elapsed);
+          staffAnim(st, 0, 0, elapsed);
           st.meshObj.armR.shoulder.rotation.x = -0.58;
           st.meshObj.armR.shoulder.rotation.z = 0.10 + Math.sin(elapsed * 6.0) * 0.34;
           st.sweepTimer -= dt;
@@ -4002,20 +4021,20 @@
       } else if (st.role === 'stocker') {
         if (st.pauseTimer > 0) {
           st.pauseTimer -= dt;
-          applyBiomechanicalGait(st.meshObj, 0, 0, elapsed);
+          staffAnim(st, 0, 0, elapsed);
         } else {
           st.x += st.dir * 1.05 * dt;
           if (st.x < 1.6) { st.dir = 1; st.pauseTimer = 1.8; }
           if (st.x > 3.5) { st.dir = -1; st.pauseTimer = 1.8; }
           st.meshObj.group.rotation.y = st.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
           st.phase += 4.2 * dt;
-          applyBiomechanicalGait(st.meshObj, st.phase, 1.05, elapsed);
+          staffAnim(st, st.phase, 1.05, elapsed);
         }
         st.meshObj.group.position.set(st.x, 0.16, st.z);
         st.meshObj.armL.shoulder.rotation.x = -0.85; st.meshObj.armR.shoulder.rotation.x = -0.85;
       } else if (st.role === 'security') {
-        applyBiomechanicalGait(st.meshObj, 0, 0, elapsed);
-        st.meshObj.headPivot.rotation.y = Math.sin(elapsed * 0.9 + st.phase) * 0.42;
+        staffAnim(st, 0, 0, elapsed);
+        if (!st.meshObj.cast) st.meshObj.headPivot.rotation.y = Math.sin(elapsed * 0.9 + st.phase) * 0.42;
       }
     });
     if (tramGroup) {
@@ -4429,7 +4448,15 @@
     // GLB modeller yüklenince dışarıdaki müşterileri yeni modellere dönüştür
     window.addEventListener('models-ready', () => {
       npcs.forEach(n => { if (n.role === 'customer' && n.z > -6.0 && !n.order) swapNpcCharacter(n); });
+      // yakın kaldırımdaki yayalar da gerçek modellere geçer (karşı kıyıdakiler uzakta, hafif kalır)
+      npcs.forEach(n => {
+        if (n.role !== 'pedestrian' || n.z > 0 || n.meshObj.cast) return;
+        const fresh = window.ModelCast && ModelCast.next(); if (!fresh) return;
+        scene.remove(n.meshObj.group); fresh.group.position.copy(n.meshObj.group.position); fresh.group.rotation.y = n.meshObj.group.rotation.y;
+        assignCastToNpc(n, fresh); scene.add(fresh.group);
+      });
     });
+    window.addEventListener('models-more', () => syncStaffEntities());
     if (window.ModelCast && ModelCast.ready()) window.dispatchEvent(new Event('models-ready'));
 
     const rainCount = 900; rainPositions = new Float32Array(rainCount * 3);
@@ -4563,7 +4590,7 @@
     return raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -0.16), pt);
   }
 
-  window.onload = () => (window.OwnerGate ? OwnerGate.whenOpen(initEngine) : initEngine());
+  window.onload = () => initEngine();
 })();
 </script>
 </body>

@@ -52,18 +52,33 @@
       p.p0 = pos.clone().add(new T.Vector3((Math.random() - 0.5) * 0.02, 0, (Math.random() - 0.5) * 0.02));
       p.v0 = big ? new T.Vector3((Math.random() - 0.5) * 0.12, 0.08, (Math.random() - 0.5) * 0.12) : new T.Vector3((Math.random() - 0.5) * 0.03, 0.05, (Math.random() - 0.5) * 0.03);
       if (big && big.isVector3) p.v0.addScaledVector(big, 0.35);
-      p.a = 0.06 + Math.random() * 0.04; p.r0 = big ? 0.07 : 0.025; p.k = big ? 2.2 : 3.4; p.a0 = big ? 0.55 : 0.35;
+      p.a = 0.06 + Math.random() * 0.04; p.r0 = big ? 0.07 : 0.025; p.k = big ? 2.2 : 3.4; p.a0 = big ? 0.55 : 0.35; p.c = 0;
       p.sp.visible = true;
     }
+  }
+  // Ağızdan üfleme akımı: hava sürtünmesiyle yavaşlayan jet  p(t) = p0 + v0·(1 − e^(−ct))/c + ½·a·t²
+  function exhale(mouth, fwd, strength) {
+    let p = lg.smoke.find(q => !q.alive);
+    if (!p) {
+      if (lg.smoke.length > 220) return;
+      const sp = new T.Sprite(new T.SpriteMaterial({ map: smokeTexture(), transparent: true, depthWrite: false, opacity: 0 }));
+      B.scene.add(sp); p = { sp }; lg.smoke.push(p);
+    }
+    p.alive = true; p.t = 0; p.T = 2.2 + Math.random() * 0.8;
+    p.p0 = mouth.clone();
+    p.v0 = fwd.clone().multiplyScalar(0.55 * strength).add(new T.Vector3((Math.random() - 0.5) * 0.08, 0.05 + Math.random() * 0.05, (Math.random() - 0.5) * 0.08));
+    p.c = 2.4; p.a = 0.07 + Math.random() * 0.03; p.r0 = 0.018; p.k = 4.2; p.a0 = 0.5 * strength;
+    p.sp.visible = true;
   }
   function stepSmoke(dt) {
     for (const p of lg.smoke) {
       if (!p.alive) continue;
       p.t += dt; const t = p.t;
       if (t >= p.T) { p.alive = false; p.sp.visible = false; continue; }
-      p.sp.position.set(p.p0.x + p.v0.x * t, p.p0.y + p.v0.y * t + 0.5 * p.a * t * t, p.p0.z + p.v0.z * t);
+      const f = p.c ? (1 - Math.exp(-p.c * t)) / p.c : t;
+      p.sp.position.set(p.p0.x + p.v0.x * f, p.p0.y + p.v0.y * f + 0.5 * p.a * t * t, p.p0.z + p.v0.z * f);
       p.sp.scale.setScalar(p.r0 * (1 + p.k * t) * 2);
-      const f = 1 - t / p.T; p.sp.material.opacity = p.a0 * f * f;
+      const fd = 1 - t / p.T; p.sp.material.opacity = p.a0 * fd * fd;
     }
   }
 
@@ -84,27 +99,49 @@
     if (hand) { j.position.set(0.02, -0.06, 0.05); j.rotation.set(0.3, 0.4, 0); hand.add(j); }
     else { j.position.set(0.25, 1.0, 0.25); n.meshObj.group.add(j); }
     n.lgJoint = j;
-    c.onPuff && c.onPuff(() => {   // nefesi verirken ağızdan büyük duman bulutu
-      const h = c.headWorld(); const fwd = new T.Vector3(Math.sin(n.meshObj.group.rotation.y), 0, Math.cos(n.meshObj.group.rotation.y));
-      h.y -= 0.06; h.addScaledVector(fwd, 0.1); setTimeout(() => emit(h, 6, fwd), 900);
-      j.userData.glow = 1;
-    });
   }
-  function dropJoint(n) { if (n.lgJoint) { n.lgJoint.parent && n.lgJoint.parent.remove(n.lgJoint); n.lgJoint = null; } const c = n.meshObj.cast; c && c.onPuff && c.onPuff(null); }
+  function dropJoint(n) { if (n.lgJoint) { n.lgJoint.parent && n.lgJoint.parent.remove(n.lgJoint); n.lgJoint = null; } }
+  // Her kare: joint yönü (çekerken filtre dudakta), kor parlaması, uçtan ince duman, ağızdan üfleme
+  let _v1 = null, _v2 = null;
+  function smokeFrame(n, dt) {
+    if (!_v1) { _v1 = new T.Vector3(); _v2 = new T.Vector3(); }
+    const c = n.meshObj.cast, s = c.smokeState ? c.smokeState() : null, j = n.lgJoint;
+    if (j) {
+      const hand = j.parent ? j.parent.getWorldPosition(_v1) : null;
+      if (hand && s) {
+        if (s.ph === 'inhale' || s.ph === 'raise' && s.t > 0.6) j.lookAt(_v2.copy(hand).multiplyScalar(2).sub(s.mouth));   // kor dışarı, filtre ağza
+        else j.lookAt(_v2.copy(hand).addScaledVector(s.fwd, 0.8).add(new T.Vector3(0, -0.25, 0)));
+      }
+      const e = j.userData; const want = s && s.ph === 'inhale' ? 1 : 0;
+      e.glow = (e.glow || 0) + (want - (e.glow || 0)) * Math.min(1, dt * (want ? 6 : 1.5));
+      e.ember.material.emissiveIntensity = 0.9 + 3.2 * e.glow;
+      if (!s || s.ph !== 'inhale') {
+        n.lgSmokeAcc = (n.lgSmokeAcc || 0) + dt;
+        if (n.lgSmokeAcc > 0.33) { n.lgSmokeAcc = 0; emit(e.ember.getWorldPosition(new T.Vector3()), 1, false); }
+      }
+    }
+    if (s && s.ph === 'exhale' && s.t < 1.25) {
+      n.lgExAcc = (n.lgExAcc || 0) + dt;
+      while (n.lgExAcc > 0.07) { n.lgExAcc -= 0.07; const up = new T.Vector3(0, 0.35, 0); exhale(s.mouth, s.fwd.clone().add(up).normalize(), 1 - s.t / 1.6); }
+    }
+  }
 
   // ---- Dükkân içi: küllük + bong masalara, mantar köşeye ----------------------
   const TABLES = [-8.6, -10.8, -13.0];
   async function buildShopProps() {
     const [ash, bong, mush] = await Promise.all([loadGLB('ashtray.glb'), loadGLB('bong.glb'), loadGLB('mushroom.glb')]);
     const topY = 0.16 + 0.77;
+    lg.ashW = TABLES.map(tz => new T.Vector3(-2.85, topY + 0.02, tz - 0.14));
+    lg.bongW = TABLES.map(tz => new T.Vector3(-3.38, topY + 0.16, tz + 0.05));
     if (ash) { const a = fit(ash, 0.15, 'max'); TABLES.forEach(tz => { const c = a.clone(); c.position.set(-2.85, topY, tz - 0.14); B.scene.add(c); }); lg.props.ash = a; }
     if (bong) {
       const b = fit(bong, 0.36, 'y'); lg.props.bong = b;
       lg.bongs = TABLES.map(tz => { const c = b.clone(); c.position.set(-3.38, topY, tz + 0.05); c.rotation.y = Math.random() * 6; B.scene.add(c); return c; });
     }
     if (mush) {
-      const m = fit(mush, 1.15, 'y'); m.position.set(-3.78, 0.16, -6.98); m.rotation.y = 0.85; B.scene.add(m);
-      B.colliders.push({ minX: -4.2, maxX: -3.38, minZ: -7.38, maxZ: -6.58, tag: 'lg_mushroom' });
+      // arka-sol köşe: teslimat kutularından uzak, kapıdan çapraz bakınca görünür
+      const m = fit(mush, 1.05, 'y'); m.position.set(-3.82, 0.16, -15.55); m.rotation.y = 0.7; B.scene.add(m);
+      B.colliders.push({ minX: -4.22, maxX: -3.42, minZ: -15.95, maxZ: -15.15, tag: 'lg_mushroom' });
     }
     // 6 sandalye (masa x = −3.05, sandalyeler z ± 0.62, masaya bakar)
     TABLES.forEach((tz, ti) => [-0.62, 0.62].forEach(dz => lg.seats.push({ x: -3.05, z: tz + dz, face: dz < 0 ? 0 : Math.PI, seatY: 0.64 - 0.16, table: ti, aisle: { x: -2.12, z: tz + dz * 0.8 }, npc: null })));
@@ -232,9 +269,9 @@
     if (lg.waiter || !window.ModelCast || !ModelCast.has('glb_char4')) return;
     const rig = ModelCast.build('glb_char4'); if (!rig) return;
     // önlük: garson olduğu belli olsun
-    const apron = new T.Mesh(new T.BoxGeometry(0.36, 0.5, 0.02), new T.MeshStandardMaterial({ color: 0x0f5132, roughness: 0.8 }));
-    apron.position.set(0, rig.stature * 0.47, 0.13 * rig.stature / 1.75); rig.pelvisPivot.add(apron);
     B.scene.add(rig.group);
+    rig.group.position.set(STATION.x, 0.16, STATION.z); rig.group.updateMatrixWorld(true);
+    rig.cast.addApron && rig.cast.addApron(0x0f5132);   // kumaş fiziğiyle sallanan önlük
     lg.waiter = { rig, x: STATION.x, z: STATION.z, tx: STATION.x, tz: STATION.z, task: null, t: 0, yaw: Math.PI, speed: rig.cast.speed * 1.05 };
   }
   function waiterFrame(dt, el) {
@@ -304,6 +341,59 @@
     MarketMode.emote(n, msg); n.state = 'leaving';
   }
 
+
+  // ---- PERFORMANS: hareket etmeyen dekoru malzemeye göre tek ağda birleştir (çizim çağrısı ↓) ----
+  function mergeStatic(group) {
+    group.updateMatrixWorld(true);
+    const inv = new T.Matrix4().copy(group.matrixWorld).invert(), buckets = new Map();
+    group.traverse(o => {
+      if (!o.isMesh || o.isSkinnedMesh || o.isInstancedMesh || Array.isArray(o.material) || !o.geometry || !o.geometry.attributes.position) return;
+      for (let p = o; p && p !== group; p = p.parent) if (!p.visible) return;
+      if (o.material.transparent || o.geometry.morphAttributes && Object.keys(o.geometry.morphAttributes).length) return;
+      const key = o.material.uuid + (o.castShadow ? 's' : '') + (o.receiveShadow ? 'r' : '');
+      if (!buckets.has(key)) buckets.set(key, { mat: o.material, cast: o.castShadow, rec: o.receiveShadow, list: [] });
+      buckets.get(key).list.push(o);
+    });
+    let removed = 0;
+    for (const b of buckets.values()) {
+      if (b.list.length < 2) continue;
+      const hasUV = b.list.every(o => o.geometry.attributes.uv);
+      let nv = 0, ni = 0;
+      for (const o of b.list) { const g = o.geometry; nv += g.attributes.position.count; ni += g.index ? g.index.count : g.attributes.position.count; }
+      const P = new Float32Array(nv * 3), N = new Float32Array(nv * 3), U = hasUV ? new Float32Array(nv * 2) : null, I = new Uint32Array(ni);
+      let vo = 0, io = 0; const m = new T.Matrix4(), nm = new T.Matrix3(), v = new T.Vector3();
+      for (const o of b.list) {
+        const g = o.geometry, pa = g.attributes.position, na = g.attributes.normal, ua = g.attributes.uv;
+        m.multiplyMatrices(inv, o.matrixWorld); nm.getNormalMatrix(m);
+        for (let i = 0; i < pa.count; i++) {
+          v.fromBufferAttribute(pa, i).applyMatrix4(m); P[(vo + i) * 3] = v.x; P[(vo + i) * 3 + 1] = v.y; P[(vo + i) * 3 + 2] = v.z;
+          if (na) { v.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); N[(vo + i) * 3] = v.x; N[(vo + i) * 3 + 1] = v.y; N[(vo + i) * 3 + 2] = v.z; }
+          if (U) { U[(vo + i) * 2] = ua.getX(i); U[(vo + i) * 2 + 1] = ua.getY(i); }
+        }
+        if (g.index) for (let i = 0; i < g.index.count; i++) I[io++] = g.index.getX(i) + vo;
+        else for (let i = 0; i < pa.count; i++) I[io++] = i + vo;
+        vo += pa.count;
+      }
+      const mg = new T.BufferGeometry();
+      mg.setAttribute('position', new T.BufferAttribute(P, 3)); mg.setAttribute('normal', new T.BufferAttribute(N, 3));
+      if (U) mg.setAttribute('uv', new T.BufferAttribute(U, 2));
+      mg.setIndex(new T.BufferAttribute(I, 1)); mg.computeBoundingSphere();
+      const mesh = new T.Mesh(mg, b.mat); mesh.castShadow = b.cast; mesh.receiveShadow = b.rec; mesh.name = 'merged';
+      group.add(mesh);
+      for (const o of b.list) { o.parent && o.parent.remove(o); removed++; }
+    }
+    return removed;
+  }
+  function perfPass() {
+    let n = 0;
+    // kanal evleri (sokağın iki yakası) + VIP salon dekoru
+    B.scene.children.slice().forEach(o => {
+      if (o.isGroup && (Math.abs(o.position.z + 6.8) < 0.01 || Math.abs(o.position.z - 32.2) < 0.01) && o.position.y === 0) n += mergeStatic(o);
+    });
+    const vip = B.scene.getObjectByName('vip-lounge'); if (vip) n += mergeStatic(vip);
+    lg.merged = n;
+  }
+
   // ---- MarketMode kancaları ------------------------------------------------------
   function admit(n) {
     if (!lg.ready || !n.meshObj || !n.meshObj.cast || !n.meshObj.cast.canSit) return false;
@@ -324,7 +414,8 @@
   function sitDown(n, seat) {
     n.x = seat.x; n.z = seat.z; n.targetX = seat.x; n.targetZ = seat.z;
     n.meshObj.group.rotation.y = seat.face;
-    n.meshObj.cast.sit(seat.seatY, null);
+    const o = seat.vip ? {} : { table: { top: 0.93, z: 0.23 }, ash: lg.ashW && lg.ashW[seat.table], bong: lg.bongW && lg.bongW[seat.table] };
+    n.meshObj.cast.sit(seat.seatY, null, o);
   }
   function arrive(n, dt) {
     const st = n.state; if (!st || st.slice(0, 3) !== 'lg_') return false;
@@ -339,13 +430,11 @@
       case 'lg_t_ordered': break;
       case 'lg_t_smoke': case 'lg_v_smoke':
         n.lgT += dt;
-        if (n.lgJoint) {   // korun ucundan ince duman
-          n.lgSmokeAcc = (n.lgSmokeAcc || 0) + dt;
-          if (n.lgSmokeAcc > 0.28) { n.lgSmokeAcc = 0; emit(n.lgJoint.userData.ember.getWorldPosition(new T.Vector3()), 1, false); }
-          const e = n.lgJoint.userData; e.glow = Math.max(0, (e.glow || 0) - dt * 0.8); e.ember.material.emissiveIntensity = 1.0 + 2.2 * e.glow;
-        } else if (n.lgWhat === 'bong') {
+        if (n.lgJoint) smokeFrame(n, dt);
+        else if (n.lgWhat === 'bong') {   // bong: çek (~2 s) → kafa kalkar → ağızdan yukarı doğru bulut
           n.lgBongAcc = (n.lgBongAcc || 0) + dt;
-          if (n.lgBongAcc > 8) { n.lgBongAcc = 0; const h = n.meshObj.cast.headWorld(); setTimeout(() => emit(h, 7, new T.Vector3(0, 0.2, 0)), 600); }
+          if (n.lgBongAcc > 7.5 && n.lgBongAcc < 8.9) { n.lgExAcc = (n.lgExAcc || 0) + dt; while (n.lgExAcc > 0.06) { n.lgExAcc -= 0.06; const m = n.meshObj.cast.mouthWorld(); const f = new T.Vector3(Math.sin(n.meshObj.group.rotation.y), 0.9, Math.cos(n.meshObj.group.rotation.y)).normalize(); exhale(m, f, 1); } }
+          if (n.lgBongAcc > 10) n.lgBongAcc = 0;
         }
         if (n.lgT > n.lgDur) endSession(n, seat);
         break;
@@ -369,7 +458,10 @@
     B = window.GameBridge; T = window.THREE;
     if (!B || !B.scene || !T.GLTFLoader) return;
     if (window.ModelCast) ModelCast.reserve('glb_char4');   // Joris garson olarak çalışır
-    Promise.all([buildShopProps(), buildVIP().catch(e => console.warn('VIP', e))]).then(() => { lg.ready = true; });
+    Promise.all([buildShopProps(), buildVIP().catch(e => console.warn('VIP', e))]).then(() => {
+      try { perfPass(); } catch (e) { console.warn('perf', e); }
+      lg.ready = true;
+    });
   }
   if (window.ModelCast) ModelCast.reserve('glb_char4');
   window.addEventListener('game-ready', init);
