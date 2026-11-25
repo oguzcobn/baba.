@@ -1514,6 +1514,35 @@
     }
   `;
 
+
+  // FXAA (Lottes) + hafif keskinleştirme: sahne HDR hedefe çizildiği için tarayıcının kenar yumuşatması
+  // devre dışı kalıyordu; kenarlar burada yumuşatılır, ardından ince detay için hafif unsharp uygulanır.
+  const FXAA_FRAG = `
+    uniform sampler2D tDiffuse; uniform vec2 uTexelSize; uniform float uSharp; varying vec2 vUv;
+    void main() {
+      vec2 t = uTexelSize;
+      vec3 nw = texture2D(tDiffuse, vUv + vec2(-1.0, -1.0) * t).rgb, ne = texture2D(tDiffuse, vUv + vec2(1.0, -1.0) * t).rgb;
+      vec3 sw = texture2D(tDiffuse, vUv + vec2(-1.0, 1.0) * t).rgb, se = texture2D(tDiffuse, vUv + vec2(1.0, 1.0) * t).rgb;
+      vec3 mC = texture2D(tDiffuse, vUv).rgb;
+      vec3 L = vec3(0.299, 0.587, 0.114);
+      float lNW = dot(nw, L), lNE = dot(ne, L), lSW = dot(sw, L), lSE = dot(se, L), lM = dot(mC, L);
+      float lMin = min(lM, min(min(lNW, lNE), min(lSW, lSE))), lMax = max(lM, max(max(lNW, lNE), max(lSW, lSE)));
+      vec2 dir = vec2(-((lNW + lNE) - (lSW + lSE)), ((lNW + lSW) - (lNE + lSE)));
+      float red = max((lNW + lNE + lSW + lSE) * 0.25 * (1.0 / 8.0), 1.0 / 128.0);
+      float rcp = 1.0 / (min(abs(dir.x), abs(dir.y)) + red);
+      dir = clamp(dir * rcp, vec2(-8.0), vec2(8.0)) * t;
+      vec3 a = 0.5 * (texture2D(tDiffuse, vUv + dir * (1.0 / 3.0 - 0.5)).rgb + texture2D(tDiffuse, vUv + dir * (2.0 / 3.0 - 0.5)).rgb);
+      vec3 b = a * 0.5 + 0.25 * (texture2D(tDiffuse, vUv + dir * -0.5).rgb + texture2D(tDiffuse, vUv + dir * 0.5).rgb);
+      float lB = dot(b, L);
+      vec3 col = (lB < lMin || lB > lMax) ? a : b;
+      // kenar olmayan yerlerde detay keskinleştirme (kontrast uyarlamalı)
+      float edge = smoothstep(0.04, 0.16, lMax - lMin);
+      vec3 blur = (nw + ne + sw + se) * 0.25;
+      col += (mC - blur) * uSharp * (1.0 - edge);
+      gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+    }
+  `;
+  let ldrTarget = null, fxaaMat = null, fxaaQuad = null;
   // =========================================================================
   // 5. ENGINE GLOBALS & MATHEMATICAL 3D ASSET BUILDERS
   // =========================================================================
@@ -2257,6 +2286,139 @@
     const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.48, 6), rimMat);
     handle.rotation.x = Math.PI / 2; handle.position.set(0.35, 1.02, 0); g.add(handle);
     return g;
+  }
+
+
+  // =========================================================================
+  // ŞEHİR DEVAMI — haritanın sol ve sağı (x ±27 … ±170): kanal, rıhtımlar ve sıra evler devam eder.
+  // Oyuncu x ±28'in ötesine geçemez (resolvePlayerCollision), burası yalnızca manzaradır.
+  // Ucuz çizim: aynı malzemeyi paylaşan tüm parçalar tek geometride birleştirilir (≈10 çizim çağrısı).
+  // =========================================================================
+  function mergeGeos(list) {
+    let n = 0; const parts = list.map(({ geo, m }) => { const g = (geo.index ? geo.toNonIndexed() : geo.clone()); g.applyMatrix4(m); n += g.attributes.position.count; return g; });
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3), uv = new Float32Array(n * 2); let o = 0;
+    for (const g of parts) {
+      pos.set(g.attributes.position.array, o * 3); nor.set(g.attributes.normal.array, o * 3);
+      if (g.attributes.uv) uv.set(g.attributes.uv.array, o * 2);
+      o += g.attributes.position.count; g.dispose();
+    }
+    const out = new THREE.BufferGeometry();
+    out.setAttribute('position', new THREE.BufferAttribute(pos, 3)); out.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    out.computeBoundingSphere(); return out;
+  }
+  function facadeTextures() {
+    const W = 256, H = 512, cols = 3, floors = 4;
+    const mk = (lit) => { const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d'); g.clearRect(0, 0, W, H);
+      for (let f = 0; f < floors; f++) for (let k = 0; k < cols; k++) {
+        const x = 26 + k * 74, y = 30 + f * 112, w = 52, h = 84;
+        if (!lit) { g.fillStyle = '#efe9dc'; g.fillRect(x - 5, y - 5, w + 10, h + 10); g.fillStyle = '#d6cbb6'; g.fillRect(x - 8, y + h + 4, w + 16, 7); }
+        const gr = g.createLinearGradient(x, y, x + w, y + h);
+        if (lit) { const on = ((f * 7 + k * 3) % 5) < 3; gr.addColorStop(0, on ? '#ffcf86' : '#000'); gr.addColorStop(1, on ? '#ff9f43' : '#000'); }
+        else { gr.addColorStop(0, '#2c4258'); gr.addColorStop(0.55, '#14202d'); gr.addColorStop(1, '#3d5a73'); }
+        g.fillStyle = gr; g.fillRect(x, y, w, h);
+        if (!lit) { g.fillStyle = '#efe9dc'; g.fillRect(x + w / 2 - 2, y, 4, h); g.fillRect(x, y + h * 0.42, w, 4); }
+      }
+      // zemin kat: kapı + vitrin
+      if (!lit) { g.fillStyle = '#1f3b2f'; g.fillRect(30, 470, 44, 42); g.fillStyle = '#efe9dc'; g.fillRect(100, 468, 130, 44); }
+      const vg = g.createLinearGradient(104, 472, 226, 512); vg.addColorStop(0, lit ? '#ffd79a' : '#24384a'); vg.addColorStop(1, lit ? '#ffad5a' : '#101a24');
+      g.fillStyle = vg; g.fillRect(104, 472, 122, 40);
+      const t = new THREE.CanvasTexture(c); if (!lit) t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; };
+    return { map: mk(false), emissive: mk(true) };
+  }
+  function buildCityExtension() {
+    const by = {};   // malzeme anahtarı → [{geo, m}]
+    const add = (key, geo, x, y, z, ry = 0, sx = 1, sy = 1, sz = 1) => {
+      const m = new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, ry, 0)), new THREE.Vector3(sx, sy, sz));
+      (by[key] || (by[key] = [])).push({ geo, m });
+    };
+    const box = new THREE.BoxGeometry(1, 1, 1), plane = new THREE.PlaneGeometry(1, 1);
+    const roofGeo = new THREE.ConeGeometry(0.74, 1, 4); roofGeo.rotateY(Math.PI / 4);
+    const tri = new THREE.Shape(); tri.moveTo(-0.5, 0); tri.lineTo(0, 1); tri.lineTo(0.5, 0); tri.closePath();
+    const gableGeo = new THREE.ExtrudeGeometry(tri, { depth: 1, bevelEnabled: false });
+    const leafA = new THREE.IcosahedronGeometry(1.5, 2), leafB = new THREE.IcosahedronGeometry(1.05, 2);
+    let seed = 11; const R = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    function house(cx, zFront, f, w, h, d) {
+      const bk = 'brick' + Math.floor(R() * brickMaterials.length);
+      const cz = zFront - f * d / 2, ry = f > 0 ? 0 : Math.PI;
+      add(bk, box, cx, h / 2, cz, 0, w - 0.06, h, d);
+      add('facade', plane, cx, h * 0.5 - 0.1, zFront + f * 0.035, ry, w - 0.5, h - 0.6, 1);
+      const type = R();
+      if (type < 0.4) for (let k = 0; k < 4; k++) add(bk, box, cx, h + 0.33 + k * 0.66, zFront - f * 0.22, 0, (w - 0.1) * (1 - k * 0.21), 0.66, 0.46);
+      else add(bk, gableGeo, cx, h, zFront - f * (type < 0.7 ? 0.44 : 0.44), 0, w - 0.1, type < 0.7 ? 2.6 : 3.2, 0.44);
+      add('roof', roofGeo, cx, h + 1.2, cz, 0, w, 2.6, d);
+      add('trim', box, cx, h, zFront + f * 0.05, 0, w + 0.12, 0.22, 0.3);
+    }
+    function row(x0, x1, zFront, f) {
+      const dir = Math.sign(x1 - x0); let x = x0;
+      while ((x1 - x) * dir > 2.4) { const w = 4.6 + R() * 1.5; house(x + dir * w / 2, zFront, f, w, 11.2 + R() * 4.2, 10.5); x += dir * w; }
+    }
+    for (const sgn of [-1, 1]) {
+      // rıhtımlar, kaldırımlar, bisiklet yolları, kanal kenarı taşları, su
+      const cx = sgn * 102, L = 136;
+      add('cobble', box, cx, -0.7, -10, 0, L, 1.4, 20); add('cobble', box, cx, -0.7, 35, 0, L, 1.4, 18);
+      add('walk', box, cx, 0.06, -4.8, 0, L, 0.12, 3.2); add('walk', box, cx, 0.06, 30.8, 0, L, 0.12, 3.2);
+      add('bike', box, cx, 0.015, -2.3, 0, L, 0.03, 1.8); add('bike', box, cx, 0.015, 28.3, 0, L, 0.03, 1.8);
+      add('coping', box, cx, 0.04, -0.15, 0, L, 0.18, 0.45); add('coping', box, cx, 0.04, 26.15, 0, L, 0.18, 0.45);
+      // sıra evler (mevcut sıraların bittiği yerden başlar)
+      row(sgn > 0 ? 30.6 : -27.1, sgn * 166, -6.8, 1);
+      row(sgn > 0 ? 26.6 : -26.7, sgn * 166, 32.2, -1);
+      // kanalın kıvrıldığı uç: karşıdan bakan bir blok manzarayı kapatır
+      for (let z = -18; z < 44; z += 5.3) {   // cepheler kanala (içeriye) bakar
+        const w = 5.2, h = 12 + R() * 3, d = 10.5, fx = sgn * 168, bk = 'brick' + Math.floor(R() * brickMaterials.length), zc = z + w / 2;
+        add(bk, box, fx + sgn * d / 2, h / 2, zc, 0, d, h, w - 0.06);
+        add('facade', plane, fx - sgn * 0.035, h * 0.5 - 0.1, zc, -sgn * Math.PI / 2, w - 0.5, h - 0.6, 1);
+        add('roof', roofGeo, fx + sgn * d / 2, h + 1.2, zc, 0, d, 2.6, w);
+        add('trim', box, fx - sgn * 0.05, h, zc, 0, 0.3, 0.22, w + 0.12);
+      }
+      // kemer köprüler
+      for (const bxp of [sgn * 64, sgn * 118]) {
+        for (let i = 0; i < 10; i++) { const zm = (i + 0.5) / 10 * 26, a = Math.sin(zm / 26 * Math.PI) * 1.3; add('stone', box, bxp, a - 0.1, zm, 0, 6.4, 0.4, 2.8); add('rail', box, bxp - 3.05, a + 0.5, zm, 0, 0.08, 0.9, 2.7); add('rail', box, bxp + 3.05, a + 0.5, zm, 0, 0.08, 0.9, 2.7); }
+      }
+      // karaağaçlar ve fenerler iki rıhtım boyunca
+      for (let x = sgn * 34; Math.abs(x) < 164; x += sgn * 9) for (const z of [-0.6, 26.6]) {
+        if (Math.abs(Math.abs(x) - 64) < 4 || Math.abs(Math.abs(x) - 118) < 4) continue;
+        const s = 0.85 + R() * 0.35;
+        add('trunk', new THREE.CylinderGeometry(0.14, 0.2, 3.2, 6), x, 1.6, z, 0, 1, s, 1);
+        add('leaf', leafA, x, 3.6 * s + 0.4, z, R() * 3, 1.25, 1.0, 1.25);
+        add('leaf', leafB, x + 0.7, 3.2 * s + 0.6, z + 0.4, 0, 1.1, 0.9, 1.1);
+        add('iron', new THREE.CylinderGeometry(0.05, 0.08, 4, 6), x + 3.2, 2, z, 0);
+        add('lamp', new THREE.OctahedronGeometry(0.22, 1), x + 3.2, 4.15, z, 0);
+      }
+      // demirli tekneler
+      for (let k = 0; k < 5; k++) { const bx = sgn * (40 + k * 25 + R() * 8), bz = k % 2 ? 2.2 : 23.8; add('hull', box, bx, -0.9, bz, 0, 6.5, 0.7, 2.0); add('cabin', box, bx - 0.6, -0.35, bz, 0, 3.2, 0.6, 1.5); }
+    }
+    // su: aynı kanal malzemesi, iki uca uzatıldı
+    for (const sgn of [-1, 1]) {
+      const wg = new THREE.PlaneGeometry(140, 26.4, 28, 10); wg.rotateX(-Math.PI / 2);
+      const wm = new THREE.Mesh(wg, waterMat); wm.position.set(sgn * 105.5, -1.15, 13.0); scene.add(wm);
+    }
+    const ft = facadeTextures();
+    const facadeMat = new THREE.MeshStandardMaterial({ map: ft.map, emissiveMap: ft.emissive, emissive: 0xffd9a0, emissiveIntensity: 0.03, transparent: true, alphaTest: 0.4, roughness: 0.35, metalness: 0.15 });
+    wallenGlow.push({ mat: facadeMat, base: 0.03, night: 0.5 });
+    const lampMat = new THREE.MeshStandardMaterial({ color: 0xfff5d6, emissive: 0xffb347, emissiveIntensity: 0.2 });
+    windowGlowMats.push(lampMat);
+    const mats = {
+      facade: facadeMat, roof: roofMat, cobble: cobbleMat, lamp: lampMat,
+      walk: new THREE.MeshStandardMaterial({ color: 0x7c7872, roughness: 0.82 }), bike: new THREE.MeshStandardMaterial({ color: 0x8b3a2e, roughness: 0.78 }),
+      coping: new THREE.MeshStandardMaterial({ color: 0xb8b2a6, roughness: 0.72 }), trim: new THREE.MeshStandardMaterial({ color: 0xe6dfd1, roughness: 0.68 }),
+      stone: new THREE.MeshStandardMaterial({ color: 0xb9b2a7, roughness: 0.74 }), rail: new THREE.MeshStandardMaterial({ color: 0x162b22, metalness: 0.7, roughness: 0.4 }),
+      trunk: new THREE.MeshStandardMaterial({ color: 0x4b3828, roughness: 0.92 }), leaf: new THREE.MeshStandardMaterial({ color: 0x3b6e35, roughness: 0.82 }),
+      iron: new THREE.MeshStandardMaterial({ color: 0x15221d, metalness: 0.78, roughness: 0.38 }),
+      hull: new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.5 }), cabin: new THREE.MeshStandardMaterial({ color: 0xe5e7eb, roughness: 0.5 })
+    };
+    brickMaterials.forEach((bm, i) => { mats['brick' + i] = bm; });
+    for (const k in by) {
+      if (k === '__last' || !mats[k]) continue;
+      const mesh = new THREE.Mesh(mergeGeos(by[k]), mats[k]);
+      mesh.receiveShadow = k === 'cobble' || k === 'walk'; mesh.castShadow = false; mesh.matrixAutoUpdate = false; mesh.updateMatrix();
+      mesh.name = 'city-ext-' + k; scene.add(mesh);
+    }
+  }
+
+  // Doku keskinliği: eğik bakılan zemin, tuğla ve çatı dokularında anizotropik süzme
+  function sharpenTextures() {
+    const maxA = Math.min(16, renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1);
+    scene.traverse(o => { if (!o.material) return; [].concat(o.material).forEach(m => ['map', 'normalMap', 'roughnessMap', 'emissiveMap'].forEach(k => { const t = m[k]; if (t && t.anisotropy < maxA) { t.anisotropy = maxA; t.needsUpdate = true; } })); });
   }
 
   function buildStreetProps() {
@@ -3114,7 +3276,7 @@
   window.setGfxQuality = function (q) {
     perfGov.mode = q; perfGov.acc = perfGov.n = 0;
     const p = GFX_PRESETS[q] || GFX_PRESETS.med;
-    if (q === 'auto') { perfGov.shadowsOff = false; perfGov.shadowEvery = 2; setShadows(true, 1024, false); setDpr(Math.min(window.devicePixelRatio || 1, 1.25)); return; }
+    if (q === 'auto') { const mob = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent); perfGov.shadowsOff = false; perfGov.shadowEvery = 2; setShadows(true, mob ? 1024 : 2048, !mob); setDpr(mob ? Math.min(window.devicePixelRatio || 1, 1.25) : Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2)); return; }
     perfGov.shadowEvery = p.every; setShadows(p.shadows, p.map, p.soft); setDpr(Math.min(window.devicePixelRatio || 1, p.dpr) || p.dpr);
   };
   function perfGovern() {
@@ -3127,7 +3289,7 @@
     const avg = perfGov.acc / perfGov.n; perfGov.acc = 0; perfGov.n = 0; perfGov.fps = 1000 / avg;
     if (perfGov.mode !== 'auto') return;            // sabit kalite: asla otomatik düşmez
     // OTOMATİK: 45 FPS tabanı (22.2 ms). Altına inerse çözünürlüğü düşür; bolca pay varsa yükselt
-    const cap = Math.min(window.devicePixelRatio || 1, 1.75);
+    const cap = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? Math.min(window.devicePixelRatio || 1, 1.75) : Math.min(Math.max(window.devicePixelRatio || 1, 1.5), 2.0);
     if (perfGov.dpr == null) perfGov.dpr = renderer.getPixelRatio();
     let d = perfGov.dpr;
     if (avg > 21.5) d = Math.max(0.5, d * (avg > 30 ? 0.8 : 0.9));
@@ -3157,6 +3319,7 @@
     gtaoTarget.setSize(Math.max(1, Math.floor(rw * 0.5)), Math.max(1, Math.floor(rh * 0.5)));
     if (gtaoMat) gtaoMat.uniforms.uTexelSize.value.set(1 / rw, 1 / rh);
     if (postMat) postMat.uniforms.uTexelSize.value.set(1 / rw, 1 / rh);
+    if (ldrTarget) { ldrTarget.setSize(rw, rh); fxaaMat.uniforms.uTexelSize.value.set(1 / rw, 1 / rh); }
   }
 
   // =========================================================================
@@ -4524,15 +4687,15 @@
   function initEngine() {
     const container = document.getElementById('canvas-container');
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 320);
+    camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.1, 420);
 
     const mobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) || Math.min(screen.width, screen.height) < 820;
     renderer = new THREE.WebGLRenderer({ antialias: !mobile, powerPreference: 'high-performance', preserveDrawingBuffer: false });
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.25 : 1.75);
+    const dpr = Math.min(Math.max(window.devicePixelRatio || 1, mobile ? 1 : 1.5), mobile ? 1.25 : 2.0);   // masaüstünde 1× ekranda da 1.5× süper örnekleme
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.setPixelRatio(dpr);
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.type = mobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;   // yumuşak gölge kenarları
     renderer.outputEncoding = THREE.LinearEncoding; // Post-process composite handles ACES + sRGB gamma!
     container.appendChild(renderer.domElement);
 
@@ -4553,19 +4716,23 @@
     const fsGeo = new THREE.PlaneGeometry(2, 2);
     gtaoMat = new THREE.ShaderMaterial({
       vertexShader: FULLSCREEN_VERT, fragmentShader: GTAO_FRAG,
-      uniforms: { tDepth: { value: depthTex }, uTexelSize: { value: new THREE.Vector2(1 / rw, 1 / rh) }, uNear: { value: 0.1 }, uFar: { value: 320.0 } }
+      uniforms: { tDepth: { value: depthTex }, uTexelSize: { value: new THREE.Vector2(1 / rw, 1 / rh) }, uNear: { value: 0.1 }, uFar: { value: 420.0 } }
     });
     postMat = new THREE.ShaderMaterial({
       vertexShader: FULLSCREEN_VERT, fragmentShader: POST_FRAG,
       uniforms: {
         tDiffuse: { value: hdrTarget.texture }, tDepth: { value: depthTex }, tAO: { value: gtaoTarget.texture },
-        uTexelSize: { value: new THREE.Vector2(1 / rw, 1 / rh) }, uNear: { value: 0.1 }, uFar: { value: 320.0 },
+        uTexelSize: { value: new THREE.Vector2(1 / rw, 1 / rh) }, uNear: { value: 0.1 }, uFar: { value: 420.0 },
         uExposure: { value: liveParams.exposure }, uFogDensity: { value: 0.0045 },
         uFogColor: { value: new THREE.Color(0x9fb8cf) }, uSunColor: { value: new THREE.Color(0xfff1dc) }, uPipeMode: { value: 0.0 }
       }
     });
     gtaoQuad = new THREE.Mesh(fsGeo, gtaoMat);
     postQuad = new THREE.Mesh(fsGeo, postMat);
+    ldrTarget = new THREE.WebGLRenderTarget(rw, rh, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
+    fxaaMat = new THREE.ShaderMaterial({ vertexShader: FULLSCREEN_VERT, fragmentShader: FXAA_FRAG,
+      uniforms: { tDiffuse: { value: ldrTarget.texture }, uTexelSize: { value: new THREE.Vector2(1 / rw, 1 / rh) }, uSharp: { value: 0.35 } } });
+    fxaaQuad = new THREE.Mesh(fsGeo, fxaaMat);
 
     // Physical Sky + Volumetric Clouds
     skyMat = new THREE.ShaderMaterial({
@@ -4585,7 +4752,8 @@
     // Physical Sun + Hemisphere GI + Canal Bounce Light
     sunLight = new THREE.DirectionalLight(0xfff1dc, liveParams.sunIntensity);
     sunLight.position.set(28, 42, 22); sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(1024, 1024);
+    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.radius = 2.5; sunLight.shadow.normalBias = 0.02;
     sunLight.shadow.camera.left = -35; sunLight.shadow.camera.right = 35;
     sunLight.shadow.camera.top = 35; sunLight.shadow.camera.bottom = -35;
     sunLight.shadow.bias = -0.0005;
@@ -4669,6 +4837,7 @@
     buildDeWallen(brickMaterials[3 % brickMaterials.length]);
     buildBridge(brickMaterials[1]);
     buildStreetProps();
+    buildCityExtension();
 
     const pObj = createAnatomicalHuman({ sex: 'M', stature: 1.78, skin: 0xefc0a0, shirt: 0x059669, pants: 0x1e293b, hair: 0x3b2618, hairStyle: 'short', eyeColor: 0x2563eb });
     player.gaitPhase = 0;
@@ -4676,6 +4845,7 @@
 
     buildCanalBoat();
     buildAmsterdamTramAndFestivals();
+    sharpenTextures();
     spawnLivingCity();
     syncStaffEntities();
     if (window.CastEngine) CastEngine.mountGallery({ button: document.getElementById('btn-cast') });
@@ -4789,8 +4959,12 @@
       renderer.setRenderTarget(gtaoTarget);
       renderer.render(postScene, postCam);
 
-      // 3) Volumetric Fog + Bloom + Auto Exposure + Local Tone Mapping + ACES -> Screen
+      // 3) Volumetric Fog + Bloom + Auto Exposure + Local Tone Mapping + ACES -> LDR
       postScene.children = [postQuad];
+      renderer.setRenderTarget(ldrTarget);
+      renderer.render(postScene, postCam);
+      // 4) FXAA kenar yumuşatma + hafif keskinleştirme -> ekran
+      postScene.children = [fxaaQuad];
       renderer.setRenderTarget(null);
       renderer.render(postScene, postCam);
       }
