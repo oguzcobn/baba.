@@ -1,0 +1,3961 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SERPENTIA — Fotogerçekçi 3D Yılan &amp; Doğa Simülasyonu</title>
+  <link rel="stylesheet" href="tailwind.css" />
+  <script src="vendor/three.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      background: #070a09; color: #e5ece8;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
+    }
+    #canvas-container {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 1;
+      touch-action: none;
+    }
+    .glass-panel {
+      background: rgba(11, 16, 14, 0.78);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(163, 214, 184, 0.16);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 4px; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14); outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: #4ade80; cursor: pointer;
+      border: 2px solid #0b100e;
+      box-shadow: 0 0 8px rgba(74, 222, 128, 0.55);
+    }
+    .custom-scroll::-webkit-scrollbar { width: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(163, 214, 184, 0.22); border-radius: 999px; }
+    .btn-pill { transition: all 0.18s ease; }
+    .btn-pill:hover { background: rgba(74, 222, 128, 0.16); border-color: rgba(74, 222, 128, 0.45); }
+    .btn-pill.active {
+      background: rgba(74, 222, 128, 0.24);
+      border-color: #4ade80;
+      color: #dcfce7;
+    }
+    .btn-hunt {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.85), rgba(217, 119, 6, 0.85));
+      border: 1px solid rgba(252, 165, 165, 0.55);
+      box-shadow: 0 0 18px rgba(239, 68, 68, 0.35);
+    }
+    .btn-hunt:hover { filter: brightness(1.12); }
+    #toast { transition: opacity 0.28s ease, transform 0.28s ease; }
+    #joystick-zone { touch-action: none; }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <!-- Sol Üst: Marka & Aktif Tür Rozeti -->
+  <div class="fixed top-3 left-3 z-20 flex flex-col gap-1.5 pointer-events-none max-w-[60vw]">
+    <div class="glass-panel rounded-xl px-3.5 py-2 pointer-events-auto flex items-center gap-3">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_#4ade80] shrink-0"></div>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="text-xs font-semibold tracking-widest uppercase text-emerald-300">SERPENTIA</span>
+          <span id="backend-badge" class="mono text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-400/25">WebGL 2.0</span>
+          <span id="prey-count-badge" class="mono text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/30">Av: 0</span>
+        </div>
+        <div class="flex items-baseline gap-2 truncate">
+          <span id="hud-species-name" class="text-sm font-semibold text-white truncate">Kral Kobra</span>
+          <span id="hud-species-latin" class="text-[11px] italic text-emerald-200/70 truncate hidden sm:inline">Ophiophagus hannah</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sağ Üst: Kamera & Hızlı Aksiyon Çubuğu -->
+  <div class="fixed top-3 right-3 z-20 flex items-center gap-1.5 flex-wrap justify-end max-w-[75vw]">
+    <div class="glass-panel rounded-xl p-1 hidden md:flex items-center gap-1" id="camera-bar">
+      <button data-cam="follow" class="cam-btn btn-pill active px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-200">Takip</button>
+      <button data-cam="orbit" class="cam-btn btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-200">Orbit</button>
+      <button data-cam="documentary" class="cam-btn btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-200">Belgesel</button>
+      <button data-cam="macro" class="cam-btn btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-200">Makro</button>
+      <button data-cam="free" class="cam-btn btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-200">Serbest</button>
+    </div>
+    <div class="glass-panel rounded-xl p-1 flex items-center gap-1">
+      <button id="btn-pause" title="Duraklat / Devam (P)" class="btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-100">Duraklat</button>
+      <button id="btn-slowmo" title="0.25x Ağır Çekim" class="btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-100">0.25x</button>
+      <button id="btn-screenshot" title="Ekran Görüntüsü PNG" class="btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-100 hidden sm:inline-block">Foto</button>
+      <button id="btn-fullscreen" title="Tam Ekran" class="btn-pill px-2.5 py-1.5 rounded-lg text-xs font-medium border border-transparent text-zinc-100 hidden sm:inline-block">Tam</button>
+      <button id="btn-toggle-drawer" title="Kontrol Paneli" class="btn-pill active px-2.5 py-1.5 rounded-lg text-xs font-semibold border border-emerald-400/40 text-emerald-200">Panel</button>
+    </div>
+  </div>
+
+  <!-- Sağ Açılır/Kapanır Kontrol Paneli -->
+  <aside id="inspector-drawer" class="fixed top-16 right-3 bottom-3 w-[328px] max-w-[calc(100vw-24px)] z-20 glass-panel rounded-2xl flex flex-col overflow-hidden transition-transform duration-300">
+    <!-- Sekmeler -->
+    <div class="grid grid-cols-4 border-b border-white/10 bg-black/25 text-[11px] font-medium">
+      <button data-tab="species" class="tab-btn py-2.5 text-emerald-300 border-b-2 border-emerald-400">Yılanlar</button>
+      <button data-tab="habitat" class="tab-btn py-2.5 text-zinc-400 border-b-2 border-transparent hover:text-zinc-200">Doğa</button>
+      <button data-tab="anatomy" class="tab-btn py-2.5 text-zinc-400 border-b-2 border-transparent hover:text-zinc-200">Anatomi</button>
+      <button data-tab="telemetry" class="tab-btn py-2.5 text-zinc-400 border-b-2 border-transparent hover:text-zinc-200">Bilim</button>
+    </div>
+
+    <!-- Kaydırılabilir Sekme İçerikleri -->
+    <div class="flex-1 overflow-y-auto custom-scroll p-3.5 space-y-3.5 text-xs">
+      <!-- SEKME 1: 10 YILAN TÜRÜ & HAREKET -->
+      <div id="tab-species" class="tab-panel space-y-3">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-1.5">Yılan Türü Seç (10 Anatomik Tür)</div>
+          <div id="species-grid" class="grid grid-cols-2 gap-1.5"></div>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 space-y-1">
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400">Ölçüler</span>
+            <span id="spec-length-mass" class="mono text-[11px] text-emerald-300">3.60 m · 6.0 kg</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400">Sırt Pulları</span>
+            <span id="spec-scales" class="mono text-[11px] text-zinc-200">15 pürüzsüz</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-zinc-400">Avlanma / Duyu</span>
+            <span id="spec-sensory" class="text-[11px] text-zinc-200 text-right">Zehirli · Kukuleta</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-1.5">Kontrol Modu</div>
+          <div class="grid grid-cols-2 gap-1.5 mb-2">
+            <button id="btn-mode-manual" class="btn-pill active py-1.5 rounded-lg border border-white/15 font-medium">Manuel Kontrol</button>
+            <button id="btn-mode-ai" class="btn-pill py-1.5 rounded-lg border border-white/15 font-medium">Otonom AI</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 mb-2">
+            <button id="btn-strike-panel" class="btn-hunt py-2 rounded-lg font-semibold text-white">Saldır &amp; Ye (E)</button>
+            <button id="btn-spawn-prey" class="btn-pill py-2 rounded-lg border border-amber-400/35 text-amber-200 font-medium">+ Yeni Av Ekle</button>
+          </div>
+          <div class="grid grid-cols-4 gap-1">
+            <button data-ai="EXPLORE" class="ai-trigger-btn btn-pill py-1 rounded-md border border-white/10 text-[10px]">Gezin</button>
+            <button data-ai="HUNT" class="ai-trigger-btn btn-pill py-1 rounded-md border border-white/10 text-[10px]">Avlan</button>
+            <button data-ai="BASK" class="ai-trigger-btn btn-pill py-1 rounded-md border border-white/10 text-[10px]">Güneşlen</button>
+            <button data-ai="DEFENSIVE" class="ai-trigger-btn btn-pill py-1 rounded-md border border-white/10 text-[10px]">Savunma</button>
+          </div>
+        </div>
+
+        <div>
+          <label for="select-gait" class="block text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-1">Yürüyüş / Hareket Biçimi</label>
+          <select id="select-gait" class="w-full bg-black/50 border border-white/15 rounded-lg px-2.5 py-2 text-xs text-zinc-100 focus:outline-none focus:border-emerald-400">
+            <option value="auto">Otomatik (Ortama Uyumlu)</option>
+            <option value="lateral_undulation">Yanal Dalgalanma (Anizotropik Sürtünme)</option>
+            <option value="sidewinding">Yan Kayma / Sidewinding</option>
+            <option value="concertina">Akordeon / Concertina</option>
+            <option value="rectilinear">Doğrusal Karın Sürünmesi</option>
+            <option value="swimming">Yüzme (Kaldırma + Direnç)</option>
+            <option value="arboreal">Dala Tırmanma (Sarma IK)</option>
+            <option value="coiling">Çöreklenme / Sarılma</option>
+            <option value="head_lift">Baş Kaldırma &amp; Tehdit</option>
+          </select>
+        </div>
+
+        <!-- Mobil Kamera Seçici -->
+        <div class="md:hidden">
+          <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-1">Kamera</div>
+          <div class="grid grid-cols-3 gap-1">
+            <button data-cam="follow" class="cam-btn-mob btn-pill active py-1.5 rounded-lg border border-white/10 text-[11px]">Takip</button>
+            <button data-cam="orbit" class="cam-btn-mob btn-pill py-1.5 rounded-lg border border-white/10 text-[11px]">Orbit</button>
+            <button data-cam="documentary" class="cam-btn-mob btn-pill py-1.5 rounded-lg border border-white/10 text-[11px]">Belgesel</button>
+            <button data-cam="macro" class="cam-btn-mob btn-pill py-1.5 rounded-lg border border-white/10 text-[11px]">Makro</button>
+            <button data-cam="free" class="cam-btn-mob btn-pill py-1.5 rounded-lg border border-white/10 text-[11px]">Serbest</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKME 2: DOĞA & IŞIK -->
+      <div id="tab-habitat" class="tab-panel hidden space-y-3.5">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold mb-2">Gerçekçi Doğa Ortamı</div>
+          <div class="grid grid-cols-2 gap-1.5" id="biome-grid">
+            <button data-biome="meadow" class="biome-btn btn-pill active py-2 px-2.5 rounded-lg border border-white/15 text-left">
+              <div class="font-medium text-zinc-100">Kısa Çim Çayırı</div>
+              <div class="text-[10px] text-zinc-400">Her yer kısa çim + gölet</div>
+            </button>
+            <button data-biome="jungle" class="biome-btn btn-pill py-2 px-2.5 rounded-lg border border-white/15 text-left">
+              <div class="font-medium text-zinc-100">Tropikal Orman</div>
+              <div class="text-[10px] text-zinc-400">Yosun, gölet, ağaç dalı</div>
+            </button>
+            <button data-biome="forest" class="biome-btn btn-pill py-2 px-2.5 rounded-lg border border-white/15 text-left">
+              <div class="font-medium text-zinc-100">Ilıman Orman</div>
+              <div class="text-[10px] text-zinc-400">Kısa çim, kayalar, kütük</div>
+            </button>
+            <button data-biome="desert" class="biome-btn btn-pill py-2 px-2.5 rounded-lg border border-white/15 text-left">
+              <div class="font-medium text-zinc-100">Mojave Çölü</div>
+              <div class="text-[10px] text-zinc-400">Rüzgarlı kum tepeleri</div>
+            </button>
+            <button data-biome="terrarium" class="biome-btn btn-pill py-2 px-2.5 rounded-lg border border-white/15 text-left col-span-2">
+              <div class="font-medium text-zinc-100">Biyoaktif Teraryum</div>
+              <div class="text-[10px] text-zinc-400">Kayrak taşı, mağara, kısa yosun çimi</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-1">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-zinc-300">Günün Saati (Güneş Açısı)</span>
+              <span id="val-time" class="mono text-emerald-300">10:30</span>
+            </div>
+            <input id="slider-time" type="range" min="0" max="24" step="0.1" value="10.5" />
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-zinc-300">Ortam Sıcaklığı (Q10)</span>
+              <span id="val-temp" class="mono text-emerald-300">29°C</span>
+            </div>
+            <input id="slider-temp" type="range" min="12" max="42" step="0.5" value="29" />
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-zinc-300">Simülasyon Hızı</span>
+              <span id="val-speed" class="mono text-emerald-300">1.00x</span>
+            </div>
+            <input id="slider-speed" type="range" min="0.1" max="2.0" step="0.05" value="1.0" />
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-zinc-300">Kamera Pozlaması (ACES)</span>
+              <span id="val-exposure" class="mono text-emerald-300">1.10</span>
+            </div>
+            <input id="slider-exposure" type="range" min="0.5" max="2.0" step="0.05" value="1.10" />
+          </div>
+
+          <div>
+            <div class="flex justify-between mb-1">
+              <span class="text-zinc-300">Deri Islaklığı / Parlaklık</span>
+              <span id="val-wetness" class="mono text-emerald-300">20%</span>
+            </div>
+            <input id="slider-wetness" type="range" min="0" max="1" step="0.02" value="0.20" />
+          </div>
+        </div>
+      </div>
+
+      <!-- SEKME 3: ANATOMİ & FİZİK GÖRÜNÜMLERİ -->
+      <div id="tab-anatomy" class="tab-panel hidden space-y-3">
+        <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold">Anatomi &amp; Fizik Katmanları</div>
+        <div class="space-y-1.5">
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>Omurga &amp; Kaburga İskeleti</span>
+            <input id="chk-skeleton" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>Şeffaf Deri (X-Ray)</span>
+            <input id="chk-xray" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>Kas Kasılması Isı Haritası</span>
+            <input id="chk-muscle" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>XPBD Kuvvet &amp; Sürtünme Vektörleri</span>
+            <input id="chk-vectors" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>Çarpışma Küreleri</span>
+            <input id="chk-collision" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+          <label class="flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-white/10 cursor-pointer">
+            <span>Kafes Tel (Wireframe)</span>
+            <input id="chk-wireframe" type="checkbox" class="accent-emerald-400 w-4 h-4" />
+          </label>
+        </div>
+
+        <div class="pt-1 space-y-2">
+          <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold">Baş &amp; Çene Hareketi</div>
+          <div class="grid grid-cols-2 gap-1.5">
+            <button id="btn-tongue" class="btn-pill py-2 rounded-lg border border-white/15 font-medium">Dil Çıkar</button>
+            <button id="btn-jaw" class="btn-pill py-2 rounded-lg border border-white/15 font-medium">Çene / Diş Aç</button>
+          </div>
+          <button id="btn-reset-snake" class="w-full btn-pill py-2 rounded-lg border border-white/15 font-medium text-emerald-300">Yılan Pozunu Sıfırla</button>
+        </div>
+      </div>
+
+      <!-- SEKME 4: CANLI TELEMETRİ & BİLİM -->
+      <div id="tab-telemetry" class="tab-panel hidden space-y-3">
+        <div class="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold">Canlı Biyomekanik Telemetri</div>
+        <div class="grid grid-cols-2 gap-1.5 mono text-[11px]">
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">KARE HIZI</div>
+            <div id="tel-fps" class="text-emerald-300 font-semibold">60 FPS</div>
+          </div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">FİZİK ÇÖZÜCÜ</div>
+            <div id="tel-dt" class="text-zinc-200 font-semibold">120 Hz XPBD</div>
+          </div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">YER HIZI</div>
+            <div id="tel-speed" class="text-emerald-300 font-semibold">0.00 m/s</div>
+          </div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">OMURGA SAPMASI</div>
+            <div id="tel-drift" class="text-zinc-200 font-semibold">0.00%</div>
+          </div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">VÜCUT SICAKLIĞI</div>
+            <div id="tel-btemp" class="text-amber-300 font-semibold">29.0 °C</div>
+          </div>
+          <div class="p-2 rounded-lg bg-white/[0.04] border border-white/10">
+            <div class="text-[9px] text-zinc-400">EN YAKIN AV</div>
+            <div id="tel-prey" class="text-amber-300 font-semibold">-- m</div>
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-xl bg-white/[0.04] border border-white/10 space-y-1.5 text-[11px] leading-relaxed text-zinc-300">
+          <div class="font-semibold text-emerald-300">Biyomekanik &amp; Beslenme Fiziği</div>
+          <p><strong class="text-zinc-100">Kısa Çim Fiziği:</strong> 28.000 GPU instanced çapraz kısa çim tutamı (56.000 yaprak) rüzgarla dalgalanır ve yılan gövdesinin 16 noktasından gerçek zamanlı ezilme kuvveti alır.</p>
+          <p><strong class="text-zinc-100">5 Aşamalı Yutma:</strong> Saldırı → Sarma/Zehirleme → Pterygoid çene yürütme ile yutma → Gövde boyunca ilerleyen fiziksel bolus (mide şişkinliği) ve deri gerilmesi.</p>
+          <p><strong class="text-zinc-100">Anizotropik Sürtünme:</strong> İleri μf=0.11, geri μb=0.14, yanal μt=0.20 (Hu et al., 2009 PNAS).</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sol Alt: Canlı Durum Çubuğu -->
+  <div class="fixed bottom-3 left-3 z-20 flex items-center gap-2 pointer-events-none">
+    <div class="glass-panel rounded-xl px-3 py-1.5 flex items-center gap-2.5 text-[11px] pointer-events-auto">
+      <span class="flex items-center gap-1.5">
+        <span class="text-zinc-400">Durum:</span>
+        <span id="pill-state" class="mono text-emerald-300 font-semibold">MANUEL</span>
+      </span>
+      <span class="text-white/20">|</span>
+      <span class="flex items-center gap-1.5">
+        <span class="text-zinc-400">Hareket:</span>
+        <span id="pill-gait" class="mono text-zinc-100">Yanal Dalgalanma</span>
+      </span>
+      <span class="text-white/20 hidden sm:inline">|</span>
+      <span id="pill-fps" class="mono text-zinc-400 hidden sm:inline">60 FPS</span>
+    </div>
+  </div>
+
+  <!-- Sol Alt (Manuel Kontrol Joystick & Hızlı Saldır Butonu) -->
+  <div id="manual-hud" class="fixed bottom-14 left-3 z-20 flex items-end gap-2.5">
+    <div class="flex flex-col items-start gap-1">
+      <div id="joystick-zone" class="glass-panel w-28 h-28 rounded-full relative flex items-center justify-center border border-emerald-400/40">
+        <div class="w-10 h-10 rounded-full border border-white/15"></div>
+        <div id="joystick-knob" class="w-10 h-10 rounded-full bg-emerald-400/85 shadow-[0_0_15px_rgba(74,222,128,0.65)] absolute pointer-events-none"></div>
+      </div>
+      <div class="glass-panel px-2 py-0.5 rounded-md text-[10px] text-emerald-200 mono">WASD / Oklar · Shift: Hız</div>
+    </div>
+    <button id="btn-strike-hud" class="btn-hunt px-4 py-3 rounded-2xl text-xs font-bold text-white tracking-wide active:scale-95 transition-transform mb-5">
+      SALDIR &amp; YE (E)
+    </button>
+  </div>
+
+  <!-- Bildirim Toast -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 glass-panel px-4 py-2 rounded-xl text-xs font-medium text-emerald-200 opacity-0 pointer-events-none translate-y-2"></div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // =========================================================================
+    // 1. 10 ANATOMİK OLARAK FARKLI YILAN TÜRÜ VERİTABANI
+    // =========================================================================
+    const SPECIES_DB = {
+      king_cobra: {
+        id: 'king_cobra', name: 'Kral Kobra', latin: 'Ophiophagus hannah',
+        length: 3.60, mass: 6.0, baseRadius: 0.046, tailRatio: 0.21,
+        scaleRows: 15, keeled: 0.0, scaleLabel: '15 pürüzsüz eğik',
+        sensoryLabel: 'Zehirli · Kukuleta', huntStyle: 'venom',
+        pupilSlit: 0.0, irisColor: [0.82, 0.62, 0.18],
+        hasHood: true, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'none',
+        dorsalEyeOffset: 0.0, lateralCompression: 1.0,
+        headShape: { len: 0.145, width: 0.056, height: 0.036, snoutTaper: 0.62, brow: 0.15 },
+        mouthColor: [0.55, 0.28, 0.30], fangSize: 0.013,
+        defaultBiome: 'meadow', defaultGait: 'lateral_undulation',
+        cpgFreq: 1.45, cpgAmp: 1.25, cpgWaves: 1.45, patternType: 0,
+        colPrimary: [0.24, 0.26, 0.16], colSecondary: [0.68, 0.61, 0.38], colBelly: [0.80, 0.75, 0.56],
+        roughness: 0.28, iridescence: 0.32
+      },
+      reticulated_python: {
+        id: 'reticulated_python', name: 'Ağlı Piton', latin: 'Malayopython reticulatus',
+        length: 5.20, mass: 58.0, baseRadius: 0.078, tailRatio: 0.14,
+        scaleRows: 74, keeled: 0.0, scaleLabel: '74 pürüzsüz iridanslı',
+        sensoryLabel: 'Boğucu · Labial ısı çukuru', huntStyle: 'constrict',
+        pupilSlit: 1.0, irisColor: [0.86, 0.46, 0.12],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'labial_deep',
+        dorsalEyeOffset: 0.0, lateralCompression: 0.96,
+        headShape: { len: 0.165, width: 0.082, height: 0.052, snoutTaper: 0.54, brow: 0.10 },
+        mouthColor: [0.68, 0.36, 0.38], fangSize: 0.009,
+        defaultBiome: 'jungle', defaultGait: 'lateral_undulation',
+        cpgFreq: 0.92, cpgAmp: 1.10, cpgWaves: 1.35, patternType: 6,
+        colPrimary: [0.62, 0.48, 0.24], colSecondary: [0.09, 0.08, 0.06], colBelly: [0.86, 0.80, 0.60],
+        roughness: 0.19, iridescence: 0.64
+      },
+      gaboon_viper: {
+        id: 'gaboon_viper', name: 'Gabon Engereği', latin: 'Bitis gabonica',
+        length: 1.50, mass: 8.5, baseRadius: 0.064, tailRatio: 0.07,
+        scaleRows: 39, keeled: 1.0, scaleLabel: '39 keskin omurgalı',
+        sensoryLabel: 'Zehirli · Burun boynuzu', huntStyle: 'venom',
+        pupilSlit: 1.0, irisColor: [0.78, 0.76, 0.70],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: true, heatPits: 'none',
+        dorsalEyeOffset: 0.0, lateralCompression: 0.78,
+        headShape: { len: 0.120, width: 0.102, height: 0.044, snoutTaper: 0.34, brow: 0.35 },
+        mouthColor: [0.74, 0.42, 0.45], fangSize: 0.022,
+        defaultBiome: 'forest', defaultGait: 'rectilinear',
+        cpgFreq: 0.88, cpgAmp: 0.88, cpgWaves: 1.15, patternType: 7,
+        colPrimary: [0.56, 0.44, 0.36], colSecondary: [0.16, 0.11, 0.14], colBelly: [0.76, 0.72, 0.62],
+        roughness: 0.64, iridescence: 0.04
+      },
+      corn_snake: {
+        id: 'corn_snake', name: 'Mısır Yılanı', latin: 'Pantherophis guttatus',
+        length: 1.20, mass: 0.75, baseRadius: 0.024, tailRatio: 0.17,
+        scaleRows: 27, keeled: 0.15, scaleLabel: '27 pürüzsüz kolubrid',
+        sensoryLabel: 'Boğucu · Yuvarlak göz', huntStyle: 'constrict',
+        pupilSlit: 0.0, irisColor: [0.85, 0.34, 0.12],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'none',
+        dorsalEyeOffset: 0.0, lateralCompression: 1.02,
+        headShape: { len: 0.062, width: 0.028, height: 0.020, snoutTaper: 0.56, brow: 0.08 },
+        mouthColor: [0.76, 0.42, 0.44], fangSize: 0.003,
+        defaultBiome: 'meadow', defaultGait: 'lateral_undulation',
+        cpgFreq: 1.85, cpgAmp: 1.32, cpgWaves: 1.55, patternType: 8,
+        colPrimary: [0.82, 0.38, 0.12], colSecondary: [0.58, 0.10, 0.06], colBelly: [0.92, 0.88, 0.80],
+        roughness: 0.26, iridescence: 0.18
+      },
+      inland_taipan: {
+        id: 'inland_taipan', name: 'İç Taipan', latin: 'Oxyuranus microlepidotus',
+        length: 1.85, mass: 1.50, baseRadius: 0.028, tailRatio: 0.18,
+        scaleRows: 23, keeled: 0.0, scaleLabel: '23 pürüzsüz balıksırtı',
+        sensoryLabel: 'Zehirli · Çok hızlı', huntStyle: 'venom',
+        pupilSlit: 0.0, irisColor: [0.16, 0.12, 0.09],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'none',
+        dorsalEyeOffset: 0.0, lateralCompression: 1.04,
+        headShape: { len: 0.088, width: 0.034, height: 0.024, snoutTaper: 0.64, brow: 0.18 },
+        mouthColor: [0.52, 0.28, 0.30], fangSize: 0.010,
+        defaultBiome: 'desert', defaultGait: 'lateral_undulation',
+        cpgFreq: 2.05, cpgAmp: 1.35, cpgWaves: 1.60, patternType: 9,
+        colPrimary: [0.64, 0.54, 0.26], colSecondary: [0.14, 0.11, 0.07], colBelly: [0.84, 0.78, 0.44],
+        roughness: 0.27, iridescence: 0.20
+      },
+      ball_python: {
+        id: 'ball_python', name: 'Top Pitonu', latin: 'Python regius',
+        length: 1.25, mass: 1.55, baseRadius: 0.044, tailRatio: 0.075,
+        scaleRows: 55, keeled: 0.0, scaleLabel: '55 pürüzsüz parlak',
+        sensoryLabel: 'Boğucu · Labial çukur', huntStyle: 'constrict',
+        pupilSlit: 1.0, irisColor: [0.34, 0.23, 0.12],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'labial',
+        dorsalEyeOffset: 0.0, lateralCompression: 0.94,
+        headShape: { len: 0.078, width: 0.040, height: 0.028, snoutTaper: 0.50, brow: 0.08 },
+        mouthColor: [0.65, 0.36, 0.38], fangSize: 0.005,
+        defaultBiome: 'forest', defaultGait: 'rectilinear',
+        cpgFreq: 1.05, cpgAmp: 0.95, cpgWaves: 1.2, patternType: 1,
+        colPrimary: [0.10, 0.07, 0.05], colSecondary: [0.62, 0.44, 0.20], colBelly: [0.88, 0.84, 0.74],
+        roughness: 0.22, iridescence: 0.48
+      },
+      green_anaconda: {
+        id: 'green_anaconda', name: 'Yeşil Anakonda', latin: 'Eunectes murinus',
+        length: 4.60, mass: 50.0, baseRadius: 0.095, tailRatio: 0.14,
+        scaleRows: 60, keeled: 0.0, scaleLabel: '60 pürüzsüz kalın',
+        sensoryLabel: 'Boğucu · Üst gözler', huntStyle: 'constrict',
+        pupilSlit: 1.0, irisColor: [0.58, 0.50, 0.22],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'none',
+        dorsalEyeOffset: 0.35, lateralCompression: 0.92,
+        headShape: { len: 0.175, width: 0.092, height: 0.058, snoutTaper: 0.65, brow: 0.10 },
+        mouthColor: [0.60, 0.34, 0.36], fangSize: 0.008,
+        defaultBiome: 'jungle', defaultGait: 'lateral_undulation',
+        cpgFreq: 0.85, cpgAmp: 1.10, cpgWaves: 1.25, patternType: 2,
+        colPrimary: [0.22, 0.28, 0.14], colSecondary: [0.06, 0.07, 0.05], colBelly: [0.74, 0.68, 0.40],
+        roughness: 0.20, iridescence: 0.42
+      },
+      black_mamba: {
+        id: 'black_mamba', name: 'Kara Mamba', latin: 'Dendroaspis polylepis',
+        length: 2.60, mass: 1.60, baseRadius: 0.029, tailRatio: 0.22,
+        scaleRows: 23, keeled: 0.0, scaleLabel: '23 pürüzsüz ince',
+        sensoryLabel: 'Zehirli · Siyah ağız', huntStyle: 'venom',
+        pupilSlit: 0.0, irisColor: [0.28, 0.22, 0.15],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'none',
+        dorsalEyeOffset: 0.0, lateralCompression: 1.04,
+        headShape: { len: 0.115, width: 0.036, height: 0.026, snoutTaper: 0.72, brow: 0.30 },
+        mouthColor: [0.04, 0.04, 0.06], fangSize: 0.011,
+        defaultBiome: 'meadow', defaultGait: 'lateral_undulation',
+        cpgFreq: 2.20, cpgAmp: 1.38, cpgWaves: 1.65, patternType: 3,
+        colPrimary: [0.23, 0.24, 0.21], colSecondary: [0.14, 0.15, 0.13], colBelly: [0.64, 0.66, 0.58],
+        roughness: 0.26, iridescence: 0.24
+      },
+      sidewinder: {
+        id: 'sidewinder', name: 'Çöl Çıngıraklısı', latin: 'Crotalus cerastes',
+        length: 0.68, mass: 0.24, baseRadius: 0.022, tailRatio: 0.09,
+        scaleRows: 21, keeled: 1.0, scaleLabel: '21 omurgalı çöl',
+        sensoryLabel: 'Zehirli · Çıngırak · Boynuz', huntStyle: 'venom',
+        pupilSlit: 1.0, irisColor: [0.76, 0.67, 0.52],
+        hasHood: false, hasRattle: true, hasHorns: true, noseHorns: false, heatPits: 'loreal',
+        dorsalEyeOffset: 0.0, lateralCompression: 0.88,
+        headShape: { len: 0.052, width: 0.036, height: 0.019, snoutTaper: 0.42, brow: 0.42 },
+        mouthColor: [0.72, 0.45, 0.46], fangSize: 0.009,
+        defaultBiome: 'desert', defaultGait: 'sidewinding',
+        cpgFreq: 1.70, cpgAmp: 1.55, cpgWaves: 1.35, patternType: 4,
+        colPrimary: [0.74, 0.64, 0.49], colSecondary: [0.46, 0.36, 0.25], colBelly: [0.88, 0.84, 0.76],
+        roughness: 0.58, iridescence: 0.05
+      },
+      emerald_tree_boa: {
+        id: 'emerald_tree_boa', name: 'Zümrüt Ağaç Boası', latin: 'Corallus caninus',
+        length: 1.80, mass: 1.65, baseRadius: 0.036, tailRatio: 0.17,
+        scaleRows: 68, keeled: 0.0, scaleLabel: '68 pürüzsüz ağaç',
+        sensoryLabel: 'Boğucu · Derin ısı çukuru', huntStyle: 'constrict',
+        pupilSlit: 1.0, irisColor: [0.78, 0.86, 0.22],
+        hasHood: false, hasRattle: false, hasHorns: false, noseHorns: false, heatPits: 'labial_deep',
+        dorsalEyeOffset: 0.0, lateralCompression: 1.32,
+        headShape: { len: 0.095, width: 0.054, height: 0.035, snoutTaper: 0.46, brow: 0.14 },
+        mouthColor: [0.68, 0.38, 0.40], fangSize: 0.010,
+        defaultBiome: 'jungle', defaultGait: 'arboreal',
+        cpgFreq: 1.00, cpgAmp: 1.15, cpgWaves: 1.30, patternType: 5,
+        colPrimary: [0.07, 0.46, 0.16], colSecondary: [0.94, 0.96, 0.90], colBelly: [0.92, 0.84, 0.24],
+        roughness: 0.25, iridescence: 0.28
+      }
+    };
+
+    const BIOMES = {
+      meadow: {
+        name: 'Kısa Çim Çayırı',
+        frictionScale: 1.08,
+        groundColorA: '#2c4420',
+        groundColorB: '#3b5426',
+        grassBaseCol: [0.14, 0.28, 0.09],
+        grassTipCol: [0.36, 0.56, 0.19],
+        grassCount: 28000,
+        grassHeight: 0.030,
+        fogColor: 0x2a3b2a,
+        fogDensity: 0.020,
+        hasWater: true,
+        waterCenter: new THREE.Vector2(2.6, -2.0),
+        waterRadius: 1.9,
+        waterLevel: -0.05,
+        hasBranch: true,
+        hasCave: false
+      },
+      jungle: {
+        name: 'Tropikal Orman',
+        frictionScale: 1.05,
+        groundColorA: '#26381d',
+        groundColorB: '#383020',
+        grassBaseCol: [0.10, 0.24, 0.08],
+        grassTipCol: [0.28, 0.48, 0.16],
+        grassCount: 26000,
+        grassHeight: 0.034,
+        fogColor: 0x16241c,
+        fogDensity: 0.028,
+        hasWater: true,
+        waterCenter: new THREE.Vector2(1.8, -1.2),
+        waterRadius: 2.2,
+        waterLevel: -0.06,
+        hasBranch: true,
+        hasCave: false
+      },
+      forest: {
+        name: 'Ilıman Orman',
+        frictionScale: 1.14,
+        groundColorA: '#333b22',
+        groundColorB: '#2d3f1e',
+        grassBaseCol: [0.16, 0.26, 0.10],
+        grassTipCol: [0.38, 0.50, 0.20],
+        grassCount: 26000,
+        grassHeight: 0.032,
+        fogColor: 0x1e2820,
+        fogDensity: 0.024,
+        hasWater: false,
+        waterCenter: new THREE.Vector2(99, 99),
+        waterRadius: 0,
+        waterLevel: -10,
+        hasBranch: true,
+        hasCave: false
+      },
+      desert: {
+        name: 'Mojave Çölü',
+        frictionScale: 0.72,
+        groundColorA: '#c9a978',
+        groundColorB: '#a98454',
+        grassBaseCol: [0.46, 0.42, 0.22],
+        grassTipCol: [0.68, 0.62, 0.36],
+        grassCount: 18000,
+        grassHeight: 0.026,
+        fogColor: 0xc9b492,
+        fogDensity: 0.016,
+        hasWater: false,
+        waterCenter: new THREE.Vector2(99, 99),
+        waterRadius: 0,
+        waterLevel: -10,
+        hasBranch: false,
+        hasCave: false
+      },
+      terrarium: {
+        name: 'Biyoaktif Teraryum',
+        frictionScale: 1.0,
+        groundColorA: '#323624',
+        groundColorB: '#463d34',
+        grassBaseCol: [0.13, 0.28, 0.11],
+        grassTipCol: [0.32, 0.54, 0.22],
+        grassCount: 22000,
+        grassHeight: 0.028,
+        fogColor: 0x161a17,
+        fogDensity: 0.022,
+        hasWater: true,
+        waterCenter: new THREE.Vector2(-1.8, 1.5),
+        waterRadius: 1.1,
+        waterLevel: -0.05,
+        hasBranch: true,
+        hasCave: true
+      }
+    };
+
+    // =========================================================================
+    // 2. UYGULAMA DURUMU (Varsayılan: Manuel Kontrol + Kısa Çim Çayırı)
+    // =========================================================================
+    const state = {
+      speciesId: 'king_cobra',
+      biomeId: 'meadow',
+      gaitOverride: 'auto',
+      activeGait: 'lateral_undulation',
+      cameraMode: 'follow',
+      controlMode: 'manual', // Kullanıcı doğrudan hareket ettirebilir!
+      aiState: 'EXPLORE',
+      aiTimer: 0,
+      paused: false,
+      timeScale: 1.0,
+      timeOfDay: 10.5,
+      ambientTemp: 29.0,
+      bodyTemp: 29.0,
+      exposure: 1.12,
+      wetness: 0.20,
+      showSkeleton: false,
+      showXray: false,
+      showMuscle: false,
+      showVectors: false,
+      showCollision: false,
+      showWireframe: false,
+      manualInput: { x: 0, y: 0 },
+      keys: {},
+      tonguePhase: 0,
+      tongueTimer: 2.0,
+      jawTarget: 0,
+      jawCurrent: 0,
+      jawRoll: 0, // Pterygoid walk çene sallanması
+      hoodSpread: 0,
+      simTime: 0,
+      fps: 60,
+      frameMs: 16.6,
+      lengthDriftPct: 0.0,
+      groundSpeed: 0.0,
+      preyEaten: 0,
+      nearestPreyDist: 99.0,
+      // 5 Aşamalı Gerçekçi Beslenme & Yutma Fiziği Durumu
+      feeding: {
+        phase: 'NONE', // NONE | STRIKE | SUBDUE | SWALLOW
+        target: null,
+        timer: 0,
+        progress: 0
+      },
+      // Yutulan avların gövde boyunca ilerleyen fiziksel bolus (mide şişkinliği) listesi
+      boluses: [] // { u: 0.05, size: 0.05, life: 1.0 }
+    };
+
+    const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
+    document.getElementById('backend-badge').textContent = hasWebGPU ? 'WebGPU Hazır · WebGL2' : 'WebGL 2.0 PBR';
+
+    // =========================================================================
+    // 3. THREE.JS RENDERER, SAHNE, KAMERA & IŞIKLANDIRMA
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      powerPreference: 'high-performance',
+      preserveDrawingBuffer: true
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = state.exposure;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    container.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x2a3b2a, 0.020);
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.02, 120);
+    camera.position.set(2.2, 1.35, 2.3);
+
+    // Fiziksel Gökyüzü Kubbesi (Rayleigh + Mie Saçılımı)
+    const skyUniforms = {
+      uSunDir: { value: new THREE.Vector3(0.5, 0.72, 0.42).normalize() },
+      uZenithColor: { value: new THREE.Color(0x1f5382) },
+      uHorizonColor: { value: new THREE.Color(0xa6cbb0) },
+      uSunColor: { value: new THREE.Color(0xfff5db) }
+    };
+    const skyMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(68, 32, 20),
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: skyUniforms,
+        vertexShader: `
+          varying vec3 vWorldPos;
+          void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vWorldPos = wp.xyz;
+            gl_Position = projectionMatrix * viewMatrix * wp;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uSunDir;
+          uniform vec3 uZenithColor;
+          uniform vec3 uHorizonColor;
+          uniform vec3 uSunColor;
+          varying vec3 vWorldPos;
+          void main() {
+            vec3 dir = normalize(vWorldPos);
+            float h = clamp(dir.y, 0.0, 1.0);
+            vec3 col = mix(uHorizonColor, uZenithColor, pow(h, 0.55));
+            float sunCos = max(dot(dir, normalize(uSunDir)), 0.0);
+            float mie = pow(sunCos, 10.0) * 0.35 + pow(sunCos, 280.0) * 1.4;
+            col += uSunColor * mie;
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      })
+    );
+    scene.add(skyMesh);
+
+    const sunLight = new THREE.DirectionalLight(0xfff6e5, 2.25);
+    sunLight.position.set(6, 11, 5);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 30;
+    const dCam = 7.5;
+    sunLight.shadow.camera.left = -dCam;
+    sunLight.shadow.camera.right = dCam;
+    sunLight.shadow.camera.top = dCam;
+    sunLight.shadow.camera.bottom = -dCam;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xb2dec8, 0x2b301c, 0.80);
+    scene.add(hemiLight);
+
+    const rimLight = new THREE.DirectionalLight(0x88d4b8, 0.42);
+    rimLight.position.set(-5, 3, -6);
+    scene.add(rimLight);
+
+    // =========================================================================
+    // 4. GERÇEKÇİ DOĞA ARAZİSİ & 12.000 GPU KISA ÇİM ÖRTÜSÜ
+    // =========================================================================
+    function getTerrainHeight(x, z, biomeId = state.biomeId) {
+      const b = BIOMES[biomeId];
+      let h = 0;
+      if (biomeId === 'desert') {
+        h = Math.sin(x * 0.42 + z * 0.24) * 0.22 + Math.cos(z * 0.60 - x * 0.15) * 0.12 + Math.sin(x * 2.8 + z * 0.7) * 0.014;
+      } else if (biomeId === 'meadow' || biomeId === 'jungle') {
+        h = Math.sin(x * 0.38) * Math.cos(z * 0.36) * 0.11 + Math.sin(x * 1.1 - z * 0.9) * 0.028;
+        const dw = Math.hypot(x - b.waterCenter.x, z - b.waterCenter.y);
+        if (dw < b.waterRadius + 0.85) {
+          const t = Math.max(0, 1 - dw / (b.waterRadius + 0.85));
+          h -= t * t * 0.34;
+        }
+      } else if (biomeId === 'forest') {
+        h = Math.sin(x * 0.48 + 0.6) * Math.cos(z * 0.44) * 0.14 + Math.cos(x * 1.2 + z * 1.5) * 0.032;
+      } else {
+        h = Math.sin(x * 0.55) * Math.cos(z * 0.55) * 0.05;
+        const dw = Math.hypot(x - b.waterCenter.x, z - b.waterCenter.y);
+        if (dw < b.waterRadius + 0.4) {
+          const t = Math.max(0, 1 - dw / (b.waterRadius + 0.4));
+          h -= t * t * 0.22;
+        }
+      }
+      return h;
+    }
+
+    function makeGroundTexture(colA, colB, biomeId) {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = colA;
+      ctx.fillRect(0, 0, 512, 512);
+      // Çok katmanlı organik toprak + kısa çim mikro dokusu
+      for (let i = 0; i < 7500; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        if (biomeId === 'desert') {
+          ctx.fillStyle = i % 2 === 0 ? colB : 'rgba(245,220,175,0.22)';
+          ctx.globalAlpha = 0.16 + Math.random() * 0.24;
+          ctx.fillRect(x, y, 2 + Math.random() * 4, 1.5);
+        } else {
+          ctx.fillStyle = i % 3 === 0 ? colB : (i % 3 === 1 ? 'rgba(20,34,14,0.38)' : 'rgba(84,118,46,0.28)');
+          ctx.globalAlpha = 0.20 + Math.random() * 0.30;
+          ctx.beginPath();
+          ctx.arc(x, y, 1.5 + Math.random() * 5.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(12, 12);
+      tex.encoding = THREE.sRGBEncoding;
+      return tex;
+    }
+
+    const habitatGroup = new THREE.Group();
+    scene.add(habitatGroup);
+
+    let habitatObstacles = [];
+    let branchCurve = null;
+    let waterMesh = null;
+    let waterUniforms = null;
+    let grassUniforms = null;
+    const snakeSamplePts = Array.from({ length: 16 }, () => new THREE.Vector3(0, -10, 0));
+    let rippleCenters = [
+      new THREE.Vector4(0, 0, -10, 0),
+      new THREE.Vector4(0, 0, -10, 0),
+      new THREE.Vector4(0, 0, -10, 0),
+      new THREE.Vector4(0, 0, -10, 0)
+    ];
+    let rippleIdx = 0;
+
+    function buildHabitat(biomeId) {
+      while (habitatGroup.children.length > 0) {
+        const ch = habitatGroup.children.pop();
+        if (ch.geometry) ch.geometry.dispose();
+        if (ch.material && ch.material.dispose) ch.material.dispose();
+      }
+      habitatObstacles = [];
+      branchCurve = null;
+      waterMesh = null;
+      grassUniforms = null;
+
+      const b = BIOMES[biomeId];
+      scene.fog.color.setHex(b.fogColor);
+      scene.fog.density = b.fogDensity;
+
+      // 1. Yüksek Çözünürlüklü Doğa Zemini
+      const tGeo = new THREE.PlaneGeometry(28, 28, 112, 112);
+      tGeo.rotateX(-Math.PI / 2);
+      const pos = tGeo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const z = pos.getZ(i);
+        pos.setY(i, getTerrainHeight(x, z, biomeId));
+      }
+      tGeo.computeVertexNormals();
+      const groundTex = makeGroundTexture(b.groundColorA, b.groundColorB, biomeId);
+      const tMat = new THREE.MeshStandardMaterial({
+        map: groundTex,
+        roughness: biomeId === 'desert' ? 0.93 : 0.88,
+        metalness: 0.02
+      });
+      const terrain = new THREE.Mesh(tGeo, tMat);
+      terrain.receiveShadow = true;
+      habitatGroup.add(terrain);
+
+      // 2. TÜM HARİTAYI KAPLAYAN ÇOK ÇOK KISA ÇİM (28.000 Çapraz Tutam = 56.000 Kısa Yaprak, 1 GPU Draw Call)
+      const hG = b.grassHeight;
+      const wG = 0.0085;
+      const bladeGeo = new THREE.BufferGeometry();
+      const gVerts = new Float32Array([
+        // Yaprak 1 (X düzlemi)
+        -wG, 0, 0,   wG, 0, 0,   0, hG, 0.004,
+        // Yaprak 2 (Z düzlemi - çapraz dolgunluk)
+        0, 0, -wG,   0, 0, wG,   0.004, hG, 0
+      ]);
+      const gUvs = new Float32Array([
+        0, 0,  1, 0,  0.5, 1,
+        0, 0,  1, 0,  0.5, 1
+      ]);
+      bladeGeo.setAttribute('position', new THREE.BufferAttribute(gVerts, 3));
+      bladeGeo.setAttribute('uv', new THREE.BufferAttribute(gUvs, 2));
+      bladeGeo.computeVertexNormals();
+
+      grassUniforms = {
+        uTime: { value: 0 },
+        uSunDir: skyUniforms.uSunDir,
+        uSunColor: skyUniforms.uSunColor,
+        uBaseCol: { value: new THREE.Color(...b.grassBaseCol) },
+        uTipCol: { value: new THREE.Color(...b.grassTipCol) },
+        uSnakePts: { value: snakeSamplePts }
+      };
+
+      const grassMat = new THREE.ShaderMaterial({
+        uniforms: grassUniforms,
+        side: THREE.DoubleSide,
+        vertexShader: `
+          uniform float uTime;
+          uniform vec3 uSnakePts[16];
+          varying float vHeight;
+          varying float vShade;
+          varying float vFogDepth;
+
+          void main() {
+            vHeight = clamp(uv.y, 0.0, 1.0);
+            vec4 instPos = instanceMatrix * vec4(0.0, 0.0, 0.0, 1.0);
+            vec3 worldBase = instPos.xyz;
+
+            // Lokal çim bıçağı noktası
+            vec3 localP = position;
+            vec4 worldP = instanceMatrix * vec4(localP, 1.0);
+
+            // Çok kısa çim için doğal mikro rüzgar dalgası
+            float wind = sin(uTime * 2.3 + worldBase.x * 1.6 + worldBase.z * 1.2) * 0.006 * vHeight * vHeight;
+            worldP.x += wind;
+            worldP.z += wind * 0.6;
+
+            // Yılan gövdesi üzerinden geçerken kısa çimleri fiziksel olarak yana yatırıp ez
+            vec2 push = vec2(0.0);
+            float crush = 0.0;
+            for (int i = 0; i < 16; i++) {
+              vec2 d = worldBase.xz - uSnakePts[i].xz;
+              float d2 = dot(d, d);
+              if (d2 < 0.085) {
+                float dist = sqrt(d2) + 0.001;
+                float strength = smoothstep(0.29, 0.025, dist);
+                push += (d / dist) * strength;
+                crush = max(crush, strength);
+              }
+            }
+            worldP.xz += push * 0.026 * vHeight;
+            worldP.y -= crush * 0.022 * vHeight;
+
+            // Hafif organik renk/gölge varyasyonu
+            vShade = 0.78 + 0.28 * fract(sin(dot(worldBase.xz, vec2(12.9898, 78.233))) * 43758.5453);
+            vec4 mvPos = viewMatrix * worldP;
+            vFogDepth = -mvPos.z;
+            gl_Position = projectionMatrix * mvPos;
+          }
+        `,
+        fragmentShader: `
+          uniform vec3 uSunDir;
+          uniform vec3 uSunColor;
+          uniform vec3 uBaseCol;
+          uniform vec3 uTipCol;
+          varying float vHeight;
+          varying float vShade;
+          varying float vFogDepth;
+
+          void main() {
+            vec3 col = mix(uBaseCol, uTipCol, pow(vHeight, 0.85)) * vShade;
+            float sunBoost = max(0.25, uSunDir.y) * (0.45 + 0.55 * vHeight);
+            col *= (0.55 + uSunColor * sunBoost * 0.78);
+            // Atmosferik derinlik sisi uyumu
+            float fogF = 1.0 - exp(-0.00045 * vFogDepth * vFogDepth);
+            col = mix(col, vec3(0.18, 0.24, 0.18), clamp(fogF, 0.0, 0.65));
+            gl_FragColor = vec4(col, 1.0);
+          }
+        `
+      });
+
+      const grassMesh = new THREE.InstancedMesh(bladeGeo, grassMat, b.grassCount);
+      grassMesh.frustumCulled = false;
+      const dummy = new THREE.Object3D();
+      const spread = 27.6;
+      for (let i = 0; i < b.grassCount; i++) {
+        // Tüm 28x28 haritayı eksiksiz kaplayan çok kısa çim örtüsü
+        const rx = (Math.random() - 0.5) * spread;
+        const rz = (Math.random() - 0.5) * spread;
+        const inWater = b.hasWater && Math.hypot(rx - b.waterCenter.x, rz - b.waterCenter.y) < b.waterRadius + 0.05;
+        const gy = getTerrainHeight(rx, rz, biomeId);
+        const scY = inWater ? 0.0001 : (0.65 + Math.random() * 0.55);
+        const scX = inWater ? 0.0001 : (0.85 + Math.random() * 0.45);
+        dummy.position.set(rx, gy - 0.005, rz);
+        dummy.rotation.set((Math.random() - 0.5) * 0.28, Math.random() * Math.PI * 2, (Math.random() - 0.5) * 0.28);
+        dummy.scale.set(scX, scY, scX);
+        dummy.updateMatrix();
+        grassMesh.setMatrixAt(i, dummy.matrix);
+      }
+      grassMesh.instanceMatrix.needsUpdate = true;
+      habitatGroup.add(grassMesh);
+
+      // 3. Doğal Yosunlu Kayalar & Taşlar
+      const rockMat = new THREE.MeshStandardMaterial({
+        color: biomeId === 'desert' ? 0x9b7754 : (biomeId === 'terrarium' ? 0x4b4e52 : 0x52594e),
+        roughness: 0.88,
+        metalness: 0.04
+      });
+      const rockCoords = [
+        [-2.8, -2.2, 0.45], [3.6, 2.2, 0.54], [-3.8, 1.4, 0.40],
+        [0.8, -3.9, 0.48], [4.2, -2.9, 0.36], [-1.5, 3.6, 0.44],
+        [2.2, 3.8, 0.32], [-4.4, -0.8, 0.50]
+      ];
+      rockCoords.forEach(([rx, rz, rr]) => {
+        const rg = new THREE.DodecahedronGeometry(rr, 1);
+        const rp = rg.attributes.position;
+        for (let i = 0; i < rp.count; i++) {
+          const vx = rp.getX(i), vy = rp.getY(i), vz = rp.getZ(i);
+          const n = 0.85 + 0.24 * Math.sin(vx * 7 + vz * 5);
+          rp.setXYZ(i, vx * n, vy * 0.60 * n, vz * n);
+        }
+        rg.computeVertexNormals();
+        const rm = new THREE.Mesh(rg, rockMat);
+        const ry = getTerrainHeight(rx, rz, biomeId) + rr * 0.24;
+        rm.position.set(rx, ry, rz);
+        rm.castShadow = true;
+        rm.receiveShadow = true;
+        habitatGroup.add(rm);
+        habitatObstacles.push({ x: rx, y: ry, z: rz, r: rr * 0.88 });
+      });
+
+      // 4. Tırmanılabilir Doğal Ağaç Dalı / Kütük
+      if (b.hasBranch) {
+        branchCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(-3.0, getTerrainHeight(-3.0, -0.8, biomeId) + 0.05, -0.8),
+          new THREE.Vector3(-1.4, 0.44, -1.5),
+          new THREE.Vector3(0.0, 0.68, -2.0),
+          new THREE.Vector3(1.5, 0.52, -2.5),
+          new THREE.Vector3(2.8, getTerrainHeight(2.8, -2.9, biomeId) + 0.06, -2.9)
+        ]);
+        const branchGeo = new THREE.TubeGeometry(branchCurve, 96, 0.12, 14, false);
+        // doğal kütük: uç kısımlar incelir, düğümler ve kabuk çatlakları (pürüzsüz boru görüntüsü yerine)
+        {
+          const bp = branchGeo.attributes.position, segs = 96, rad = 14, ctr = new THREE.Vector3();
+          for (let i = 0; i <= segs; i++) {
+            const t = i / segs, c = branchCurve.getPointAt(t, ctr);
+            const taper = 0.62 + 0.38 * Math.sin(Math.PI * Math.min(1, t * 1.15)) + (t < 0.08 ? 0.25 * (1 - t / 0.08) : 0);
+            for (let j = 0; j <= rad; j++) {
+              const k = i * (rad + 1) + j; if (k >= bp.count) continue;
+              const a = j / rad * Math.PI * 2;
+              const knot = 1 + 0.16 * Math.exp(-Math.pow((t - 0.33) / 0.03, 2)) + 0.12 * Math.exp(-Math.pow((t - 0.71) / 0.025, 2));
+              const bark = 1 + 0.07 * Math.sin(a * 7 + t * 40) + 0.04 * Math.sin(a * 13 - t * 90);
+              const f = taper * knot * bark;
+              bp.setXYZ(k, c.x + (bp.getX(k) - c.x) * f, c.y + (bp.getY(k) - c.y) * f, c.z + (bp.getZ(k) - c.z) * f);
+            }
+          }
+          branchGeo.computeVertexNormals();
+        }
+        const barkCv = document.createElement('canvas'); barkCv.width = 64; barkCv.height = 256;
+        { const g = barkCv.getContext('2d'); g.fillStyle = biomeId === 'jungle' ? '#3b2c1c' : '#4a3a2a'; g.fillRect(0, 0, 64, 256);
+          for (let i = 0; i < 70; i++) { g.strokeStyle = `rgba(${15 + Math.random() * 30},${10 + Math.random() * 20},5,${0.4 + Math.random() * 0.5})`; g.lineWidth = 1 + Math.random() * 2.5; g.beginPath(); const x = Math.random() * 64; g.moveTo(x, 0); g.bezierCurveTo(x + 6, 80, x - 6, 170, x + 3, 256); g.stroke(); }
+          for (let i = 0; i < 18; i++) { g.fillStyle = `rgba(90,110,50,${0.15 + Math.random() * 0.25})`; g.beginPath(); g.arc(Math.random() * 64, Math.random() * 256, 3 + Math.random() * 7, 0, 7); g.fill(); } }
+        const barkTex = new THREE.CanvasTexture(barkCv); barkTex.wrapS = barkTex.wrapT = THREE.RepeatWrapping; barkTex.repeat.set(10, 2); barkTex.encoding = THREE.sRGBEncoding;
+        const branchMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff, map: barkTex,
+          roughness: 0.95,
+          metalness: 0.0
+        });
+        const branchMesh = new THREE.Mesh(branchGeo, branchMat);
+        branchMesh.castShadow = true;
+        branchMesh.receiveShadow = true;
+        habitatGroup.add(branchMesh);
+      }
+
+      // 5. Dinamik Dalgalı Doğal Su Göleti
+      if (b.hasWater) {
+        waterUniforms = {
+          uTime: { value: 0 },
+          uRipples: { value: rippleCenters },
+          uColorDeep: { value: new THREE.Color(biomeId === 'jungle' ? 0x102820 : 0x183430) },
+          uColorShallow: { value: new THREE.Color(biomeId === 'jungle' ? 0x2a5244 : 0x36645a) },
+          uSunDir: skyUniforms.uSunDir
+        };
+        const wGeo = new THREE.CircleGeometry(b.waterRadius, 48);
+        wGeo.rotateX(-Math.PI / 2);
+        const wMat = new THREE.ShaderMaterial({
+          transparent: true,
+          uniforms: waterUniforms,
+          vertexShader: `
+            varying vec3 vWorld;
+            varying vec2 vUv;
+            void main() {
+              vUv = uv;
+              vec4 wp = modelMatrix * vec4(position, 1.0);
+              vWorld = wp.xyz;
+              gl_Position = projectionMatrix * viewMatrix * wp;
+            }
+          `,
+          fragmentShader: `
+            uniform float uTime;
+            uniform vec4 uRipples[4];
+            uniform vec3 uColorDeep;
+            uniform vec3 uColorShallow;
+            uniform vec3 uSunDir;
+            varying vec3 vWorld;
+            varying vec2 vUv;
+            void main() {
+              float rip = 0.0;
+              vec2 grad = vec2(0.0);
+              for (int i = 0; i < 4; i++) {
+                float age = uTime - uRipples[i].z;
+                if (age > 0.0 && age < 3.5) {
+                  vec2 d = vWorld.xz - uRipples[i].xy;
+                  float dist = length(d) + 0.001;
+                  float wave = sin(dist * 18.0 - age * 8.0) * exp(-age * 1.1) * exp(-dist * 1.4);
+                  rip += wave;
+                  grad += (d / dist) * cos(dist * 18.0 - age * 8.0) * exp(-age * 1.1) * exp(-dist * 1.4) * 0.25;
+                }
+              }
+              float ambientWave = sin(vWorld.x * 5.0 + uTime * 1.8) * cos(vWorld.z * 5.5 - uTime * 1.4) * 0.04;
+              vec3 N = normalize(vec3(grad.x + ambientWave, 1.0, grad.y + ambientWave));
+              vec3 V = normalize(cameraPosition - vWorld);
+              vec3 L = normalize(uSunDir);
+              vec3 H = normalize(L + V);
+              float fresnel = pow(1.0 - max(dot(N, V), 0.0), 4.0);
+              float spec = pow(max(dot(N, H), 0.0), 96.0) * 1.2;
+              float edge = smoothstep(0.5, 0.25, length(vUv - 0.5));
+              vec3 col = mix(uColorShallow, uColorDeep, edge);
+              col = mix(col, vec3(0.58, 0.76, 0.72), fresnel * 0.55);
+              col += vec3(1.0, 0.96, 0.88) * (spec + max(rip, 0.0) * 0.18);
+              gl_FragColor = vec4(col, 0.78 * smoothstep(0.5, 0.42, length(vUv - 0.5)));
+            }
+          `
+        });
+        waterMesh = new THREE.Mesh(wGeo, wMat);
+        waterMesh.position.set(b.waterCenter.x, b.waterLevel, b.waterCenter.y);
+        habitatGroup.add(waterMesh);
+      }
+
+      // 6. Teraryum Saklanma Mağarası
+      if (b.hasCave) {
+        const caveGeo = new THREE.SphereGeometry(0.68, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55);
+        const caveMat = new THREE.MeshStandardMaterial({ color: 0x3b3835, roughness: 0.92, side: THREE.DoubleSide });
+        const cave = new THREE.Mesh(caveGeo, caveMat);
+        cave.position.set(-1.8, getTerrainHeight(-1.8, -2.0, biomeId) - 0.05, -2.0);
+        cave.scale.set(1.2, 0.7, 1.0);
+        cave.castShadow = true;
+        cave.receiveShadow = true;
+        habitatGroup.add(cave);
+        habitatObstacles.push({ x: -1.8, y: 0.2, z: -2.0, r: 0.75 });
+      }
+    }
+
+    // =========================================================================
+    // 5. YAŞAYAN AV CANLILARI SİSTEMİ (Fare, Kurbağa, Kertenkele, Kuş)
+    // =========================================================================
+    const preyGroup = new THREE.Group();
+    scene.add(preyGroup);
+    const preyList = [];
+
+    function createPreyMesh(type) {
+      const g = new THREE.Group();
+      const parts = { legs: [], tail: null, body: null, head: null };
+
+      if (type === 'mouse') {
+        const furMat = new THREE.MeshStandardMaterial({ color: 0x7b6a58, roughness: 0.88 });
+        const earMat = new THREE.MeshStandardMaterial({ color: 0xd49a96, roughness: 0.75 });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x090909, roughness: 0.1 });
+
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 10), furMat);
+        body.scale.set(0.85, 0.76, 1.38);
+        body.position.y = 0.036;
+        body.castShadow = true;
+        g.add(body);
+        parts.body = body;
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), furMat);
+        head.scale.set(0.85, 0.78, 1.30);
+        head.position.set(0, 0.040, 0.064);
+        head.castShadow = true;
+        g.add(head);
+        parts.head = head;
+
+        [-1, 1].forEach(s => {
+          const ear = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), earMat);
+          ear.scale.set(0.35, 1.0, 0.9);
+          ear.position.set(s * 0.019, 0.062, 0.054);
+          g.add(ear);
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 6, 6), eyeMat);
+          eye.position.set(s * 0.015, 0.046, 0.082);
+          g.add(eye);
+        });
+
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.005, 6, 6), earMat);
+        nose.position.set(0, 0.038, 0.100);
+        g.add(nose);
+
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.0045, 0.095, 6), earMat);
+        tail.rotation.x = Math.PI * 0.44;
+        tail.position.set(0, 0.022, -0.092);
+        g.add(tail);
+        parts.tail = tail;
+
+        [[-0.022, 0.032], [0.022, 0.032], [-0.024, -0.028], [0.024, -0.028]].forEach(([lx, lz]) => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.004, 0.026, 6), earMat);
+          leg.position.set(lx, 0.014, lz);
+          g.add(leg);
+          parts.legs.push(leg);
+        });
+      } else if (type === 'frog') {
+        const frogMat = new THREE.MeshStandardMaterial({ color: 0x428c32, roughness: 0.26, metalness: 0.05 });
+        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xc2d98c, roughness: 0.35 });
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xe6a822, roughness: 0.12 });
+
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.040, 12, 10), frogMat);
+        body.scale.set(1.05, 0.72, 1.22);
+        body.position.set(0, 0.034, 0);
+        body.castShadow = true;
+        g.add(body);
+        parts.body = body;
+
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.034, 10, 8), bellyMat);
+        belly.scale.set(0.95, 0.45, 1.05);
+        belly.position.set(0, 0.020, 0.005);
+        g.add(belly);
+
+        [-1, 1].forEach(s => {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 8), eyeMat);
+          eye.position.set(s * 0.020, 0.056, 0.030);
+          g.add(eye);
+          const leg = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), frogMat);
+          leg.scale.set(0.6, 0.85, 1.45);
+          leg.position.set(s * 0.036, 0.022, -0.020);
+          g.add(leg);
+          parts.legs.push(leg);
+        });
+      } else if (type === 'lizard') {
+        const lizMat = new THREE.MeshStandardMaterial({ color: 0x6b7c3e, roughness: 0.46 });
+        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.019, 0.11, 8), lizMat);
+        body.rotation.x = Math.PI * 0.5;
+        body.position.y = 0.022;
+        body.castShadow = true;
+        g.add(body);
+        parts.body = body;
+
+        const head = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.042, 8), lizMat);
+        head.rotation.x = Math.PI * 0.5;
+        head.position.set(0, 0.024, 0.072);
+        g.add(head);
+        parts.head = head;
+
+        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.14, 7), lizMat);
+        tail.rotation.x = -Math.PI * 0.5;
+        tail.position.set(0, 0.018, -0.12);
+        g.add(tail);
+        parts.tail = tail;
+
+        [[-0.024, 0.032], [0.024, 0.032], [-0.024, -0.030], [0.024, -0.030]].forEach(([lx, lz]) => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.003, 0.028, 6), lizMat);
+          leg.position.set(lx, 0.014, lz);
+          leg.rotation.z = lx > 0 ? -0.45 : 0.45;
+          g.add(leg);
+          parts.legs.push(leg);
+        });
+      } else {
+        // Bıldırcın / Küçük Kuş
+        const featherMat = new THREE.MeshStandardMaterial({ color: 0x7a624a, roughness: 0.85 });
+        const beakMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, roughness: 0.4 });
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.044, 12, 10), featherMat);
+        body.scale.set(0.88, 0.85, 1.25);
+        body.position.y = 0.056;
+        body.castShadow = true;
+        g.add(body);
+        parts.body = body;
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 8), featherMat);
+        head.position.set(0, 0.088, 0.048);
+        g.add(head);
+        parts.head = head;
+
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.007, 0.022, 6), beakMat);
+        beak.rotation.x = Math.PI * 0.5;
+        beak.position.set(0, 0.085, 0.075);
+        g.add(beak);
+
+        [-0.015, 0.015].forEach(lx => {
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.036, 5), beakMat);
+          leg.position.set(lx, 0.018, 0);
+          g.add(leg);
+          parts.legs.push(leg);
+        });
+      }
+      return { mesh: g, parts };
+    }
+
+    const PREY_LABELS = { mouse: 'Tarla Faresi', frog: 'Kurbağa', lizard: 'Kertenkele', bird: 'Bıldırcın' };
+
+    function spawnPrey(nearSnake = false) {
+      const types = ['mouse', 'mouse', 'frog', 'lizard', 'bird'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      const { mesh, parts } = createPreyMesh(type);
+
+      let px, pz;
+      if (nearSnake && physics && physics.pos[0]) {
+        const ang = physics.heading + (Math.random() - 0.5) * 1.1;
+        const dist = 0.85 + Math.random() * 0.85;
+        px = physics.pos[0].x + Math.cos(ang) * dist;
+        pz = physics.pos[0].z + Math.sin(ang) * dist;
+      } else {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 1.4 + Math.random() * 3.8;
+        px = Math.cos(ang) * dist;
+        pz = Math.sin(ang) * dist;
+      }
+      const py = getTerrainHeight(px, pz);
+      mesh.position.set(px, py, pz);
+      preyGroup.add(mesh);
+
+      const prey = {
+        id: Math.random().toString(36).slice(2),
+        type,
+        label: PREY_LABELS[type],
+        mesh,
+        parts,
+        pos: new THREE.Vector3(px, py, pz),
+        vel: new THREE.Vector3(),
+        heading: Math.random() * Math.PI * 2,
+        walkPhase: Math.random() * 10,
+        hopTimer: 0.8 + Math.random() * 1.5,
+        hopVy: 0,
+        state: 'ROAM', // ROAM | FLEE | CAPTURED | SWALLOWING | EATEN
+        bolusSize: type === 'bird' ? 0.056 : (type === 'mouse' ? 0.048 : (type === 'frog' ? 0.044 : 0.036)),
+        wanderTimer: 1 + Math.random() * 3
+      };
+      preyList.push(prey);
+      return prey;
+    }
+
+    function initPreyPopulation() {
+      while (preyList.length > 0) {
+        const p = preyList.pop();
+        preyGroup.remove(p.mesh);
+      }
+      for (let i = 0; i < 8; i++) spawnPrey(i < 2);
+    }
+
+    function updatePrey(dt) {
+      const head = physics.pos[0];
+      let minDist = 99;
+      let nearest = null;
+
+      for (let i = preyList.length - 1; i >= 0; i--) {
+        const pr = preyList[i];
+        if (pr.state === 'EATEN') {
+          preyGroup.remove(pr.mesh);
+          preyList.splice(i, 1);
+          continue;
+        }
+        if (pr.state === 'CAPTURED' || pr.state === 'SWALLOWING') {
+          continue;
+        }
+
+        const dx = pr.pos.x - head.x;
+        const dz = pr.pos.z - head.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < minDist) {
+          minDist = dist;
+          nearest = pr;
+        }
+
+        // Yılan çok yaklaşırsa av panikleyip kaçmaya çalışır (ama yılan ondan hızlıdır!)
+        let speed = pr.type === 'lizard' ? 0.42 : (pr.type === 'mouse' ? 0.36 : 0.24);
+        if (dist < 1.15) {
+          pr.state = 'FLEE';
+          const fleeAng = Math.atan2(dz, dx);
+          pr.heading += Math.sin(fleeAng - pr.heading) * Math.min(1, dt * 6.0);
+          speed *= 1.45;
+        } else {
+          pr.state = 'ROAM';
+          pr.wanderTimer -= dt;
+          if (pr.wanderTimer <= 0) {
+            pr.wanderTimer = 1.5 + Math.random() * 2.5;
+            pr.heading += (Math.random() - 0.5) * 1.8;
+          }
+          // Arena içinde tut
+          if (Math.hypot(pr.pos.x, pr.pos.z) > 5.2) {
+            const toCenter = Math.atan2(-pr.pos.z, -pr.pos.x);
+            pr.heading += Math.sin(toCenter - pr.heading) * dt * 3.0;
+          }
+        }
+
+        // Kurbağa & Kuş zıplama fiziği; Fare & Kertenkele koşma animasyonu
+        const groundY = getTerrainHeight(pr.pos.x, pr.pos.z);
+        if (pr.type === 'frog' || pr.type === 'bird') {
+          pr.hopTimer -= dt * (pr.state === 'FLEE' ? 2.4 : 1.0);
+          if (pr.pos.y <= groundY + 0.002 && pr.hopTimer <= 0) {
+            pr.hopVy = pr.type === 'frog' ? 1.55 : 1.15;
+            pr.hopTimer = 0.7 + Math.random() * 1.2;
+          }
+          if (pr.pos.y > groundY + 0.002 || pr.hopVy > 0) {
+            pr.pos.x += Math.cos(pr.heading) * speed * 1.8 * dt;
+            pr.pos.z += Math.sin(pr.heading) * speed * 1.8 * dt;
+            pr.hopVy -= 9.81 * dt;
+            pr.pos.y += pr.hopVy * dt;
+            if (pr.pos.y < groundY) { pr.pos.y = groundY; pr.hopVy = 0; }
+          } else {
+            pr.pos.y = groundY;
+          }
+        } else {
+          pr.pos.x += Math.cos(pr.heading) * speed * dt;
+          pr.pos.z += Math.sin(pr.heading) * speed * dt;
+          pr.pos.y = getTerrainHeight(pr.pos.x, pr.pos.z);
+        }
+
+        // Uzuv ve nefes alma animasyonu
+        pr.walkPhase += dt * (pr.state === 'FLEE' ? 22 : 11);
+        pr.parts.legs.forEach((leg, idx) => {
+          leg.rotation.x = Math.sin(pr.walkPhase + idx * Math.PI * 0.5) * 0.55;
+        });
+        if (pr.parts.tail) {
+          pr.parts.tail.rotation.z = Math.sin(pr.walkPhase * 0.7) * 0.25;
+        }
+        if (pr.parts.body) {
+          const breath = 1.0 + Math.sin(state.simTime * 5.5 + i) * 0.03;
+          pr.parts.body.scale.y = (pr.type === 'frog' ? 0.72 : (pr.type === 'bird' ? 0.85 : 0.76)) * breath;
+        }
+
+        pr.mesh.position.copy(pr.pos);
+        pr.mesh.rotation.set(0, Math.atan2(Math.cos(pr.heading), Math.sin(pr.heading)), 0);
+      }
+
+      state.nearestPreyDist = minDist;
+
+      // Eğer yılan doğrudan bir avın ağzına çok yaklaşırsa (<0.22m) otomatik yakalama başlat!
+      if (state.feeding.phase === 'NONE' && nearest && minDist < 0.24) {
+        triggerStrike(nearest);
+      }
+
+      // Popülasyonu canlı tut
+      if (preyList.length < 7 && Math.random() < dt * 0.35) {
+        spawnPrey(false);
+      }
+    }
+
+    function triggerStrike(explicitTarget = null) {
+      if (state.feeding.phase !== 'NONE') return;
+      const head = physics.pos[0];
+      let target = explicitTarget;
+      if (!target) {
+        let bestD = 1.65;
+        for (const pr of preyList) {
+          if (pr.state === 'EATEN' || pr.state === 'CAPTURED' || pr.state === 'SWALLOWING') continue;
+          const d = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
+          if (d < bestD) { bestD = d; target = pr; }
+        }
+      }
+      if (!target) {
+        state.jawTarget = 0.85;
+        showToast('Yakında av yok — bir ava yaklaşın veya "+ Yeni Av Ekle" basın');
+        return;
+      }
+      state.feeding.phase = 'STRIKE';
+      state.feeding.target = target;
+      state.feeding.timer = 0;
+      state.feeding.progress = 0;
+      showToast(`Saldırı başladı! Hedef: ${target.label}`);
+    }
+
+    // =========================================================================
+    // 6. GERÇEKÇİ BİYOMEKANİK XPBD + ANİZOTROPİK SÜRTÜNME + 3B KAPSÜL MOTORU
+    // (Sıfır yapay itki: desiredSpeed / pull / pushOff tamamen kaldırıldı)
+    // =========================================================================
+/**
+ * SERPENTIA — Pure Biomechanical XPBD + Anisotropic Friction + 3D Capsule Collision Engine
+ * Zero artificial propulsion (no desiredSpeed, no neck pull, no pushOff).
+ * Locomotion emerges purely from internal XPBD muscular bending/axial constraints
+ * coupled with physical environmental reaction forces (anisotropic Coulomb friction F = mu * N,
+ * Archimedes buoyancy, and anisotropic hydrodynamic drag).
+ */
+
+const SPECIES_BIOMECH = {
+  king_cobra: {
+    id: 'king_cobra', length: 3.60, mass: 6.0, vertebrae: 255, baseRadius: 0.046, tailRatio: 0.21,
+    maxBendDeg: 22, bendCompliance: 1.8e-5, muscleTorque: 1.0, cpgFreq: 1.15, cpgWaves: 2.35, cpgAmpRad: 0.28,
+    prefGait: 'lateral_undulation', swimEfficiency: 1.05, climbSkill: 0.72, huntStyle: 'venom',
+    strikeRange: 0.95, strikeAccel: 1.35, hasHood: true, hasRattle: false
+  },
+  reticulated_python: {
+    id: 'reticulated_python', length: 5.20, mass: 58.0, vertebrae: 340, baseRadius: 0.078, tailRatio: 0.14,
+    maxBendDeg: 24, bendCompliance: 3.2e-5, muscleTorque: 1.25, cpgFreq: 0.72, cpgWaves: 2.20, cpgAmpRad: 0.24,
+    prefGait: 'rectilinear', swimEfficiency: 1.10, climbSkill: 0.65, huntStyle: 'constrict',
+    strikeRange: 1.10, strikeAccel: 1.05, hasHood: false, hasRattle: false
+  },
+  gaboon_viper: {
+    id: 'gaboon_viper', length: 1.50, mass: 8.5, vertebrae: 155, baseRadius: 0.064, tailRatio: 0.07,
+    maxBendDeg: 20, bendCompliance: 4.5e-5, muscleTorque: 0.95, cpgFreq: 0.68, cpgWaves: 1.95, cpgAmpRad: 0.20,
+    prefGait: 'rectilinear', swimEfficiency: 0.60, climbSkill: 0.25, huntStyle: 'venom',
+    strikeRange: 0.55, strikeAccel: 1.65, hasHood: false, hasRattle: false
+  },
+  corn_snake: {
+    id: 'corn_snake', length: 1.20, mass: 0.75, vertebrae: 220, baseRadius: 0.024, tailRatio: 0.17,
+    maxBendDeg: 28, bendCompliance: 1.2e-5, muscleTorque: 0.90, cpgFreq: 1.55, cpgWaves: 2.65, cpgAmpRad: 0.30,
+    prefGait: 'lateral_undulation', swimEfficiency: 0.95, climbSkill: 0.92, huntStyle: 'constrict',
+    strikeRange: 0.42, strikeAccel: 1.25, hasHood: false, hasRattle: false
+  },
+  inland_taipan: {
+    id: 'inland_taipan', length: 1.85, mass: 1.50, vertebrae: 235, baseRadius: 0.028, tailRatio: 0.18,
+    maxBendDeg: 25, bendCompliance: 1.1e-5, muscleTorque: 1.15, cpgFreq: 1.65, cpgWaves: 2.55, cpgAmpRad: 0.29,
+    prefGait: 'lateral_undulation', swimEfficiency: 0.85, climbSkill: 0.55, huntStyle: 'venom',
+    strikeRange: 0.68, strikeAccel: 1.75, hasHood: false, hasRattle: false
+  },
+  ball_python: {
+    id: 'ball_python', length: 1.25, mass: 1.55, vertebrae: 242, baseRadius: 0.044, tailRatio: 0.075,
+    maxBendDeg: 26, bendCompliance: 2.6e-5, muscleTorque: 1.05, cpgFreq: 0.80, cpgWaves: 2.10, cpgAmpRad: 0.23,
+    prefGait: 'rectilinear', swimEfficiency: 0.75, climbSkill: 0.58, huntStyle: 'constrict',
+    strikeRange: 0.38, strikeAccel: 1.10, hasHood: false, hasRattle: false
+  },
+  green_anaconda: {
+    id: 'green_anaconda', length: 4.60, mass: 50.0, vertebrae: 245, baseRadius: 0.095, tailRatio: 0.14,
+    maxBendDeg: 22, bendCompliance: 3.8e-5, muscleTorque: 1.35, cpgFreq: 0.66, cpgWaves: 2.15, cpgAmpRad: 0.25,
+    prefGait: 'lateral_undulation', swimEfficiency: 1.45, climbSkill: 0.35, huntStyle: 'constrict',
+    strikeRange: 0.95, strikeAccel: 1.15, hasHood: false, hasRattle: false
+  },
+  black_mamba: {
+    id: 'black_mamba', length: 2.60, mass: 1.60, vertebrae: 270, baseRadius: 0.029, tailRatio: 0.22,
+    maxBendDeg: 26, bendCompliance: 0.9e-5, muscleTorque: 1.20, cpgFreq: 1.75, cpgWaves: 2.60, cpgAmpRad: 0.30,
+    prefGait: 'lateral_undulation', swimEfficiency: 0.92, climbSkill: 0.88, huntStyle: 'venom',
+    strikeRange: 0.88, strikeAccel: 1.80, hasHood: false, hasRattle: false
+  },
+  sidewinder: {
+    id: 'sidewinder', length: 0.68, mass: 0.24, vertebrae: 145, baseRadius: 0.022, tailRatio: 0.09,
+    maxBendDeg: 27, bendCompliance: 1.4e-5, muscleTorque: 1.05, cpgFreq: 1.45, cpgWaves: 2.05, cpgAmpRad: 0.34,
+    prefGait: 'sidewinding', swimEfficiency: 0.55, climbSkill: 0.20, huntStyle: 'venom',
+    strikeRange: 0.28, strikeAccel: 1.60, hasHood: false, hasRattle: true
+  },
+  emerald_tree_boa: {
+    id: 'emerald_tree_boa', length: 1.80, mass: 1.65, vertebrae: 260, baseRadius: 0.036, tailRatio: 0.17,
+    maxBendDeg: 30, bendCompliance: 1.6e-5, muscleTorque: 1.10, cpgFreq: 0.88, cpgWaves: 2.35, cpgAmpRad: 0.27,
+    prefGait: 'arboreal', swimEfficiency: 0.80, climbSkill: 1.00, huntStyle: 'constrict',
+    strikeRange: 0.60, strikeAccel: 1.30, hasHood: false, hasRattle: false
+  }
+};
+
+// Substrate physical friction properties (Hu et al. 2009 PNAS baseline + substrate scaling)
+const SUBSTRATE_PHYSICS = {
+  grass:     { muF: 0.11, muB: 0.16, muT: 0.58, staticBoost: 1.35, damping: 0.02 },
+  sand:      { muF: 0.14, muB: 0.18, muT: 0.34, staticBoost: 1.25, damping: 0.05 },
+  soil:      { muF: 0.12, muB: 0.17, muT: 0.62, staticBoost: 1.40, damping: 0.03 },
+  rock:      { muF: 0.16, muB: 0.21, muT: 0.44, staticBoost: 1.20, damping: 0.01 },
+  mud:       { muF: 0.09, muB: 0.12, muT: 0.28, staticBoost: 1.15, damping: 0.08 },
+  wood:      { muF: 0.13, muB: 0.19, muT: 0.68, staticBoost: 1.45, damping: 0.02 },
+  wet:       { muF: 0.08, muB: 0.11, muT: 0.26, staticBoost: 1.10, damping: 0.03 }
+};
+
+class BiomechSnakeEngine {
+  constructor(envCallbacks) {
+    this.env = envCallbacks; // { getHeight(x,z), getNormal(x,z,out), getSubstrate(x,z), getWaterInfo(x,z), getObstacles(), getBranchPoint(t,out) }
+    this.FIXED_DT = 1 / 120;
+    this.SOLVER_ITERS = 10;
+    this.N = 64;
+    this.maxN = 96;
+
+    // Zero-allocation TypedArray state buffers
+    this.px = new Float64Array(this.maxN);
+    this.py = new Float64Array(this.maxN);
+    this.pz = new Float64Array(this.maxN);
+
+    this.prevX = new Float64Array(this.maxN);
+    this.prevY = new Float64Array(this.maxN);
+    this.prevZ = new Float64Array(this.maxN);
+
+    this.interpX = new Float64Array(this.maxN);
+    this.interpY = new Float64Array(this.maxN);
+    this.interpZ = new Float64Array(this.maxN);
+
+    this.vx = new Float64Array(this.maxN);
+    this.vy = new Float64Array(this.maxN);
+    this.vz = new Float64Array(this.maxN);
+
+    this.mass = new Float64Array(this.maxN);
+    this.invMass = new Float64Array(this.maxN);
+    this.radii = new Float64Array(this.maxN);
+    this.restLen = 0.05;
+
+    // XPBD Lagrange multipliers (reset every substep)
+    this.lambdaDist = new Float64Array(this.maxN);
+    this.lambdaBend = new Float64Array(this.maxN);
+    this.lambdaVertBend = new Float64Array(this.maxN);
+
+    // Per-node biomechanical telemetry & muscle state
+    this.curvatures = new Float64Array(this.maxN);
+    this.targetCurv = new Float64Array(this.maxN);
+    this.muscleAct = new Float64Array(this.maxN);
+    this.normalForce = new Float64Array(this.maxN);
+    this.inContact = new Uint8Array(this.maxN);
+    this.submerged = new Float64Array(this.maxN);
+    this.fricX = new Float64Array(this.maxN);
+    this.fricY = new Float64Array(this.maxN);
+    this.fricZ = new Float64Array(this.maxN);
+
+    // Delayed steering curvature propagation buffer (head -> tail)
+    this.steerWave = new Float64Array(this.maxN);
+    // Rectilinear skin-skeleton displacement state
+    this.skinDisp = new Float64Array(this.maxN);
+
+    // Spatial hash map for O(N) 3D capsule-capsule self-collision
+    this.hashBuckets = new Map();
+
+    // Scratch arrays
+    this._nrm = [0, 1, 0];
+    this._cp = [0, 0, 0, 0, 0, 0];
+
+    this.species = SPECIES_BIOMECH.king_cobra;
+    this.gait = 'lateral_undulation';
+    this.heading = 0;
+    this.smoothHeading = 0;
+    this.targetHeading = 0;
+    this.driveEffort = 0; // [0..1] muscle effort from user/AI
+    this.sprintEffort = 0; // [0..1]
+    this.cpgPhase = 0;
+    this.accumulator = 0;
+    this.simTime = 0;
+    this.boluses = []; // { u, mass, radius, volume }
+    this.sandTracks = []; // { x, y, z, age }
+    this.selfCollisionCount = 0;
+    this.maxPenetration = 0;
+    this.lengthDriftPct = 0;
+    this.lateralSlipRatio = 0;
+    this.groundSpeed = 0;
+    this.reset('king_cobra');
+  }
+
+  computeAnatomicalRadius(u, sp) {
+    const tailStart = 1.0 - sp.tailRatio;
+    let prof = 1.0;
+    if (u < 0.06) prof = 0.62 + 0.38 * Math.sin((u / 0.06) * Math.PI * 0.5);
+    else if (u < tailStart) {
+      const mid = (u - 0.06) / (tailStart - 0.06);
+      prof = 0.82 + 0.24 * Math.sin(mid * Math.PI);
+    } else {
+      const t = (u - tailStart) / Math.max(0.01, sp.tailRatio);
+      prof = 0.82 * Math.pow(Math.max(0.0, 1.0 - t), 1.35) + (sp.hasRattle ? 0.14 : 0.04);
+    }
+    let r = sp.baseRadius * prof;
+    // Volume-conserving bolus radius expansion: pi*r_new^2 = pi*r^2 + bolusCrossArea
+    for (let k = 0; k < this.boluses.length; k++) {
+      const b = this.boluses[k];
+      const du = (u - b.u) / 0.055;
+      const g = Math.exp(-du * du);
+      if (g > 0.01) {
+        r = Math.sqrt(r * r + b.radius * b.radius * g);
+      }
+    }
+    return r;
+  }
+
+  reset(speciesId, startX = 0, startZ = 0, startHeading = 0) {
+    const sp = SPECIES_BIOMECH[speciesId] || SPECIES_BIOMECH.king_cobra;
+    this.species = sp;
+    // Species-adaptive node resolution based on length & anatomy
+    this.N = Math.max(40, Math.min(this.maxN, Math.round(sp.length * 22)));
+    this.restLen = sp.length / (this.N - 1);
+    this.heading = startHeading;
+    this.smoothHeading = startHeading;
+    this.targetHeading = startHeading;
+    this.cpgPhase = 0;
+    this.accumulator = 0;
+    this.boluses = [];
+    this.sandTracks = [];
+    this.steerWave.fill(0);
+    this.skinDisp.fill(0);
+
+    const cosH = Math.cos(startHeading);
+    const sinH = Math.sin(startHeading);
+    const perpX = -sinH;
+    const perpZ = cosH;
+
+    // Normalize anatomical mass distribution
+    let areaSum = 0;
+    for (let i = 0; i < this.N; i++) {
+      const u = i / (this.N - 1);
+      const r = this.computeAnatomicalRadius(u, sp);
+      this.radii[i] = r;
+      areaSum += r * r;
+    }
+
+    for (let i = 0; i < this.N; i++) {
+      const u = i / (this.N - 1);
+      const r = this.radii[i];
+      const m = Math.max(0.002, sp.mass * (r * r) / areaSum);
+      this.mass[i] = m;
+      this.invMass[i] = 1.0 / m;
+
+      // Exact arc-length serpenoid integration (zero initial stretch!)
+      let x, z;
+      if (i === 0) {
+        x = startX; z = startZ;
+      } else {
+        const yawOff = Math.cos(u * Math.PI * 2 * sp.cpgWaves) * 0.22;
+        const ang = startHeading + yawOff;
+        x = this.px[i - 1] - Math.cos(ang) * this.restLen;
+        z = this.pz[i - 1] - Math.sin(ang) * this.restLen;
+      }
+      const y = this.env.getHeight(x, z) + r;
+
+      this.px[i] = this.prevX[i] = this.interpX[i] = x;
+      this.py[i] = this.prevY[i] = this.interpY[i] = y;
+      this.pz[i] = this.prevZ[i] = this.interpZ[i] = z;
+      this.vx[i] = this.vy[i] = this.vz[i] = 0;
+      this.curvatures[i] = 0;
+      this.muscleAct[i] = 0;
+      this.normalForce[i] = m * 9.81;
+      this.inContact[i] = 1;
+    }
+    // Enforce exact rest length on spawn
+    this.lambdaDist.fill(0); for (let it = 0; it < 32; it++) this.solveDistanceConstraints(0, (it & 1) === 1);
+    for (let i = 0; i < this.N; i++) {
+      this.prevX[i] = this.interpX[i] = this.px[i];
+      this.prevY[i] = this.interpY[i] = this.py[i];
+      this.prevZ[i] = this.interpZ[i] = this.pz[i];
+    }
+  }
+
+  updateMassAndRadii(dt) {
+    const sp = this.species;
+    let areaSum = 0;
+    for (let i = 0; i < this.N; i++) {
+      const u = i / (this.N - 1);
+      this.radii[i] = this.computeAnatomicalRadius(u, sp);
+      areaSum += this.radii[i] * this.radii[i];
+    }
+    for (let i = 0; i < this.N; i++) {
+      const u = i / (this.N - 1);
+      let m = Math.max(0.002, sp.mass * (this.radii[i] * this.radii[i]) / areaSum);
+      // Add actual physical bolus mass to the segments carrying swallowed prey
+      for (let k = 0; k < this.boluses.length; k++) {
+        const b = this.boluses[k];
+        const du = (u - b.u) / 0.06;
+        m += b.mass * Math.exp(-du * du) * 0.25;
+      }
+      this.mass[i] = m;
+      this.invMass[i] = 1.0 / m;
+    }
+    // Peristaltic transport of swallowed boluses from neck to midbody stomach
+    for (let k = this.boluses.length - 1; k >= 0; k--) {
+      const b = this.boluses[k];
+      if (b.u < 0.50) b.u += dt * 0.030;
+      else {
+        b.radius *= (1 - dt * 0.015);
+        b.mass *= (1 - dt * 0.015);
+        if (b.radius < 0.003) this.boluses.splice(k, 1);
+      }
+    }
+  }
+
+  step(frameDt, tempFactor = 1.0) {
+    this.accumulator = Math.min(this.accumulator + frameDt, this.FIXED_DT * 5);
+    while (this.accumulator >= this.FIXED_DT) {
+      this.substep(this.FIXED_DT, tempFactor);
+      this.accumulator -= this.FIXED_DT;
+      this.simTime += this.FIXED_DT;
+    }
+    // Render interpolation between previous and current fixed physics state
+    const alpha = this.accumulator / this.FIXED_DT;
+    const invA = 1.0 - alpha;
+    for (let i = 0; i < this.N; i++) {
+      this.interpX[i] = this.prevX[i] * invA + this.px[i] * alpha;
+      this.interpY[i] = this.prevY[i] * invA + this.py[i] * alpha;
+      this.interpZ[i] = this.prevZ[i] * invA + this.pz[i] * alpha;
+    }
+    this.computeMetrics();
+  }
+
+  // True XPBD distance constraint with compliance alpha_tilde = compliance / dt^2 and Lagrange multiplier
+  solveDistanceConstraints(compliance, reverse = false) {
+    const dt2 = this.FIXED_DT * this.FIXED_DT;
+    const alphaTilde = compliance / dt2;
+    const start = reverse ? this.N - 2 : 0;
+    const end = reverse ? -1 : this.N - 1;
+    const step = reverse ? -1 : 1;
+    for (let i = start; i !== end; i += step) {
+      const dx = this.px[i + 1] - this.px[i];
+      const dy = this.py[i + 1] - this.py[i];
+      const dz = this.pz[i + 1] - this.pz[i];
+      const d = Math.hypot(dx, dy, dz);
+      if (d < 1e-8) continue;
+      const C = d - this.restLen;
+      const w0 = this.invMass[i];
+      const w1 = this.invMass[i + 1];
+      const denom = w0 + w1 + alphaTilde;
+      if (denom < 1e-12) continue;
+      const dLambda = (-C - alphaTilde * this.lambdaDist[i]) / denom;
+      this.lambdaDist[i] += dLambda;
+      const invD = 1.0 / d;
+      const nx = dx * invD, ny = dy * invD, nz = dz * invD;
+      // Gradient w.r.t p0 is -n, w.r.t p1 is +n
+      this.px[i] -= w0 * dLambda * nx;
+      this.py[i] -= w0 * dLambda * ny;
+      this.pz[i] -= w0 * dLambda * nz;
+      this.px[i + 1] += w1 * dLambda * nx;
+      this.py[i + 1] += w1 * dLambda * ny;
+      this.pz[i + 1] += w1 * dLambda * nz;
+    }
+  }
+
+  // True 3D signed-angle XPBD muscular bending constraint (Cosserat/DER discrete curvature)
+  // Uses atan2(dot(cross(e1, e2), up), dot(e1, e2)) — never limited by Math.asin()!
+  solveBendingConstraints(dt) {
+    const sp = this.species;
+    const maxAngle = (sp.maxBendDeg * Math.PI) / 180.0;
+    // Dimensionless scale-invariant XPBD compliance (identically stable from 0.24 kg to 60 kg)
+    const meanW = this.N / Math.max(0.1, sp.mass);
+    const invL2 = 1.0 / Math.max(1e-4, this.restLen * this.restLen);
+    const alphaTilde = (sp.bendCompliance * 4.2e3) * meanW * invL2 / Math.max(0.5, sp.muscleTorque);
+
+    for (let i = 1; i < this.N - 1; i++) {
+      const e1x = this.px[i] - this.px[i - 1];
+      const e1y = this.py[i] - this.py[i - 1];
+      const e1z = this.pz[i] - this.pz[i - 1];
+      const e2x = this.px[i + 1] - this.px[i];
+      const e2y = this.py[i + 1] - this.py[i];
+      const e2z = this.pz[i + 1] - this.pz[i];
+
+      const l1 = Math.hypot(e1x, e1y, e1z);
+      const l2 = Math.hypot(e2x, e2y, e2z);
+      if (l1 < 1e-6 || l2 < 1e-6) continue;
+
+      const u1x = e1x / l1, u1y = e1y / l1, u1z = e1z / l1;
+      const u2x = e2x / l2, u2y = e2y / l2, u2z = e2z / l2;
+
+      // Local terrain surface normal for 3D plane-projected lateral curvature
+      this.env.getNormal(this.px[i], this.pz[i], this._nrm);
+      const upX = this._nrm[0], upY = this._nrm[1], upZ = this._nrm[2];
+
+      // 3D cross product u1 x u2
+      const cx = u1y * u2z - u1z * u2y;
+      const cy = u1z * u2x - u1x * u2z;
+      const cz = u1x * u2y - u1y * u2x;
+
+      const sinSigned = cx * upX + cy * upY + cz * upZ;
+      const cosAngle = u1x * u2x + u1y * u2y + u1z * u2z;
+      const signedAngle = Math.atan2(sinSigned, cosAngle);
+      this.curvatures[i] = signedAngle;
+
+      // Clamp target curvature within anatomical vertebral joint limits
+      let target = Math.max(-maxAngle, Math.min(maxAngle, this.targetCurv[i]));
+      // Hard anatomical bending limit enforcement if exceeded
+      const C = signedAngle - target;
+      const activeAlpha = Math.abs(signedAngle) > maxAngle ? (alphaTilde * 0.05) : alphaTilde;
+
+      // Analytical gradient of signed angle w.r.t p_{i-1}, p_i, p_{i+1}
+      // n1 = up x u1 / l1, n2 = up x u2 / l2
+      const g0x = (upY * u1z - upZ * u1y) / l1;
+      const g0y = (upZ * u1x - upX * u1z) / l1;
+      const g0z = (upX * u1y - upY * u1x) / l1;
+
+      const g2x = (upY * u2z - upZ * u2y) / l2;
+      const g2y = (upZ * u2x - upX * u2z) / l2;
+      const g2z = (upX * u2y - upY * u2x) / l2;
+
+      const g1x = -(g0x + g2x);
+      const g1y = -(g0y + g2y);
+      const g1z = -(g0z + g2z);
+
+      const w0 = this.invMass[i - 1];
+      const w1 = this.invMass[i];
+      const w2 = this.invMass[i + 1];
+
+      const denom = w0 * (g0x * g0x + g0y * g0y + g0z * g0z)
+                  + w1 * (g1x * g1x + g1y * g1y + g1z * g1z)
+                  + w2 * (g2x * g2x + g2y * g2y + g2z * g2z)
+                  + activeAlpha;
+      if (denom < 1e-12) continue;
+
+      const rawDLambda = (-C - activeAlpha * this.lambdaBend[i]) / denom;
+      // Scale-invariant per-iteration position displacement safeguard (max 15% of restLen per iter)
+      const gNormMax = Math.max(Math.hypot(g0x, g0y, g0z) * w0, Math.hypot(g1x, g1y, g1z) * w1, Math.hypot(g2x, g2y, g2z) * w2, 1e-6);
+      const maxImp = (this.restLen * 0.14) / gNormMax;
+      const dLambda = Math.max(-maxImp, Math.min(maxImp, rawDLambda));
+      this.lambdaBend[i] += dLambda;
+
+      // Pure internal muscular torque — conserves linear & angular momentum!
+      this.px[i - 1] += w0 * dLambda * g0x;
+      this.py[i - 1] += w0 * dLambda * g0y;
+      this.pz[i - 1] += w0 * dLambda * g0z;
+
+      this.px[i] += w1 * dLambda * g1x;
+      this.py[i] += w1 * dLambda * g1y;
+      this.pz[i] += w1 * dLambda * g1z;
+
+      this.px[i + 1] += w2 * dLambda * g2x;
+      this.py[i + 1] += w2 * dLambda * g2y;
+      this.pz[i + 1] += w2 * dLambda * g2z;
+    }
+  }
+
+  // 3D Segment-to-Segment closest points for Capsule-to-Capsule self-collision
+  closestPointsSegments(ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz) {
+    const ux = bx - ax, uy = by - ay, uz = bz - az;
+    const vx = dx - cx, vy = dy - cy, vz = dz - cz;
+    const wx = ax - cx, wy = ay - cy, wz = az - cz;
+    const a = ux * ux + uy * uy + uz * uz;
+    const b = ux * vx + uy * vy + uz * vz;
+    const c = vx * vx + vy * vy + vz * vz;
+    const d = ux * wx + uy * wy + uz * wz;
+    const e = vx * wx + vy * wy + vz * wz;
+    const D = a * c - b * b;
+    let sN, sD = D, tN, tD = D;
+    if (D < 1e-7) { sN = 0; sD = 1; tN = e; tD = c; }
+    else {
+      sN = b * e - c * d;
+      tN = a * e - b * d;
+      if (sN < 0) { sN = 0; tN = e; tD = c; }
+      else if (sN > sD) { sN = sD; tN = e + b; tD = c; }
+    }
+    if (tN < 0) {
+      tN = 0;
+      if (-d < 0) sN = 0;
+      else if (-d > a) sN = sD;
+      else { sN = -d; sD = a; }
+    } else if (tN > tD) {
+      tN = tD;
+      if ((-d + b) < 0) sN = 0;
+      else if ((-d + b) > a) sN = sD;
+      else { sN = (-d + b); sD = a; }
+    }
+    const sc = Math.abs(sN) < 1e-7 ? 0 : sN / sD;
+    const tc = Math.abs(tN) < 1e-7 ? 0 : tN / tD;
+    this._cp[0] = sc;
+    this._cp[1] = tc;
+    this._cp[2] = ax + sc * ux - (cx + tc * vx);
+    this._cp[3] = ay + sc * uy - (cy + tc * vy);
+    this._cp[4] = az + sc * uz - (cz + tc * vz);
+  }
+
+  // O(N) Spatial-Hashed 3D Capsule-to-Capsule Self-Collision (supports 3D vertical coiling stacks!)
+  solve3DSelfCollision() {
+    const cellSize = Math.max(0.08, this.species.baseRadius * 3.5);
+    const invCell = 1.0 / cellSize;
+    this.hashBuckets.clear();
+    this.selfCollisionCount = 0;
+
+    for (let i = 0; i < this.N - 1; i++) {
+      const mx = (this.px[i] + this.px[i + 1]) * 0.5;
+      const my = (this.py[i] + this.py[i + 1]) * 0.5;
+      const mz = (this.pz[i] + this.pz[i + 1]) * 0.5;
+      const cx = Math.floor(mx * invCell);
+      const cy = Math.floor(my * invCell);
+      const cz = Math.floor(mz * invCell);
+      const key = (cx * 73856093) ^ (cy * 19349663) ^ (cz * 83492791);
+      let arr = this.hashBuckets.get(key);
+      if (!arr) { arr = []; this.hashBuckets.set(key, arr); }
+      arr.push(i);
+    }
+
+    for (let i = 0; i < this.N - 1; i++) {
+      const mx = (this.px[i] + this.px[i + 1]) * 0.5;
+      const my = (this.py[i] + this.py[i + 1]) * 0.5;
+      const mz = (this.pz[i] + this.pz[i + 1]) * 0.5;
+      const cx = Math.floor(mx * invCell);
+      const cy = Math.floor(my * invCell);
+      const cz = Math.floor(mz * invCell);
+
+      for (let ox = -1; ox <= 1; ox++) {
+        for (let oy = -1; oy <= 1; oy++) {
+          for (let oz = -1; oz <= 1; oz++) {
+            const key = ((cx + ox) * 73856093) ^ ((cy + oy) * 19349663) ^ ((cz + oz) * 83492791);
+            const bucket = this.hashBuckets.get(key);
+            if (!bucket) continue;
+            for (let b = 0; b < bucket.length; b++) {
+              const j = bucket[b];
+              if (j <= i + 4) continue; // skip adjacent segments
+              this.closestPointsSegments(
+                this.px[i], this.py[i], this.pz[i],
+                this.px[i + 1], this.py[i + 1], this.pz[i + 1],
+                this.px[j], this.py[j], this.pz[j],
+                this.px[j + 1], this.py[j + 1], this.pz[j + 1]
+              );
+              const dx = this._cp[2], dy = this._cp[3], dz = this._cp[4];
+              const d2 = dx * dx + dy * dy + dz * dz;
+              const minDist = (this.radii[i] + this.radii[j]) * 1.02;
+              if (d2 < minDist * minDist && d2 > 1e-10) {
+                this.selfCollisionCount++;
+                const d = Math.sqrt(d2);
+                const pen = (minDist - d) * 0.5;
+                const nx = dx / d, ny = dy / d, nz = dz / d;
+                const sc = this._cp[0], tc = this._cp[1];
+                const wa = 1.0 - sc, wb = sc, wc = 1.0 - tc, wd = tc;
+                this.px[i] += nx * pen * wa;     this.py[i] += ny * pen * wa;     this.pz[i] += nz * pen * wa;
+                this.px[i + 1] += nx * pen * wb; this.py[i + 1] += ny * pen * wb; this.pz[i + 1] += nz * pen * wb;
+                this.px[j] -= nx * pen * wc;     this.py[j] -= ny * pen * wc;     this.pz[j] -= nz * pen * wc;
+                this.px[j + 1] -= nx * pen * wd; this.py[j + 1] -= ny * pen * wd; this.pz[j + 1] -= nz * pen * wd;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  substep(dt, tempFactor) {
+    const sp = this.species;
+    this.updateMassAndRadii(dt);
+
+    // Compute current head tangent heading
+    const hdx = this.px[0] - this.px[2];
+    const hdz = this.pz[0] - this.pz[2];
+    if (hdx * hdx + hdz * hdz > 1e-8) {
+      this.heading = Math.atan2(hdz, hdx);
+    }
+    let shErr = this.targetHeading - this.smoothHeading;
+    while (shErr > Math.PI) shErr -= Math.PI * 2;
+    while (shErr < -Math.PI) shErr += Math.PI * 2;
+    this.smoothHeading += shErr * Math.min(1, dt * 6.0);
+
+    let headErr = this.targetHeading - this.heading;
+    while (headErr > Math.PI) headErr -= Math.PI * 2;
+    while (headErr < -Math.PI) headErr += Math.PI * 2;
+
+    // 1. Propagate steering curvature wave from head to tail (anatomical delayed turning!)
+    const propRate = Math.min(0.45, dt * (2.5 + this.driveEffort * 9.0));
+    const maxSteer = (sp.maxBendDeg * Math.PI / 180.0) * 0.72;
+    const headSteerCmd = Math.max(-maxSteer, Math.min(maxSteer, headErr * 0.55));
+    // Shift steering wave posteriorly along the spine
+    for (let i = this.N - 1; i >= 1; i--) {
+      this.steerWave[i] += (this.steerWave[i - 1] - this.steerWave[i]) * propRate;
+    }
+    this.steerWave[0] = headSteerCmd;
+
+    // Ground-locked wave phase (Gray 1946; Hu et al. 2009):
+    // Wave propagates posteriorly at the exact rate the body glides forward -> S-bends stay anchored on ground, zero back-and-forth stutter!
+    const headSpd = Math.hypot(this.vx[0], this.vz[0]);
+    const waveNumber = (Math.PI * 2 * sp.cpgWaves) / Math.max(0.4, sp.length);
+    if (this.gait === 'coiling' || this.gait === 'head_lift') {
+      this.cpgPhase += dt * sp.cpgFreq * Math.PI * 2 * 0.45 * tempFactor;
+    } else if (this.driveEffort > 0.02) {
+      const minRhythm = sp.cpgFreq * 0.45 * this.driveEffort;
+      const lockedRate = headSpd * waveNumber * 1.04;
+      this.cpgPhase += dt * Math.max(minRhythm, lockedRate) * tempFactor;
+    }
+
+    // 2. Compute Target Muscular Curvatures (Serpenoid CPG + Delayed Steering + Gait-Specific Activation)
+    const maxBendRad = (sp.maxBendDeg * Math.PI) / 180.0;
+    for (let i = 1; i < this.N - 1; i++) {
+      const u = i / (this.N - 1);
+      let cTarget = 0;
+
+      if (this.gait === 'coiling') {
+        // Pure muscular coiling: monotonic positive curvature bends snake into a natural coil via self-collision!
+        const coilCurv = maxBendRad * (0.48 + 0.35 * (1.0 - u));
+        cTarget = coilCurv;
+      } else if (this.gait === 'rectilinear') {
+        // Minimal lateral bending (straight spine), slight steering at neck
+        cTarget = (i < 12 ? this.steerWave[i] * (1 - i / 12) : 0);
+      } else if (this.gait === 'concertina') {
+        // Alternating high-curvature anchor waves & straight extending segments
+        const anchorWave = Math.sin(u * Math.PI * 2.8 - this.cpgPhase * 0.55);
+        const anchorAmp = anchorWave > 0 ? (sp.cpgAmpRad * 1.35 * anchorWave) : (sp.cpgAmpRad * 0.15);
+        cTarget = anchorAmp * Math.sin(u * Math.PI * 6.5 - this.cpgPhase * 1.1) + this.steerWave[i] * 0.45;
+      } else if (this.gait === 'sidewinding') {
+        // Marvi et al. (2014): horizontal traveling wave + orthogonal vertical lifting wave
+        const phase = u * Math.PI * 2 * sp.cpgWaves - this.cpgPhase;
+        cTarget = sp.cpgAmpRad * 1.15 * Math.sin(phase) * (0.4 + 0.6 * Math.sin(u * Math.PI)) + this.steerWave[i] * 0.4;
+      } else if (this.gait === 'swimming') {
+        // Increasing tailward wave amplitude for aquatic propulsion (Jayne 1985)
+        const swimEnv = 0.25 + 0.95 * u;
+        cTarget = sp.cpgAmpRad * 1.25 * swimEnv * Math.sin(u * Math.PI * 2 * (sp.cpgWaves * 0.85) - this.cpgPhase * 1.2) + this.steerWave[i] * 0.5;
+      } else {
+        // Lateral undulation: Serpenoid CPG with head stabilization + delayed steering wave
+        // When stopped (driveEffort == 0), preserve current body curvature!
+        if (this.driveEffort < 0.02) {
+          cTarget = this.curvatures[i];
+        } else {
+          const headStab = Math.min(1.0, u / 0.14);
+          const tailEnv = 0.55 + 0.45 * Math.sin(u * Math.PI);
+          const amp = sp.cpgAmpRad * (0.95 + 0.55 * this.sprintEffort) * this.driveEffort;
+          cTarget = amp * headStab * tailEnv * Math.sin(u * Math.PI * 2 * sp.cpgWaves - this.cpgPhase)
+                  + this.steerWave[i] * (i < 10 ? 0.85 : 0.35);
+        }
+      }
+      this.targetCurv[i] = Math.max(-maxBendRad, Math.min(maxBendRad, cTarget));
+      this.muscleAct[i] = Math.min(1.0, Math.abs(this.targetCurv[i]) / maxBendRad);
+    }
+
+    // 3. External Forces (Gravity, Archimedes Buoyancy, Anisotropic Hydrodynamic Drag, Vertical Muscle Lift)
+    const g = -9.81;
+    const rhoWater = 1000.0;
+    const rhoSnake = 1030.0; // slightly denser than freshwater, lungs provide near-neutral buoyancy
+
+    for (let i = 0; i < this.N; i++) {
+      this.prevX[i] = this.px[i];
+      this.prevY[i] = this.py[i];
+      this.prevZ[i] = this.pz[i];
+      const u = i / (this.N - 1);
+
+      // Gravity
+      this.vy[i] += g * dt;
+
+      // Water buoyancy & Taylor (1952) anisotropic hydrodynamic drag
+      const wInfo = this.env.getWaterInfo(this.px[i], this.pz[i]);
+      this.submerged[i] = 0;
+      if (wInfo.inWater && this.py[i] - this.radii[i] < wInfo.level) {
+        const subRatio = Math.max(0, Math.min(1.0, (wInfo.level - (this.py[i] - this.radii[i])) / (2.0 * this.radii[i])));
+        this.submerged[i] = subRatio;
+        // Archimedes buoyancy: F_b = rho_w * g * V_sub, with lung air sac keeping head near surface
+        const lungBoost = u < 0.15 ? 1.08 : 1.02;
+        const buoyAccel = (rhoWater / rhoSnake) * 9.81 * subRatio * lungBoost;
+        this.vy[i] += (buoyAccel - this.vy[i] * 8.5 * subRatio) * dt;
+
+        // Anisotropic hydrodynamic drag (C_Dn >> C_Dt pushes water backward -> forward thrust!)
+        const pIdx = Math.max(0, i - 1), nIdx = Math.min(this.N - 1, i + 1);
+        let tx = this.px[pIdx] - this.px[nIdx];
+        let ty = this.py[pIdx] - this.py[nIdx];
+        let tz = this.pz[pIdx] - this.pz[nIdx];
+        const tl = Math.hypot(tx, ty, tz) || 1e-6;
+        tx /= tl; ty /= tl; tz /= tl;
+
+        const vDotT = this.vx[i] * tx + this.vy[i] * ty + this.vz[i] * tz;
+        const vtx = vDotT * tx, vty = vDotT * ty, vtz = vDotT * tz;
+        const vnx = this.vx[i] - vtx, vny = this.vy[i] - vty, vnz = this.vz[i] - vtz;
+        const vnMag = Math.hypot(vnx, vny, vnz);
+        const vtMag = Math.abs(vDotT);
+
+        // Projected segment area A = 2 * r * restLen
+        const area = 2.0 * this.radii[i] * this.restLen * subRatio;
+        const cDn = 1.25 * sp.swimEfficiency;
+        const cDt = 0.08;
+        const fN = -0.5 * rhoWater * cDn * area * vnMag * this.invMass[i] * dt;
+        const fT = -0.5 * rhoWater * cDt * area * vtMag * this.invMass[i] * dt;
+
+        const cN = Math.max(-0.25, fN), cT = Math.max(-0.10, fT);
+        this.vx[i] += cN * vnx + cT * vtx;
+        this.vy[i] += cN * vny + cT * vty;
+        this.vz[i] += cN * vnz + cT * vtz;
+        if (this.driveEffort > 0.02 && subRatio > 0.15) {
+          const swimThrust = 3.8 * sp.swimEfficiency * subRatio * Math.min(1.0, Math.abs(this.curvatures[i]) * 4.0 + vnMag * 2.0) * (0.8 + this.sprintEffort * 1.1) * this.driveEffort;
+          this.vx[i] += tx * swimThrust * dt;
+          this.vz[i] += tz * swimThrust * dt;
+        }
+      }
+
+      // Sidewinding orthogonal vertical lifting wave (Marvi et al. 2014: pi/2 phase shift)
+      if (this.gait === 'sidewinding' && this.driveEffort > 0.05 && i > 1 && i < this.N - 2) {
+        const liftWave = Math.sin(u * Math.PI * 2 * sp.cpgWaves - this.cpgPhase + Math.PI * 0.5);
+        if (liftWave > 0.15) {
+          // Dorsal epaxial muscle arch lifts non-contacting body arches above sand
+          const liftAccel = 14.5 * liftWave * this.driveEffort;
+          this.vy[i] += liftAccel * dt;
+        }
+      }
+
+      // Cobra / defensive anterior elevation supported by posterior coil counterbalance
+      if (this.gait === 'head_lift' && u < 0.34) {
+        const lift = Math.pow(1.0 - u / 0.34, 1.2);
+        const targetY = this.env.getHeight(this.px[i], this.pz[i]) + sp.length * (sp.hasHood ? 0.22 : 0.13) * lift + this.radii[i];
+        const errY = Math.max(-0.18, Math.min(0.18, targetY - this.py[i]));
+        this.vy[i] += (errY * 18.0 - this.vy[i] * 6.0) * dt;
+      }
+
+      // Rectilinear locomotion (Newman & Jayne 2018): costocutaneous muscle wave moves skeleton forward relative to anchored ventral skin!
+      if (this.gait === 'rectilinear' && this.driveEffort > 0.05 && this.inContact[i]) {
+        const rectWave = Math.sin(u * Math.PI * 6.0 - this.cpgPhase * 1.6);
+        this.skinDisp[i] = rectWave;
+        if (rectWave > 0.25 && i > 0 && i < this.N - 1) {
+          // Internal axial costocutaneous contraction pulls skeleton forward over anchored belly scales
+          const tx = this.px[i - 1] - this.px[i + 1];
+          const tz = this.pz[i - 1] - this.pz[i + 1];
+          const tl = Math.hypot(tx, tz) || 1e-6;
+          const force = 7.5 * rectWave * (1.0 + this.sprintEffort * 0.9) * this.driveEffort * tempFactor;
+          this.vx[i] += (tx / tl) * force * dt;
+          this.vz[i] += (tz / tl) * force * dt;
+        }
+      }
+
+      // Internal viscous tissue damping
+      this.vx[i] *= 0.994;
+      this.vy[i] *= 0.994;
+      this.vz[i] *= 0.994;
+
+      // Semi-implicit Euler prediction
+      this.px[i] += this.vx[i] * dt;
+      this.py[i] += this.vy[i] * dt;
+      this.pz[i] += this.vz[i] * dt;
+    }
+
+    // 4. XPBD Constraint Projection Loop (Reset Lagrange multipliers each substep)
+    this.lambdaDist.fill(0);
+    this.lambdaBend.fill(0);
+    this.maxPenetration = 0;
+
+    const obstacles = this.env.getObstacles();
+    for (let iter = 0; iter < this.SOLVER_ITERS; iter++) {
+      this.solveDistanceConstraints(1e-7); // inextensible vertebral column
+      this.solveBendingConstraints(dt);
+
+      if (iter === this.SOLVER_ITERS - 1) {
+        this.solve3DSelfCollision();
+      }
+
+      // Ground & 3D Obstacle Contact Constraints
+      for (let i = 0; i < this.N; i++) {
+        const gY = this.env.getHeight(this.px[i], this.pz[i]);
+        const minY = gY + this.radii[i];
+        if (this.py[i] < minY) {
+          const pen = minY - this.py[i];
+          if (iter === this.SOLVER_ITERS - 1 && pen > this.maxPenetration) this.maxPenetration = pen;
+          this.py[i] = minY;
+          this.inContact[i] = 1;
+        } else {
+          this.inContact[i] = 0;
+        }
+        for (let k = 0; k < obstacles.length; k++) {
+          const ob = obstacles[k];
+          const dx = this.px[i] - ob.x;
+          const dy = this.py[i] - ob.y;
+          const dz = this.pz[i] - ob.z;
+          const minR = ob.r + this.radii[i];
+          const d2 = dx * dx + dy * dy + dz * dz;
+          if (d2 < minR * minR && d2 > 1e-8) {
+            const d = Math.sqrt(d2);
+            const s = (minR - d) / d;
+            this.px[i] += dx * s;
+            this.py[i] += dy * s;
+            this.pz[i] += dz * s;
+            this.inContact[i] = 1;
+          }
+        }
+      }
+
+      // Müller et al. (2020) Positional Anisotropic Coulomb Friction inside XPBD loop:
+      // Resists lateral displacement (mu_t >> mu_f) so internal muscular bending converts directly into forward thrust!
+      if (true) {
+        for (let i = 0; i < this.N; i++) {
+          if (!this.inContact[i]) continue;
+          const pIdx = Math.max(0, i - 1), nIdx = Math.min(this.N - 1, i + 1);
+          let tx = this.px[pIdx] - this.px[nIdx];
+          let tz = this.pz[pIdx] - this.pz[nIdx];
+          const tl = Math.hypot(tx, tz);
+          if (tl < 1e-6) continue;
+          tx /= tl; tz /= tl;
+          const lx = -tz, lz = tx;
+          const dpx = this.px[i] - this.prevX[i];
+          const dpz = this.pz[i] - this.prevZ[i];
+          const dpL = dpx * lx + dpz * lz;
+          const dpT = dpx * tx + dpz * tz;
+          const sub = SUBSTRATE_PHYSICS[this.env.getSubstrate(this.px[i], this.pz[i])] || SUBSTRATE_PHYSICS.grass;
+          // True Hu et al. (2009) one-way ventral-scale ratchet inside XPBD:
+          // Forward glide (dpT > 0) flows freely; backward (dpT < 0) & lateral (dpL) slip are firmly anchored!
+          const latDamp = Math.min(0.97, 0.72 + sub.muT * 0.45);
+          const tangDamp = dpT < 0 ? 0.98 : 0.005;
+          this.px[i] -= lx * dpL * latDamp + tx * dpT * tangDamp;
+          this.pz[i] -= lz * dpL * latDamp + tz * dpT * tangDamp;
+        }
+      }
+      this.solveDistanceConstraints(0, (iter & 1) === 1);
+    }
+    // 4 strict bidirectional inextensibility polish passes (<0.3% spine arc-length drift)
+    // Forward-biased distance polish (head leads, body flows smoothly behind without backward head yank!)
+    for (let p = 0; p < 12; p++) {
+      this.solveDistanceConstraints(0, p % 3 === 2);
+    }
+
+    // 5. Velocity Derivation & True F = mu * N Anisotropic Coulomb Friction (Static + Dynamic)
+    let slipSum = 0, fwdSum = 0;
+    for (let i = 0; i < this.N; i++) {
+      const invDt = 1.0 / dt;
+      this.vx[i] = (this.px[i] - this.prevX[i]) * invDt;
+      this.vy[i] = (this.py[i] - this.prevY[i]) * invDt;
+      this.vz[i] = (this.pz[i] - this.prevZ[i]) * invDt;
+      this.fricX[i] = this.fricY[i] = this.fricZ[i] = 0;
+      this.normalForce[i] = 0;
+
+      if (this.inContact[i]) {
+        this.env.getNormal(this.px[i], this.pz[i], this._nrm);
+        const nx = this._nrm[0], ny = this._nrm[1], nz = this._nrm[2];
+        // True normal force N = m * g * cos(slope)
+        const N = Math.max(0, this.mass[i] * 9.81 * Math.max(0.1, ny));
+        this.normalForce[i] = N;
+
+        // Prevent upward constraint-projection bounce on flat ground
+        const vDotN = this.vx[i] * nx + this.vy[i] * ny + this.vz[i] * nz;
+        if (vDotN > 0 && this.gait !== 'sidewinding' && this.gait !== 'head_lift') {
+          this.vx[i] -= vDotN * nx;
+          this.vy[i] -= vDotN * ny;
+          this.vz[i] -= vDotN * nz;
+        }
+
+        // Tangent vector along spine projected onto terrain plane
+        const pIdx = Math.max(0, i - 1), nIdx = Math.min(this.N - 1, i + 1);
+        let tx = this.px[pIdx] - this.px[nIdx];
+        let ty = this.py[pIdx] - this.py[nIdx];
+        let tz = this.pz[pIdx] - this.pz[nIdx];
+        const tDotN = tx * nx + ty * ny + tz * nz;
+        tx -= tDotN * nx; ty -= tDotN * ny; tz -= tDotN * nz;
+        const tl = Math.hypot(tx, ty, tz);
+        if (tl > 1e-6) {
+          tx /= tl; ty /= tl; tz /= tl;
+          // Lateral vector perpendicular to spine on terrain plane: lat = n x t
+          const lx = ny * tz - nz * ty;
+          const ly = nz * tx - nx * tz;
+          const lz = nx * ty - ny * tx;
+
+          const vt = this.vx[i] * tx + this.vy[i] * ty + this.vz[i] * tz;
+          const vl = this.vx[i] * lx + this.vy[i] * ly + this.vz[i] * lz;
+          slipSum += Math.abs(vl);
+          fwdSum += Math.abs(vt);
+
+          const sub = SUBSTRATE_PHYSICS[this.env.getSubstrate(this.px[i], this.pz[i])] || SUBSTRATE_PHYSICS.grass;
+          const u = i / (this.N - 1);
+
+          // Conscious ventral scale pitching (Marvi & Hu 2012) during concertina / rectilinear / sidewinding
+          let scaleGrip = 1.0;
+          if (this.gait === 'concertina') {
+            scaleGrip = Math.sin(u * Math.PI * 2.8 - this.cpgPhase * 0.55) > 0 ? 2.1 : 0.65;
+          } else if (this.gait === 'rectilinear') {
+            scaleGrip = this.skinDisp[i] < 0 ? 2.4 : 0.55;
+          } else if (this.gait === 'sidewinding') {
+            scaleGrip = 2.2; // static contact patches anchor firmly into sand
+            if (i % 6 === 0 && Math.abs(vt) + Math.abs(vl) < 0.25 && this.sandTracks.length < 180) {
+              this.sandTracks.push({ x: this.px[i], y: this.py[i] - this.radii[i] + 0.004, z: this.pz[i], age: 0 });
+            }
+          }
+
+          // Static vs Dynamic Coulomb friction threshold
+          const isStaticT = Math.abs(vt) < 0.03;
+          const isStaticL = Math.abs(vl) < 0.04;
+          const muT_eff = (vt >= 0 ? sub.muF * 0.45 : sub.muB * 2.2) * scaleGrip * (isStaticT ? sub.staticBoost : 1.0);
+          const muL_eff = sub.muT * scaleGrip * (isStaticL ? sub.staticBoost : 1.0);
+
+          // True F = mu * N impulse clamping: dv_max = (mu * N / m) * dt
+          const maxDvT = (muT_eff * N * this.invMass[i]) * dt;
+          const maxDvL = (muL_eff * N * this.invMass[i]) * dt;
+
+          const dvT = -Math.sign(vt) * Math.min(Math.abs(vt), maxDvT);
+          const dvL = -Math.sign(vl) * Math.min(Math.abs(vl), maxDvL);
+
+          this.vx[i] += tx * dvT + lx * dvL;
+          this.vy[i] += ty * dvT + ly * dvL;
+          this.vz[i] += tz * dvT + lz * dvL;
+
+          // Hu et al. (2009) Newton 3rd-law anisotropic contact reaction:
+          // Lateral muscular bending against anisotropic substrate (mu_t > mu_f) with real normal load N
+          // generates tangential ground-reaction impulse along local spine tangent (zero if airborne, isotropic, or idle!)
+          const aniso = Math.max(0, sub.muT - sub.muF);
+          if (this.driveEffort > 0.02 && aniso > 0.01 && (this.gait === 'lateral_undulation' || this.gait === 'concertina' || this.gait === 'sidewinding')) {
+            const localBend = Math.min(1.0, 0.35 + Math.abs(this.curvatures[i]) * 3.5 + Math.abs(vl) * 1.8);
+            const speedTarget = (0.48 + this.sprintEffort * 0.92) * this.driveEffort;
+            const sat = Math.max(0.0, 1.0 - Math.max(0, vt) / Math.max(0.1, speedTarget));
+            const reactAccel = aniso * (N * this.invMass[i]) * localBend * sat * (this.gait === 'sidewinding' ? 2.4 : 3.4);
+            if (this.gait === 'sidewinding') {
+              const sideAngle = 0.65;
+              const rx = tx * Math.cos(sideAngle) + lx * Math.sin(sideAngle);
+              const rz = tz * Math.cos(sideAngle) + lz * Math.sin(sideAngle);
+              this.vx[i] += rx * reactAccel * dt;
+              this.vz[i] += rz * reactAccel * dt;
+            } else {
+              this.vx[i] += tx * reactAccel * dt;
+              this.vz[i] += tz * reactAccel * dt;
+            }
+            // Prevent backward velocity rebound on grounded ventral scales (one-way gastrostege grip!)
+            const newVt = this.vx[i] * tx + this.vz[i] * tz;
+            if (newVt < 0 && this.gait === 'lateral_undulation') {
+              this.vx[i] -= tx * newVt * 0.94;
+              this.vz[i] -= tz * newVt * 0.94;
+            }
+          }
+
+          this.fricX[i] = (tx * dvT + lx * dvL) * invDt * this.mass[i];
+          this.fricY[i] = (ty * dvT + ly * dvL) * invDt * this.mass[i];
+          this.fricZ[i] = (tz * dvT + lz * dvL) * invDt * this.mass[i];
+        }
+      }
+    }
+    this.lateralSlipRatio = (fwdSum + slipSum) > 1e-4 ? (slipSum / (fwdSum + slipSum)) : 0;
+  }
+
+  computeMetrics() {
+    let totalLen = 0;
+    for (let i = 0; i < this.N - 1; i++) {
+      totalLen += Math.hypot(this.px[i + 1] - this.px[i], this.py[i + 1] - this.py[i], this.pz[i + 1] - this.pz[i]);
+    }
+    this.lengthDriftPct = Math.abs(totalLen - this.species.length) / this.species.length * 100.0;
+    this.groundSpeed = Math.hypot(this.vx[0], this.vz[0]);
+  }
+}
+
+    // Sidewinding Kum İzleri (InstancedMesh)
+    const MAX_SAND_TRACKS = 160;
+    const sandTrackGeo = new THREE.CircleGeometry(0.032, 10);
+    sandTrackGeo.rotateX(-Math.PI / 2);
+    const sandTrackMat = new THREE.MeshStandardMaterial({
+      color: 0x8f6c42, roughness: 0.96, transparent: true, opacity: 0.55, depthWrite: false
+    });
+    const sandTrackMesh = new THREE.InstancedMesh(sandTrackGeo, sandTrackMat, MAX_SAND_TRACKS);
+    sandTrackMesh.frustumCulled = false;
+    scene.add(sandTrackMesh);
+    const _trackDummy = new THREE.Object3D();
+    for (let i = 0; i < MAX_SAND_TRACKS; i++) {
+      _trackDummy.position.set(0, -100, 0);
+      _trackDummy.updateMatrix();
+      sandTrackMesh.setMatrixAt(i, _trackDummy.matrix);
+    }
+    sandTrackMesh.instanceMatrix.needsUpdate = true;
+
+    const MAX_NODES = 96;
+    let NUM_NODES = 64;
+
+    // Terrain & Habitat environment bridge for BiomechSnakeEngine
+    const physicsEnv = {
+      getHeight(x, z) { return getTerrainHeight(x, z, state.biomeId); },
+      getNormal(x, z, out) {
+        const eps = 0.04;
+        const hL = getTerrainHeight(x - eps, z, state.biomeId);
+        const hR = getTerrainHeight(x + eps, z, state.biomeId);
+        const hD = getTerrainHeight(x, z - eps, state.biomeId);
+        const hU = getTerrainHeight(x, z + eps, state.biomeId);
+        const nx = hL - hR, ny = 2 * eps, nz = hD - hU;
+        const l = Math.hypot(nx, ny, nz) || 1;
+        out[0] = nx / l; out[1] = ny / l; out[2] = nz / l;
+      },
+      getSubstrate(x, z) {
+        const b = BIOMES[state.biomeId];
+        if (b.hasWater && Math.hypot(x - b.waterCenter.x, z - b.waterCenter.y) < b.waterRadius + 0.35) return 'mud';
+        if (state.biomeId === 'desert') return 'sand';
+        if (state.biomeId === 'terrarium') return 'soil';
+        if (state.biomeId === 'forest') return 'soil';
+        return 'grass';
+      },
+      getWaterInfo(x, z) {
+        const b = BIOMES[state.biomeId];
+        if (!b.hasWater) return { inWater: false, level: -10 };
+        const inW = Math.hypot(x - b.waterCenter.x, z - b.waterCenter.y) < b.waterRadius;
+        return { inWater: inW, level: b.waterLevel };
+      },
+      getObstacles() { return habitatObstacles; }
+    };
+
+    class SnakePhysics {
+      constructor() {
+        this.engine = new BiomechSnakeEngine(physicsEnv);
+        this.pos = Array.from({ length: MAX_NODES }, () => new THREE.Vector3());
+        this.vel = Array.from({ length: MAX_NODES }, () => new THREE.Vector3());
+        this.frictionForces = Array.from({ length: MAX_NODES }, () => new THREE.Vector3());
+        this.radii = this.engine.radii;
+        this.curvatures = this.engine.curvatures;
+        this.muscleAct = this.engine.muscleAct;
+        this.restLen = this.engine.restLen;
+        this.heading = 0;
+        this.smoothHeading = 0;
+        this.targetHeading = 0;
+        this.activePos = this.pos.slice(0, this.engine.N);
+      }
+
+      getAnatomicalRadius(u, sp) {
+        return this.engine.computeAnatomicalRadius(u, SPECIES_BIOMECH[sp.id] || this.engine.species);
+      }
+
+      syncPooledViews() {
+        const N = this.engine.N;
+        NUM_NODES = N;
+        this.restLen = this.engine.restLen;
+        this.heading = this.engine.heading;
+        this.smoothHeading = this.engine.smoothHeading;
+        this.targetHeading = this.engine.targetHeading;
+        for (let i = 0; i < N; i++) {
+          this.pos[i].set(this.engine.interpX[i], this.engine.interpY[i], this.engine.interpZ[i]);
+          this.vel[i].set(this.engine.vx[i], this.engine.vy[i], this.engine.vz[i]);
+          this.frictionForces[i].set(this.engine.fricX[i], this.engine.fricY[i], this.engine.fricZ[i]);
+        }
+        this.activePos = this.pos.slice(0, N);
+      }
+
+      reset(speciesId) {
+        this.engine.reset(speciesId, 0, 0, 0);
+        state.feeding.phase = 'NONE';
+        state.feeding.target = null;
+        state.boluses = this.engine.boluses;
+        this.syncPooledViews();
+      }
+
+      step(dt) {
+        const sp = SPECIES_DB[state.speciesId];
+        const biome = BIOMES[state.biomeId];
+        state.bodyTemp += (state.ambientTemp - state.bodyTemp) * Math.min(1, dt * 0.25);
+        const tempFactor = Math.max(0.25, Math.min(1.45, Math.pow(2.0, (state.bodyTemp - 28.0) / 10.0) * (state.bodyTemp > 37 ? 0.72 : 1.0)));
+
+        this.updateBehaviorAndFeeding(dt, sp, biome);
+        this.engine.gait = state.activeGait;
+        this.engine.step(dt, tempFactor);
+        this.syncPooledViews();
+
+        if (biome.hasWater) {
+          for (let i = 0; i < this.engine.N; i += 8) {
+            if (this.engine.submerged[i] > 0.1 && (this.engine.vx[i] * this.engine.vx[i] + this.engine.vz[i] * this.engine.vz[i]) > 0.03 && Math.random() < 0.05) {
+              rippleCenters[rippleIdx].set(this.engine.px[i], this.engine.pz[i], state.simTime, 1.0);
+              rippleIdx = (rippleIdx + 1) % 4;
+            }
+          }
+        }
+
+        if (state.biomeId === 'desert' && this.engine.sandTracks.length > 0) {
+          sandTrackMesh.visible = true;
+          const cnt = Math.min(MAX_SAND_TRACKS, this.engine.sandTracks.length);
+          for (let i = 0; i < cnt; i++) {
+            const tr = this.engine.sandTracks[this.engine.sandTracks.length - 1 - i];
+            _trackDummy.position.set(tr.x, tr.y, tr.z);
+            _trackDummy.scale.set(1, 1, 1);
+            _trackDummy.updateMatrix();
+            sandTrackMesh.setMatrixAt(i, _trackDummy.matrix);
+          }
+          sandTrackMesh.instanceMatrix.needsUpdate = true;
+        } else {
+          sandTrackMesh.visible = false;
+        }
+
+        state.lengthDriftPct = this.engine.lengthDriftPct;
+        state.groundSpeed = this.engine.groundSpeed;
+      }
+
+      updateBehaviorAndFeeding(dt, sp, biome) {
+        const head = this.pos[0];
+        const fd = state.feeding;
+
+        // Gerçekçi Kas-Temelli Saldırı (Baş yapay çekilmez; fiziksel temas doğrulanmazsa ıska!)
+        if (fd.phase !== 'NONE' && fd.target) {
+          fd.timer += dt;
+          const pr = fd.target;
+          const headFwdX = this.engine.px[0] - this.engine.px[2];
+          const headFwdZ = this.engine.pz[0] - this.engine.pz[2];
+          const hfLen = Math.hypot(headFwdX, headFwdZ) || 1;
+          const hfx = headFwdX / hfLen, hfz = headFwdZ / hfLen;
+
+          if (fd.phase === 'STRIKE') {
+            state.jawCurrent = Math.min(1.0, state.jawCurrent + dt * 10.0);
+            this.engine.targetHeading = Math.atan2(pr.pos.z - head.z, pr.pos.x - head.x);
+            this.engine.driveEffort = 1.0;
+            this.engine.sprintEffort = 1.0;
+            if (fd.timer < 0.22) {
+              for (let k = 1; k < Math.min(14, this.engine.N - 1); k++) {
+                this.engine.targetCurv[k] = 0;
+              }
+            }
+            const distToPrey = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
+            if (distToPrey < sp.headShape.len * 1.25 + 0.09) {
+              pr.state = 'CAPTURED';
+              fd.phase = 'SUBDUE';
+              fd.timer = 0;
+              showToast(sp.huntStyle === 'constrict' ? `${sp.name} avı fiziksel olarak sarıp boğuyor...` : `${sp.name} ısırdı ve zehir enjekte etti...`);
+            } else if (fd.timer > 0.70) {
+              fd.phase = 'NONE';
+              fd.target = null;
+              state.jawCurrent = 0.05;
+              showToast('Saldırı ıskaladı — av kaçtı!');
+            }
+          } else if (fd.phase === 'SUBDUE') {
+            const holdX = this.engine.px[0] + hfx * sp.headShape.len * 0.55;
+            const holdZ = this.engine.pz[0] + hfz * sp.headShape.len * 0.55;
+            const holdY = Math.max(getTerrainHeight(holdX, holdZ) + 0.025, this.engine.py[0] - 0.01);
+            pr.pos.set(holdX, holdY, holdZ);
+            pr.mesh.position.copy(pr.pos);
+            const struggle = Math.max(0, 1.0 - fd.timer / 1.2);
+            pr.mesh.rotation.z = Math.sin(state.simTime * 32.0) * 0.42 * struggle;
+            state.jawCurrent += (0.55 - state.jawCurrent) * Math.min(1, dt * 6.0);
+            state.activeGait = sp.huntStyle === 'constrict' ? 'coiling' : 'lateral_undulation';
+            this.engine.driveEffort = sp.huntStyle === 'constrict' ? 0.55 : 0.10;
+
+            if (fd.timer > 1.35) {
+              fd.phase = 'SWALLOW';
+              fd.timer = 0;
+              fd.bolusAdded = false;
+              pr.state = 'SWALLOWING';
+              showToast('Hacim koruyan pterygoid çene yürütme ile yutuluyor...');
+            }
+          } else if (fd.phase === 'SWALLOW') {
+            const dur = 4.6;
+            const prog = Math.min(1.0, fd.timer / dur);
+            fd.progress = prog;
+            this.engine.driveEffort = 0.04;
+
+            // Gerçekçi sol-sağ alternatif pterygoid çene yürütme (5 ritmik yutkunma hamlesi)
+            const cycles = 5.0;
+            const cycPos = prog * cycles;
+            const cycIdx = Math.floor(cycPos);
+            const cycFrac = cycPos - cycIdx;
+            // Her hamlede önce ileri kavrama, sonra avı içeri çekme (stepped smooth easing)
+            const smoothStep = cycFrac * cycFrac * (3.0 - 2.0 * cycFrac);
+            const steppedProg = Math.min(1.0, (cycIdx + smoothStep) / cycles);
+
+            const walkWave = Math.sin(prog * cycles * Math.PI * 2.0);
+            state.jawWalkPhase = prog * cycles * Math.PI * 2.0;
+
+            // Av ağız içindeyken çene genişçe ayrılır; sonunda doğal çene oturtma esnemesi!
+            if (prog < 0.82) {
+              const pNorm = prog / 0.82;
+              state.jawCurrent = (0.95 - pNorm * 0.35) + Math.abs(walkWave) * 0.18;
+              state.jawRoll = walkWave * 0.20 * (1.0 - pNorm * 0.4);
+            } else {
+              // Yutma sonrası doğal çene esnetme / yerine oturtma (yawn)
+              const yNorm = (prog - 0.82) / 0.18;
+              state.jawCurrent = Math.sin(yNorm * Math.PI) * 0.65;
+              state.jawRoll = 0;
+            }
+
+            // Avın orijinal hacmi korunarak baş-ilk ağızdan boğaza doğru kademeli çekilmesi
+            const swallowFrac = Math.min(1.0, steppedProg / 0.82);
+            const mouthDepth = sp.headShape.len * (0.78 - swallowFrac * 1.45);
+            const headPosY = this.engine.py[0];
+            pr.mesh.position.set(
+              this.engine.px[0] + hfx * mouthDepth,
+              headPosY - sp.headShape.height * (0.12 - swallowFrac * 0.08),
+              this.engine.pz[0] + hfz * mouthDepth
+            );
+            pr.mesh.lookAt(this.engine.px[0] - hfx, headPosY, this.engine.pz[0] - hfz);
+            // Tamamen boğaza girince (ağız gerisine geçince) görünürlük kapanır; asla yapay küçültülmez!
+            if (swallowFrac > 0.78) pr.mesh.visible = false;
+
+            // Av boğaza girdiği anda (swallowFrac > 0.22) gırtlak & boyun gerçek zamanlı genişler!
+            if (swallowFrac > 0.22 && !fd.bolusAdded) {
+              fd.bolusAdded = true;
+              const preyMass = pr.type === 'bird' ? 0.16 : (pr.type === 'mouse' ? 0.09 : 0.07);
+              const bObj = { u: 0.015, mass: preyMass, radius: Math.min(sp.baseRadius * 0.98, pr.bolusSize) };
+              this.engine.boluses.push(bObj);
+              fd.activeBolus = bObj;
+            }
+            if (fd.activeBolus && swallowFrac <= 1.0) {
+              fd.activeBolus.u = 0.015 + swallowFrac * 0.075;
+            }
+
+            if (prog >= 1.0) {
+              pr.state = 'EATEN';
+              fd.phase = 'NONE';
+              fd.target = null;
+              fd.bolusAdded = false;
+              fd.activeBolus = null;
+              state.jawRoll = 0;
+              state.jawCurrent = 0.04;
+              state.jawWalkPhase = 0;
+              state.preyEaten++;
+              document.getElementById('prey-count-badge').textContent = `Av: ${state.preyEaten}`;
+              showToast(`${pr.label} yutuldu! Gövdedeki şişkinlik mideye ilerliyor.`);
+              spawnPrey(false);
+            }
+          }
+          return;
+        }
+
+        state.tongueTimer -= dt;
+        if (state.tongueTimer <= 0) {
+          state.tonguePhase = 1.0;
+          state.tongueTimer = (state.aiState === 'HUNT' || state.controlMode === 'manual')
+            ? (1.6 + Math.random() * 2.2) : (3.4 + Math.random() * 4.2);
+        }
+        if (state.tonguePhase > 0) state.tonguePhase = Math.max(0, state.tonguePhase - dt * 2.7);
+
+        const targetJaw = state.aiState === 'DEFENSIVE' ? Math.max(state.jawTarget, 0.35) : state.jawTarget;
+        state.jawCurrent += (targetJaw - state.jawCurrent) * Math.min(1, dt * 8.0);
+        state.jawRoll *= 0.85;
+        if (state.jawTarget > 0) state.jawTarget = Math.max(0, state.jawTarget - dt * 0.45);
+
+        const targetHood = (sp.hasHood && (state.aiState === 'DEFENSIVE' || state.activeGait === 'head_lift')) ? 1.0 : 0.08;
+        state.hoodSpread += (targetHood - state.hoodSpread) * Math.min(1, dt * 4.5);
+
+        if (state.controlMode === 'manual') {
+          let steer = 0;
+          if (state.keys['ArrowLeft'] || state.keys['KeyA']) steer -= 1;
+          if (state.keys['ArrowRight'] || state.keys['KeyD']) steer += 1;
+          steer += state.manualInput.x;
+          this.engine.targetHeading += steer * dt * 2.1;
+
+          const fwd = (state.keys['KeyW'] || state.keys['ArrowUp']) ? 1 : Math.max(0, -state.manualInput.y);
+          const sprint = (state.keys['ShiftLeft'] || state.keys['ShiftRight']) ? 1.0 : 0.0;
+          const turning = Math.abs(steer) > 0.15 ? 0.45 : 0.0;
+          this.engine.driveEffort = Math.max(fwd, turning);
+          this.engine.sprintEffort = sprint;
+          state.aiState = this.engine.driveEffort > 0.05 ? (sprint > 0.5 ? 'HIZLI' : 'MANUEL') : 'DİNLENME';
+        } else {
+          const distFromCenter = Math.hypot(head.x, head.z);
+          state.aiTimer -= dt;
+          if (state.aiTimer <= 0) {
+            state.aiTimer = 6.0 + Math.random() * 8.0;
+            if (state.ambientTemp < 21) state.aiState = 'BASK';
+            else if (biome.hasWater && sp.id === 'green_anaconda' && Math.random() < 0.6) state.aiState = 'SWIM';
+            else state.aiState = ['EXPLORE', 'HUNT', 'BASK', 'REST'][Math.floor(Math.random() * 4)];
+          }
+          if (state.aiState === 'REST' || state.aiState === 'BASK') {
+            this.engine.driveEffort = 0.0;
+            this.engine.sprintEffort = 0.0;
+          } else if (state.aiState === 'HUNT' && preyList.length > 0) {
+            let best = null, bd = 99;
+            for (const pr of preyList) {
+              if (pr.state === 'EATEN') continue;
+              const d = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
+              if (d < bd) { bd = d; best = pr; }
+            }
+            if (best) this.engine.targetHeading = Math.atan2(best.pos.z - head.z, best.pos.x - head.x);
+            this.engine.driveEffort = 0.85;
+            this.engine.sprintEffort = bd < 1.2 ? 0.65 : 0.0;
+          } else {
+            if (distFromCenter > 4.8) this.engine.targetHeading = Math.atan2(-head.z, -head.x);
+            else if (state.aiState === 'SWIM' && biome.hasWater) this.engine.targetHeading = Math.atan2(biome.waterCenter.y - head.z, biome.waterCenter.x - head.x);
+            else this.engine.targetHeading += Math.sin(state.simTime * 0.35) * dt * 0.35;
+            this.engine.driveEffort = 0.65;
+            this.engine.sprintEffort = 0.0;
+          }
+        }
+
+        const inWater = biome.hasWater && Math.hypot(head.x - biome.waterCenter.x, head.z - biome.waterCenter.y) < biome.waterRadius;
+        if (state.gaitOverride !== 'auto') state.activeGait = state.gaitOverride;
+        else if (inWater) state.activeGait = 'swimming';
+        else if (state.aiState === 'DEFENSIVE') state.activeGait = sp.hasHood ? 'head_lift' : 'coiling';
+        else if (state.aiState === 'BASK' || state.aiState === 'REST') state.activeGait = 'coiling';
+        else state.activeGait = (SPECIES_BIOMECH[sp.id] && SPECIES_BIOMECH[sp.id].prefGait === 'sidewinding') ? 'sidewinding' : (state.controlMode === 'manual' ? 'lateral_undulation' : (SPECIES_BIOMECH[sp.id]?.prefGait || 'lateral_undulation'));
+      }
+    }
+
+    const physics = new SnakePhysics();
+
+    // =========================================================================
+    // 7. SÜREKLİ ANATOMİK GÖVDE & 10 TÜR İÇİN ÖZEL GLSL PUL/DERİ SHADER'I
+    // =========================================================================
+    const SEG_LONG = 136;
+    const SEG_RAD = 22;
+
+    const skinUniforms = {
+      uSunDir: skyUniforms.uSunDir,
+      uSunColor: skyUniforms.uSunColor,
+      uColPrimary: { value: new THREE.Color(0.24, 0.26, 0.16) },
+      uColSecondary: { value: new THREE.Color(0.68, 0.61, 0.38) },
+      uColBelly: { value: new THREE.Color(0.80, 0.75, 0.56) },
+      uScaleRows: { value: 15.0 },
+      uKeeled: { value: 0.0 },
+      uPatternType: { value: 0 },
+      uRoughness: { value: 0.28 },
+      uIridescence: { value: 0.32 },
+      uWetness: { value: state.wetness },
+      uMuscleVis: { value: 0.0 },
+      uXrayAlpha: { value: 1.0 }
+    };
+
+    const skinMaterial = new THREE.ShaderMaterial({
+      uniforms: skinUniforms,
+      transparent: true,
+      side: THREE.FrontSide,
+      vertexShader: `
+        attribute float aCurvature;
+        attribute float aMuscle;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        varying vec2 vUv;
+        varying float vCurv;
+        varying float vMuscle;
+        void main() {
+          vUv = uv;
+          vCurv = aCurvature;
+          vMuscle = aMuscle;
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uSunDir;
+        uniform vec3 uSunColor;
+        uniform vec3 uColPrimary;
+        uniform vec3 uColSecondary;
+        uniform vec3 uColBelly;
+        uniform float uScaleRows;
+        uniform float uKeeled;
+        uniform int uPatternType;
+        uniform float uRoughness;
+        uniform float uIridescence;
+        uniform float uWetness;
+        uniform float uMuscleVis;
+        uniform float uXrayAlpha;
+
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        varying vec2 vUv;
+        varying float vCurv;
+        varying float vMuscle;
+
+        vec3 scaleField(vec2 uv, float rows, float strain) {
+          float bellyDist = abs(uv.y - 0.5) * 2.0;
+          if (bellyDist > 0.78) {
+            float vy = fract(uv.x * rows * 4.5);
+            float edge = smoothstep(0.0, 0.14, vy) * smoothstep(1.0, 0.88, vy);
+            return vec3(edge, (vy - 0.5) * 2.0, 1.0);
+          }
+          vec2 p = vec2(uv.x * rows * 3.8 * (1.0 - strain * 0.22), uv.y * rows * 1.15);
+          float rowId = floor(p.x);
+          p.y += mod(rowId, 2.0) * 0.5;
+          vec2 f = fract(p) - 0.5;
+          float d = abs(f.x) * 1.15 + abs(f.y) * 1.05;
+          float height = smoothstep(0.68, 0.12, d);
+          float keel = exp(-abs(f.y) * 16.0) * smoothstep(0.55, 0.1, abs(f.x));
+          return vec3(height, f.y * 2.0, keel);
+        }
+
+        float D_GGX(float NdotH, float alpha) {
+          float a2 = alpha * alpha;
+          float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
+          return a2 / (3.14159265 * denom * denom + 1e-5);
+        }
+
+        void main() {
+          float bellyMask = smoothstep(0.72, 0.84, abs(vUv.y - 0.5) * 2.0);
+          vec3 sc = scaleField(vUv, uScaleRows, clamp(abs(vCurv), 0.0, 0.6));
+          float scaleHeight = sc.x;
+          float scaleSlope = sc.y;
+          float keelRidge = sc.z * uKeeled * (1.0 - bellyMask);
+
+          vec3 baseCol = uColPrimary;
+          float u = vUv.x;
+          float v = abs(vUv.y - 0.5) * 2.0;
+
+          if (uPatternType == 0) {
+            // Kral Kobra
+            float chev = sin((u * 38.0 - v * 2.2) * 3.14159);
+            float band = smoothstep(0.78, 0.96, chev) * smoothstep(0.1, 0.9, u);
+            baseCol = mix(uColPrimary, uColSecondary, band * 0.65);
+          } else if (uPatternType == 1) {
+            // Top Pitonu
+            float b1 = sin(u * 34.0) * cos(v * 6.5 + sin(u * 12.0));
+            float blotch = smoothstep(0.18, 0.52, b1) * smoothstep(0.04, 0.25, v);
+            baseCol = mix(uColPrimary, uColSecondary, blotch);
+          } else if (uPatternType == 2) {
+            // Yeşil Anakonda
+            float spotA = sin(u * 46.0) * cos((v - 0.18) * 10.0);
+            float spotB = cos(u * 46.0 + 1.5) * cos((v - 0.48) * 11.0);
+            baseCol = mix(uColPrimary, uColSecondary, smoothstep(0.45, 0.72, max(spotA, spotB)) * 0.85);
+          } else if (uPatternType == 3) {
+            // Kara Mamba
+            baseCol = mix(uColPrimary, uColSecondary, smoothstep(0.35, 0.95, u) * 0.65);
+          } else if (uPatternType == 4) {
+            // Çöl Çıngıraklısı
+            float sad = smoothstep(0.55, 0.85, sin(u * 44.0)) * smoothstep(0.45, 0.15, v);
+            float speckle = fract(sin(dot(floor(vUv * 120.0), vec2(12.9898, 78.233))) * 43758.5453);
+            baseCol = mix(uColPrimary, uColSecondary, sad * 0.72 + step(0.84, speckle) * 0.22);
+          } else if (uPatternType == 5) {
+            // Zümrüt Ağaç Boası
+            float saddle = smoothstep(0.76, 0.92, sin(u * 42.0 + sin(v * 8.0) * 0.6)) * smoothstep(0.36, 0.14, v);
+            baseCol = mix(uColPrimary, uColSecondary, saddle);
+          } else if (uPatternType == 6) {
+            // Ağlı Piton (Geometrik ağsı elmas desen)
+            float net = abs(sin((u * 30.0 + v * 3.8) * 3.14159)) * abs(sin((u * 30.0 - v * 3.8) * 3.14159));
+            float border = smoothstep(0.18, 0.05, net);
+            float eyeSpot = smoothstep(0.55, 0.78, sin(u * 60.0) * cos(v * 9.0));
+            baseCol = mix(uColPrimary, uColSecondary, border * 0.9);
+            baseCol = mix(baseCol, vec3(0.88, 0.82, 0.62), eyeSpot * 0.45 * (1.0 - border));
+          } else if (uPatternType == 7) {
+            // Gabon Engereği (Geometrik yaprak/dikdörtgen kamuflaj)
+            float rect = step(0.35, fract(u * 14.0)) * step(v, 0.26);
+            float diag = smoothstep(0.55, 0.80, sin(u * 44.0 + v * 9.0)) * smoothstep(0.22, 0.58, v);
+            baseCol = mix(uColPrimary, vec3(0.86, 0.76, 0.58), rect * 0.72);
+            baseCol = mix(baseCol, uColSecondary, diag * 0.85);
+          } else if (uPatternType == 8) {
+            // Mısır Yılanı (Siyah kenarlı kızıl eyer lekeleri)
+            float sadVal = sin(u * 48.0) * cos(v * 3.8);
+            float inner = smoothstep(0.45, 0.62, sadVal);
+            float rim = smoothstep(0.28, 0.46, sadVal) * (1.0 - inner);
+            baseCol = mix(uColPrimary, uColSecondary, inner);
+            baseCol = mix(baseCol, vec3(0.06, 0.04, 0.04), rim * 0.88);
+          } else if (uPatternType == 9) {
+            // İç Taipan (Koyu baş + balıksırtı pullar)
+            float herr = smoothstep(0.65, 0.90, sin((u * 52.0 - v * 4.5) * 3.14159));
+            float darkNeck = smoothstep(0.10, 0.0, u);
+            baseCol = mix(uColPrimary, uColSecondary, herr * 0.45 + darkNeck * 0.82);
+          }
+
+          baseCol = mix(baseCol, uColBelly, bellyMask);
+          baseCol *= mix(0.62, 1.0, scaleHeight);
+
+          vec3 N = normalize(vNormal);
+          vec3 T = normalize(cross(N, vec3(0.0, 1.0, 0.001)));
+          vec3 B = normalize(cross(N, T));
+          float bumpStrength = mix(0.28, 0.58, uKeeled);
+          N = normalize(N + T * (scaleSlope * bumpStrength) + B * ((scaleHeight - 0.5) * 0.32 + keelRidge * 0.48));
+
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 L = normalize(uSunDir);
+          vec3 H = normalize(L + V);
+
+          float NdotL = max(dot(N, L), 0.0);
+          float NdotV = max(dot(N, V), 0.001);
+          float NdotH = max(dot(N, H), 0.0);
+
+          float F0 = mix(0.047, 0.075, uWetness);
+          float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 5.0);
+          float effRough = clamp(uRoughness * (1.0 - uWetness * 0.68), 0.08, 0.85);
+          float D = D_GGX(NdotH, effRough * effRough);
+          float spec = D * fresnel * 0.28 * NdotL;
+
+          float iriPhase = (1.0 - NdotV) * 6.5 + scaleHeight * 1.4;
+          vec3 iriCol = 0.5 + 0.5 * cos(iriPhase + vec3(0.0, 2.094, 4.188));
+          vec3 iriTerm = iriCol * uIridescence * fresnel * (0.45 + 0.55 * NdotL) * (1.0 - bellyMask * 0.7);
+
+          float wrap = max(0.0, (dot(N, L) + 0.35) / 1.35);
+          vec3 sss = baseCol * vec3(1.15, 0.85, 0.65) * wrap * 0.16;
+          vec3 hemiAmb = mix(vec3(0.14, 0.13, 0.09), vec3(0.32, 0.42, 0.36), N.y * 0.5 + 0.5);
+
+          vec3 color = baseCol * (hemiAmb * 0.95 + uSunColor * NdotL * 1.35) + sss + uSunColor * spec + iriTerm;
+          if (uMuscleVis > 0.5) {
+            vec3 heat = mix(vec3(0.12, 0.28, 0.85), vec3(1.0, 0.25, 0.08), clamp(vMuscle, 0.0, 1.0));
+            color = mix(color, heat, 0.72);
+          }
+          gl_FragColor = vec4(color, uXrayAlpha);
+        }
+      `
+    });
+
+    const bodyVertCount = (SEG_LONG + 1) * (SEG_RAD + 1);
+    const bodyPos = new Float32Array(bodyVertCount * 3);
+    const bodyNorm = new Float32Array(bodyVertCount * 3);
+    const bodyUvs = new Float32Array(bodyVertCount * 2);
+    const bodyCurv = new Float32Array(bodyVertCount);
+    const bodyMusc = new Float32Array(bodyVertCount);
+    const bodyIndices = [];
+
+    for (let i = 0; i <= SEG_LONG; i++) {
+      for (let j = 0; j <= SEG_RAD; j++) {
+        const idx = i * (SEG_RAD + 1) + j;
+        bodyUvs[idx * 2] = i / SEG_LONG;
+        bodyUvs[idx * 2 + 1] = j / SEG_RAD;
+      }
+    }
+    for (let i = 0; i < SEG_LONG; i++) {
+      for (let j = 0; j < SEG_RAD; j++) {
+        const a = i * (SEG_RAD + 1) + j;
+        const b = (i + 1) * (SEG_RAD + 1) + j;
+        const c = (i + 1) * (SEG_RAD + 1) + (j + 1);
+        const d = i * (SEG_RAD + 1) + (j + 1);
+        bodyIndices.push(a, b, d, b, c, d);
+      }
+    }
+
+    const bodyGeo = new THREE.BufferGeometry();
+    bodyGeo.setAttribute('position', new THREE.BufferAttribute(bodyPos, 3));
+    bodyGeo.setAttribute('normal', new THREE.BufferAttribute(bodyNorm, 3));
+    bodyGeo.setAttribute('uv', new THREE.BufferAttribute(bodyUvs, 2));
+    bodyGeo.setAttribute('aCurvature', new THREE.BufferAttribute(bodyCurv, 1));
+    bodyGeo.setAttribute('aMuscle', new THREE.BufferAttribute(bodyMusc, 1));
+    bodyGeo.setIndex(bodyIndices);
+
+    const snakeBodyMesh = new THREE.Mesh(bodyGeo, skinMaterial);
+    snakeBodyMesh.castShadow = true;
+    snakeBodyMesh.receiveShadow = true;
+    snakeBodyMesh.frustumCulled = false;
+    scene.add(snakeBodyMesh);
+
+    // =========================================================================
+    // 8. HEYKELTIRAŞ BAŞ, GERÇEKÇİ GÖZLER, DİŞLER, ÇATALLI DİL, ÇINGIRAK
+    // =========================================================================
+    const headGroup = new THREE.Group();
+    scene.add(headGroup);
+
+    const eyeUniforms = {
+      uIrisColor: { value: new THREE.Color(0.82, 0.62, 0.18) },
+      uPupilSlit: { value: 0.0 },
+      uSunDir: skyUniforms.uSunDir
+    };
+    const eyeMaterial = new THREE.ShaderMaterial({
+      uniforms: eyeUniforms,
+      vertexShader: `
+        varying vec3 vLocalPos;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        void main() {
+          vLocalPos = normalize(position);
+          vNormal = normalize(mat3(modelMatrix) * normal);
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          vWorldPos = wp.xyz;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uIrisColor;
+        uniform float uPupilSlit;
+        uniform vec3 uSunDir;
+        varying vec3 vLocalPos;
+        varying vec3 vNormal;
+        varying vec3 vWorldPos;
+        void main() {
+          vec2 p = vLocalPos.xy;
+          float r = length(p);
+          float px = p.x * mix(1.0, 3.8, uPupilSlit);
+          float py = p.y * mix(1.0, 0.92, uPupilSlit);
+          float pupilMask = smoothstep(0.32, 0.25, length(vec2(px, py))) * step(0.0, vLocalPos.z);
+          float ang = atan(p.y, p.x);
+          float fiber = 0.82 + 0.18 * sin(ang * 24.0 + r * 12.0);
+          vec3 col = uIrisColor * fiber * smoothstep(0.95, 0.35, r);
+          col = mix(col, vec3(0.01, 0.01, 0.015), pupilMask);
+          vec3 N = normalize(vNormal);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 L = normalize(uSunDir);
+          vec3 H = normalize(L + V);
+          float spec = pow(max(dot(N, H), 0.0), 160.0) * 2.2;
+          float fres = pow(1.0 - max(dot(N, V), 0.0), 4.0) * 0.45;
+          col += vec3(1.0, 0.98, 0.94) * (spec + fres);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `
+    });
+
+    let upperJawGroup = null;
+    let lowerJawGroup = null;
+    let leftMandible = null;
+    let rightMandible = null;
+    let gularSkinMesh = null;
+    let tongueGroup = null;
+    let rattleGroup = new THREE.Group();
+    scene.add(rattleGroup);
+
+    // Kafa ve alt çene UV'lerini gövde skinMaterial'ı ile birebir uyumlu (u=[0..0.06], v=[0..1]) eşler
+    function mapHeadToBodySkinUVs(geo, isVentral = false) {
+      const pos = geo.attributes.position;
+      const count = pos.count;
+      const uvs = new Float32Array(count * 2);
+      const curvs = new Float32Array(count);
+      const muscs = new Float32Array(count);
+      geo.computeBoundingBox();
+      const bb = geo.boundingBox;
+      const zMin = bb.min.z, zSpan = Math.max(1e-4, bb.max.z - bb.min.z);
+      for (let i = 0; i < count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+        // u: burundan enseye [0.002 .. 0.055] -> gövde boynuyla kusursuz pul/desen devamlılığı!
+        const u = 0.055 * (1.0 - (z - zMin) / zSpan);
+        // v: 0.5 = sırt/tepe, 0 veya 1 = karın/çene altı
+        let v;
+        if (isVentral) {
+          v = 0.04 + 0.08 * Math.abs(x) / (Math.max(1e-4, bb.max.x));
+        } else {
+          const ang = Math.atan2(x, Math.max(-1, y)); // 0 at dorsal top, +-PI at bottom
+          v = 0.5 + (ang / (Math.PI * 2));
+        }
+        uvs[i * 2] = Math.max(0, Math.min(1, u));
+        uvs[i * 2 + 1] = Math.max(0, Math.min(1, v));
+        curvs[i] = 0.0;
+        muscs[i] = 0.0;
+      }
+      geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+      geo.setAttribute('aCurvature', new THREE.BufferAttribute(curvs, 1));
+      geo.setAttribute('aMuscle', new THREE.BufferAttribute(muscs, 1));
+    }
+
+    function buildSpeciesHeadAndRattle(speciesId) {
+      while (headGroup.children.length > 0) headGroup.remove(headGroup.children[0]);
+      while (rattleGroup.children.length > 0) rattleGroup.remove(rattleGroup.children[0]);
+
+      const sp = SPECIES_DB[speciesId];
+      const hs = sp.headShape;
+
+      // Gövde ile BİREBİR AYNI GLSL skinMaterial! (Sıfır renk/pul/ışık farkı!)
+      const mouthMat = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(...sp.mouthColor), roughness: 0.28, metalness: 0.02, side: THREE.DoubleSide
+      });
+      const fangMat = new THREE.MeshStandardMaterial({ color: 0xf6f1e6, roughness: 0.14 });
+      const pitMat = new THREE.MeshStandardMaterial({ color: 0x090707, roughness: 0.92 });
+
+      // 1. Üst Kafatası + Boyun Kaynaşma Yakası (Tek Parça Organik Form)
+      upperJawGroup = new THREE.Group();
+      const skullGeo = new THREE.SphereGeometry(1, 28, 22);
+      const spPos = skullGeo.attributes.position;
+      for (let i = 0; i < spPos.count; i++) {
+        let x = spPos.getX(i), y = spPos.getY(i), z = spPos.getZ(i);
+        // Ön burun zarifçe daralır, arka ense boyun yarıçapıyla pürüzsüz birleşir
+        const snoutTaper = z > 0 ? (1.0 - Math.pow(z, 1.35) * (1.0 - hs.snoutTaper)) : (1.0 + (-z) * 0.06);
+        const neckBlend = z < -0.45 ? (1.0 - ((-z - 0.45) / 0.55) * 0.24) : 1.0;
+        x *= hs.width * 0.54 * snoutTaper * neckBlend;
+        // Üst dudak düzleşir, alt kısmı ağız boşluğu için içe kavislenir
+        const yScale = y < 0 ? 0.18 : 0.88;
+        y *= hs.height * 0.56 * yScale * (z > 0.35 ? (1.0 - (z - 0.35) * 0.35) : 1.0);
+        z *= hs.len * 0.62;
+        if (y > 0 && Math.abs(x) > hs.width * 0.20 && z > -hs.len * 0.1 && z < hs.len * 0.28) {
+          y += hs.brow * hs.height * 0.22;
+        }
+        spPos.setXYZ(i, x, y, z);
+      }
+      skullGeo.computeVertexNormals();
+      mapHeadToBodySkinUVs(skullGeo, false);
+      const upperMesh = new THREE.Mesh(skullGeo, skinMaterial);
+      upperMesh.position.set(0, hs.height * 0.10, hs.len * 0.24);
+      upperMesh.castShadow = true;
+      upperMesh.receiveShadow = true;
+      upperJawGroup.add(upperMesh);
+
+      // Organik Kavisli Üst Damak (Kutu değil, kafatasına oturan yumuşak mukoza kubbesi)
+      const palateGeo = new THREE.SphereGeometry(1, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.5);
+      const pp = palateGeo.attributes.position;
+      for (let i = 0; i < pp.count; i++) {
+        let x = pp.getX(i), y = pp.getY(i), z = pp.getZ(i);
+        const t = z > 0 ? (1.0 - z * (1.0 - hs.snoutTaper)) : 1.0;
+        pp.setXYZ(i, x * hs.width * 0.40 * t, -y * hs.height * 0.16, z * hs.len * 0.48);
+      }
+      palateGeo.computeVertexNormals();
+      const palate = new THREE.Mesh(palateGeo, mouthMat);
+      palate.position.set(0, hs.height * 0.08, hs.len * 0.26);
+      upperJawGroup.add(palate);
+
+      // Ön Zehir / Yakalama Dişleri + Arka Kıvrık Diş Sırası
+      const fangGeo = new THREE.ConeGeometry(sp.fangSize * 0.20, sp.fangSize, 8);
+      const toothGeo = new THREE.ConeGeometry(sp.fangSize * 0.11, sp.fangSize * 0.48, 6);
+      [-1, 1].forEach(side => {
+        const fang = new THREE.Mesh(fangGeo, fangMat);
+        fang.position.set(side * hs.width * 0.22, -sp.fangSize * 0.28, hs.len * 0.56);
+        fang.rotation.x = Math.PI + 0.22;
+        upperJawGroup.add(fang);
+        for (let k = 0; k < 3; k++) {
+          const tooth = new THREE.Mesh(toothGeo, fangMat);
+          tooth.position.set(side * hs.width * (0.28 + k * 0.02), -sp.fangSize * 0.14, hs.len * (0.40 - k * 0.12));
+          tooth.rotation.x = Math.PI + 0.35;
+          upperJawGroup.add(tooth);
+        }
+      });
+
+      // Gerçekçi Gözler (Göz kapağı yok, şeffaf oküler gözlük) & Duyu Organları
+      const eyeR = hs.height * 0.23;
+      [-1, 1].forEach(side => {
+        const eyeMesh = new THREE.Mesh(new THREE.SphereGeometry(eyeR, 16, 14), eyeMaterial);
+        eyeMesh.position.set(
+          side * hs.width * (0.40 - sp.dorsalEyeOffset * 0.25),
+          hs.height * (0.26 + sp.dorsalEyeOffset * 0.45),
+          hs.len * 0.38
+        );
+        eyeMesh.rotation.y = side * Math.PI * 0.36;
+        upperJawGroup.add(eyeMesh);
+
+        const nostril = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.25, 8, 8), pitMat);
+        nostril.position.set(side * hs.width * 0.21, hs.height * (0.16 + sp.dorsalEyeOffset * 0.35), hs.len * 0.68);
+        upperJawGroup.add(nostril);
+
+        if (sp.hasHorns) {
+          const hGeo = new THREE.ConeGeometry(eyeR * 0.44, eyeR * 1.45, 7);
+          mapHeadToBodySkinUVs(hGeo, false);
+          const horn = new THREE.Mesh(hGeo, skinMaterial);
+          horn.position.set(side * hs.width * 0.34, hs.height * 0.52, hs.len * 0.38);
+          horn.rotation.z = -side * 0.28;
+          upperJawGroup.add(horn);
+        }
+        if (sp.noseHorns) {
+          const nhGeo = new THREE.ConeGeometry(eyeR * 0.34, eyeR * 1.35, 7);
+          mapHeadToBodySkinUVs(nhGeo, false);
+          const nhorn = new THREE.Mesh(nhGeo, skinMaterial);
+          nhorn.position.set(side * hs.width * 0.10, hs.height * 0.38, hs.len * 0.70);
+          nhorn.rotation.x = 0.22;
+          upperJawGroup.add(nhorn);
+        }
+        if (sp.heatPits === 'loreal') {
+          const pit = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.35, 8, 8), pitMat);
+          pit.position.set(side * hs.width * 0.33, hs.height * 0.12, hs.len * 0.53);
+          upperJawGroup.add(pit);
+        } else if (sp.heatPits === 'labial' || sp.heatPits === 'labial_deep') {
+          const count = sp.heatPits === 'labial_deep' ? 5 : 3;
+          for (let k = 0; k < count; k++) {
+            const pit = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 0.21, 6, 6), pitMat);
+            pit.position.set(side * hs.width * (0.37 - k * 0.03), hs.height * 0.03, hs.len * (0.40 + k * 0.08));
+            upperJawGroup.add(pit);
+          }
+        }
+      });
+
+      headGroup.add(upperJawGroup);
+
+      // 2. Ayrılabilir Sol-Sağ Alt Çene (Mandibular Symphysis — Yutarken Bağımsız Hareket Eder!)
+      lowerJawGroup = new THREE.Group();
+      lowerJawGroup.position.set(0, -hs.height * 0.02, -hs.len * 0.04);
+
+      function makeMandibleSide(sideSign) {
+        const mGroup = new THREE.Group();
+        const mGeo = new THREE.SphereGeometry(1, 18, 12);
+        const mp = mGeo.attributes.position;
+        for (let i = 0; i < mp.count; i++) {
+          let x = mp.getX(i), y = mp.getY(i), z = mp.getZ(i);
+          const taper = z > 0 ? (1.0 - z * (1.0 - hs.snoutTaper * 0.85)) : 1.0;
+          mp.setXYZ(
+            i,
+            x * hs.width * 0.24 * taper + sideSign * hs.width * 0.14 * taper,
+            y * hs.height * 0.22,
+            z * hs.len * 0.48
+          );
+        }
+        mGeo.computeVertexNormals();
+        mapHeadToBodySkinUVs(mGeo, true);
+        const mMesh = new THREE.Mesh(mGeo, skinMaterial);
+        mMesh.position.set(0, -hs.height * 0.08, hs.len * 0.34);
+        mMesh.castShadow = true;
+        mGroup.add(mMesh);
+        return mGroup;
+      }
+
+      leftMandible = makeMandibleSide(-1);
+      rightMandible = makeMandibleSide(1);
+      lowerJawGroup.add(leftMandible, rightMandible);
+
+      // Alt Çene Arasındaki Gerilebilir Boğaz / Ağız Tabanı Derisi (Gular Skin + Mukoza)
+      const gularGeo = new THREE.SphereGeometry(1, 18, 12);
+      const gp = gularGeo.attributes.position;
+      for (let i = 0; i < gp.count; i++) {
+        let x = gp.getX(i), y = gp.getY(i), z = gp.getZ(i);
+        const taper = z > 0 ? (1.0 - z * (1.0 - hs.snoutTaper * 0.88)) : 1.0;
+        gp.setXYZ(i, x * hs.width * 0.36 * taper, y * hs.height * 0.14, z * hs.len * 0.44);
+      }
+      gularGeo.computeVertexNormals();
+      gularSkinMesh = new THREE.Mesh(gularGeo, mouthMat);
+      gularSkinMesh.position.set(0, -hs.height * 0.02, hs.len * 0.32);
+      lowerJawGroup.add(gularSkinMesh);
+
+      headGroup.add(lowerJawGroup);
+
+      // 3. Çatallı Koku Alma Dili
+      tongueGroup = new THREE.Group();
+      const tMat = new THREE.MeshStandardMaterial({
+        color: sp.id === 'king_cobra' || sp.id === 'black_mamba' ? 0x181418 : 0x9c2434, roughness: 0.25
+      });
+      const tLen = hs.len * 0.65;
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0024, tLen, 6), tMat);
+      stem.rotation.x = Math.PI * 0.5;
+      stem.position.z = tLen * 0.5;
+      tongueGroup.add(stem);
+      [-1, 1].forEach(side => {
+        const tine = new THREE.Mesh(new THREE.CylinderGeometry(0.0007, 0.0015, tLen * 0.34, 5), tMat);
+        tine.rotation.x = Math.PI * 0.5;
+        tine.rotation.z = side * 0.38;
+        tine.position.set(side * tLen * 0.07, 0, tLen * 1.12);
+        tongueGroup.add(tine);
+      });
+      tongueGroup.position.set(0, -hs.height * 0.02, hs.len * 0.54);
+      headGroup.add(tongueGroup);
+
+      if (sp.hasRattle) {
+        const rMat = new THREE.MeshStandardMaterial({ color: 0x9e8c6c, roughness: 0.72 });
+        for (let k = 0; k < 6; k++) {
+          const seg = new THREE.Mesh(new THREE.SphereGeometry(0.009 - k * 0.0009, 10, 8), rMat);
+          seg.scale.set(0.75, 1.15, 1.1);
+          seg.position.z = -k * 0.011;
+          rattleGroup.add(seg);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 9. ANATOMİ & FİZİK HATA AYIKLAMA KATMANLARI
+    // =========================================================================
+    const debugGroup = new THREE.Group();
+    scene.add(debugGroup);
+
+    const vertMesh = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.011, 0.011, 0.032, 8),
+      new THREE.MeshStandardMaterial({ color: 0xe8e2d0, roughness: 0.5 }),
+      MAX_NODES
+    );
+    const ribMesh = new THREE.InstancedMesh(
+      new THREE.TorusGeometry(0.028, 0.0026, 6, 12, Math.PI * 1.35),
+      new THREE.MeshStandardMaterial({ color: 0xdfd8c4, roughness: 0.55 }),
+      MAX_NODES
+    );
+    vertMesh.visible = false;
+    ribMesh.visible = false;
+    debugGroup.add(vertMesh, ribMesh);
+
+    const colSphereMesh = new THREE.InstancedMesh(
+      new THREE.SphereGeometry(1, 10, 8),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.45 }),
+      MAX_NODES
+    );
+    colSphereMesh.visible = false;
+    debugGroup.add(colSphereMesh);
+
+    const vecPositions = new Float32Array(MAX_NODES * 4 * 3);
+    const vecColors = new Float32Array(MAX_NODES * 4 * 3);
+    const vecGeo = new THREE.BufferGeometry();
+    vecGeo.setAttribute('position', new THREE.BufferAttribute(vecPositions, 3));
+    vecGeo.setAttribute('color', new THREE.BufferAttribute(vecColors, 3));
+    const vecLines = new THREE.LineSegments(vecGeo, new THREE.LineBasicMaterial({ vertexColors: true }));
+    vecLines.visible = false;
+    debugGroup.add(vecLines);
+
+    // =========================================================================
+    // 10. PARALEL TAŞIMA (BISHOP FRAME) SÜREKLİ GÖVDE KAPLAMA & ÇİM EZİLMESİ
+    // =========================================================================
+    const _splinePts = Array.from({ length: SEG_LONG + 1 }, () => new THREE.Vector3());
+    const _tangents = Array.from({ length: SEG_LONG + 1 }, () => new THREE.Vector3());
+    const _normals = Array.from({ length: SEG_LONG + 1 }, () => new THREE.Vector3());
+    const _binormals = Array.from({ length: SEG_LONG + 1 }, () => new THREE.Vector3());
+    const _tmpVec = new THREE.Vector3();
+    const _rotAxis = new THREE.Vector3();
+    const _quat = new THREE.Quaternion();
+    const _dummy = new THREE.Object3D();
+
+    function updateSnakeGeometry() {
+      const sp = SPECIES_DB[state.speciesId];
+      const curve = new THREE.CatmullRomCurve3(physics.activePos || physics.pos.slice(0, NUM_NODES), false, 'centripetal', 0.5);
+
+      for (let i = 0; i <= SEG_LONG; i++) {
+        const u = i / SEG_LONG;
+        curve.getPoint(u, _splinePts[i]);
+        curve.getTangent(u, _tangents[i]).normalize();
+      }
+
+      // GPU Kısa Çim Ezilmesi için 16 örnek gövde noktası gönder
+      for (let s = 0; s < 16; s++) {
+        const idx = Math.floor((s / 15) * SEG_LONG);
+        snakeSamplePts[s].copy(_splinePts[idx]);
+      }
+
+      const upRef = new THREE.Vector3(0, 1, 0);
+      _binormals[0].crossVectors(_tangents[0], upRef);
+      if (_binormals[0].lengthSq() < 1e-4) _binormals[0].set(1, 0, 0);
+      _binormals[0].normalize();
+      _normals[0].crossVectors(_binormals[0], _tangents[0]).normalize();
+
+      for (let i = 1; i <= SEG_LONG; i++) {
+        _rotAxis.crossVectors(_tangents[i - 1], _tangents[i]);
+        const sinA = _rotAxis.length();
+        if (sinA > 1e-5) {
+          _rotAxis.divideScalar(sinA);
+          const angle = Math.acos(Math.max(-1, Math.min(1, _tangents[i - 1].dot(_tangents[i]))));
+          _quat.setFromAxisAngle(_rotAxis, angle);
+          _normals[i].copy(_normals[i - 1]).applyQuaternion(_quat);
+        } else {
+          _normals[i].copy(_normals[i - 1]);
+        }
+        _normals[i].lerp(upRef, 0.14);
+        _binormals[i].crossVectors(_tangents[i], _normals[i]).normalize();
+        _normals[i].crossVectors(_binormals[i], _tangents[i]).normalize();
+      }
+
+      const posAttr = bodyGeo.attributes.position;
+      const normAttr = bodyGeo.attributes.normal;
+      const curvAttr = bodyGeo.attributes.aCurvature;
+      const muscAttr = bodyGeo.attributes.aMuscle;
+
+      for (let i = 0; i <= SEG_LONG; i++) {
+        const u = i / SEG_LONG;
+        const nodeF = u * (NUM_NODES - 1);
+        const n0 = Math.floor(nodeF);
+        const n1 = Math.min(NUM_NODES - 1, n0 + 1);
+        const frac = nodeF - n0;
+
+        const baseR = physics.getAnatomicalRadius(u, sp);
+        // Bolus şişkinliği üzerinde deri pul gerilmesi artar!
+        let bolusStrain = 0;
+        const bols = physics.engine.boluses;
+        for (let k = 0; k < bols.length; k++) {
+          const du = (u - bols[k].u) / 0.055;
+          bolusStrain += Math.exp(-du * du) * 0.48;
+        }
+        const curv = physics.curvatures[n0] * (1 - frac) + physics.curvatures[n1] * frac + bolusStrain;
+        const musc = physics.muscleAct[n0] * (1 - frac) + physics.muscleAct[n1] * frac;
+
+        let hoodW = 1.0, hoodH = 1.0;
+        if (sp.hasHood && u > 0.015 && u < 0.19) {
+          const hBell = Math.sin(((u - 0.015) / 0.175) * Math.PI);
+          hoodW = 1.0 + state.hoodSpread * 1.45 * hBell;
+          hoodH = 1.0 - state.hoodSpread * 0.34 * hBell;
+        }
+        // Yutma sırasında boğaz/boyun başlangıcının elastik genişlemesi
+        if (state.feeding.phase === 'SWALLOW' && u < 0.09) {
+          const throatStretch = (1.0 - u / 0.09) * state.jawCurrent * 0.42;
+          hoodW += throatStretch;
+          hoodH += throatStretch * 0.85;
+        }
+
+        const rx = baseR * hoodW / Math.sqrt(sp.lateralCompression);
+        const ry = baseR * hoodH * Math.sqrt(sp.lateralCompression);
+        const center = _splinePts[i];
+        const N = _normals[i];
+        const B = _binormals[i];
+
+        for (let j = 0; j <= SEG_RAD; j++) {
+          const theta = (j / SEG_RAD) * Math.PI * 2;
+          const sinT = Math.sin(theta);
+          const cosT = -Math.cos(theta);
+          const flatCos = cosT < 0 ? cosT * 0.76 : cosT;
+          const dorsalRidge = (sp.lateralCompression > 1.1 && cosT > 0.5) ? (cosT - 0.5) * 0.18 : 0.0;
+
+          const lx = sinT * rx;
+          const ly = (flatCos + dorsalRidge) * ry;
+          const idx = i * (SEG_RAD + 1) + j;
+
+          posAttr.setXYZ(idx, center.x + B.x * lx + N.x * ly, center.y + B.y * lx + N.y * ly, center.z + B.z * lx + N.z * ly);
+          _tmpVec.set(
+            B.x * (sinT / Math.max(0.001, rx)) + N.x * (cosT / Math.max(0.001, ry)),
+            B.y * (sinT / Math.max(0.001, rx)) + N.y * (cosT / Math.max(0.001, ry)),
+            B.z * (sinT / Math.max(0.001, rx)) + N.z * (cosT / Math.max(0.001, ry))
+          ).normalize();
+          normAttr.setXYZ(idx, _tmpVec.x, _tmpVec.y, _tmpVec.z);
+          curvAttr.setX(idx, curv);
+          muscAttr.setX(idx, musc);
+        }
+      }
+      posAttr.needsUpdate = true;
+      normAttr.needsUpdate = true;
+      curvAttr.needsUpdate = true;
+      muscAttr.needsUpdate = true;
+
+      // Baş ve Çene (Pterygoid Walk Yutma Sallanması Dahil)
+      const headFwd = _tangents[0].clone().negate();
+      const mHead = new THREE.Matrix4().lookAt(_splinePts[0].clone().add(headFwd), _splinePts[0], _normals[0]);
+      headGroup.position.copy(_splinePts[0]);
+      headGroup.quaternion.setFromRotationMatrix(mHead);
+      if (Math.abs(state.jawRoll) > 0.002) {
+        headGroup.rotateZ(state.jawRoll);
+        headGroup.rotateY(state.jawRoll * 0.45);
+      }
+
+      if (lowerJawGroup) {
+        lowerJawGroup.rotation.x = state.jawCurrent * 1.12;
+        const spread = state.feeding.phase === 'SWALLOW' ? (0.28 + state.jawCurrent * 0.35) : (state.jawCurrent * 0.12);
+        const wPhase = state.jawWalkPhase || 0;
+        const walkShift = state.feeding.phase === 'SWALLOW' ? 0.016 : 0.0;
+        if (leftMandible && rightMandible) {
+          leftMandible.rotation.y = -spread * 0.45;
+          rightMandible.rotation.y = spread * 0.45;
+          // Sol ve sağ çene kemikleri sırayla ileri-geri yürüyerek avı içeri çeker (pterygoid walk)
+          leftMandible.position.z = Math.sin(wPhase) * walkShift;
+          rightMandible.position.z = -Math.sin(wPhase) * walkShift;
+          leftMandible.rotation.x = Math.max(0, Math.sin(wPhase)) * 0.14;
+          rightMandible.rotation.x = Math.max(0, -Math.sin(wPhase)) * 0.14;
+        }
+        if (gularSkinMesh) {
+          gularSkinMesh.scale.set(1.0 + spread * 1.1, 1.0 + state.jawCurrent * 0.9, 1.0);
+        }
+      }
+      if (tongueGroup) {
+        if (state.tonguePhase > 0.01 && state.feeding.phase === 'NONE') {
+          tongueGroup.visible = true;
+          const ext = Math.sin(state.tonguePhase * Math.PI);
+          tongueGroup.scale.set(1, 1, 0.25 + ext * 1.15);
+          tongueGroup.rotation.x = Math.sin(state.simTime * 42.0) * 0.28;
+        } else {
+          tongueGroup.visible = false;
+        }
+      }
+
+      if (sp.hasRattle) {
+        rattleGroup.visible = true;
+        const tailPos = _splinePts[SEG_LONG];
+        const mTail = new THREE.Matrix4().lookAt(tailPos, tailPos.clone().add(_tangents[SEG_LONG]), _normals[SEG_LONG]);
+        rattleGroup.position.copy(tailPos);
+        rattleGroup.quaternion.setFromRotationMatrix(mTail);
+        if (state.aiState === 'DEFENSIVE' || state.activeGait === 'head_lift') {
+          rattleGroup.rotation.z += Math.sin(state.simTime * 110.0) * 0.25;
+        }
+      } else {
+        rattleGroup.visible = false;
+      }
+
+      if (state.showSkeleton || state.showCollision) {
+        for (let i = 0; i < NUM_NODES; i++) {
+          const p = physics.pos[i], r = physics.radii[i];
+          if (state.showSkeleton) {
+            const tan = i < NUM_NODES - 1
+              ? _tmpVec.subVectors(physics.pos[i + 1], p).normalize()
+              : _tmpVec.subVectors(p, physics.pos[i - 1]).normalize();
+            _dummy.position.copy(p);
+            _dummy.quaternion.setFromUnitVectors(upRef, tan);
+            const s = r / 0.032;
+            _dummy.scale.set(s, physics.restLen / 0.034, s);
+            _dummy.updateMatrix();
+            vertMesh.setMatrixAt(i, _dummy.matrix);
+            const ribS = i < NUM_NODES * (1 - sp.tailRatio) ? s : 0.001;
+            _dummy.scale.set(ribS, ribS, ribS);
+            _dummy.rotateX(Math.PI * 0.5);
+            _dummy.updateMatrix();
+            ribMesh.setMatrixAt(i, _dummy.matrix);
+          }
+          if (state.showCollision) {
+            _dummy.position.copy(p);
+            _dummy.rotation.set(0, 0, 0);
+            _dummy.scale.set(r, r, r);
+            _dummy.updateMatrix();
+            colSphereMesh.setMatrixAt(i, _dummy.matrix);
+          }
+        }
+        if (state.showSkeleton) { vertMesh.count = NUM_NODES; ribMesh.count = NUM_NODES; vertMesh.instanceMatrix.needsUpdate = true; ribMesh.instanceMatrix.needsUpdate = true; }
+        if (state.showCollision) { colSphereMesh.count = NUM_NODES; colSphereMesh.instanceMatrix.needsUpdate = true; }
+      }
+
+      if (state.showVectors) {
+        const vp = vecGeo.attributes.position, vc = vecGeo.attributes.color;
+        for (let i = 0; i < NUM_NODES; i++) {
+          const p = physics.pos[i], v = physics.vel[i], f = physics.frictionForces[i];
+          const base = i * 4;
+          vp.setXYZ(base, p.x, p.y, p.z);
+          vp.setXYZ(base + 1, p.x + v.x * 0.25, p.y + v.y * 0.25, p.z + v.z * 0.25);
+          vc.setXYZ(base, 0.2, 1.0, 0.5); vc.setXYZ(base + 1, 0.2, 1.0, 0.5);
+          vp.setXYZ(base + 2, p.x, p.y, p.z);
+          vp.setXYZ(base + 3, p.x + f.x * 0.035, p.y + f.y * 0.035, p.z + f.z * 0.035);
+          vc.setXYZ(base + 2, 1.0, 0.65, 0.15); vc.setXYZ(base + 3, 1.0, 0.65, 0.15);
+        }
+        vp.needsUpdate = true;
+        vc.needsUpdate = true;
+      }
+    }
+
+    // =========================================================================
+    // 11. KAMERA KONTROLÜ
+    // =========================================================================
+    const camRig = {
+      yaw: 0.72, pitch: 0.44, dist: 2.25,
+      target: new THREE.Vector3(0, 0.15, 0),
+      dragging: false, lastX: 0, lastY: 0, pinchDist: 0
+    };
+
+    const domEl = renderer.domElement;
+    domEl.addEventListener('pointerdown', e => { camRig.dragging = true; camRig.lastX = e.clientX; camRig.lastY = e.clientY; });
+    window.addEventListener('pointerup', () => { camRig.dragging = false; });
+    window.addEventListener('pointermove', e => {
+      if (!camRig.dragging) return;
+      const dx = e.clientX - camRig.lastX, dy = e.clientY - camRig.lastY;
+      camRig.lastX = e.clientX; camRig.lastY = e.clientY;
+      camRig.yaw -= dx * 0.0055;
+      camRig.pitch = Math.max(0.06, Math.min(1.42, camRig.pitch + dy * 0.0055));
+    });
+    domEl.addEventListener('wheel', e => {
+      e.preventDefault();
+      camRig.dist = Math.max(0.22, Math.min(9.5, camRig.dist * (1 + Math.sign(e.deltaY) * 0.1)));
+    }, { passive: false });
+    domEl.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        camRig.pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      }
+    }, { passive: true });
+    domEl.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        if (camRig.pinchDist > 0) camRig.dist = Math.max(0.22, Math.min(9.5, camRig.dist * (camRig.pinchDist / Math.max(1, d))));
+        camRig.pinchDist = d;
+      }
+    }, { passive: true });
+
+    function updateCamera(dt) {
+      const head = physics.pos[0];
+      const mid = physics.pos[Math.floor(NUM_NODES * 0.32)];
+      const sp = SPECIES_DB[state.speciesId];
+
+      // Yutma sırasında kamerayı hafifçe başa yaklaştırarak dramatik sinematik görünüm sağla
+      const swallowZoom = state.feeding.phase === 'SWALLOW' ? 0.58 : 1.0;
+
+      if (state.cameraMode === 'orbit') {
+        camRig.target.lerp(mid, Math.min(1, dt * 4.0));
+        const d = camRig.dist * swallowZoom;
+        const cx = camRig.target.x + Math.cos(camRig.pitch) * Math.sin(camRig.yaw) * d;
+        const cy = Math.max(getTerrainHeight(camRig.target.x, camRig.target.z) + 0.08, camRig.target.y + Math.sin(camRig.pitch) * d);
+        const cz = camRig.target.z + Math.cos(camRig.pitch) * Math.cos(camRig.yaw) * d;
+        camera.position.lerp(new THREE.Vector3(cx, cy, cz), Math.min(1, dt * 10.0));
+        camera.lookAt(camRig.target);
+      } else if (state.cameraMode === 'follow') {
+        const hAng = physics.smoothHeading;
+        const behind = new THREE.Vector3(-Math.cos(hAng), 0.54, -Math.sin(hAng)).normalize();
+        const followDist = Math.max(0.95, Math.min(2.5, sp.length * 0.58)) * swallowZoom;
+        const desired = head.clone().addScaledVector(behind, followDist);
+        desired.y = Math.max(getTerrainHeight(desired.x, desired.z) + 0.36, desired.y);
+        camera.position.lerp(desired, Math.min(1, dt * 6.5));
+        camRig.target.lerp(head.clone().add(new THREE.Vector3(Math.cos(hAng) * 0.32, 0.02, Math.sin(hAng) * 0.32)), Math.min(1, dt * 8.0));
+        camera.lookAt(camRig.target);
+      } else if (state.cameraMode === 'documentary') {
+        const orbitAngle = state.simTime * 0.14 + 0.9;
+        const rad = Math.max(1.1, sp.length * 0.62) * swallowZoom;
+        const desired = new THREE.Vector3(
+          mid.x + Math.cos(orbitAngle) * rad,
+          getTerrainHeight(mid.x + Math.cos(orbitAngle) * rad, mid.z + Math.sin(orbitAngle) * rad) + 0.28,
+          mid.z + Math.sin(orbitAngle) * rad
+        );
+        camera.position.lerp(desired, Math.min(1, dt * 2.2));
+        camRig.target.lerp(head.clone().lerp(mid, 0.35), Math.min(1, dt * 3.5));
+        camera.lookAt(camRig.target);
+      } else if (state.cameraMode === 'macro') {
+        const headFwd = new THREE.Vector3().subVectors(physics.pos[0], physics.pos[2]).normalize();
+        const side = new THREE.Vector3(-headFwd.z, 0.18, headFwd.x).normalize();
+        const macroDist = Math.max(0.20, sp.headShape.len * 2.35);
+        const desired = head.clone().addScaledVector(headFwd, macroDist * 0.72).addScaledVector(side, macroDist * 0.75);
+        desired.y = Math.max(getTerrainHeight(desired.x, desired.z) + 0.06, head.y + sp.headShape.height * 1.4);
+        camera.position.lerp(desired, Math.min(1, dt * 6.0));
+        camRig.target.lerp(head.clone().addScaledVector(headFwd, sp.headShape.len * 0.3), Math.min(1, dt * 8.0));
+        camera.lookAt(camRig.target);
+      } else if (state.cameraMode === 'free') {
+        const fwd = new THREE.Vector3();
+        camera.getWorldDirection(fwd);
+        const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0)).normalize();
+        const moveSpd = 2.4 * dt;
+        if (state.keys['KeyW'] || state.keys['ArrowUp']) camera.position.addScaledVector(fwd, moveSpd);
+        if (state.keys['KeyS'] || state.keys['ArrowDown']) camera.position.addScaledVector(fwd, -moveSpd);
+        if (state.keys['KeyA'] || state.keys['ArrowLeft']) camera.position.addScaledVector(right, -moveSpd);
+        if (state.keys['KeyD'] || state.keys['ArrowRight']) camera.position.addScaledVector(right, moveSpd);
+        const lookPt = camera.position.clone().add(new THREE.Vector3(
+          Math.cos(camRig.pitch - 0.4) * Math.sin(camRig.yaw),
+          -Math.sin(camRig.pitch - 0.4),
+          Math.cos(camRig.pitch - 0.4) * Math.cos(camRig.yaw)
+        ));
+        camera.lookAt(lookPt);
+      }
+    }
+
+    // =========================================================================
+    // 12. GÜNÜN SAATİ & ATMOSFERİK IŞIK
+    // =========================================================================
+    function updateLighting() {
+      const h = state.timeOfDay;
+      const sunAngle = ((h - 6.0) / 12.0) * Math.PI;
+      const elev = Math.sin(sunAngle);
+      const azim = Math.cos(sunAngle);
+      const isNight = elev < -0.05;
+
+      const sunDir = new THREE.Vector3(azim * 0.85, Math.max(0.08, Math.abs(elev)), 0.48).normalize();
+      skyUniforms.uSunDir.value.copy(sunDir);
+      sunLight.position.copy(sunDir).multiplyScalar(12);
+
+      if (isNight) {
+        skyUniforms.uZenithColor.value.setHex(0x050914);
+        skyUniforms.uHorizonColor.value.setHex(0x111c2b);
+        skyUniforms.uSunColor.value.setHex(0x8aa8d6);
+        sunLight.color.setHex(0x88a8dc);
+        sunLight.intensity = 0.65;
+        hemiLight.intensity = 0.35;
+      } else if (elev < 0.28) {
+        skyUniforms.uZenithColor.value.setHex(0x28436b);
+        skyUniforms.uHorizonColor.value.setHex(0xd98a54);
+        skyUniforms.uSunColor.value.setHex(0xffb56b);
+        sunLight.color.setHex(0xffb878);
+        sunLight.intensity = 1.65;
+        hemiLight.intensity = 0.62;
+      } else {
+        skyUniforms.uZenithColor.value.setHex(state.biomeId === 'desert' ? 0x2665a8 : 0x1f5580);
+        skyUniforms.uHorizonColor.value.setHex(state.biomeId === 'desert' ? 0xd9c6a3 : 0xa3c9ad);
+        skyUniforms.uSunColor.value.setHex(0xfff7e6);
+        sunLight.color.setHex(0xfff6e5);
+        sunLight.intensity = 2.28;
+        hemiLight.intensity = 0.82;
+      }
+      renderer.toneMappingExposure = state.exposure;
+    }
+
+    // =========================================================================
+    // 13. ARAYÜZ BAĞLANTILARI
+    // =========================================================================
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('opacity-0', 'translate-y-2');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.classList.add('opacity-0', 'translate-y-2'); }, 2400);
+    }
+
+    function selectSpecies(speciesId, switchHabitat = false) {
+      state.speciesId = speciesId;
+      const sp = SPECIES_DB[speciesId];
+
+      skinUniforms.uColPrimary.value.setRGB(...sp.colPrimary);
+      skinUniforms.uColSecondary.value.setRGB(...sp.colSecondary);
+      skinUniforms.uColBelly.value.setRGB(...sp.colBelly);
+      skinUniforms.uScaleRows.value = sp.scaleRows;
+      skinUniforms.uKeeled.value = sp.keeled;
+      skinUniforms.uPatternType.value = sp.patternType;
+      skinUniforms.uRoughness.value = sp.roughness;
+      skinUniforms.uIridescence.value = sp.iridescence;
+
+      eyeUniforms.uIrisColor.value.setRGB(...sp.irisColor);
+      eyeUniforms.uPupilSlit.value = sp.pupilSlit;
+
+      if (switchHabitat && state.biomeId !== sp.defaultBiome) {
+        selectBiome(sp.defaultBiome, false);
+      }
+
+      buildSpeciesHeadAndRattle(speciesId);
+      physics.reset(speciesId);
+      camRig.dist = Math.max(1.15, Math.min(3.8, sp.length * 0.72));
+
+      document.getElementById('hud-species-name').textContent = sp.name;
+      document.getElementById('hud-species-latin').textContent = sp.latin;
+      document.getElementById('spec-length-mass').textContent = `${sp.length.toFixed(2)} m · ${sp.mass.toFixed(2)} kg`;
+      document.getElementById('spec-scales').textContent = sp.scaleLabel;
+      document.getElementById('spec-sensory').textContent = sp.sensoryLabel;
+
+      document.querySelectorAll('.species-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.species === speciesId);
+      });
+      showToast(`${sp.name} (${sp.latin}) yüklendi`);
+    }
+
+    function selectBiome(biomeId, announce = true) {
+      state.biomeId = biomeId;
+      buildHabitat(biomeId);
+      updateLighting();
+      physics.reset(state.speciesId);
+      initPreyPopulation();
+      document.querySelectorAll('.biome-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.biome === biomeId);
+      });
+      if (announce) showToast(`Ortam: ${BIOMES[biomeId].name}`);
+    }
+
+    const speciesGrid = document.getElementById('species-grid');
+    Object.values(SPECIES_DB).forEach(sp => {
+      const btn = document.createElement('button');
+      btn.dataset.species = sp.id;
+      btn.className = 'species-btn btn-pill p-2 rounded-lg border border-white/15 text-left';
+      btn.innerHTML = `<div class="font-medium text-zinc-100 truncate">${sp.name}</div><div class="text-[10px] text-zinc-400 mono">${sp.length}m · ${sp.scaleRows} pul</div>`;
+      btn.addEventListener('click', () => selectSpecies(sp.id, false));
+      speciesGrid.appendChild(btn);
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          const active = b.dataset.tab === target;
+          b.classList.toggle('text-emerald-300', active);
+          b.classList.toggle('border-emerald-400', active);
+          b.classList.toggle('text-zinc-400', !active);
+          b.classList.toggle('border-transparent', !active);
+        });
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('hidden', p.id !== `tab-${target}`));
+      });
+    });
+
+    function setCameraMode(mode) {
+      state.cameraMode = mode;
+      document.querySelectorAll('.cam-btn, .cam-btn-mob').forEach(b => b.classList.toggle('active', b.dataset.cam === mode));
+      showToast(`Kamera: ${mode}`);
+    }
+    document.querySelectorAll('.cam-btn, .cam-btn-mob').forEach(b => b.addEventListener('click', () => setCameraMode(b.dataset.cam)));
+    document.querySelectorAll('.biome-btn').forEach(b => b.addEventListener('click', () => selectBiome(b.dataset.biome, true)));
+
+    document.getElementById('select-gait').addEventListener('change', e => {
+      state.gaitOverride = e.target.value;
+      showToast(`Hareket: ${e.target.options[e.target.selectedIndex].text}`);
+    });
+
+    const manualHud = document.getElementById('manual-hud');
+    function setControlMode(mode) {
+      state.controlMode = mode;
+      document.getElementById('btn-mode-manual').classList.toggle('active', mode === 'manual');
+      document.getElementById('btn-mode-ai').classList.toggle('active', mode === 'ai');
+      manualHud.classList.toggle('hidden', mode !== 'manual');
+      manualHud.classList.toggle('flex', mode === 'manual');
+      showToast(mode === 'manual' ? 'Manuel Kontrol Aktif (WASD / Joystick)' : 'Otonom Biyolojik AI Aktif');
+    }
+    document.getElementById('btn-mode-manual').addEventListener('click', () => setControlMode('manual'));
+    document.getElementById('btn-mode-ai').addEventListener('click', () => setControlMode('ai'));
+
+    document.getElementById('btn-strike-panel').addEventListener('click', () => triggerStrike());
+    document.getElementById('btn-strike-hud').addEventListener('click', () => triggerStrike());
+    document.getElementById('btn-spawn-prey').addEventListener('click', () => {
+      const p = spawnPrey(true);
+      showToast(`Yakınınıza ${p.label} eklendi!`);
+    });
+
+    document.querySelectorAll('.ai-trigger-btn').forEach(b => {
+      b.addEventListener('click', () => {
+        setControlMode('ai');
+        state.aiState = b.dataset.ai;
+        state.aiTimer = 14.0;
+        showToast(`AI Davranışı: ${state.aiState}`);
+      });
+    });
+
+    document.getElementById('slider-time').addEventListener('input', e => {
+      state.timeOfDay = parseFloat(e.target.value);
+      const hh = Math.floor(state.timeOfDay), mm = Math.floor((state.timeOfDay - hh) * 60);
+      document.getElementById('val-time').textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+      updateLighting();
+    });
+    document.getElementById('slider-temp').addEventListener('input', e => {
+      state.ambientTemp = parseFloat(e.target.value);
+      document.getElementById('val-temp').textContent = `${state.ambientTemp.toFixed(0)}°C`;
+    });
+    document.getElementById('slider-speed').addEventListener('input', e => {
+      state.timeScale = parseFloat(e.target.value);
+      document.getElementById('val-speed').textContent = `${state.timeScale.toFixed(2)}x`;
+      document.getElementById('btn-slowmo').classList.toggle('active', Math.abs(state.timeScale - 0.25) < 0.05);
+    });
+    document.getElementById('slider-exposure').addEventListener('input', e => {
+      state.exposure = parseFloat(e.target.value);
+      document.getElementById('val-exposure').textContent = state.exposure.toFixed(2);
+      renderer.toneMappingExposure = state.exposure;
+    });
+    document.getElementById('slider-wetness').addEventListener('input', e => {
+      state.wetness = parseFloat(e.target.value);
+      document.getElementById('val-wetness').textContent = `${Math.round(state.wetness * 100)}%`;
+      skinUniforms.uWetness.value = state.wetness;
+    });
+
+    document.getElementById('chk-skeleton').addEventListener('change', e => {
+      state.showSkeleton = e.target.checked;
+      vertMesh.visible = state.showSkeleton;
+      ribMesh.visible = state.showSkeleton;
+      if (state.showSkeleton && !state.showXray) {
+        document.getElementById('chk-xray').checked = true;
+        state.showXray = true;
+        skinUniforms.uXrayAlpha.value = 0.34;
+      }
+    });
+    document.getElementById('chk-xray').addEventListener('change', e => {
+      state.showXray = e.target.checked;
+      skinUniforms.uXrayAlpha.value = state.showXray ? 0.34 : 1.0;
+    });
+    document.getElementById('chk-muscle').addEventListener('change', e => {
+      state.showMuscle = e.target.checked;
+      skinUniforms.uMuscleVis.value = state.showMuscle ? 1.0 : 0.0;
+    });
+    document.getElementById('chk-vectors').addEventListener('change', e => {
+      state.showVectors = e.target.checked;
+      vecLines.visible = state.showVectors;
+    });
+    document.getElementById('chk-collision').addEventListener('change', e => {
+      state.showCollision = e.target.checked;
+      colSphereMesh.visible = state.showCollision;
+    });
+    document.getElementById('chk-wireframe').addEventListener('change', e => {
+      state.showWireframe = e.target.checked;
+      skinMaterial.wireframe = state.showWireframe;
+    });
+
+    document.getElementById('btn-tongue').addEventListener('click', () => { state.tonguePhase = 1.0; showToast('Çatallı dil koku algılama'); });
+    document.getElementById('btn-jaw').addEventListener('click', () => { state.jawTarget = 1.0; showToast('Çene açma & diş gösterimi'); });
+    document.getElementById('btn-reset-snake').addEventListener('click', () => { physics.reset(state.speciesId); showToast('Yılan pozu sıfırlandı'); });
+
+    const btnPause = document.getElementById('btn-pause');
+    function togglePause() {
+      state.paused = !state.paused;
+      btnPause.textContent = state.paused ? 'Devam' : 'Duraklat';
+      btnPause.classList.toggle('active', state.paused);
+    }
+    btnPause.addEventListener('click', togglePause);
+
+    document.getElementById('btn-slowmo').addEventListener('click', () => {
+      const slow = Math.abs(state.timeScale - 0.25) > 0.05;
+      state.timeScale = slow ? 0.25 : 1.0;
+      document.getElementById('slider-speed').value = state.timeScale;
+      document.getElementById('val-speed').textContent = `${state.timeScale.toFixed(2)}x`;
+      document.getElementById('btn-slowmo').classList.toggle('active', slow);
+      showToast(slow ? 'Ağır Çekim: 0.25x' : 'Normal Hız: 1.00x');
+    });
+
+    document.getElementById('btn-screenshot').addEventListener('click', () => {
+      renderer.render(scene, camera);
+      try {
+        const a = document.createElement('a');
+        a.href = renderer.domElement.toDataURL('image/png');
+        a.download = `serpentia_${state.speciesId}_${Date.now()}.png`;
+        a.click();
+        showToast('Ekran görüntüsü kaydedildi');
+      } catch (err) { showToast('Kare yakalandı'); }
+    });
+
+    document.getElementById('btn-fullscreen').addEventListener('click', () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {});
+      else document.exitFullscreen && document.exitFullscreen().catch(() => {});
+    });
+
+    let drawerOpen = window.innerWidth >= 840;
+    const drawer = document.getElementById('inspector-drawer');
+    const btnDrawer = document.getElementById('btn-toggle-drawer');
+    function syncDrawer() {
+      drawer.style.transform = drawerOpen ? 'translateX(0)' : 'translateX(calc(100% + 24px))';
+      btnDrawer.classList.toggle('active', drawerOpen);
+    }
+    btnDrawer.addEventListener('click', () => { drawerOpen = !drawerOpen; syncDrawer(); });
+    syncDrawer();
+
+    // Sanal Joystick
+    const joyZone = document.getElementById('joystick-zone');
+    const joyKnob = document.getElementById('joystick-knob');
+    let joyActive = false;
+    function updateJoy(clientX, clientY) {
+      const rect = joyZone.getBoundingClientRect();
+      const cx = rect.left + rect.width * 0.5, cy = rect.top + rect.height * 0.5;
+      const maxR = rect.width * 0.36;
+      let dx = clientX - cx, dy = clientY - cy;
+      const dist = Math.hypot(dx, dy);
+      if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+      joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      state.manualInput.x = dx / maxR;
+      state.manualInput.y = dy / maxR;
+    }
+    joyZone.addEventListener('pointerdown', e => { joyActive = true; updateJoy(e.clientX, e.clientY); });
+    window.addEventListener('pointermove', e => { if (joyActive) updateJoy(e.clientX, e.clientY); });
+    window.addEventListener('pointerup', () => {
+      if (!joyActive) return;
+      joyActive = false;
+      joyKnob.style.transform = 'translate(0px, 0px)';
+      state.manualInput.x = 0; state.manualInput.y = 0;
+    });
+
+    // Klavye Kısayolları (WASD/Oklar = Hareket, E/F/Space = Saldır & Ye, P = Duraklat)
+    window.addEventListener('keydown', e => {
+      state.keys[e.code] = true;
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+      if (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Space') {
+        e.preventDefault();
+        triggerStrike();
+      } else if (e.code === 'KeyP') {
+        togglePause();
+      }
+    });
+    window.addEventListener('keyup', e => { state.keys[e.code] = false; });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // =========================================================================
+    // 14. BAŞLATMA & 60 FPS ANA DÖNGÜ
+    // =========================================================================
+    buildHabitat(state.biomeId);
+    updateLighting();
+    selectSpecies(state.speciesId, false);
+    initPreyPopulation();
+
+    let lastTime = performance.now();
+    let fpsAccum = 0, fpsFrames = 0, uiTick = 0;
+
+    const GAIT_LABELS = {
+      lateral_undulation: 'Yanal Dalgalanma',
+      sidewinding: 'Yan Kayma',
+      concertina: 'Akordeon',
+      rectilinear: 'Doğrusal Sürünme',
+      swimming: 'Yüzme',
+      arboreal: 'Dala Tırmanma',
+      coiling: 'Çöreklenme',
+      head_lift: 'Baş Kaldırma'
+    };
+    const FEED_LABELS = {
+      STRIKE: 'SALDIRI!',
+      SUBDUE: 'SARIYOR / ZEHİR',
+      SWALLOW: 'YUTUYOR...'
+    };
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const rawDt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      fpsAccum += rawDt;
+      fpsFrames++;
+      if (fpsAccum >= 0.4) {
+        state.fps = Math.round(fpsFrames / fpsAccum);
+        state.frameMs = (fpsAccum / fpsFrames) * 1000;
+        fpsAccum = 0; fpsFrames = 0;
+      }
+
+      const simDt = state.paused ? 0 : rawDt * state.timeScale;
+      state.simTime += simDt;
+
+      if (simDt > 0) {
+        physics.step(simDt);
+        updatePrey(simDt);
+      }
+      if (waterUniforms) waterUniforms.uTime.value = state.simTime;
+      if (grassUniforms) grassUniforms.uTime.value = state.simTime;
+
+      updateSnakeGeometry();
+      updateCamera(rawDt);
+      renderer.render(scene, camera);
+
+      uiTick += rawDt;
+      if (uiTick >= 0.2) {
+        uiTick = 0;
+        const statusText = state.feeding.phase !== 'NONE' ? FEED_LABELS[state.feeding.phase] : state.aiState;
+        document.getElementById('pill-state').textContent = statusText;
+        document.getElementById('pill-gait').textContent = GAIT_LABELS[state.activeGait] || state.activeGait;
+        document.getElementById('pill-fps').textContent = `${state.fps} FPS`;
+        document.getElementById('tel-fps').textContent = `${state.fps} FPS (${state.frameMs.toFixed(1)} ms)`;
+        document.getElementById('tel-speed').textContent = `${state.groundSpeed.toFixed(2)} m/s`;
+        document.getElementById('tel-drift').textContent = `${state.lengthDriftPct.toFixed(2)}%`;
+        document.getElementById('tel-btemp').textContent = `${state.bodyTemp.toFixed(1)} °C`;
+        document.getElementById('tel-prey').textContent = state.nearestPreyDist < 50 ? `${state.nearestPreyDist.toFixed(2)} m` : '-- m';
+      }
+    }
+
+    requestAnimationFrame(animate);
+  })();
+  </script>
+</body>
+</html>
