@@ -160,6 +160,7 @@ const App = (() => {
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
     { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
+    { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
@@ -245,6 +246,7 @@ const App = (() => {
     'living-island': 'img/library/living-island-1280.svg',
     'koy': 'img/library/koy-1280.webp',
     'simitci': 'img/library/simitci-1280.webp',
+    'operasyon-hatti': 'img/library/operasyon-hatti-1280.webp',
     'yelken': 'img/library/yelken-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
     'amsterdam-coffeeshop': 'img/library/amsterdam-coffeeshop-1280.webp',
@@ -513,6 +515,17 @@ const App = (() => {
     });
     const page = root().querySelector('.game-page');
     if (page) page.classList.add('koy-page');
+  }
+
+  /* ==================== OPERASYON HATTI. / TAKTİK 3D FPS ==================== */
+  function operasyonHatti() {
+    openEmbeddedGame({
+      title: T('OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'),
+      url: 'games/operasyon-hatti/index.html?v=1',
+      tag: T('BABA. OPERASYON HATTI. · Taktik FPS · 3D', 'BABA. OPERATION LINE. · Tactical FPS · 3D'),
+      lead: T('Üç kişilik timinle dağ geçidi, çöl şehri, sınır kasabası ve gece üssünde operasyon: balistik, rüzgâr, geri tepme ve tim emirleriyle hedefleri temizle.', 'Lead a three-man team through a mountain pass, desert city, border town and night base: ballistics, wind, recoil and squad orders.'),
+      tip: T('WASD ile yürü, fareyle nişan al. Sol tık ateş, sağ tık/F nişangâh, R şarjör, G el bombası, Shift koş/nefes tut, C çömel, V tim emri.', 'WASD to move, mouse to aim. Left click fire, right click/F aim, R reload, G grenade, Shift sprint/hold breath, C crouch, V squad order.')
+    });
   }
 
   /* ==================== SİMİTÇİ. / TRABZON UZUN SOKAK TYCOON ==================== */
@@ -902,6 +915,7 @@ const App = (() => {
       tip: T('WASD veya ok tuşlarını kullan. Telefonda ekrandaki pedallara dokun.', 'Use WASD or the arrow keys. On phones, use the on-screen controls.')
     });
     else if (r === 'simitci') simitci();
+    else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
     else if (r === '2048') g2048();
