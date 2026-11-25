@@ -516,7 +516,7 @@ const App = (() => {
   function yelken() {
     openEmbeddedGame({
       title: T('YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'),
-      url: 'games/yelken/index.html?v=1',
+      url: 'games/yelken/index.html?v=2',
       tag: T('BABA. YELKEN. · Trabzon Körfezi · 3D', 'BABA. SAIL. · Trabzon Bay · 3D'),
       lead: T('Trabzon kıyısında Optimist’ten 11,5 m maxi yata beş tekne: gerçek rüzgâr ve zahiri rüzgâr, yelken kaldırma/sürükleme, dalga üstünde yüzerlik, yatış ve iz dalgası.', 'Five boats from an Optimist to an 11.5 m maxi off the Trabzon coast: true and apparent wind, sail lift and drag, buoyancy on the waves, heel and wake.'),
       tip: T('A/D ya da ← → dümen, W/S yelkeni çevirir. “Oto” ideal yelken açısını tutar. Pusuladaki yeşil çizgi doğru bumba açısını gösterir.', 'A/D or ← → steer, W/S trims the sail. “Oto” holds the ideal sail angle. The green line on the compass shows the right boom angle.')

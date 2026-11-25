@@ -1199,7 +1199,7 @@
           // Exact Kelvin Stationary-Phase Wake Geometry (theta_K = arcsin(1/3) = 19.47°, tan = 0.35355)
           float speedNorm = clamp(abs(uBoatSpeed) / 3.4, 0.0, 1.6);
           float aftDist = max(0.0, -along - 1.15); // Distance behind stern transom
-          float wakeEnvelope = smoothstep(0.3, -1.1, along) * exp(-aftDist * 0.085);
+          float wakeEnvelope = (1.0 - smoothstep(-1.1, 0.3, along)) * exp(-aftDist * 0.085); // (edge0 < edge1: defined on every GPU)
           float kelvinArmX = 0.52 + aftDist * 0.35355;
           float distToArm = abs(across) - kelvinArmX;
 
@@ -1250,7 +1250,7 @@
 
           // Subtle ambient occlusion right at the hull waterline
           float hullEdgeDist = max(abs(across) - halfBeam, max(along - 1.46, -1.45 - along));
-          float hullContactAO = exp(-max(0.0, hullEdgeDist) * 4.2) * smoothstep(2.1, 1.3, abs(along));
+          float hullContactAO = exp(-max(0.0, hullEdgeDist) * 4.2) * (1.0 - smoothstep(1.3, 2.1, abs(along)));
           col *= mix(1.0, 0.76, hullContactAO * uGtao);
 
           // LAYER 2 (AAA Wake): Domain-warped ridged cellular seafoam webbing (delicate lacy tendrils, zero solid blob!)
@@ -1265,13 +1265,13 @@
           float whitecap = smoothstep(0.56, 0.86, vFoam * 0.85 + lacyWeb * 0.45);
 
           // Tight waterline collar & crisp bow-wave break (breaks into lacy bubbles instead of a thick band)
-          float collarMask = exp(-pow(max(0.0, hullEdgeDist) / (0.14 + speedNorm * 0.10), 2.0)) * smoothstep(1.8, 1.38, abs(along));
+          float collarMask = exp(-pow(max(0.0, hullEdgeDist) / (0.14 + speedNorm * 0.10), 2.0)) * (1.0 - smoothstep(1.38, 1.8, abs(along)));
           float collarLace = collarMask * smoothstep(0.16, 0.62, lacyWeb + 0.25 * speedNorm) * (0.35 + 0.55 * speedNorm);
 
           // Kelvin wake surface foam: concentrated along the 19.47° cusp arms & dissipating into fine lacy filaments aft
           float wakeDecay = clamp(1.0 - aftDist / 16.0, 0.0, 1.0);
           float armCrestFoam = exp(-pow(distToArm / (0.15 + aftDist * 0.042), 2.0)) * wakeEnvelope;
-          float sternChurn = exp(-aftDist * 0.45) * exp(-pow(across / 0.55, 2.0));
+          float sternChurn = exp(-aftDist * 0.45) * exp(-pow(across / 0.55, 2.0)) * (1.0 - smoothstep(-1.6, -0.9, along)); // only behind the transom
           float rawWakeMask = (armCrestFoam * 0.88 + corePlume * 0.42 + sternChurn * 0.95) * speedNorm;
           // Threshold against lacyWeb so foam dissolves organically into thin web strands as it trails behind!
           float wakeLace = smoothstep(0.32 - rawWakeMask * 0.24, 0.78 - rawWakeMask * 0.18, lacyWeb + sternChurn * 0.28) * clamp(rawWakeMask * 1.25, 0.0, 1.0) * wakeDecay;
