@@ -149,6 +149,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    { id: 'subterra', name: ['SUBTERRA. — Dev Solucan', 'SUBTERRA. — Giant Worm'], tags: [['Simülasyon','Simulation'],['Açık dünya','Open world'],['3D','3D']], best: () => T('2–200 m','2–200 m') },
     { id:'hayat-oyunu',name:['HAYAT. — Gerçek Yaşam','LIFE. — Life Simulator'],tags:[['Simülasyon','Simulation'],['Kariyer','Career'],['İlişkiler','Relationships']],best:()=>T('Kendi hikâyeni yaz','Write your story') },
     { id: 'futbol', name: ['Futbol — Tarafını Seç', 'Football — Pick Your Side'], tags: [['Draft', 'Draft'], ['Kariyer', 'Career'], ['2D maç', '2D match']], best: () => T('2 mod', '2 modes') },
     { id: 'career', name: ['Menajerlik Kariyeri', 'Manager Career'], tags: [['Kariyer', 'Career'], ['Transfer', 'Transfers'], ['Canlı maç', 'Live match']], best: () => { try { const s = JSON.parse(localStorage.getItem('baba_career_save')); return s ? T(`Sezon ${s.season} · H${Math.min(s.week + 1, 34)}`, `Season ${s.season} · W${Math.min(s.week + 1, 34)}`) : T('Yeni', 'New'); } catch (e) { return ''; } } },
@@ -954,6 +955,7 @@ const App = (() => {
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'pelagos') pelagosGame();
+    else if (r === 'subterra') openEmbeddedGame({title:'SUBTERRA. — Giant Worm Simulator',url:'games/subterra/index.html?v=1',tag:'BABA. · 3D',lead:T('Yeraltında kaz, yüzeye çık, beslen ve büyü.','Burrow, breach, feed and grow.'),tip:T('WASD hareket · Q/E derinlik · Space sıçra · R beslen. Mobil kontroller mevcut.','WASD movement · Q/E depth · Space breach · R feed. Touch controls included.')});
     else if (r === 'serpentia') serpentiaGame();
     else if (r === 'dune') duneGame();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
