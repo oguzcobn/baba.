@@ -1,5 +1,5 @@
 import {collideBuildings} from './walls.js';
-import { buildCity } from './city.js?v=7';
+import { buildCity } from './city.js?v=8';
 import { fresh, advance } from './dynamics.js?v=7';
 import { route } from './route.js';
 
@@ -68,8 +68,13 @@ function update(dt) {
   while (accumulator >= 1/120) {
     const paved=city.paved(car.x,car.y);
     const grip=paved ? (weather.value==='rain'?.60:.94) : (weather.value==='rain'?.35:.56);
+    const x=car.x,y=car.y,angle=car.angle,dist=car.distance;
     advance(car,Number(input.has('gas')),Number(input.has('brake')),turn,grip,1/120,paved);
     collideBuildings(car,city.buildings);
+    if(!city.area.fits(car)){
+      car.x=x;car.y=y;car.angle=angle;car.distance=dist;
+      car.speed=car.lateral=car.yawRate=0;
+    }
     accumulator -= 1/120;
   }
   vehicle.style.setProperty('--steering', (car.steer*700)+'deg');
@@ -297,7 +302,7 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=7').then(async ({createCoast}) => {
+import('./scene.js?v=8').then(async ({createCoast}) => {
   coast = await createCoast(coastView,pose,length,city);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;

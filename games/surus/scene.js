@@ -1,3 +1,4 @@
+import {buildHighlands} from './landscape.js';
 import {coastalLife} from './life.js';
 import {buildHouses} from './houses.js?v=7';
 import {steeringRig} from './hands.js';
@@ -133,7 +134,8 @@ export async function createCoast(container, pose, length, city) {
   for(const e of city.segments.filter(e=>e.city)){
     const nx=e.dy/Math.sqrt(e.squared)*e.width, ny=-e.dx/Math.sqrt(e.squared)*e.width;
     for(const [point,side] of [[e.a,-1],[e.b,-1],[e.a,1],[e.a,1],[e.b,-1],[e.b,1]]){
-      streetVertices.push(point.x+side*nx,.024,-point.y-side*ny);
+      const x=point.x+side*nx,y=point.y+side*ny;
+      streetVertices.push(x,city.area.height(x,y)+.04,-y);
     }
   }
   const streets=new T.BufferGeometry();
@@ -141,13 +143,9 @@ export async function createCoast(container, pose, length, city) {
   const pavement=material(0x404344,{side:T.DoubleSide});
   const cityMesh=new T.Mesh(streets,pavement);cityMesh.receiveShadow=true;scene.add(cityMesh);
   // Close the shoreline on the inland side without sweeping a wide ribbon around tight bends.
-  const shore=new T.Shape(),first=pose(0,42),last=pose(length,42);
-  const dx=last.x-first.x,dy=last.y-first.y,span=Math.hypot(dx,dy);
-  const inlandX=-dy/span*4200,inlandY=dx/span*4200;
-  shore.moveTo(first.x,first.y);
-  for(let d=5;d<length;d+=5){const p=pose(d,42);shore.lineTo(p.x,p.y);}
-  shore.lineTo(last.x,last.y);shore.lineTo(last.x+inlandX,last.y+inlandY);
-  shore.lineTo(first.x+inlandX,first.y+inlandY);shore.closePath();
+  const shore=new T.Shape(city.area.shore.map(p=>new T.Vector2(p.x,p.y)));
+  shore.closePath();
+  buildHighlands(scene,city.area,city);
   const land=new T.Mesh(new T.ShapeGeometry(shore),material(0x859371,{side:T.DoubleSide}));
   land.rotation.x=-Math.PI/2;land.position.y=-.22;scene.add(land);
   const rainGeometry=new T.BufferGeometry(), drops=[];
@@ -185,28 +183,29 @@ export async function createCoast(container, pose, length, city) {
     draw(car, chase, weather) {
       const p={x:car.x,y:car.y,heading:car.angle};
       if(weather!==lastWeather){atmosphere(weather);lastWeather=weather;}
+      const altitude=city.area.height(p.x,p.y);
       const dusk=weather==='dusk';
-      sun.target.position.set(p.x,0,-p.y);
-      sun.position.set(p.x+48,dusk?12:62,-p.y-30);
-      rain.position.set(p.x,4-(performance.now()*.011)%7,-p.y);
+      sun.target.position.set(p.x,altitude,-p.y);
+      sun.position.set(p.x+48,altitude+(dusk?12:62),-p.y-30);
+      rain.position.set(p.x,altitude+4-(performance.now()*.011)%7,-p.y);
       const vx=Math.sin(p.heading), vz=-Math.cos(p.heading);
-      model.car.position.set(p.x,0,-p.y);
+      model.car.position.set(p.x,altitude,-p.y);
       model.car.rotation.y = -p.heading;
       model.car.visible = true;
       moveHands(car.steer);
       model.body.rotation.z = car.roll;
-      model.body.rotation.x = car.pitch;
+      model.body.rotation.x = car.pitch+Math.atan((city.area.height(p.x+vx,p.y-vz)-city.area.height(p.x-vx,p.y+vz))/2);
       for (const wheel of model.wheels) wheel.rotation.x = -car.spin;
       for (const pivot of model.steering) {
         const tangent=Math.tan(car.steer);
         pivot.rotation.y=-Math.atan(tangent/(1-pivot.position.x*tangent/2.72));
       }
-      shadow.position.set(p.x,.012,-p.y);
+      shadow.position.set(p.x,altitude+.055,-p.y);
       shadow.rotation.z = -p.heading;
       shadow.visible = chase;
       if(chase){
-        camera.position.set(p.x-vx*6.6,2.62,-p.y-vz*6.6);
-        camera.lookAt(p.x+vx*9,.88,-p.y+vz*9);
+        camera.position.set(p.x-vx*6.6,altitude+2.62,-p.y-vz*6.6);
+        camera.lookAt(p.x+vx*9,altitude+.88,-p.y+vz*9);
       }else{
         model.body.updateWorldMatrix(true,false);
         camera.position.set(-.35,1.16,-.07).applyMatrix4(model.body.matrixWorld);

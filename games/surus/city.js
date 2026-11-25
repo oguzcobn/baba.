@@ -1,3 +1,4 @@
+import {countryside} from './highlands.js';
 import {buildingLots} from './lots.js';
 // One road graph supplies both visible pavement and tyre surface queries.
 export function buildCity(pose,length) {
@@ -14,6 +15,8 @@ export function buildCity(pose,length) {
       for(let i=0;i<180;i+=6) road(pose(d+i,side),pose(d+i+6,side),4,true);
     }
   }
+  const area=countryside(pose,length);
+  for(let i=1;i<area.path.length;i++)road(area.path[i-1],area.path[i],3.65,true);
   const cells=new Map(), cellSize=30;
   for(const edge of segments) {
     const {a,b,width}=edge;
@@ -31,5 +34,10 @@ export function buildCity(pose,length) {
       return Math.hypot(x-e.a.x-t*e.dx,y-e.a.y-t*e.dy)<=e.width;
     });
   }
-  return {segments,paved,buildings:buildingLots(pose,length,segments)};
+  const buildings=buildingLots(pose,length,segments);
+  for(let i=0;i<7;i++)for(const side of [-1,1]){
+    const p=area.world(251+i*22,side*(14+i%3*3));
+    buildings.push({...p,heading:pose(90).heading+Math.PI/2,theme:0,width:8.6,depth:10,radius:8});
+  }
+  return {segments,paved,buildings,area,pose};
 }
