@@ -150,7 +150,7 @@ const App = (() => {
   /* ---------------- menü ---------------- */
   const GAMES = [
     { id:'element',name:['ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'],tags:[['Simülasyon','Simulation'],['Sandbox','Sandbox'],['Fizik','Physics']],best:()=>T('37 madde','37 materials') },
-    { id: 'subterra', name: ['SUBTERRA. — Dev Solucan', 'SUBTERRA. — Giant Worm'], tags: [['Simülasyon','Simulation'],['Açık dünya','Open world'],['3D','3D']], best: () => T('2–200 m','2–200 m') },
+    { id: 'subterra', name: ['SUBTERRA. — Dev Solucan', 'SUBTERRA. — Giant Worm'], tags: [['Simülasyon','Simulation'],['Açık dünya','Open world'],['3D','3D']], best: () => { const b = +(localStorage.getItem('baba_subterra_best') || 0); return b ? T('Rekor ' + b.toFixed(1) + ' m', 'Best ' + b.toFixed(1) + ' m') : T('2–200 m', '2–200 m'); } },
     { id:'hayat-oyunu',name:['HAYAT. — Gerçek Yaşam','LIFE. — Life Simulator'],tags:[['Simülasyon','Simulation'],['Kariyer','Career'],['İlişkiler','Relationships']],best:()=>T('Kendi hikâyeni yaz','Write your story') },
     { id: 'futbol', name: ['Futbol — Tarafını Seç', 'Football — Pick Your Side'], tags: [['Draft', 'Draft'], ['Kariyer', 'Career'], ['2D maç', '2D match']], best: () => T('2 mod', '2 modes') },
     { id: 'career', name: ['Menajerlik Kariyeri', 'Manager Career'], tags: [['Kariyer', 'Career'], ['Transfer', 'Transfers'], ['Canlı maç', 'Live match']], best: () => { try { const s = JSON.parse(localStorage.getItem('baba_career_save')); return s ? T(`Sezon ${s.season} · H${Math.min(s.week + 1, 34)}`, `Season ${s.season} · W${Math.min(s.week + 1, 34)}`) : T('Yeni', 'New'); } catch (e) { return ''; } } },
@@ -958,7 +958,7 @@ const App = (() => {
     else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
-    else if (r === 'subterra') openEmbeddedGame({title:'SUBTERRA. — Giant Worm Simulator',url:'games/subterra/index.html?v=1',tag:'BABA. · 3D',lead:T('Yeraltında kaz, yüzeye çık, beslen ve büyü.','Burrow, breach, feed and grow.'),tip:T('WASD hareket · Q/E derinlik · Space sıçra · R beslen. Mobil kontroller mevcut.','WASD movement · Q/E depth · Space breach · R feed. Touch controls included.')});
+    else if (r === 'subterra') openEmbeddedGame({title:'SUBTERRA. — Giant Worm Simulator',url:'games/subterra/index.html?v=2',tag:'BABA. · 3D',lead:T('Yeraltında kaz, besinleri ve yüzeydeki hayvanları ye, fosillerin arasından geç ve 200 metrelik Leviathan’a dönüş.','Burrow, eat food and surface animals, pass fossils and grow into a 200 m Leviathan.'),tip:T('Fareyi gezdir: solucan imlece gider. Sol tık basılı hızlanır, sağ tık/Space yüzeye sıçrar, tekerlek derinliği ayarlar. Besinler kendiliğinden yenir, yeşil ok en yakın besini gösterir. Dokunmatikte parmağını sürükle.','Move the mouse: the worm follows the cursor. Hold left click to speed up, right click/Space to breach, wheel sets depth. Food is eaten automatically; the green arrow points to the nearest food. On touch, drag your finger.')});
     else if (r === 'serpentia') serpentiaGame();
     else if (r === 'dune') duneGame();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
