@@ -149,6 +149,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    { id:'element',name:['ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'],tags:[['Simülasyon','Simulation'],['Sandbox','Sandbox'],['Fizik','Physics']],best:()=>T('37 madde','37 materials') },
     { id: 'subterra', name: ['SUBTERRA. — Dev Solucan', 'SUBTERRA. — Giant Worm'], tags: [['Simülasyon','Simulation'],['Açık dünya','Open world'],['3D','3D']], best: () => T('2–200 m','2–200 m') },
     { id:'hayat-oyunu',name:['HAYAT. — Gerçek Yaşam','LIFE. — Life Simulator'],tags:[['Simülasyon','Simulation'],['Kariyer','Career'],['İlişkiler','Relationships']],best:()=>T('Kendi hikâyeni yaz','Write your story') },
     { id: 'futbol', name: ['Futbol — Tarafını Seç', 'Football — Pick Your Side'], tags: [['Draft', 'Draft'], ['Kariyer', 'Career'], ['2D maç', '2D match']], best: () => T('2 mod', '2 modes') },
@@ -240,6 +241,7 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
+    'element': 'img/library/element-1280.svg',
     'hayat-oyunu': 'img/library/hayat-oyunu-1280.webp',
     'futbol': 'img/library/futbol-1280.webp',
     'career': 'img/library/career-1280.webp',
@@ -955,6 +957,7 @@ const App = (() => {
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'pelagos') pelagosGame();
+    else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
     else if (r === 'subterra') openEmbeddedGame({title:'SUBTERRA. — Giant Worm Simulator',url:'games/subterra/index.html?v=1',tag:'BABA. · 3D',lead:T('Yeraltında kaz, yüzeye çık, beslen ve büyü.','Burrow, breach, feed and grow.'),tip:T('WASD hareket · Q/E derinlik · Space sıçra · R beslen. Mobil kontroller mevcut.','WASD movement · Q/E depth · Space breach · R feed. Touch controls included.')});
     else if (r === 'serpentia') serpentiaGame();
     else if (r === 'dune') duneGame();
