@@ -1,3 +1,4 @@
+import { buildCity } from './city.js';
 import { fresh, advance } from './dynamics.js';
 import { route } from './route.js';
 
@@ -28,7 +29,10 @@ const points = route.map(([lon, lat], index) => {
   }
   return { x: (lon - longitude) * metersEast, y: (lat - latitude) * metersNorth, distance: length };
 });
-const car = fresh();
+const spawn=pose(0,1.5);
+const car = Object.assign(fresh(),{x:spawn.x,y:spawn.y,angle:spawn.heading});
+const city=buildCity(pose,length);
+const weather=byId('weather');
 let accumulator = 0;
 let viewer;
 let tiles;
@@ -60,19 +64,18 @@ function update(dt) {
   const input = new Set(controls.values());
   turn = Number(input.has('right')) - Number(input.has('left'));
   accumulator += dt;
-  const delta = pose(car.distance+1).heading-pose(car.distance-1).heading;
-  const curvature = Math.atan2(Math.sin(delta),Math.cos(delta))/2;
   while (accumulator >= 1/120) {
-    if (car.distance < length) advance(car,Number(input.has('gas')),Number(input.has('brake')),turn,curvature,1/120);
+    const paved=city.paved(car.x,car.y);
+    const grip=paved ? (weather.value==='rain'?.60:.94) : (weather.value==='rain'?.35:.56);
+    advance(car,Number(input.has('gas')),Number(input.has('brake')),turn,grip,1/120,paved);
     accumulator -= 1/120;
   }
-  if (car.distance >= length) { car.distance=length; car.speed=0; }
   vehicle.style.setProperty('--steering', (car.steer*700)+'deg');
   byId('motor').textContent = (car.gear+1)+' · '+Math.round(car.rpm/50)*50+' d/d';
   byId('speed-needle').setAttribute('transform','rotate('+(-115+Math.min(180,car.speed*3.6)*230/180)+' 349 438)');
   byId('rpm-needle').setAttribute('transform','rotate('+(-115+car.rpm*230/7000)+' 453 438)');
   byId('speed').value = Math.round(car.speed * 3.6);
-  byId('distance').value = car.distance / length;
+  byId('distance').textContent = (car.distance/1000).toFixed(2)+' km';
 }
 
 function drawPreview() {
@@ -82,39 +85,25 @@ function drawPreview() {
   ctx.fillRect(0, 0, width, horizon);
   ctx.fillStyle = '#607263';
   ctx.fillRect(0, horizon, width, height - horizon);
-  const camera = pose(car.distance, car.offset);
-  if (chase) {
-    camera.x -= Math.sin(camera.heading) * 7;
-    camera.y -= Math.cos(camera.heading) * 7;
-  }
-  const heading = camera.heading + car.angle;
+  const camera={x:car.x,y:car.y};
+  const heading=car.angle;
   const sin = Math.sin(heading), cos = Math.cos(heading);
   const focal = width * 0.73;
-  function project(distance, side) {
-    const p = pose(distance, side);
-    const dx = p.x - camera.x, dy = p.y - camera.y;
-    const depth = Math.max(0.85, dx * sin + dy * cos);
-    return [width / 2 + (dx * cos - dy * sin) * focal / depth, horizon + (chase ? 3.25 : 1.55) * focal / depth];
-  }
-  function strip(near, far, left, right, color) {
-    const polygon = [project(near, left), project(far, left), project(far, right), project(near, right)];
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    polygon.forEach(([x,y], index) => index ? ctx.lineTo(x,y) : ctx.moveTo(x,y));
-    ctx.closePath();
-    ctx.fill();
-  }
-  const first = Math.max(0, car.distance + 1);
-  for (let far = Math.min(length, car.distance + 160); far > first; far -= 2) {
-    const near = Math.max(first, far - 2);
-    strip(near, far, -4.5, 4.5, '#adb2a6');
-    strip(near, far, -3.6, 3.6, '#30383d');
-    if (Math.floor(near / 4) % 2 === 0) strip(near, far, -0.07, 0.07, '#eadcaf');
+  for(const edge of city.segments){
+    const corners=[];
+    for(const [node,side] of [[edge.a,-1],[edge.b,-1],[edge.b,1],[edge.a,1]]){
+      const scale=side*edge.width/Math.sqrt(edge.squared);
+      const dx=node.x+edge.dy*scale-camera.x, dy=node.y-edge.dx*scale-camera.y;
+      const depth=dx*sin+dy*cos;
+      if(depth<.7 || depth>270) break;
+      corners.push([width/2+(dx*cos-dy*sin)*focal/depth,horizon+2.5*focal/depth]);
+    }
+    if(corners.length===4){ctx.fillStyle='#363a3d';ctx.beginPath();corners.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill();}
   }
 }
 
 function reset() {
-  Object.assign(car,fresh());
+  Object.assign(car,fresh(),{x:spawn.x,y:spawn.y,angle:spawn.heading});
   accumulator=0;
   lastSample = -Infinity;
   elevation = undefined;
@@ -190,9 +179,7 @@ function loadCesium() {
 
 function updateStatus(message) {
   const mode = viewer ? 'Google 3D' : coast ? 'Konyaaltı 3D' : 'Antrenman görünümü';
-  status.textContent = message || (car.distance >= length
-    ? 'Rota tamamlandı. Yeniden sürmek için Başa dön.'
-    : mode + ' · Gaz ve fren için ↑ / ↓, yön için ← / →.');
+  status.textContent = message || (mode + ' · Akdeniz Bulvarı’ndan şehir içine dönebilirsin.');
 }
 
 function closeMap() {
@@ -257,7 +244,7 @@ byId('google').addEventListener('submit', async event => {
 
 function drawMap() {
   const C = window.Cesium;
-  const p = pose(car.distance, car.offset);
+  const p = {x:car.x,y:car.y,heading:0};
   const lon = longitude + p.x / metersEast, lat = latitude + p.y / metersNorth;
   if (Math.abs(car.distance - lastSample) >= 2 || elevation === undefined) {
     lastSample = car.distance;
@@ -280,7 +267,7 @@ function drawMap() {
 }
 
 function frame(now) {
-  const finished = car.distance >= length;
+  
   update(Math.min((now - lastTime) / 1000, 0.15));
   lastTime = now;
   if (actionEnds && (car.speed > 0 || now >= actionEnds)) {
@@ -288,13 +275,13 @@ function frame(now) {
     updateStatus();
   }
   for (const button of driverButtons) button.disabled = car.speed > 0 || Boolean(actionEnds);
-  if (!finished && car.distance >= length) updateStatus();
+
   if (mapFailed || (viewer && elevation === undefined && now > coverageDeadline)) {
     closeMap();
     updateStatus('Google 3D bağlantısı kesildi. Yerel görünümde sürüşe devam edebilirsin.');
   }
   if (viewer) drawMap();
-  else if (coast) coast.draw(car,chase,turn);
+  else if (coast) coast.draw(car,chase,weather.value);
   else drawPreview();
   requestAnimationFrame(frame);
 }
@@ -308,8 +295,8 @@ function syncView() {
   vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
   resize();
 }
-import('./scene.js?v=3').then(({createCoast}) => {
-  coast = createCoast(coastView,pose,length);
+import('./scene.js?v=4').then(async ({createCoast}) => {
+  coast = await createCoast(coastView,pose,length,city);
   coastView.addEventListener('webglcontextlost', () => {
     coast = undefined;
     syncView();

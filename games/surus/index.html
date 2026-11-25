@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SÜRÜŞ. — Konyaaltı</title>
-<link rel="stylesheet" href="./style.css?v=2">
+<link rel="stylesheet" href="./style.css?v=4">
 </head>
 <body>
 <main>
@@ -26,9 +26,9 @@
         <circle cx="397" cy="474" r="65" fill="none" stroke="#121615" stroke-width="13"/>
         <path d="m339 470 58 15 58-15m-58 12v54" fill="none" stroke="#141916" stroke-width="9"/>
         <rect x="369" y="467" width="56" height="26" rx="5" fill="#262d29"/>
-        <text x="397" y="484" text-anchor="middle" fill="#dad6be" font-size="10" font-family="sans-serif">TOFAŞ</text>
+        <text x="397" y="484" text-anchor="middle" fill="#dad6be" font-size="10" font-family="sans-serif">AMG</text>
       </g>
-      <text x="732" y="475" fill="#c7c9bb" font-size="16" font-family="sans-serif" letter-spacing="4">KARTAL</text>
+      <text x="732" y="475" fill="#c7c9bb" font-size="16" font-family="sans-serif" letter-spacing="4">C32 AMG</text>
     </svg>
     <svg class="kartal-rear" viewBox="0 0 260 154">
       <defs>
@@ -45,17 +45,17 @@
       <path d="M22 89h46v5H22zm170 0h46v5h-46z" fill="#c87837"/>
       <rect x="103" y="97" width="54" height="12" rx="2" fill="#ebe9db"/>
       <text x="130" y="106" text-anchor="middle" font-family="sans-serif" font-size="8" font-weight="bold">07 KRT 94</text>
-      <text x="189" y="117" fill="#d5d0ba" font-family="sans-serif" font-size="7">KARTAL</text>
+      <text x="189" y="117" fill="#d5d0ba" font-family="sans-serif" font-size="7">C32 AMG</text>
     </svg>
   </div>
-  <header><strong>SÜRÜŞ.</strong><span>Tofaş Kartal · Konyaaltı</span></header>
+  <header><strong>SÜRÜŞ.</strong><span>Mercedes-Benz C32 AMG · Konyaaltı</span></header>
   <section class="hud" aria-label="Sürüş bilgileri">
     <output id="speed">0</output> km/sa <small id="motor"></small>
-    <div><progress id="distance" value="0" max="1" aria-label="Rota ilerlemesi"></progress></div>
+    <div><output id="distance" style="font-size:14px">0.00 km</output></div>
     <button id="reset" type="button">Başa dön</button>
   </section>
   <details class="settings">
-    <summary>Harita</summary>
+    <summary>Ortam</summary><label>Hava <select id="weather"><option value="clear">Güneşli</option><option value="rain">Yağmurlu</option><option value="dusk">Gün batımı</option><option value="fog">Sisli</option></select></label>
     <form id="google">
       <label for="key">Google Map Tiles API anahtarı</label>
       <input id="key" type="password" autocomplete="off" spellcheck="false" required>
@@ -91,6 +91,6 @@
   </div>
   <footer><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Rota © OpenStreetMap katkıcıları</a></footer>
 </main>
-<script type="module" src="./drive.js?v=3"></script>
+<script type="module" src="./drive.js?v=4"></script>
 </body>
 </html>

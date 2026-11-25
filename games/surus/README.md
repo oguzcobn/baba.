@@ -13,3 +13,11 @@ Google görünümü için Google Cloud projesinde faturalandırmayı ve Map Tile
 `games/surus/` ve `img/library/surus-1280.svg` dosyalarını deponun aynı konumlarına kopyala. Depo kökünden `git apply --check /paketin/yolu/baba-oyunlar.patch` çalıştır. Kontrol geçerse `git apply /paketin/yolu/baba-oyunlar.patch` komutunu kullan. Yama `472dfdc` sürümüne göre hazırlandı.
 
 Rota geometrisi OpenStreetMap katkıcılarının yol verisinden FOSSGIS OSRM servisiyle 25 Kasım 2026 tarihinde alındı. [OpenStreetMap lisans ve atıf bilgisi](https://www.openstreetmap.org/copyright).
+
+## Mercedes C32 AMG ve serbest sürüş
+
+Yerel Three.js sahnesi gerçek sahil güzergâhına bağlı, prosedürel şehir sokakları içerir. Ortam menüsünden güneş, yağmur, sis veya gün batımı seçilir. İki kamera da aynı araç modelini kullanır. 3D desteklenmeyen cihazlarda basitleştirilmiş görünüm açılır.
+
+Araç modeli: ActsOfDoge, “2003 Mercedes-Benz C32 AMG”, kullanıcının sağladığı Sketchfab Standard lisans bilgili GLB. Modelin malzeme ve kaynak bilgileri orijinal dosyanın içinde korunmuştur.
+
+Fizik yaklaşımı: 120 Hz düzlemsel gövde dinamiği, aksta birleşik kuvvet sınırı, hızla değişen yanal kayma, yay-sönümleyici gövde salınımı. Zemin ve yağmura göre sürtünme katsayıları simülasyon ayarlarıdır. Kaynak: https://nvidia-omniverse.github.io/PhysX/physx/5.1.1/docs/Vehicles.html
