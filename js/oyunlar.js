@@ -12,6 +12,7 @@ const BABALibrary = (() => {
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
+    element: {cat:'sim',accent:'#5eead4',time:['37 madde','37 materials'],isNew:true,blurb:['Kum, su, lav, elektrik ve rüzgârla kendi fizik dünyanı kur.','Build your own physics world with sand, water, lava, electricity and wind.']},
     subterra: {cat:'sim',accent:'#e8b476',time:['3D açık dünya','3D open world'],isNew:true,blurb:['Toprağın altına dal, beslen, yüzeyi yar ve 200 metrelik Leviathan’a dönüş.','Burrow underground, feed, breach the surface and grow into a 200-metre Leviathan.']},
     surus: {cat:'sim',accent:'#60dce8',time:['3 km','3 km'],isNew:true,blurb:['Konyaaltı sahil yolunda sürüş yap.','Drive the Konyaaltı coastal road.']},
     'living-island': {cat:'sim',accent:'#86c77a',time:['2.5D yaşam','2.5D life'],isNew:true,blurb:['Ergün ile adada tarım yap, köyü izle, üretim ve ticaretle çiftliğini büyüt.','Farm with Ergün, watch village life, and grow through production and trade.']},
@@ -56,7 +57,7 @@ const BABALibrary = (() => {
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }, { id: 'web', tr: 'Web Oyunları', en: 'Web Games' }
   ];
-  const SPOTLIGHT = ['subterra', 'living-island', 'amsterdam-coffeeshop', 'koy', 'yelken', 'pelagos', 'serpentia', 'dune', 'operasyon-hatti', 'simitci', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
+  const SPOTLIGHT = ['element', 'subterra', 'living-island', 'amsterdam-coffeeshop', 'koy', 'yelken', 'pelagos', 'serpentia', 'dune', 'operasyon-hatti', 'simitci', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
