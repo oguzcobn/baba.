@@ -301,7 +301,8 @@
     if (!arrived) return;
     if (task.phase === 'go') {
       w.yaw = Math.atan2(task.seat.x - w.x, task.seat.z - w.z);
-      task.what = Math.random() < 0.65 ? 'joint' : 'bong';
+      const bongBusy = lg.seats.some(o => o !== task.seat && o.table === task.seat.table && o.npc && o.npc.lgWhat === 'bong');
+      task.what = bongBusy || Math.random() < 0.6 ? 'joint' : 'bong';
       MarketMode.emote(n, task.what === 'joint' ? 'Bir joint lütfen 🌿' : 'Bong alabilir miyim? 💨');
       n.state = 'lg_t_ordered'; task.phase = 'take'; w.t = 0;
     } else if (task.phase === 'take') {
@@ -320,6 +321,23 @@
     }
   }
 
+  // Bong elde: tutma noktası (sol el) → bong tabanı = el − 0.16 m; hafif yüze doğru eğik. Bırakınca masadaki yerine döner
+  function bongFrame(n, seat, dt) {
+    const b = lg.bongs && lg.bongs[seat.table], s = n.meshObj.cast.bongState && n.meshObj.cast.bongState();
+    if (!b || !s) return;
+    if (!b.userData.home) b.userData.home = { p: b.position.clone(), r: b.rotation.y };
+    if (s.held) {
+      b.position.copy(s.grip).add(new T.Vector3(0, -0.16, 0));
+      b.rotation.set(-0.12 * Math.cos(n.meshObj.group.rotation.y), b.userData.home.r, 0.12 * Math.sin(n.meshObj.group.rotation.y));
+      if (s.ph === 'inhale') {   // haznede kabarcık + çakmak alevi yerine küçük kor duman
+        n.lgBub = (n.lgBub || 0) + dt; if (n.lgBub > 0.25) { n.lgBub = 0; emit(b.position.clone().add(new T.Vector3(0, 0.08, 0)), 1, false); }
+      }
+    } else { b.position.copy(b.userData.home.p); b.rotation.set(0, b.userData.home.r, 0); }
+    if (s.ph === 'exhale' && s.t < 1.4) {
+      n.lgExAcc = (n.lgExAcc || 0) + dt;
+      while (n.lgExAcc > 0.06) { n.lgExAcc -= 0.06; exhale(s.mouth, s.fwd.clone().add(new T.Vector3(0, 0.6, 0)).normalize(), 1.1 - s.t / 1.6); }
+    }
+  }
   function startSession(n, what, seat) {
     n.lgWhat = what; n.lgT = 0; n.lgDur = (seat.vip ? 55 : 32) + Math.random() * 18;
     n.state = seat.vip ? 'lg_v_smoke' : 'lg_t_smoke';
@@ -332,6 +350,7 @@
     const gross = vip ? PRICE.vip : PRICE[what] || PRICE.joint, cost = vip ? COST.vip : COST[what] || COST.joint;
     MarketMode.addRevenue(gross, 0.21, cost, n, vip ? 'VIP harikaydı ✨' : what === 'bong' ? 'Süper bong 💨' : 'Çok rahatladım 🌿', vip ? 14 : 7);
     dropJoint(n); const c = n.meshObj.cast; c.stand && c.stand();
+    if (seat && lg.bongs && lg.bongs[seat.table] && lg.bongs[seat.table].userData.home) { const b = lg.bongs[seat.table]; b.position.copy(b.userData.home.p); b.rotation.set(0, b.userData.home.r, 0); }
     if (seat) seat.npc = null; n.lgSeat = null; n.lgWhat = null;
     n.state = 'leaving';
   }
@@ -431,11 +450,7 @@
       case 'lg_t_smoke': case 'lg_v_smoke':
         n.lgT += dt;
         if (n.lgJoint) smokeFrame(n, dt);
-        else if (n.lgWhat === 'bong') {   // bong: çek (~2 s) → kafa kalkar → ağızdan yukarı doğru bulut
-          n.lgBongAcc = (n.lgBongAcc || 0) + dt;
-          if (n.lgBongAcc > 7.5 && n.lgBongAcc < 8.9) { n.lgExAcc = (n.lgExAcc || 0) + dt; while (n.lgExAcc > 0.06) { n.lgExAcc -= 0.06; const m = n.meshObj.cast.mouthWorld(); const f = new T.Vector3(Math.sin(n.meshObj.group.rotation.y), 0.9, Math.cos(n.meshObj.group.rotation.y)).normalize(); exhale(m, f, 1); } }
-          if (n.lgBongAcc > 10) n.lgBongAcc = 0;
-        }
+        else if (n.lgWhat === 'bong') bongFrame(n, seat, dt);
         if (n.lgT > n.lgDur) endSession(n, seat);
         break;
       case 'lg_v_go': n.state = 'lg_v_in'; n.targetX = seat.x; n.targetZ = seat.z; break;

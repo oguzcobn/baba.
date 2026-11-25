@@ -322,6 +322,15 @@
       else { smk.ph = 'rest'; smk.dur = 3.5 + Math.random() * 5; }
     }
 
+    // bong: dinlen → uzan → kaldır (sol el gövdeden tutar) → çek (sağ el haznede çakmak) → indir → bırak → tut → üfle
+    const bng = { ph: 'rest', t: Math.random() * 2, dur: 1.5 + Math.random() * 2 };
+    const BNG = { reach: 0.9, lift: 1.1, inhale: 2.1, lower: 1.0, release: 0.5, hold: 1.0, exhale: 1.9 };
+    const BNG_NEXT = { rest: 'reach', reach: 'lift', lift: 'inhale', inhale: 'lower', lower: 'release', release: 'hold', hold: 'exhale', exhale: 'rest' };
+    function bongStep(dt) {
+      bng.t += dt; if (bng.t < bng.dur) return;
+      bng.t = 0; bng.ph = BNG_NEXT[bng.ph]; bng.dur = bng.ph === 'rest' ? 4 + Math.random() * 5 : BNG[bng.ph];
+    }
+
     function sit(st, dt, t) {
       const hipY = (legs.L.hipY + legs.R.hipY) / 2, ankY = (legs.L.ankY + legs.R.ankY) / 2;
       styleT -= dt; if (styleT <= 0 && st.act !== 'bong') { styleT = 10 + Math.random() * 14; sitStyle = SIT_STYLES[Math.floor(Math.random() * SIT_STYLES.length)]; }
@@ -338,8 +347,8 @@
         solve(legs[s], legs[s].L1s * kn + (s === 'L' ? 0.03 : 0) * crs, -(hipT - ankY) + sty.footY, 0, roll, sg * 0.06);
       }
       setRot(R.hips, 0, 0, sway * 0.5);
-      const bong = st.act === 'bong' ? st.actW : 0;
-      const sp = sp0 + 0.012 * st.breath + 0.34 * bong;
+      const bong = 0;
+      const sp = sp0 + 0.012 * st.breath;
       const inh = smk.ph === 'inhale' ? 1 : smk.ph === 'hold' ? 0.7 : 0;
       if (R.spine) setRot(R.spine, sp, 0, -sway);
       if (R.chest) setRot(R.chest, ch0 + 0.015 * st.breath - 0.04 * inh + 0.2 * bong, 0, -sway * 0.5);
@@ -348,7 +357,11 @@
       if (st.act === 'smoke') {
         if (smk.ph === 'raise' || smk.ph === 'inhale') { gy = 0.05; gp = 0.12; }        // ele doğru hafif eğilme
         else if (smk.ph === 'exhale') { gy = 0.18; gp = -0.16; }                         // dumanı yukarı-yana üfle
-      } else if (bong) { gy = 0; gp = 0.35; }
+      } else if (st.act === 'bong') {
+        if (bng.ph === 'reach' || bng.ph === 'release') { gy = 0; gp = 0.3; }
+        else if (bng.ph === 'lift' || bng.ph === 'inhale') { gy = 0; gp = 0.18; }
+        else if (bng.ph === 'exhale') { gy = 0.15; gp = -0.25; }
+      }
       const hy = crit(gz.yaw, gy, 4.5, dt), hp = crit(gz.pit, gp, 4.5, dt);
       if (R.neck) setRot(R.neck, hp * 0.5 - sp * 0.4, hy * 0.5, 0);
       if (R.head) setRot(R.head, hp * 0.5 - sp * 0.3, hy * 0.5, 0);
@@ -371,11 +384,22 @@
         reach('R', tgt, poleR, w, dt);
         reach('L', restL, poleL, 4, dt);
         st.smoke = { ph: smk.ph, t: smk.t, mouth: m, fwd: f };
-      } else if (bong && st.bong) {
-        const bp = st.bong.clone();
-        reach('R', bp.clone().add(offW(-0.04, 0.12, -0.02)), poleR, 4, dt);
-        reach('L', bp.clone().add(offW(0.05, 0.04, 0.0)), poleL, 4, dt);
-        st.smoke = null;
+      } else if (st.act === 'bong' && st.bong) {
+        bongStep(dt);
+        const home = st.bong, m = mouthW(), f = dirW(0, 0, 1);
+        // tutma noktası tabandan 0.16 m yukarıda, ağızlık 0.36 m'de → elde iken ağızlık dudağa gelsin
+        const atMouth = m.clone().addScaledVector(f, 0.035 * kS).add(new THREE.Vector3(0, -0.2, 0));
+        let L = restL, Rr = restR, wl = 5;
+        if (bng.ph === 'reach') { L = home; wl = 6; }
+        else if (bng.ph === 'lift') { L = bng.t < BNG.lift * 0.45 ? home.clone().add(new THREE.Vector3(0, 0.12, 0)).lerp(atMouth, 0.4) : atMouth; wl = 6; }
+        else if (bng.ph === 'inhale') { L = atMouth; Rr = atMouth.clone().add(offW(-0.07, -0.1, 0.05)); wl = 8; }
+        else if (bng.ph === 'lower') { L = bng.t < BNG.lower * 0.5 ? atMouth.clone().lerp(home, 0.55).add(new THREE.Vector3(0, 0.08, 0)) : home; wl = 6; }
+        else if (bng.ph === 'release') { L = home; }
+        reach('L', L, poleL, wl, dt); reach('R', Rr, poleR, 5, dt);
+        root.updateMatrixWorld(true);
+        const held = bng.ph === 'lift' || bng.ph === 'inhale' || bng.ph === 'lower';
+        const gripW = bn.hdL ? bn.hdL.getWorldPosition(new THREE.Vector3()) : home.clone();
+        st.smoke = null; st.bongSt = { ph: bng.ph, t: bng.t, held, grip: gripW, mouth: m, fwd: f };
       } else {
         reach('R', restR, poleR, 4, dt); reach('L', restL, poleL, 4, dt); st.smoke = null;
       }
@@ -726,6 +750,7 @@
         setAct(act) { st.act = act || null; st.actT = 0; },
         stand() { st.mode = 'walk'; st.act = null; st.smoke = null; motion.position.set(0, 0, 0); },
         smokeState() { return st.smoke || null; },
+        bongState() { return st.act === 'bong' ? st.bongSt || null : null; },
         mouthWorld(v) { return gait && gait.mouthW ? gait.mouthW(v) : root.localToWorld((v || new THREE.Vector3()).set(0, def.stature * 0.9, 0.1)); },
         headWorld(v) { return this.mouthWorld(v); },
         addApron(color) { if (!cloth && gait) cloth = makeApron(root, gait.bones, def, color); return cloth; }

@@ -309,7 +309,7 @@
         <div class="section-title"><span>Uzman Personel Rolleri</span></div>
         <div class="row-between"><span>Temizlikçi (<strong id="role-cleaner">0</strong>)</span><button class="btn" id="btn-hire-cleaner">İşe Al (€140)</button></div>
         <div class="row-between"><span>Stokçu / EOQ (<strong id="role-stocker">0</strong>)</span><button class="btn" id="btn-hire-stocker">İşe Al (€160)</button></div>
-        <div class="row-between"><span>Güvenlik (<strong id="role-security">0</strong>)</span><button class="btn" id="btn-hire-security">İşe Al (€180)</button></div>
+        <div class="row-between" style="display:none"><span>Güvenlik (<strong id="role-security">0</strong>)</span><button class="btn" id="btn-hire-security">İşe Al (€180)</button></div>
       </div>
 
       <div class="section-card">
@@ -2638,7 +2638,8 @@
     }
 
     // 4. Cute Muscular Security Guard with glossy dark sunglasses at entrance
-    for (let i = 0; i < Math.min(2, state.roles.security); i++) {
+    state.roles.security = 0;   // oyunda güvenlik yok
+    for (let i = 0; i < 0; i++) {
       const g = glbStaff('security');
       const rig = g || createAnatomicalHuman({
         skin: 0x8d5534, shirt: 0x0f172a, pants: 0x090d16,
