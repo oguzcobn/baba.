@@ -10,7 +10,10 @@ const vehicle = byId('vehicle');
 const driver = byId('driver');
 const cameraButton = byId('camera');
 const driverButtons = [byId('beer'), byId('smoke')];
-let chase = false;
+let chase = true;
+let coast;
+let turn = 0;
+vehicle.classList.add('chase');
 let actionEnds = 0;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const [longitude, latitude] = route[0];
@@ -58,6 +61,7 @@ function update(dt) {
   const acceleration = (input.has('gas') ? 3.6 : 0) - (input.has('brake') ? 8 : 0) - drag;
   car.speed = clamp(car.speed + acceleration * dt, 0, maxSpeed);
   const steering = Number(input.has('right')) - Number(input.has('left'));
+  turn = steering;
   vehicle.style.setProperty('--steering', (steering * 25) + 'deg');
   car.offset = clamp(car.offset + steering * car.speed * dt * 0.26, -2.8, 2.8);
   car.distance = Math.min(length, car.distance + car.speed * dt);
@@ -181,7 +185,7 @@ function loadCesium() {
 }
 
 function updateStatus(message) {
-  const mode = viewer ? 'Google 3D' : 'Antrenman görünümü';
+  const mode = viewer ? 'Google 3D' : coast ? 'Konyaaltı 3D' : 'Antrenman görünümü';
   status.textContent = message || (car.distance >= length
     ? 'Rota tamamlandı. Yeniden sürmek için Başa dön.'
     : mode + ' · Gaz ve fren için ↑ / ↓, yön için ← / →.');
@@ -193,8 +197,7 @@ function closeMap() {
   viewer = tiles = undefined;
   mapFailed = false;
   map.hidden = true;
-  canvas.hidden = false;
-  resize();
+  syncView();
 }
 
 byId('offline').addEventListener('click', () => {
@@ -234,7 +237,7 @@ byId('google').addEventListener('submit', async event => {
     tiles.tileFailed.addEventListener(() => { mapFailed = true; });
     viewer.scene.renderError.addEventListener(() => { mapFailed = true; });
     candidate.canvas.addEventListener('webglcontextlost', () => { mapFailed = true; });
-    canvas.hidden = true;
+    syncView();
     lastSample = -Infinity;
     elevation = undefined;
     coverageDeadline = performance.now() + 25000;
@@ -283,11 +286,33 @@ function frame(now) {
   if (!finished && car.distance >= length) updateStatus();
   if (mapFailed || (viewer && elevation === undefined && now > coverageDeadline)) {
     closeMap();
-    updateStatus('Google 3D bağlantısı kesildi. Sürüş antrenman görünümünde devam ediyor.');
+    updateStatus('Google 3D bağlantısı kesildi. Yerel görünümde sürüşe devam edebilirsin.');
   }
   if (viewer) drawMap();
+  else if (coast) coast.draw(car,chase,turn);
   else drawPreview();
   requestAnimationFrame(frame);
 }
 resize();
 requestAnimationFrame(frame);
+
+const coastView = byId('coast');
+function syncView() {
+  coastView.hidden = Boolean(viewer) || !coast;
+  canvas.hidden = Boolean(viewer || coast);
+  vehicle.classList.toggle('rendered-car', !viewer && Boolean(coast));
+  resize();
+}
+import('./scene.js?v=2').then(({createCoast}) => {
+  coast = createCoast(coastView,pose,length);
+  coastView.addEventListener('webglcontextlost', () => {
+    coast = undefined;
+    syncView();
+    updateStatus('WebGL bağlantısı kesildi. 2D antrenman görünümüne geçildi.');
+  }, true);
+  syncView();
+  updateStatus();
+}).catch(() => {
+  syncView();
+  updateStatus('3D başlatılamadı. 2D antrenman görünümünde sürebilirsin.');
+});

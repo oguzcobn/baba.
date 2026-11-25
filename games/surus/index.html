@@ -4,11 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>SÜRÜŞ. — Konyaaltı</title>
-<link rel="stylesheet" href="./style.css">
+<link rel="stylesheet" href="./style.css?v=2">
 </head>
 <body>
 <main>
   <canvas id="preview" aria-label="Sürüş parkuru"></canvas>
+  <div id="coast" hidden></div>
   <div id="map" hidden></div>
   <div id="vehicle" aria-hidden="true">
     <svg class="cockpit" viewBox="0 0 1000 540" preserveAspectRatio="none">
@@ -60,10 +61,10 @@
       <input id="key" type="password" autocomplete="off" spellcheck="false" required>
       <button type="submit">Google 3D'yi aç</button>
     </form>
-    <button id="offline" type="button">Antrenman görünümüne dön</button>
+    <button id="offline" type="button">Konyaaltı 3D görünümüne dön</button>
   </details>
   <section class="driver-controls" aria-label="Şoför ve kamera">
-    <button id="camera" type="button">Takip kamerası</button>
+    <button id="camera" type="button">Kokpit kamerası</button>
     <button id="beer" type="button">Bira iç</button>
     <button id="smoke" type="button">Sigara yak</button>
   </section>
@@ -90,6 +91,6 @@
   </div>
   <footer><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">Rota © OpenStreetMap katkıcıları</a></footer>
 </main>
-<script type="module" src="./drive.js"></script>
+<script type="module" src="./drive.js?v=2"></script>
 </body>
 </html>

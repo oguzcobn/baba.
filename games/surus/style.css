@@ -48,3 +48,7 @@ button:disabled { cursor: default; opacity: .48; }
 @media (prefers-reduced-motion: reduce) {
   #wheel, #driver-hand, #smoke-trail { animation: none !important; transition: none !important; }
 }
+
+#coast { position: absolute; inset: 0; z-index: -1; }
+#coast canvas { display: block; width: 100%; height: 100%; }
+#vehicle.rendered-car .kartal-rear { display: none; }

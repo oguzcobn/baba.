@@ -896,7 +896,7 @@ const App = (() => {
     else if (r === 'yelken') yelken();
     else if (r === 'surus') openEmbeddedGame({
       title: T('SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'),
-      url: 'games/surus/index.html',
+      url: 'games/surus/index.html?v=2',
       tag: T('Sürüş simülasyonu', 'Driving simulator'),
       lead: T('Konyaaltı sahilinde yaklaşık 3 km sür.', 'Drive about 3 km along the Konyaaltı coast.'),
       tip: T('WASD veya ok tuşlarını kullan. Telefonda ekrandaki pedallara dokun.', 'Use WASD or the arrow keys. On phones, use the on-screen controls.')
