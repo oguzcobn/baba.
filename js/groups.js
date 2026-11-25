@@ -98,7 +98,7 @@ const BABAGroups = (() => {
     if (r !== 'cbn' && !r.startsWith('cbn/')) return;
     const el = document.getElementById('cbnRoot'); if (!el || el.querySelector('.bb-cbn-shortcuts')) return;
     const box = document.createElement('nav'); box.className = 'bb-cbn-shortcuts'; box.setAttribute('aria-label', tr('CBN bağlantıları', 'CBN shortcuts'));
-    box.innerHTML = '<a href="#today">' + tr('BUGÜN. / Bildirimler', 'TODAY / Notifications') + '</a><a href="#lab">' + tr('AI ARAÇLARI (LAB.)', 'AI TOOLS (LAB.)') + '</a><a href="#cbn/work">' + tr('İŞ ARAÇLARI', 'WORK TOOLS') + '</a>';
+    box.innerHTML = '<a href="#today">' + tr('BUGÜN. / Bildirimler', 'TODAY / Notifications') + '</a><a href="#lab">' + tr('AI ARAÇLARI (LAB.)', 'AI TOOLS (LAB.)') + '</a><a href="model-studio/">' + tr('MODEL. / 3D Stüdyo', 'MODEL. / 3D Studio') + '</a><a href="#cbn/work">' + tr('İŞ ARAÇLARI', 'WORK TOOLS') + '</a>';
     el.prepend(box);
   }
   function injectWork() {
