@@ -44,9 +44,9 @@
     { id: 'scanner', name: 'Hızlı barkod okuyucu', desc: 'Kasiyer personel %40 daha hızlı', level: 5, cost: 600 }
   ];
   const STAFF = [
-    { id: 'cashier', name: 'Kasiyer', desc: 'Sıradaki müşterileri otomatik okutur ve ödemeyi alır', hire: 200, wage: 95, level: 2, max: 3 },
-    { id: 'stocker', name: 'Raf görevlisi', desc: 'Yerdeki kutulardan rafları otomatik doldurur', hire: 220, wage: 75, level: 3, max: 2 },
-    { id: 'cleaner', name: 'Temizlik görevlisi', desc: 'Hijyeni yüksek tutar, itibar kaybını önler', hire: 140, wage: 65, level: 2, max: 2 }
+    { id: 'cashier', name: 'Kasiyer', desc: 'Sıradaki müşterileri okutur, 18+ ürünlerde kimliğe bakar ve ödemeyi alır', hire: 200, wage: 95, level: 2, max: 3, names: ['Sanne', 'Bram', 'Fleur'] },
+    { id: 'stocker', name: 'Vitrin sorumlusu', desc: 'Kolileri teslimat alanından alıp vitrin rafına tek tek dizer; en az kalan ürünü önce doldurur, boş kolileri çöpe atar', hire: 220, wage: 75, level: 2, max: 2, names: ['Daan', 'Noor'] },
+    { id: 'cleaner', name: 'Temizlik görevlisi', desc: 'Salonu süpürür, hijyeni zamanla yükseltir (denetimde ≥%75 gerekir)', hire: 140, wage: 65, level: 2, max: 2, names: ['Ahmed', 'Mila'] }
   ];
   const DENOMS = [50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05];
   const xpFor = (L) => 100 + 70 * (L - 1);
@@ -59,7 +59,7 @@
     started: false, menu: true, paused: false, open: false, ui: null,
     level: 1, xp: 0, boxes: [], held: null, pending: [], slots: [], pick: [],
     up: {}, unlocked: [], stats: null, totals: { served: 0, playerServed: 0, placed: 0, orders: 0 },
-    tut: 0, tutSeenPrices: false, nextEntry: 0, cashierT: 0, stockerT: 0, saveT: 0, hudT: 0,
+    tut: 0, tutSeenPrices: false, nextEntry: 0, cashierT: 0, merch: [], nav: null, navT: 0, saveT: 0, hudT: 0,
     target: null, co: null, emotes: [], reportShown: false, expectUnlock: false, defs: {},
     settings: { gfx: 'hdr', q: 'auto', sens: 1, day: 'normal', cam: 1 }, holdTimer: null, uid: 1
   };
@@ -68,6 +68,7 @@
   const MarketMode = window.MarketMode = {
     active: () => mm.started,
     frame, npcArrive, onRenege, queueHead, enterCheckout, deliverBoxes, openTablet,
+    stockerFrame: (...a) => stockerFrame(...a), inCheckout: () => !!(mm.co && mm.co.active),
     addRevenue: (...a) => addRevenue(...a), emote: (n, t) => emote(n, t), isOpen: () => mm.open, level: () => mm.level
   };
   const carry = (n, k) => { const c = n && n.meshObj && n.meshObj.cast; if (c && c.setCarry) c.setCarry(k); };
@@ -737,28 +738,12 @@
         mm.cashierT = 0;
         if (Math.hypot(h.x - HEAD_SPOT.x, h.z - HEAD_SPOT.z) < 2.5) {
           if (h.order.needsId && h.order.age < 18) { rejectCustomer(h, 'Kimlik… tamam, gidiyorum.'); S.reputation = Math.min(100, S.reputation + 0.5); }
-          else settleSale(h, 'staff');
+          else { settleSale(h, 'staff'); beep(1850, 0.05, 'square'); if (mm.scanGlow) { mm.scanGlow.material.color.set(0x22c55e); setTimeout(() => mm.scanGlow.material.color.set(0xef4444), 200); } }
         }
       } else if (!h) mm.cashierT = Math.min(mm.cashierT, 6);
     }
-    // personel: raf görevlisi
-    if ((S.roles.stocker || 0) > 0) {
-      mm.stockerT += dt * S.roles.stocker;
-      if (mm.stockerT >= 4) {
-        mm.stockerT = 0;
-        const bx = mm.boxes.find(b => b !== mm.held && b.qty > 0);
-        if (bx) {
-          let s = mm.slots.find(x => x.pid === bx.pid && x.count < slotCap()) || mm.slots.find(x => !x.pid || (x.count === 0 && !S.catalog.some(c => c.id === x.pid)));
-          if (s) {
-            if (s.pid !== bx.pid) setSlotProduct(s, bx.pid);
-            const q = Math.min(4, bx.qty, slotCap() - s.count); s.count += q; bx.qty -= q; refreshSlot(s); syncStock();
-            if (bx.qty <= 0) removeBox(bx);
-          }
-        }
-      }
-    }
     // emote balonları
-    for (const e of mm.emotes) { e.t -= dt; const g = e.n.meshObj.group; e.sp.position.set(g.position.x, g.position.y + e.n.meshObj.stature + 0.55 + (2.2 - e.t) * 0.12, g.position.z); e.sp.material.opacity = Math.min(1, e.t * 2); }
+    for (const e of mm.emotes) { e.t -= dt; const g = e.n.meshObj.group; e.sp.position.set(g.position.x, g.position.y + (e.n.meshObj.stature || 1.75) + 0.55 + (2.2 - e.t) * 0.12, g.position.z); e.sp.material.opacity = Math.min(1, e.t * 2); }
     mm.emotes = mm.emotes.filter(e => { if (e.t <= 0) { B.scene.remove(e.sp); e.sp.material.map.dispose(); e.sp.material.dispose(); return false; } return true; });
     // hedef & HUD
     mm.target = resolveTarget();
@@ -767,6 +752,197 @@
     checkTutorial();
     mm.saveT += dt; if (mm.saveT > 45) { mm.saveT = 0; save(true); }
     hud();
+  }
+
+
+  // ---------------------------------------------------------------------------
+  // VİTRİN SORUMLUSU (Daan, Noor) — kolileri teslimat alanından alır, rafa tek tek dizer
+  // İş akışı (gerçek market raf düzeni): en az stoklu ürünün kolisini seç → koliye yürü →
+  // kaldır → o ürünün bölmesine (yoksa boş bölmeye) yürü → birim birim diz (≈0.45 sn/adet) →
+  // bölme dolarsa sıradaki bölmeye → koli boşalınca çöpe at → boşta: yerdeki boş kolileri topla,
+  // yoksa rafları gezip düzenle. Yol: dükkân içi ızgara üzerinde A* (çarpışma kutuları + 0.3 m pay).
+  // ---------------------------------------------------------------------------
+  const NAV = { x0: -4.5, z0: -17.5, cs: 0.25, W: 36, H: 45 };
+  function buildNav() {
+    const g = new Uint8Array(NAV.W * NAV.H), r = 0.3;
+    for (const c of B.colliders) {
+      if (c.tag === 'door') continue;
+      for (let gz = 0; gz < NAV.H; gz++) {
+        const z = NAV.z0 + (gz + 0.5) * NAV.cs; if (z < c.minZ - r || z > c.maxZ + r) continue;
+        for (let gx = 0; gx < NAV.W; gx++) {
+          const x = NAV.x0 + (gx + 0.5) * NAV.cs;
+          if (x >= c.minX - r && x <= c.maxX + r) g[gz * NAV.W + gx] = 1;
+        }
+      }
+    }
+    mm.nav = g;
+  }
+  const navCell = (x, z) => [clamp(Math.floor((x - NAV.x0) / NAV.cs), 0, NAV.W - 1), clamp(Math.floor((z - NAV.z0) / NAV.cs), 0, NAV.H - 1)];
+  const navWorld = (gx, gz) => ({ x: NAV.x0 + (gx + 0.5) * NAV.cs, z: NAV.z0 + (gz + 0.5) * NAV.cs });
+  const navFree = (gx, gz) => gx >= 0 && gz >= 0 && gx < NAV.W && gz < NAV.H && !mm.nav[gz * NAV.W + gx];
+  function nearestFree(gx, gz) {
+    if (navFree(gx, gz)) return [gx, gz];
+    for (let r = 1; r < 8; r++) for (let dz = -r; dz <= r; dz++) for (let dx = -r; dx <= r; dx++) if (Math.max(Math.abs(dx), Math.abs(dz)) === r && navFree(gx + dx, gz + dz)) return [gx + dx, gz + dz];
+    return [gx, gz];
+  }
+  function lineFree(a, b) {
+    const n = Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / (NAV.cs * 0.5));
+    for (let i = 1; i < n; i++) { const t = i / n, [gx, gz] = navCell(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t); if (!navFree(gx, gz)) return false; }
+    return true;
+  }
+  function findPath(sx, sz, tx, tz) {
+    if (!mm.nav) buildNav();
+    const [s0, s1] = nearestFree(...navCell(sx, sz)), [g0, g1] = nearestFree(...navCell(tx, tz));
+    const W = NAV.W, start = s1 * W + s0, goal = g1 * W + g0;
+    const gs = new Float32Array(W * NAV.H).fill(1e9), from = new Int32Array(W * NAV.H).fill(-1), closed = new Uint8Array(W * NAV.H);
+    const open = [start]; gs[start] = 0;
+    const hfn = (k) => Math.hypot(k % W - g0, Math.floor(k / W) - g1);
+    let found = false, guard = 0;
+    while (open.length && guard++ < 4000) {
+      let bi = 0; for (let i = 1; i < open.length; i++) if (gs[open[i]] + hfn(open[i]) < gs[open[bi]] + hfn(open[bi])) bi = i;
+      const cur = open.splice(bi, 1)[0]; if (cur === goal) { found = true; break; }
+      closed[cur] = 1; const cx = cur % W, cz = Math.floor(cur / W);
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dz) continue; const nx = cx + dx, nz = cz + dz; if (!navFree(nx, nz)) continue;
+        if (dx && dz && (!navFree(cx + dx, cz) || !navFree(cx, cz + dz))) continue;   // köşe kesme yok
+        const k = nz * W + nx; if (closed[k]) continue;
+        const ng = gs[cur] + (dx && dz ? 1.4142 : 1);
+        if (ng < gs[k]) { gs[k] = ng; from[k] = cur; if (!open.includes(k)) open.push(k); }
+      }
+    }
+    if (!found) return [{ x: tx, z: tz }];
+    const cells = []; for (let k = goal; k !== -1; k = from[k]) cells.push(navWorld(k % W, Math.floor(k / W)));
+    cells.reverse(); cells.push({ x: tx, z: tz });
+    const out = [{ x: sx, z: sz }];   // görüş hattı ile sadeleştir
+    let i = 0;
+    while (i < cells.length - 1) { let j = cells.length - 1; while (j > i + 1 && !lineFree(out[out.length - 1], cells[j])) j--; out.push(cells[j]); i = j; }
+    return out.slice(1);
+  }
+  const SHELF_STAND_X = 2.78, TRASH_STAND = { x: 3.15, z: -14.05 };
+  const merchName = (i) => (STAFF.find(x => x.id === 'stocker').names[i] || 'Vitrin');
+  function shelfStock(pid) { return mm.slots.reduce((a, s) => a + (s.pid === pid ? s.count : 0), 0); }
+  function slotFor(pid) {
+    const cap = slotCap();
+    return mm.slots.find(x => x.pid === pid && x.count < cap)
+      || mm.slots.find(x => !x.pid)
+      || mm.slots.find(x => x.count === 0 && x.pid !== pid && mm.slots.some(y => y !== x && y.pid === x.pid))   // ürünün başka bölmesi varsa boş bölmeyi devral
+      || mm.slots.find(x => x.count === 0 && !S.catalog.some(c => c.id === x.pid));
+  }
+  function claimable(b) { return b !== mm.held && !b.dropping && !b.claimedBy && !b.carriedBy && mm.boxes.includes(b); }
+  function pickJob(w) {
+    // 1) dolu koli: rafta en az kalan ürün önce
+    const full = mm.boxes.filter(b => claimable(b) && b.qty > 0 && slotFor(b.pid)).sort((a, b) => shelfStock(a.pid) - shelfStock(b.pid) || a.id - b.id);
+    if (full.length) return { box: full[0], dispose: false };
+    // 2) yerde kalmış boş koli
+    const empty = mm.boxes.find(b => claimable(b) && b.qty <= 0);
+    if (empty) return { box: empty, dispose: true };
+    return null;
+  }
+  function goTo(w, x, z, task) { w.path = findPath(w.x, w.z, x, z); w.task = task; }
+  function merchDropBox(w) {
+    const bx = w.box; if (!bx) return;
+    bx.carriedBy = null; w.box = null;
+    if (bx.mesh.parent) bx.mesh.parent.remove(bx.mesh);
+    if (bx.qty > 0) { const sp = freeDeliverySpot(); addBoxToWorld(bx, sp.x, sp.y, sp.z, false); }
+  }
+  function staffStatus(role, i) {
+    if (role === 'stocker') { const w = mm.merch[i]; return w ? w.status || 'Hazır' : 'İşe başlıyor'; }
+    if (role === 'cashier') return queueHead(true) ? 'Kasada müşteriye bakıyor' : 'Kasada bekliyor';
+    if (role === 'cleaner') return `Salonu temizliyor · hijyen %${Math.round(S.hygiene)}`;
+    return '';
+  }
+  function stockerFrame(st, i, dt, el, anim) {
+    if (!mm.started) return false;
+    let w = mm.merch[i];
+    if (!w) w = mm.merch[i] = { name: merchName(i), x: st.x, z: st.z, yaw: Math.PI, task: 'idle', path: [], t: 0, box: null, slot: null, phase: i, think: 0.3 * i, status: 'Hazır' };
+    mm.navT += dt; if (mm.navT > 8) { mm.navT = 0; mm.nav = null; }   // dekor eklenirse yolu yenile
+    const cap = slotCap();
+    let speed = 0;
+    // yol izleme
+    if (w.path && w.path.length) {
+      const p = w.path[0], dx = p.x - w.x, dz = p.z - w.z, d = Math.hypot(dx, dz), v = w.box ? 1.05 : 1.25;
+      if (d < 0.08) w.path.shift();
+      else { const k = Math.min(1, v * dt / d); w.x += dx * k; w.z += dz * k; speed = v; const ty = Math.atan2(dx, dz); w.yaw += Math.atan2(Math.sin(ty - w.yaw), Math.cos(ty - w.yaw)) * Math.min(1, dt * 10); }
+    }
+    const arrived = !w.path || !w.path.length;
+    // kutu oyuncu tarafından alındıysa ya da kaybolduysa işi bırak
+    if (w.task === 'toBox' && (!w.target || !mm.boxes.includes(w.target) || mm.held === w.target)) { if (w.target) w.target.claimedBy = null; w.target = null; w.task = 'idle'; w.path = []; }
+    if (w.task === 'idle') {
+      w.think -= dt;
+      if (w.think <= 0) {
+        w.think = 0.6;
+        const job = pickJob(w);
+        if (job) {
+          const b = job.box; b.claimedBy = w; w.target = b; w.dispose = job.dispose;
+          const bp = b.mesh.position, ax = clamp(bp.x + 0.55, -3.9, 3.9);
+          goTo(w, ax, bp.z - 0.15, 'toBox');
+          w.status = job.dispose ? 'Boş koliyi topluyor' : `${META[b.pid].short} kolisine gidiyor`;
+        } else if (!w.tidyT || w.tidyT <= 0) {
+          const s = mm.slots[(i * 5 + Math.floor(el / 7)) % mm.slots.length];
+          goTo(w, SHELF_STAND_X, s.zc, 'tidy'); w.tidyT = 6; w.status = 'Rafları düzenliyor';
+        }
+      }
+    } else if (w.task === 'toBox' && arrived) {
+      const b = w.target; w.target = null; b.claimedBy = null;
+      // kutuyu kaldır: dünyadan ve nişan listesinden çıkar, elde taşınır
+      mm.boxes = mm.boxes.filter(x => x !== b); mm.pick = mm.pick.filter(m => m !== b.mesh);
+      b.carriedBy = w; b.dropping = false; w.box = b; beep(420, 0.04);
+      if (w.dispose || b.qty <= 0) { goTo(w, TRASH_STAND.x, TRASH_STAND.z, 'toTrash'); w.status = 'Boş koliyi çöpe götürüyor'; }
+      else {
+        const s = slotFor(b.pid);
+        if (s) { w.slot = s; goTo(w, SHELF_STAND_X, s.zc, 'toSlot'); w.status = `${META[b.pid].short} rafa taşınıyor`; }
+        else { merchDropBox(w); w.task = 'idle'; w.status = 'Rafta yer yok — koli bekliyor'; }
+      }
+    } else if (w.task === 'toSlot' && arrived) {
+      w.task = 'placing'; w.t = 0.3; w.status = `${META[w.box.pid].short} diziliyor`;
+    } else if (w.task === 'placing') {
+      const ty = Math.PI / 2; w.yaw += Math.atan2(Math.sin(ty - w.yaw), Math.cos(ty - w.yaw)) * Math.min(1, dt * 8);
+      w.t -= dt;
+      if (w.t <= 0) {
+        const b = w.box, sl = w.slot;
+        const ok = sl && (sl.pid === b.pid || sl.count === 0) && sl.count < cap;
+        if (ok && b.qty > 0) {
+          if (sl.pid !== b.pid) setSlotProduct(sl, b.pid);
+          sl.count++; b.qty--; mm.totals.staffPlaced = (mm.totals.staffPlaced || 0) + 1;
+          refreshSlot(sl); syncStock(); w.t = 0.45;
+          if (Math.abs(B.player.x - w.x) + Math.abs(B.player.z - w.z) < 6) beep(880 + sl.count * 30, 0.03);
+        }
+        if (b.qty <= 0) { emote({ meshObj: st.meshObj }, `${w.name}: raf doldu ✓`); goTo(w, TRASH_STAND.x, TRASH_STAND.z, 'toTrash'); w.status = 'Boş koliyi çöpe götürüyor'; }
+        else if (!ok || sl.count >= cap) {
+          const s2 = slotFor(b.pid);
+          if (s2 && s2 !== sl) { w.slot = s2; goTo(w, SHELF_STAND_X, s2.zc, 'toSlot'); }
+          else { goTo(w, -2.0, -7.9, 'return'); w.status = 'Raf dolu — koliyi teslimat alanına geri koyuyor'; }
+        }
+      }
+    } else if (w.task === 'toTrash' && arrived) {
+      const b = w.box; w.box = null; if (b) { b.carriedBy = null; removeBox(b); }
+      beep(140, 0.06); w.task = 'idle'; w.think = 0.4; w.status = 'Hazır';
+    } else if (w.task === 'return' && arrived) {
+      merchDropBox(w); w.task = 'idle'; w.status = 'Hazır';
+    } else if (w.task === 'tidy') {
+      w.think -= dt;
+      if (w.think <= 0) { w.think = 0.6; if (pickJob(w)) { w.task = 'idle'; w.think = 0; w.path = []; } }
+      if (w.task === 'tidy' && arrived) { w.tidyT -= dt; const ty = Math.PI / 2; w.yaw += Math.atan2(Math.sin(ty - w.yaw), Math.cos(ty - w.yaw)) * Math.min(1, dt * 6); if (w.tidyT <= 0 || pickJob(w)) { w.task = 'idle'; w.think = 0; } }
+    }
+    // taşınan koli: göğüs hizasında, raf önünde biraz alçalır
+    if (w.box) {
+      const m = w.box.mesh; if (m.parent !== mm.root) { if (m.parent) m.parent.remove(m); mm.root.add(m); }
+      const reach = w.task === 'placing' ? 0.5 : 0.36, y = w.task === 'placing' && w.slot ? Math.max(0.55, w.slot.y + 0.32) : 1.02;
+      m.position.set(w.x + Math.sin(w.yaw) * reach, FLOOR + y, w.z + Math.cos(w.yaw) * reach); m.rotation.set(0, w.yaw, 0);
+    }
+    // karakter: konum, yön, yürüme/taşıma animasyonu
+    st.x = w.x; st.z = w.z;
+    const g = st.meshObj.group; g.position.set(w.x, FLOOR, w.z); g.rotation.y = w.yaw;
+    w.phase += speed * 3.6 * dt;
+    anim(st, w.phase, speed, el);
+    const c = st.meshObj.cast;
+    if (c && c.setCarry) c.setCarry(w.box && w.task !== 'placing' ? 'box' : null);
+    else if (st.meshObj.armL) {
+      const placing = w.task === 'placing', lift = placing ? -1.1 + Math.sin(el * 9) * 0.25 : w.box ? -0.85 : null;
+      if (lift != null) { st.meshObj.armL.shoulder.rotation.x = lift; st.meshObj.armR.shoulder.rotation.x = placing ? -1.25 - Math.sin(el * 9) * 0.25 : lift; }
+      if (st.crate) st.crate.visible = false;
+    }
+    return true;
   }
 
   function emote(n, text) {
@@ -797,6 +973,7 @@
     { t: 'Seviye 3\'e ulaş', done: () => mm.level >= 3 },
     { t: 'Yeni bir ürün lisansı satın al', done: () => S.catalog.length > STARTER.length },
     { t: 'Bir kasiyer işe al', done: () => (S.staffCount || 0) > 0 },
+    { t: 'Bir vitrin sorumlusu işe al (kolileri rafa o dizsin)', done: () => (S.roles.stocker || 0) > 0 },
     { t: 'Toplam 50 müşteriye hizmet et', done: () => mm.totals.served >= 50 },
     { t: 'Seviye 6\'ya ulaş ve Prinsen Gold\'u aç', done: () => S.catalog.some(c => c.id === 'prinsen_gold') },
     { t: '€10.000 nakite ulaş', done: () => S.cash >= 10000 }
@@ -820,7 +997,7 @@
     const data = {
       v: 1, cash: S.cash, rep: S.reputation, day: S.day, hour: S.hour, level: mm.level, xp: mm.xp, open: false,
       catalog: S.catalog.map(c => ({ id: c.id, price: c.price })), slots: mm.slots.map(s => ({ pid: s.pid, count: s.count })),
-      boxes: [...mm.boxes, ...(mm.held ? [mm.held] : [])].filter(b => b.qty > 0).map(b => ({ pid: b.pid, qty: b.qty, x: b === mm.held ? null : b.mesh.position.x, y: b === mm.held ? null : b.restY, z: b === mm.held ? null : b.mesh.position.z })),
+      boxes: [...mm.boxes, ...(mm.held ? [mm.held] : []), ...mm.merch.filter(w => w && w.box).map(w => w.box)].filter(b => b.qty > 0).map(b => ({ pid: b.pid, qty: b.qty, x: (b === mm.held || b.carriedBy) ? null : b.mesh.position.x, y: (b === mm.held || b.carriedBy) ? null : b.restY, z: (b === mm.held || b.carriedBy) ? null : b.mesh.position.z })),
       pending: mm.pending, up: mm.up, staff: S.staffCount, roles: S.roles, tut: mm.tut, seenPrices: mm.tutSeenPrices, totals: mm.totals, marketIndex: S.marketIndex,
       ledger: S.ledger, stats: mm.stats, hygiene: S.hygiene, savedAt: Date.now()
     };
@@ -834,6 +1011,8 @@
   function resetWorld() {
     for (const b of [...mm.boxes]) removeBox(b);
     if (mm.held) { B.camera.remove(mm.held.mesh); mm.held = null; }
+    for (const w of mm.merch) if (w && w.box && w.box.mesh.parent) w.box.mesh.parent.remove(w.box.mesh);
+    mm.merch = [];
     for (const s of mm.slots) { s.count = 0; setSlotProduct(s, null); }
     mm.pending = []; if (mm.co) clearCounter(false); mm.co = null;
     for (const n of customers()) { if (n.order) B.removeOrderBubbleFromNPC(n); n.order = null; n.mmPlan = null; n.inCheckout = false; n.mmDone = false; if (n.state !== 'walk_away') { n.state = 'walk_away'; n.targetX = n.x < 0 ? -22 : 22; n.targetZ = -4.8; } }
@@ -909,8 +1088,15 @@
     S.hour = 8.0; mm.stats = newStats(); mm.reportShown = false; setOpenSilent(false);
     if (S.hygiene < 70 && !(S.roles.cleaner > 0)) toast('Hijyen düşük! Temizlik görevlisi işe almayı düşün.');
     S.hygiene = Math.min(100, S.hygiene + 8 + (S.roles.cleaner || 0) * 10);
+    // Atölye: günde bir parti, toptan maliyetin %55'i ile üretilir ve teslimat alanına bırakılır
+    let fac = '';
+    const F = S.facility, fit = F && S.catalog[F.productIdx % S.catalog.length];
+    if (fit) {
+      const cost = r2(unitCost(fit) * 0.55 * F.capacity);
+      if (S.cash >= cost) { S.cash = r2(S.cash - cost); S.ledger.stockCost = r2((S.ledger.stockCost || 0) + cost); deliverBoxes(fit.id, F.capacity, 'Atölye'); fac = ` · Atölye: ${F.capacity} ${META[fit.id].short} (${eur(cost)})`; }
+    }
     hideAll(); setPaused(false); save(true);
-    banner(`GÜN ${S.day}`, `Piyasa endeksi ×${S.marketIndex.toFixed(2)} — toptan fiyatlar ${S.marketIndex > 1 ? 'yükseldi' : 'düştü'}.`);
+    banner(`GÜN ${S.day}`, `Piyasa endeksi ×${S.marketIndex.toFixed(2)} — toptan fiyatlar ${S.marketIndex > 1 ? 'yükseldi' : 'düştü'}.${fac}`);
   }
   function endDayNow() {
     if (mm.open) { toast('Önce mağazayı kapat (tabela).'); return; }
@@ -936,7 +1122,7 @@
     if (tabApp === 'order') {
       const rows = S.catalog.map(it => {
         const per = META[it.id].box, uc = unitCost(it), bc = r2(uc * per), q = cart[it.id] || 0;
-        const inBoxes = [...mm.boxes, ...(mm.held ? [mm.held] : [])].filter(b => b.pid === it.id).reduce((a, b) => a + b.qty, 0);
+        const inBoxes = [...mm.boxes, ...(mm.held ? [mm.held] : []), ...mm.merch.filter(w => w && w.box).map(w => w.box)].filter(b => b.pid === it.id).reduce((a, b) => a + b.qty, 0);
         const onWay = mm.pending.filter(p => p.pid === it.id).reduce((a, p) => a + p.units, 0);
         return `<div class="mm-prod"><div class="sw" style="background:${hex(it.color)}"></div>
           <div class="info"><b>${META[it.id].short}</b><small>${it.category === 'Botanical' ? 'Botanik · 18+' : 'Kafe'} · kutu ${per} adet</small>
@@ -969,9 +1155,12 @@
       }).join('') + '</div>';
     } else if (tabApp === 'staff') {
       const cnt = { cashier: S.staffCount || 0, stocker: S.roles.stocker || 0, cleaner: S.roles.cleaner || 0 };
-      body.innerHTML = `<div class="mm-app-head"><h3>Personel</h3><span>Maaşlar gün sonunda ödenir.</span></div><div class="mm-cards">` + STAFF.map(s => {
+      const roster = [];
+      STAFF.forEach(st => { for (let i = 0; i < cnt[st.id]; i++) roster.push(`<div><b>${st.names[i] || st.name}</b> · ${st.name} — <span>${staffStatus(st.id, i)}</span></div>`); });
+      body.innerHTML = `<div class="mm-app-head"><h3>Personel</h3><span>Günlük maaş toplamı ${eur(dayCosts().staff)} · gün sonunda ödenir.</span></div>` +
+        (roster.length ? `<div class="mm-reviews mm-roster">${roster.join('')}</div>` : '') + `<div class="mm-cards">` + STAFF.map(s => {
         const lock = mm.level < s.level;
-        return `<div class="mm-card ${lock ? 'lock' : ''}"><b>${s.name}</b><small>${s.desc}</small><small>İşe alım ${eur(s.hire)} · günlük ${eur(s.wage)}</small>
+        return `<div class="mm-card ${lock ? 'lock' : ''}"><b>${s.name}</b><small>${s.desc}</small><small>Ekip: ${s.names.slice(0, s.max).join(', ')}</small><small>İşe alım ${eur(s.hire)} · günlük ${eur(s.wage)}</small>
           <div class="row"><span class="tag">Çalışan: ${cnt[s.id]}/${s.max}</span>${lock ? `<span class="tag">Seviye ${s.level}</span>` :
           `<button class="mm-btn sm" data-fire="${s.id}" ${cnt[s.id] ? '' : 'disabled'}>Çıkar</button><button class="mm-btn pri sm" data-hire="${s.id}" ${cnt[s.id] >= s.max || S.cash < s.hire ? 'disabled' : ''}>İşe al</button>`}</div></div>`;
       }).join('') + '</div>';
@@ -1019,11 +1208,13 @@
     if (b.dataset.hire) {
       const s = STAFF.find(x => x.id === b.dataset.hire); if (S.cash < s.hire) return;
       S.cash = r2(S.cash - s.hire);
+      const idx = s.id === 'cashier' ? (S.staffCount || 0) : (S.roles[s.id] || 0);
       if (s.id === 'cashier') S.staffCount = (S.staffCount || 0) + 1; else S.roles[s.id] = (S.roles[s.id] || 0) + 1;
-      B.syncStaffEntities(); B.sound.chime(); toast(`${s.name} işe alındı.`); renderTablet(); return;
+      B.syncStaffEntities(); B.sound.chime(); toast(`${s.names[idx] || ''} işe başladı — ${s.name}.`); renderTablet(); return;
     }
     if (b.dataset.fire) {
       const id = b.dataset.fire;
+      if (id === 'stocker') { const k = (S.roles.stocker || 0) - 1, w = mm.merch[k]; if (w) { merchDropBox(w); mm.merch.length = Math.max(0, k); } }
       if (id === 'cashier') S.staffCount = Math.max(0, (S.staffCount || 0) - 1); else S.roles[id] = Math.max(0, (S.roles[id] || 0) - 1);
       B.syncStaffEntities(); renderTablet(); return;
     }

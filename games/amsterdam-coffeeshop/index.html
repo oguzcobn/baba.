@@ -2781,19 +2781,20 @@
       staffEntities.push({ role: 'cleaner', x: 1.5, z: -9.5 - i * 2.0, wpIdx: 0, sweepTimer: 2.2, phase: i, meshObj: rig });
     }
 
-    // 3. Cute Stocker carrying a wooden crate cleanly in front of torso
+    // 3. Vitrin sorumlusu (Daan, Noor): koliyi taşırken ve rafa dizerken market modu yönetir (MarketMode.stockerFrame)
     for (let i = 0; i < Math.min(2, state.roles.stocker); i++) {
       const g = glbStaff('stocker');
       const rig = g || createAnatomicalHuman({
-        skin: 0xdca580, shirt: 0xd97706, pants: 0x1e293b,
-        hair: 0x29170b, hairStyle: 'cap', capColor: 0x9a3412
+        skin: i ? 0xe6b492 : 0xdca580, shirt: 0xd97706, pants: 0x1e293b,
+        hair: i ? 0x6b3e26 : 0x29170b, hairStyle: i ? 'bun' : 'cap', capColor: 0x9a3412
       });
-      if (g) rig.cast.setCarry('box');
-      else { const crate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.28), new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.82 }));
-      crate.position.set(0, 0.22, 0.30); crate.castShadow = true; rig.spinePivot.add(crate); }
-      rig.group.position.set(3.2, 0.16, -15.6);
+      let crate = null;
+      if (!g) { crate = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.26, 0.28), new THREE.MeshStandardMaterial({ color: 0xa16207, roughness: 0.82 }));
+      crate.position.set(0, 0.22, 0.30); crate.castShadow = true; crate.visible = false; rig.spinePivot.add(crate); }
+      const hx = 2.5, hz = -12.9 + i * 1.6;
+      rig.group.position.set(hx, 0.16, hz);
       scene.add(rig.group);
-      staffEntities.push({ role: 'stocker', x: 3.2, z: -15.6, dir: -1, pauseTimer: 1.5, phase: i, meshObj: rig });
+      staffEntities.push({ role: 'stocker', idx: i, x: hx, z: hz, dir: -1, pauseTimer: 1.5, phase: i, meshObj: rig, crate });
     }
 
     // 4. Cute Muscular Security Guard with glossy dark sunglasses at entrance
@@ -3932,6 +3933,8 @@
       sound.chime(); showToast('Pro Espresso Makinesi kuruldu! (Servis hızı +%40)'); updateUI();
     });
     const hireRole = (role, cost, label) => {
+      // market modunda işe alım tek yerden: tablet → Personel (seviye, kadro sınırı ve isimler orada)
+      if (window.MarketMode && MarketMode.active()) { MarketMode.openTablet('staff'); return; }
       if (state.cash < cost) { showToast(`${label} için €${cost} gerekli.`); return; }
       state.cash = +(state.cash - cost).toFixed(2); state.roles[role] += 1; state.sp += 20; syncStaffEntities();
       sound.chime(); showToast(`${label} işe alındı!`); updateUI();
@@ -4003,6 +4006,7 @@
       showToast(state.autoEOQ ? 'ROP eşiğinde otomatik EOQ siparişi aktif.' : 'Otomatik stok kapatıldı.');
     });
     document.getElementById('btn-hire-staff').addEventListener('click', () => {
+      if (window.MarketMode && MarketMode.active()) { MarketMode.openTablet('staff'); return; }
       if (state.cash < 150) { showToast('Yetersiz bakiye'); return; }
       state.cash = +(state.cash - 150).toFixed(2); state.staffCount += 1; syncStaffEntities(); sound.chime(); updateUI();
     });
@@ -4176,7 +4180,10 @@
     lastStaffDt = dt;
     staffEntities.forEach(st => {
       if (st.role === 'barista') {
-        st.meshObj.group.position.set(st.homeX, 0.16, st.z);
+        // oyuncu kasaya geçince (x −1.1) yanındaki kasiyer bir adım kenara çekilir — kamera içinden geçmesin
+        const coBusy = window.MarketMode && MarketMode.inCheckout && MarketMode.inCheckout();
+        const bxPos = coBusy && st.homeX < 0 ? 0.0 : st.homeX;
+        st.meshObj.group.position.set(bxPos, 0.16, st.z);
         st.meshObj.group.rotation.y = 0; // Stay stationed behind counter facing guests!
         staffAnim(st, 0, 0, elapsed);
 
@@ -4232,6 +4239,7 @@
         }
         st.meshObj.group.position.set(st.x, 0.16, st.z);
       } else if (st.role === 'stocker') {
+        if (window.MarketMode && MarketMode.stockerFrame && MarketMode.stockerFrame(st, st.idx || 0, dt, elapsed, staffAnim)) return;
         if (st.pauseTimer > 0) {
           st.pauseTimer -= dt;
           staffAnim(st, 0, 0, elapsed);
@@ -4257,10 +4265,15 @@
     if (sound.ctx && sound.ctx.listener && sound.ctx.listener.setPosition) {
       try { sound.ctx.listener.setPosition(player.x, player.y + 1.6, player.z); } catch (e) {}
     }
-    if (state.roles.cleaner > 0 && state.hygiene < 96) {
-      state.hygiene = Math.min(100, state.hygiene + state.roles.cleaner * 1.4 * dt);
+    // hijyen: açıkken içerideki müşteri trafiği yavaşça kirletir; her temizlikçi ≈ +2.4 puan/dk toparlar
+    const busyInside = npcs.filter(n => n.role === 'customer' && (n.state === 'entering' || n.state === 'queued' || /^mm_/.test(n.state))).length;
+    if (busyInside > 0) state.hygiene = Math.max(0, state.hygiene - busyInside * 0.004 * dt);
+    if (state.roles.cleaner > 0 && state.hygiene < 99) {
+      state.hygiene = Math.min(100, state.hygiene + state.roles.cleaner * 0.04 * dt);
     }
-    if (state.roles.stocker > 0) {
+    // eski mod: raf görevlisi otomatik toptan alım yapar. Market modunda stok raflardan sayılır ve
+    // bu kod her karede hayali stok için para çekiyordu — orada vitrin sorumlusu gerçek kolileri dizer.
+    if (state.roles.stocker > 0 && !(window.MarketMode && MarketMode.active())) {
       state.catalog.forEach(it => {
         if (it.stock <= (it.rop || 8)) {
           const q = it.eoq || 12, c = +(it.unitCost * state.marketIndex * q).toFixed(2);
@@ -4459,12 +4472,15 @@
 
     cyclists.forEach(c => { c.group.position.x += c.dir * c.speed * dt; if (c.group.position.x > 29) c.group.position.x = -29; if (c.group.position.x < -29) c.group.position.x = 29; });
 
-    state.facility.progress += dt;
-    if (state.facility.progress >= state.facility.duration) {
-      state.facility.progress = 0;
-      if (window.MarketMode && MarketMode.active()) MarketMode.deliverBoxes(state.catalog[state.facility.productIdx].id, state.facility.capacity, 'Atölye');
-      else state.catalog[state.facility.productIdx].stock += state.facility.capacity;
-      updateUI();
+    // Market modunda atölye her 18 sn bedava koli bırakıyordu (ekonomi açığı, teslimat alanı taşıyordu):
+    // artık günde bir parti üretir, maliyeti gün başında ödenir (MarketMode.nextDay)
+    if (!(window.MarketMode && MarketMode.active())) {
+      state.facility.progress += dt;
+      if (state.facility.progress >= state.facility.duration) {
+        state.facility.progress = 0;
+        state.catalog[state.facility.productIdx].stock += state.facility.capacity;
+        updateUI();
+      }
     }
     const facBar = document.getElementById('fac-progress');
     if (facBar) facBar.style.width = `${(state.facility.progress / state.facility.duration) * 100}%`;
