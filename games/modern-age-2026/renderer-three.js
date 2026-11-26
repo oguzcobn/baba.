@@ -25,7 +25,7 @@ export function createThreeRenderer(api) {
  const panel=new THREE.Mesh(new THREE.PlaneGeometry(8,8),new THREE.MeshBasicMaterial({color:new THREE.Color(2.8,2.5,2.1),side:THREE.DoubleSide}));
  panel.position.set(-5,8,3);panel.lookAt(0,0,0);envScene.add(panel);
  const pmrem=new THREE.PMREMGenerator(renderer);
- const env=pmrem.fromScene(envScene,.12);scene.environment=env.texture;scene.environmentIntensity=.65;
+ const env=pmrem.fromScene(envScene,.02);scene.environment=env.texture;scene.environmentIntensity=.65;
  panel.geometry.dispose();panel.material.dispose();pmrem.dispose();
  const geos={box:new THREE.BoxGeometry(1,1,1),plane:new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),sphere:new THREE.SphereGeometry(.5,10,8),low:new THREE.IcosahedronGeometry(.5,1),cyl:new THREE.CylinderGeometry(.5,.5,1,12),cone:new THREE.ConeGeometry(.5,1,10)};
  const roofShape=new THREE.Shape();roofShape.moveTo(-.5,-.5);roofShape.lineTo(.5,-.5);roofShape.lineTo(0,.5);roofShape.closePath();
@@ -51,10 +51,10 @@ export function createThreeRenderer(api) {
  const materials=new Map(),cache=new Map();
  const matrix=new THREE.Matrix4(),color=new THREE.Color(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),euler=new THREE.Euler(),size=new THREE.Vector3();
  let world,defs,countries,debris,N,T,cam,W,H,zoom,hour,season,weather,tile,project,quality,metrics;
- let batch={},staticKey='',statWorld=null,scale=software?.65:1,baseDpr=1,lastAdapt=0,lastShadow=0,lastX=Infinity,lastZ=Infinity,lastZoom=0,lastClimate='',disposed=false,drawCount=0,lastQuality=null;
+ let batch={},buildingStatic=false,staticKey='',statWorld=null,scale=software?.65:1,baseDpr=1,lastAdapt=0,lastShadow=0,lastX=Infinity,lastZ=Infinity,lastZoom=0,lastClimate='',disposed=false,drawCount=0,lastQuality=null;
  function add(g,x,y,z,sx,sy,sz,c,m=0,r=.8,yaw=0,pitch=0){
    const type=g==='mansion'?'landmark':g==='plane'?(r<.2?'water':'earth'):m>.17?(r<.35?'glass':'metal'):'wall';
-   const k=g+'|'+type; (batch[k]??=[]).push([x,y,z,sx,sy,sz,c,yaw,pitch]);
+   const k=g+'|'+type+(buildingStatic?'|'+Math.floor(x/12)+','+Math.floor(z/12):''); (batch[k]??=[]).push([x,y,z,sx,sy,sz,c,yaw,pitch]);
  }
  const box=(x,y,z,w,h,d,c,m=0,r=.8,ya=0,pi=0)=>add('box',x,y,z,w,h,d,c,m,r,ya,pi);
   function tree3(x,z,t){let h=.75+t.tone*.7;add('cyl',x,h*.35,z,.11,h*.7,.11,'#785d40');for(let j=0;j<5;j++){let ang=j*2.4;add('low',x+Math.cos(ang)*h*.19,h*(.78+j*.045),z+Math.sin(ang)*h*.19,h*.63,h*.72,h*.63,['#466b38','#5c873f','#719a4b','#365d31','#85a951'][j])}}
@@ -95,7 +95,7 @@ export function createThreeRenderer(api) {
    }
  }
  function rebuild(){
-   batch={};
+   buildingStatic=true;batch={};
    for(let z=0;z<N;z++)for(let x=0;x<N;x++){
      let t=tile(x,z),palette={grass:['#78974d','#819e56','#87a55b','#76954e'],water:['#4a8197','#568da2','#477d96','#568c9d'],sand:['#b9ae83','#c9ba92','#c2b38b','#bcae86'],rock:['#969a88','#88917f','#a1a494','#899581']}[t.type];
      let c=palette[Math.min(3,Math.floor(t.tone*4))];add('plane',x+.5,t.type==='water'?-.035:0,z+.5,1.002,1,1.002,c,0,t.type==='water'?.08:.93);
@@ -104,7 +104,7 @@ export function createThreeRenderer(api) {
    }
    for(let r of world.resources){if(r.amount<=0)continue;let c={mat:'#9a9b90',food:'#c5b55c',oil:'#484e4c',money:'#c1a362'}[r.type];for(let i=0;i<6;i++){let x=r.x+.5+(i%3-1)*.26,z=r.y+.5+((i/3|0)-.5)*.35;add(r.type==='oil'?'cyl':r.type==='mat'?'low':'box',x,.18,z,.28,.35,.30,c,r.type==='oil'?.4:0,.8)}}
    for(const b of world.buildings){building(b);if(b.progress>=1&&['hq','house','research','barracks'].includes(b.type)){let s=defs[b.type].size,x=b.x+s/2,z=b.y+s/2;for(let j=0;j<3;j++){let xx=x-s*.35+j*.26;box(xx,.07,z+s*.43,.22,.14,.18,'#a49c83');add('low',xx,.19,z+s*.43,.19,.25,.20,'#577849')}}}
-   updateMeshes('static',batch);renderer.shadowMap.needsUpdate=true;
+   updateMeshes('static',batch);buildingStatic=false;renderer.shadowMap.needsUpdate=true;
  }
  function resize(){
    const s=api.state();baseDpr=Math.min(window.devicePixelRatio||1,1.5);renderer.setPixelRatio(baseDpr*scale);renderer.setSize(Math.max(1,s.W),Math.max(1,s.H),false);
@@ -124,12 +124,12 @@ export function createThreeRenderer(api) {
    sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
    const ckey=weather()+'|'+season();
    if(ckey!==lastClimate){lastClimate=ckey;let wet=weather()==='rain';material('earth').roughness=wet?.63:.96;material('wall').roughness=wet?.62:.82;material('earth').color.set(season()==='Kış'?'#c8d1d6':'#ffffff')}
-   if(now-lastShadow>200||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
+   if(now-lastShadow>(software?1000:250)||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
      lastShadow=now;lastX=cam.x;lastZ=cam.y;lastZoom=zoom;sun.target.position.set(cam.x,0,cam.y);sun.position.set(cam.x-25*Math.cos(ang),25+20*day,cam.y+23);const span=Math.max(14,Math.min(42,halfW+halfH+5));Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
    }
    if(quality!==lastQuality||now-lastAdapt>2500){lastQuality=quality;lastAdapt=now;const f=metrics.frames.slice(-120).sort((a,b)=>a-b);const p90=f[Math.floor(f.length*.9)]||16.7;
-     let next=quality==='high'?1:quality==='low'?.55:scale;
-     if(quality==='auto'&&f.length>=60){if(p90>18.3)next=Math.max(.50,scale-.08);else if(p90<16.9)next=Math.min(1,scale+.025)}
+     renderer.shadowMap.enabled=quality!=='low'&&!(software&&quality==='auto');let next=quality==='high'?1:quality==='low'?.55:scale;
+     if(quality==='auto'&&f.length>=60){if(p90>18.3)next=Math.max(.40,scale-.08);else if(p90<16.9)next=Math.min(1,scale+.025)}
      if(Math.abs(next-scale)>.005){scale=next;resize()}
    }
    renderer.info.reset();renderer.render(scene,camera);drawCount++;
