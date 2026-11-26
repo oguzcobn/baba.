@@ -168,7 +168,7 @@ const App = (() => {
     { id: 'yasam', name: ['YAŞAM. — İskeletli Canlılar Vadisi', 'LIFE. — Valley of Rigged Creatures'], tags: [['Simülasyon', 'Simulation'], ['UniRig', 'UniRig'], ['3D', '3D']], best: () => T('UniRig · canlı ekosistem', 'UniRig · living ecosystem') },
     { id: 'akvaryum', name: ['AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'], tags: [['Simülasyon', 'Simulation'], ['Biyomekanik', 'Biomechanics'], ['Huzur', 'Relaxing']], best: () => { try { const d = JSON.parse(localStorage.getItem('baba-akvaryum-v2') || 'null'); return d && d.fish ? T(`${d.fish.length} balık`, `${d.fish.length} fish`) : T('14 tür', '14 species'); } catch (_) { return T('14 tür', '14 species'); } } },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
-    { id: 'mete-cubugu', name: ['METE\'NİN ÇUBUĞU. — Osmanlı Kılıç Sanatı', 'METE\'S BLADE. — Ottoman Swordsmithing'], tags: [['Zanaat','Craft'],['Tarih','History'],['3D','3D']], best: () => T('7 kılıç · Bedesten mezadı', '7 swords · Bedesten auction') },
+    { id: 'mete-cubugu', name: ['Mete\'nin Çubuğu', 'Mete\'nin Çubuğu'], tags: [['Zanaat','Craft'],['Tarih','History'],['3D','3D']], best: () => T('7 kılıç · Bedesten mezadı', '7 swords · Bedesten auction') },
     { id: 'kartal', name: ['ALTIN KARTAL. — Uçuş & Avlanma Simülasyonu', 'GOLDEN EAGLE. — Flight & Hunting Sim'], tags: [['Simülasyon','Simulation'],['Doğa','Nature'],['3D','3D']], best: () => T('6-DoF uçuş · av · yuva', '6-DoF flight · hunt · nest') },
     { id: 'astra-orbit', name: ['ASTRA ORBIT. — Uzay Sektör Savaşı', 'ASTRA ORBIT. — Space Sector War'], tags: [['Uzay','Space'],['2.5D','2.5D'],['Aksiyon','Action']], best: () => { const b = +(localStorage.getItem('astra_orbit_25d_best') || 0); return b ? T('Rekor ' + b, 'Best ' + b) : T('4 sektör · 8 düşman', '4 sectors · 8 enemies'); } },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
@@ -593,9 +593,9 @@ const App = (() => {
   /* ==================== METE'NİN ÇUBUĞU. / OSMANLI KILIÇ SANATI ==================== */
   function meteCubugu() {
     openEmbeddedGame({
-      title: T('METE\'NİN ÇUBUĞU. — Osmanlı Kılıç Sanatı', 'METE\'S BLADE. — Ottoman Swordsmithing'),
+      title: T('Mete\'nin Çubuğu', 'Mete\'nin Çubuğu'),
       url: 'games/mete-cubugu/index.html?v=1',
-      tag: T('BABA. METE\'NİN ÇUBUĞU. · Zanaat · 3D', 'BABA. METE\'S BLADE. · Craft · 3D'),
+      tag: T('BABA. Mete\'nin Çubuğu · Zanaat · 3D', 'BABA. Mete\'nin Çubuğu · Craft · 3D'),
       lead: T('16. yüzyıl İstanbul ocağında usta kılıççı ol: siparişi seç, Şam çeliğini tavla, örste döv, su ver, bile ve Bedesten mezadında sat.', 'Be a master swordsmith in a 16th-century Istanbul forge: take the commission, heat Damascus steel, hammer it on the anvil, quench, grind and sell at the Bedesten auction.'),
       tip: T('Ocağı Yak ile atölyeye gir, Usta Defteri\'nden form ve çelik seç. 360° Müze Vitrini\'nde kılıçları fareyle döndürüp incele.', 'Enter the workshop with Light the Forge and pick form and steel from the Master\'s Ledger. Rotate swords with the mouse in the 360° Museum Showcase.')
     });
