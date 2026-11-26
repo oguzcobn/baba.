@@ -26,10 +26,19 @@ try {
  assert.equal(await page.evaluate(()=>__MA.world.units.filter(u=>!u.enemy).length),6);
  async function build(kind,x,y){
   await page.keyboard.press('Escape');await page.keyboard.press('b');await page.click('[data-build='+kind+']');
-  const pos=await page.evaluate(([x,y])=>__MA.project(x,y),[x,y]);
+  const pos=await page.evaluate(({kind,x,y})=>{
+   const size=__MA.buildingSize(kind);let startX=Math.floor(x-size/2),startY=Math.floor(y-size/2);
+   for(let r=0;r<=10;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){
+    if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+    const a=startX+dx,b=startY+dy;if(!__MA.canBuild(kind,a,b))continue;
+    const p=__MA.project(a+size/2+.25,b+size/2+.25),cv=document.querySelector('#map');
+    if(p.x>40&&p.y>40&&p.x<cv.clientWidth-40&&p.y<cv.clientHeight-40)return p;
+   }return null
+  },{kind,x,y});
+  assert.ok(pos,'No valid visible position for '+kind);
   await page.locator('#map').click({position:pos});
   await page.evaluate(()=>{for(let i=0;i<900;i++)__MA.step(.05)});
-  assert.equal(await page.evaluate(kind=>__MA.world.buildings.find(b=>!b.enemy&&b.type===kind)?.progress,kind),1);
+  assert.equal(await page.evaluate(kind=>__MA.world.buildings.find(b=>!b.enemy&&b.type===kind)?.progress,kind),1,'Construction failed for '+kind+' at '+JSON.stringify(pos));
  }
  await build('hq',24,27);
  await page.evaluate(()=>Object.assign(__MA.world.stock,{money:5000,mat:5000,food:5000,oil:5000}));
@@ -74,14 +83,14 @@ try {
  assert.ok(await page.evaluate(b=>__MA.world.stock.mat>b,before),'worker material delivery');
  report.playtest.gather=true;
  await page.click('#tech');await page.locator('#techbody button').click();await page.locator('#techdialog button').last().click();
- assert.equal(await page.evaluate(()=>__MA.world.stage),2);
+ assert.equal(await page.evaluate(()=>__MA.world.stage),2);report.playtest.research=true;
  await build('barracks',18,24);
  await page.keyboard.press('Escape');
- const bpos=await page.evaluate(()=>__MA.project(18,24,.2));
+ const bpos=await page.evaluate(()=>{const b=__MA.world.buildings.find(b=>!b.enemy&&b.type==='barracks');return __MA.project(b.x+1.5,b.y+1.5)});
  await page.locator('#map').click({position:bpos});
  // Select completed barracks via its footprint if needed.
  if(!(await page.locator('#commands button').filter({hasText:'Piyade'}).count())){
-   const p=await page.evaluate(()=>{const b=__MA.world.buildings.find(b=>!b.enemy&&b.type==='barracks');return __MA.project(b.x+1.5,b.y+1.5,.2)});
+   const p=await page.evaluate(()=>{const b=__MA.world.buildings.find(b=>!b.enemy&&b.type==='barracks');return __MA.project(b.x+1.5,b.y+1.5,.6)});
    await page.locator('#map').click({position:p});
  }
  await page.locator('#commands button').filter({hasText:'Piyade'}).click();
