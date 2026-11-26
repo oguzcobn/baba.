@@ -1,0 +1,32 @@
+name: Modern Age V0.6 ZIP
+on:
+  push:
+    branches: [package-modern-age-v06]
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and stage complete game
+        run: |
+          mkdir -p /tmp/modern-age-package
+          cp -a games/modern-age-2026/. /tmp/modern-age-package/
+          cp .github/workflows/modern-age-check.yml /tmp/modern-age-package/github-actions-modern-age-check.yml
+          printf '%s\n' '@echo off' 'cd /d "%~dp0"' 'start "" http://localhost:8080' 'python -m http.server 8080' > /tmp/modern-age-package/START-WINDOWS.bat
+          printf '%s\n' '#!/bin/sh' 'cd "$(dirname "$0")"' 'python3 -m http.server 8080' > /tmp/modern-age-package/start.sh
+          chmod +x /tmp/modern-age-package/start.sh
+          cd /tmp/modern-age-package
+          test -s index.html
+          test -s mansion-data.js
+          test -s renderer-three.js
+          test -s vendor/three.module.min.js
+          test -s vendor/THREE-LICENSE.txt
+          find . -type f -print
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Modern_Age_2026_V0.6
+          path: /tmp/modern-age-package/
+          if-no-files-found: error
+          retention-days: 90
