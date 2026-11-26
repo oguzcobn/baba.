@@ -926,13 +926,20 @@ function spawnFry(sp, pos, n, mom, dad){
 function physics(f, dt){
   const sp = SP[f.sp], M = f.M, TLm = f.TL / 100;
   // yönelim: Rodrigues dönüşü, en fazla Ω·dt
-  let d = f.dGoal || f.e;
+  // hedef yön alçak geçiren süzgeçten geçer (τ≈0,35 s): beyin kararları kare kare titremez
+  const dRaw = f.dGoal || f.e;
+  const kd = f.startle > 0 ? 1 : 1 - Math.exp(-dt / (dot(dRaw, f.e) < .3 ? .15 : .35));
+  f.dS = f.dS ? norm(add(mul(f.dS, 1 - kd), mul(dRaw, kd))) : dRaw;
+  let d = f.dS;
   if (Math.abs(d.y) > .7) d = norm(v3(d.x, Math.sign(d.y) * .7, d.z));
   const c = clamp(dot(f.e, d), -1, 1), ang = Math.acos(c);
-  const Om = Math.min(12, (sp.mode === 'bcf' ? 1.1 : 2.6) + f.U / Math.max(.15 * TLm, .002));
+  const Om = Math.min(6, (sp.mode === 'bcf' ? 1.1 : 2.6) + f.U / Math.max(.3 * TLm, .002));
+  // dönüş hızı eylemsizliği: istenen hız açıyla orantılı, ivmesi sınırlı (τ≈0,18 s)
+  const wDes = Math.min(Om, ang * 3.2);
+  f.wY = (f.wY || 0) + (wDes - (f.wY || 0)) * (1 - Math.exp(-dt / .18));
   if (ang > 1e-4){
     let ax = cross(f.e, d); if (len(ax) < 1e-6) ax = v3(0, 1, 0); ax = norm(ax);
-    const th = Math.min(ang, Om * dt), ct = Math.cos(th), st = Math.sin(th);
+    const th = Math.min(ang, f.wY * dt), ct = Math.cos(th), st = Math.sin(th);
     const k = ax, e = f.e;
     f.e = norm(add(add(mul(e, ct), mul(cross(k, e), st)), mul(k, dot(k, e) * (1 - ct))));
   }
@@ -941,7 +948,7 @@ function physics(f, dt){
   // dönüş hızı → gövde eğriliği (κ·TL)
   const psi = Math.atan2(f.e.z, f.e.x), dpsi = angDiff(psi, f.psi) / Math.max(dt, 1e-4); f.psi = psi;
   const kT = clamp(dpsi * TLm / Math.max(f.U, .35 * TLm), -1.2, 1.2) * (sp.mode === 'bcf' ? 1 : .3);
-  f.kTL += (kT - f.kTL) * Math.min(1, dt * 8);
+  f.kTL += (kT - f.kTL) * (1 - Math.exp(-dt * 4));
   // ileri hız: hızlan–süzül histerezisi
   let target = f.Ut;
   if (f.bcOn && target > .2 * TLm){
@@ -1000,7 +1007,7 @@ function updateFish(f, dt, steps = 1, h = dt){
 function startle(f){
   const s = R() < .5 ? 1 : -1, n = v3(-f.e.z, 0, f.e.x);
   f.startle = .14; f.cdir = s;
-  f.e = norm(add(mul(f.e, .1), mul(n, s)));
+  f.e = norm(add(mul(f.e, .1), mul(n, s))); f.dS = f.e; f.wY = 0;
   f.U = Math.max(f.U, SP[f.sp].Ub * .8 * f.TL / 100);
   f.coast = true;
 }
