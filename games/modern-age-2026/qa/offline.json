@@ -1,0 +1,9 @@
+{
+  "engine": "Three.js r170",
+  "draws": 83,
+  "player": "TR",
+  "units": 12,
+  "networkRequests": [],
+  "errors": [],
+  "exportImport": true
+}

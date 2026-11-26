@@ -12,7 +12,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 let browser;
 const errors=[],warnings=[],report={scenarios:[],viewport:[1280,800]};
 try {
- browser=await chromium.launch({args:process.env.GPU_HARDWARE==='1'?[]:['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist'],headless:process.env.HEADED!=='1'});
+ browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH || undefined,args:process.env.GPU_HARDWARE==='1'?[]:['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist'],headless:process.env.HEADED!=='1'});
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  page.on('pageerror',e=>errors.push(String(e)));
  page.on('console',m=>{if(m.type()==='warning'||m.type()==='error')warnings.push(m.text().slice(0,1000))});
@@ -68,7 +68,7 @@ try {
      const begin=performance.now(),frames=[];let prev=begin;
      await new Promise(resolve=>{function tick(now){if(now>prev)frames.push(now-prev);prev=now;if(now-begin>=ms)resolve();else requestAnimationFrame(tick)}requestAnimationFrame(tick)});
      const elapsed=performance.now()-begin;frames.sort((a,b)=>a-b);const q=p=>frames[Math.min(frames.length-1,Math.floor((frames.length-1)*p))]??null;
-     return {frames:frames.length,elapsedMs:elapsed,meanFPS:frames.length*1000/elapsed,p50Ms:q(.5),p95Ms:q(.95),p99Ms:q(.99),over16_7:frames.filter(x=>x>16.7).length,units:__MA.world.units.length,drawCalls:__MA.metrics.draws,triangles:__MA.metrics.triangles,resolution:__MA.renderer?.resolution??null,scale:__MA.metrics.scale};
+     return {samplesMs:frames,onePercentLowFPS:frames.length?1000/(frames.slice(-Math.ceil(frames.length*.01)).reduce((a,b)=>a+b,0)/Math.ceil(frames.length*.01)):null,frames:frames.length,elapsedMs:elapsed,meanFPS:frames.length*1000/elapsed,p50Ms:q(.5),p95Ms:q(.95),p99Ms:q(.99),over16_7:frames.filter(x=>x>16.7).length,units:__MA.world.units.length,drawCalls:__MA.metrics.draws,triangles:__MA.metrics.triangles,resolution:__MA.renderer?.resolution??null,scale:__MA.metrics.scale};
    },ms);report.scenarios.push({label,...result});
  }
  await page.waitForTimeout(1800);await sample('normal game');
@@ -106,7 +106,7 @@ try {
  await page.evaluate(()=>{for(let i=0;i<1400;i++)__MA.step(.05)});
  assert.ok(await page.evaluate(b=>__MA.world.stock.mat>b,before),'worker material delivery');
  report.playtest.gather=true;
- await page.click('#tech');await page.locator('#techbody button').click();await page.locator('#techdialog button').last().click();
+ await page.click('#tech');await page.locator('#techbody button').first().click();await page.locator('#techdialog button').last().click();
  assert.equal(await page.evaluate(()=>__MA.world.stage),2);report.playtest.research=true;
  await build('barracks',18,24);
  await page.keyboard.press('Escape');

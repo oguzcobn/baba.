@@ -1,33 +1,39 @@
-# Modern Age: 2026 — V0.4
+# Modern Age: 2026 • V0.7
 
-## Run
-Serve this directory over HTTP (ES modules cannot reliably be loaded from file://):
+Modern çağda geçen, altı ülkenin aynı temel istatistiklerle oynandığı tek oyunculu izometrik strateji oyunu. Bu sürüm, V0.6 üzerine kurulmuş oynanabilir geliştirme sürümüdür.
+
+## Oyna
+
+ZIP'i bir klasöre çıkarıp **OYNA.html** dosyasını güncel Chrome veya Edge ile aç. İnternet, Python ve kurulum gerekmez. Maçı başlat, B ile işçileri seç ve soldaki malzeme yığınına sağ tıkla. İşçiler yükü teslim edince stok çubuğu güncellenir. Kışla için inşaat panelinden bir yer seç. Tamamlanınca binayı seçip piyadeleri sıraya koy. Savaş ilanı Diplomasi panelindedir.
+
+Web sunucusu kullanıyorsan giriş dosyası **index.html**. Windows'ta Python yüklüyse START-WINDOWS.bat, macOS/Linux'ta `sh start.sh` kullanılabilir. Yerel sunucu adresi [localhost:8080](http://localhost:8080). WebGL2 bulunmadığında oyun Canvas görünümüne geçer.
+
+## Maç kuralları
+
+- Hazır karargâh, altı işçi, 500 para, 200 gıda, 350 malzeme, 100 petrol. Skirmish rakibi de aynı başlangıç bütçesini kullanır. Sandbox tek taraflıdır.
+- İşçi yükü 20 birimdir. Farklı kaynağa geçerken eski yük önce depoya taşınır. Hareket, inşaat ve dur komutları yükü korur. Uygun teslim noktası olmadan stok artmaz.
+- Konut +5 kapasite sağlar. Üretim başladığında maliyet ödenir, nüfus yeri ayrılır. Son sırayı iptal edince maliyet iade edilir. Çıkış doluysa sıra bekler. İnşaat iptali tamamlanmamış orana göre iade verir. İşçi ve askerler için toplanma noktası belirlenebilir.
+- Altyapı seviyesinde taşıma ekipmanı yükü 30'a çıkarır. Araştırma merkezinde hassas tarım veya modüler montaj geliştirilebilir. Bir enerji tesisi 20 kapasite sağlar. Fabrika 8, hangar 12, araştırma merkezi 4 tüketir. Arz yetersizken bu tesisler %50–100 hızda çalışır. Araştırma penceresi açıkken simülasyon durur.
+- Ticaret her tarafa saniyede 0,5 para kazandırır. İttifak için 60 saniye ticaret veya 100 prestij gerekir. Ateşkes 90 saniye boyunca ilişkiyi kilitler. Başlatma ekranında ek kültür, teknoloji, ekonomi veya diplomasi hedefi seçilebilir. Süreklilik koşulu bozulduğunda sayaç sıfırlanır. Rakip karargâhını savaşta düşürmek de maçı bitirir.
+- B işçileri, H karargâhı seçer. Ctrl+1…9 grup atar, sayı tuşu grubu çağırır. Seçili üretim binasında “Toplanma noktası”na basıp haritaya sağ tıkla. Kaydet/Yükle tarayıcı kaydını kullanır. Menü → Ayarlar içinden JSON indirilebilir ve içe aktarılabilir. Dosyadan ve sunucudan açılan oyunlar tarayıcının farklı depolama alanlarını kullanabilir.
+
+## Geliştirme ve test
+
+Simülasyon ve arayüz index.html, Three.js çizimi renderer-three.js, paket GLB okuyucusu landmark.js içindedir. GLB kaynağı ve dönüştürme betiği pakettedir. Kaydetme anahtarı V0.6 ile ortaktır. Yeni JSON zarfı version=7, world, seq alanlarını içerir. Eski maçlara başlangıç binaları eklenmez. Ülke, stok, konum ve nesne kimlikleri yükleme öncesi kontrol edilir. Özel dosya oynatıcısının aynı kaynaklardan yeniden üretimi:
+
 ```sh
-python -m http.server 8080
+python tools/build-offline.py
 ```
-Open http://localhost:8080. Three.js r170 is vendored under vendor/ with its MIT license; no CDN is needed. Canvas is a fallback only. The original V0.3 gameplay and save schema are preserved.
 
-## Design
-Six nations with shared rules and country-specific presentation; fixed isometric camera; detailed miniature 2.5D/3D models; natural colors; procedural maps; landmarks grant cultural prestige and bonuses. Türkiye's landmark is Trabzon Atatürk Köşkü.
+Testler için Node.js ve Playwright gerekir. Dağıtılan oyun bu araçlara bağımlı değildir.
 
-## V0.4 renderer
-- Three.js WebGLRenderer, orthographic camera matching selection coordinates, MeshStandardMaterial, ACES tone mapping, directional/hemisphere illumination, procedural PMREM environment and PBR surface normal maps.
-- Instanced static/dynamic geometry, viewport culling, zoom-aware character LOD, throttled shadow updates and adaptive internal resolution.
-- Existing vertex-colored landmark geometry imported into BufferGeometry; still an approximate architectural prototype.
-- The current physics system is unchanged. Rapier, calibrated architectural measurements, licensed photographic textures and skeletal models remain future tasks.
-
-## Verification
 ```sh
 npm install --no-save --package-lock=false playwright@1.51.1
 npx playwright install chromium
+node qa/regression.mjs
 node smoke.mjs
 ```
-The default test uses a software GPU, verifies actual Three.js initialization and rendering, constructs HQ and landmark, and samples normal / 100 / 500 / 1500-unit scenarios. Outputs modern-age-report.json and modern-age-preview.png.
-On a hardware-accelerated desktop with Node and Chromium:
-```sh
-GPU_HARDWARE=1 HEADED=1 REQUIRE_60FPS=1 node smoke.mjs
-```
-On Windows PowerShell, use $env:GPU_HARDWARE='1'; $env:HEADED='1'; $env:REQUIRE_60FPS='1'; node smoke.mjs.
-This test target is mean >=59 FPS and P95 <=17.5 ms in every scenario, not a universal fixed-FPS guarantee. Record actual GPU, resolution, scale and frame time results. Software rasterization is not accepted as evidence of hardware performance. Current CPU projection math was verified against actual Three.js r170; GPU render and performance results are pending verification. Photorealism is an art target, not a verified claim.
 
-Do not merge or publish until functional and visual quality gates are reviewed.
+Python Playwright ile `python qa/match.py` gerçek zamanlı maçı, `python qa/offline.py` çift tıklama yolunu ve JSON aktarımını test eder. CHROMIUM_PATH ile kurulu Chromium çalıştırılabilir dosyası seçilebilir. Geliştirme testlerinde dünya koordinatları tıklamaya nişan almak ve sonuçları okumak için kullanılır. match.py simülasyonu hızlandırmaz, kaynak veya HP değiştirmez. smoke.mjs ise senaryo hazırlığı, hızlandırılmış zaman ve zayıflatılmış karargâh kullanır.
+
+`modern-age-report.json` kısa WebGL ölçümlerini, `qa/` başlangıç karşılaştırmasını, regresyonları, maç olaylarını ve gerçek oyun görüntülerini içerir. Uygulanan maddeler ve bekleyen kabul kriterleri **GDD-V07.md** içindedir. Orijinal tasarım ve MASTER PROMPT **design/** altındadır.
