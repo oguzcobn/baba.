@@ -552,7 +552,7 @@ const App = (() => {
   function akvaryumGame() {
     openEmbeddedGame({
       title: T('AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'),
-      url: 'games/akvaryum/index.html?v=1',
+      url: 'games/akvaryum/index.html?v=3',
       tag: T('BABA. AKVARYUM. · Biyomekanik · 3D perspektif tank', 'BABA. AQUARIUM. · Biomechanics · 3D perspective tank'),
       lead: T('14 gerçek tatlı su balığı, gerçek yüzme fiziğiyle: gövdede yürüyen dalga, Lighthill itmesi, Reynolds sayısına bağlı sürüklenme, hızlan–süzül döngüsü, göğüs yüzgeciyle kürek ve Couzin sürü modeli. Besle, büyüt; lepistes canlı doğurur, koridoras T pozisyonu alır, beta köpük yuva kurar.', '14 real freshwater fish with real swimming physics: travelling body wave, Lighthill thrust, Reynolds-dependent drag, burst-and-coast, pectoral rowing and the Couzin schooling model. Feed them, raise them; guppies give birth, corydoras take the T-position, bettas build bubble nests.'),
       tip: T('Suya dokun: yem yüzeye düşer, pullar bir süre yüzüp batar. Balığa dokun: kuyruk vuruş frekansı, Strouhal ve Reynolds sayısı canlı görünür; “Bilim katmanı” sürü bölgelerini çizer. Işık düğmesi gece moduna geçer. Üreme süreleri oyunda hızlandırılmıştır.', 'Tap the water to drop food. Tap a fish to see live tail-beat frequency, Strouhal and Reynolds numbers; the science layer draws the schooling zones. The light button toggles night. Breeding times are accelerated.')
