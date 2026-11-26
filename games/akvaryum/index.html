@@ -926,13 +926,20 @@ function spawnFry(sp, pos, n, mom, dad){
 function physics(f, dt){
   const sp = SP[f.sp], M = f.M, TLm = f.TL / 100;
   // yönelim: Rodrigues dönüşü, en fazla Ω·dt
-  let d = f.dGoal || f.e;
+  // hedef yön alçak geçiren süzgeçten geçer (τ≈0,35 s): beyin kararları kare kare titremez
+  const dRaw = f.dGoal || f.e;
+  const kd = f.startle > 0 ? 1 : 1 - Math.exp(-dt / (dot(dRaw, f.e) < .3 ? .15 : .35));
+  f.dS = f.dS ? norm(add(mul(f.dS, 1 - kd), mul(dRaw, kd))) : dRaw;
+  let d = f.dS;
   if (Math.abs(d.y) > .7) d = norm(v3(d.x, Math.sign(d.y) * .7, d.z));
   const c = clamp(dot(f.e, d), -1, 1), ang = Math.acos(c);
-  const Om = Math.min(12, (sp.mode === 'bcf' ? 1.1 : 2.6) + f.U / Math.max(.15 * TLm, .002));
+  const Om = Math.min(6, (sp.mode === 'bcf' ? 1.1 : 2.6) + f.U / Math.max(.3 * TLm, .002));
+  // dönüş hızı eylemsizliği: istenen hız açıyla orantılı, ivmesi sınırlı (τ≈0,18 s)
+  const wDes = Math.min(Om, ang * 3.2);
+  f.wY = (f.wY || 0) + (wDes - (f.wY || 0)) * (1 - Math.exp(-dt / .18));
   if (ang > 1e-4){
     let ax = cross(f.e, d); if (len(ax) < 1e-6) ax = v3(0, 1, 0); ax = norm(ax);
-    const th = Math.min(ang, Om * dt), ct = Math.cos(th), st = Math.sin(th);
+    const th = Math.min(ang, f.wY * dt), ct = Math.cos(th), st = Math.sin(th);
     const k = ax, e = f.e;
     f.e = norm(add(add(mul(e, ct), mul(cross(k, e), st)), mul(k, dot(k, e) * (1 - ct))));
   }
@@ -941,7 +948,7 @@ function physics(f, dt){
   // dönüş hızı → gövde eğriliği (κ·TL)
   const psi = Math.atan2(f.e.z, f.e.x), dpsi = angDiff(psi, f.psi) / Math.max(dt, 1e-4); f.psi = psi;
   const kT = clamp(dpsi * TLm / Math.max(f.U, .35 * TLm), -1.2, 1.2) * (sp.mode === 'bcf' ? 1 : .3);
-  f.kTL += (kT - f.kTL) * Math.min(1, dt * 8);
+  f.kTL += (kT - f.kTL) * (1 - Math.exp(-dt * 4));
   // ileri hız: hızlan–süzül histerezisi
   let target = f.Ut;
   if (f.bcOn && target > .2 * TLm){
@@ -965,12 +972,16 @@ function physics(f, dt){
   f.p.x = clamp(f.p.x, m, Wc - m); f.p.z = clamp(f.p.z, m * .6, Dc - m * .6);
   f.p.y = clamp(f.p.y, f.TL * .15, Hc - f.TL * SP[f.sp].h * .35);
   // görsel faz: gerçek frekans 9 Hz üstünde ekranda örneklenemez, çizim fazı 9 Hz'de kırpılır
-  const fVis = Math.min(f.omega / TAU, 9);
-  f.phase += TAU * fVis * dt;
-  const ampT = f.omega > 1 ? clamp(.45 + f.omega / (TAU * 4), .45, 1) : 0;
-  f.amp += (ampT - f.amp) * Math.min(1, dt * (ampT > f.amp ? 14 : 9));
-  const fp = f.fan ? 3.5 : f.omegaP / TAU;
-  f.phaseP += TAU * Math.min(fp, 6) * dt + (sp.mode !== 'bcf' ? .8 * dt : 0);
+  // görsel dalga: gerçek kuyruk frekansı (5–20 Hz) ekranda titreme gibi görünür; çizimde 0,8–2,6 Hz'e
+  // sıkıştırılır ve frekans/genlik yumuşak değişir (vuruş↔süzülme geçişi ani değil)
+  const fReal = f.omega / TAU, fT = fReal > .2 ? .8 + 1.8 * (1 - Math.exp(-fReal / 6)) : .5;
+  f.fVis = (f.fVis || fT) + (fT - (f.fVis || fT)) * (1 - Math.exp(-dt * 2));
+  f.phase += TAU * f.fVis * dt;
+  const ampT = f.omega > 1 ? clamp(.4 + f.omega / (TAU * 8), .4, .8) : .12;
+  f.amp += (ampT - f.amp) * (1 - Math.exp(-dt * (ampT > f.amp ? 3 : 1.6)));
+  const fp = f.fan ? 2.2 : Math.min(f.omegaP / TAU, 2.6);
+  f.fP = (f.fP || fp) + (fp - (f.fP || fp)) * (1 - Math.exp(-dt * 2));
+  f.phaseP += TAU * f.fP * dt + (sp.mode !== 'bcf' ? .6 * dt : 0);
   f.ampP = f.fan ? 1 : clamp(f.omegaP / (TAU * 2.5), .15, 1);
 }
 
@@ -1000,7 +1011,7 @@ function updateFish(f, dt, steps = 1, h = dt){
 function startle(f){
   const s = R() < .5 ? 1 : -1, n = v3(-f.e.z, 0, f.e.x);
   f.startle = .14; f.cdir = s;
-  f.e = norm(add(mul(f.e, .1), mul(n, s)));
+  f.e = norm(add(mul(f.e, .1), mul(n, s))); f.dS = f.e; f.wY = 0;
   f.U = Math.max(f.U, SP[f.sp].Ub * .8 * f.TL / 100);
   f.coast = true;
 }
@@ -1078,7 +1089,7 @@ function lateral(f, u){
   let h = TL * env * f.amp * Math.sin(TAU * (u / lam) - f.phase);
   const ub = Math.min(u, 1) - uc;
   h += .5 * f.kTL * TL * ub * ub;
-  if (f.pose === 'sigmoid') h += TL * (.07 * Math.sin(TAU * (u * 1.05) + .4) + .008 * Math.sin(time * TAU * 7 + u * 4));
+  if (f.pose === 'sigmoid') h += TL * (.07 * Math.sin(TAU * (u * 1.05) + .4) + .006 * Math.sin(time * TAU * 2.2 + u * 4));
   if (f.pose === 'embrace') h += .5 * 3.4 * TL * (u - .45) * (u - .45) * (f.id % 2 ? 1 : -1);
   if (f.startle > 0){ const k = f.startle > .07 ? (0.14 - f.startle) / .07 : f.startle / .07; h += .5 * 3.2 * k * f.cdir * TL * (u - uc) * (u - uc); }
   if (f.sp === 'beta' && f.sex === 'm' || f.pose) h += 0;
@@ -1126,7 +1137,7 @@ function drawFish(f){
   // göğüs yüzgeci: kürek vuruşu
   const pu = .26, pp = projP(add(f.p, add(mul(e, (.42 - pu) * f.TL), add(mul(n, lateral(f, pu)), mul(up, -f.TL * SP[f.sp].h * .12)))));
   const bodyAng = Math.atan2(O[0][1] - O[N][1], O[0][0] - O[N][0]);
-  const flap = Math.sin(f.phaseP) * .55 * (f.ampP || .3), finL = f.TL * .13 * PX * s;
+  const flap = Math.sin(f.phaseP) * .4 * (f.ampP || .3), finL = f.TL * .13 * PX * s;
   ctx.save(); ctx.translate(pp[0], pp[1]); ctx.rotate(bodyAng + Math.PI + (O[0][0] > O[N][0] ? -1 : 1) * (.9 + flap));
   ctx.fillStyle = rgba(hex(f.col.fin), .4); ctx.beginPath(); ctx.ellipse(finL * .5, 0, finL * .6, finL * .24, 0, 0, TAU); ctx.fill(); ctx.restore();
 }
