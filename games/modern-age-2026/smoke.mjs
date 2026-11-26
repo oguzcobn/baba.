@@ -17,6 +17,12 @@ try {
  page.on('pageerror',e=>errors.push(String(e)));
  page.on('console',m=>{if(m.type()==='warning'||m.type()==='error')warnings.push(m.text().slice(0,1000))});
  await page.goto('http://127.0.0.1:'+server.address().port+'/index.html');
+ await page.locator('[data-menu-tab=help]').click();
+ assert.equal(await page.locator('[data-menu-panel=help]').isVisible(),true);
+ await page.locator('[data-menu-tab=settings]').click();
+ assert.equal(await page.locator('#menuquality').isVisible(),true);
+ await page.locator('[data-menu-tab=setup]').click();
+ await page.screenshot({path:'modern-age-menu.png'});
  await page.click('#new');
  await page.waitForFunction(()=>__MA.renderer?.engine==='Three.js r170',{},{timeout:20000}).catch(()=>{});
  report.engine=await page.evaluate(()=>__MA.renderer?.engine||'Canvas fallback');
@@ -40,7 +46,16 @@ try {
   await page.evaluate(()=>{for(let i=0;i<900;i++)__MA.step(.05)});
   assert.equal(await page.evaluate(kind=>__MA.world.buildings.find(b=>!b.enemy&&b.type===kind)?.progress,kind),1,'Construction failed for '+kind+' at '+JSON.stringify(pos));
  }
- await build('hq',24,27);
+ assert.equal(await page.evaluate(()=>__MA.world.buildings.filter(b=>!b.enemy&&b.type==='hq'&&b.progress===1).length),1,'completed starting HQ');
+ assert.equal(await page.evaluate(()=>__MA.world.units.filter(u=>!u.enemy).length),6,'six starting workers');
+ assert.equal(await page.evaluate(()=>__MA.world.stock.money),500,'no starting HQ charge');
+ await page.click('#homebase');
+ assert.ok(await page.locator('#info').innerText().then(t=>t.includes('Yönetim merkezi')));
+ await page.keyboard.press('Escape');await page.keyboard.press('b');
+ await page.locator('[data-category=military]').click();
+ assert.equal(await page.locator('[data-build=barracks]').isVisible(),true);
+ assert.equal(await page.locator('[data-build=farm]').isVisible(),false);
+ await page.locator('[data-category=all]').click();
  await page.evaluate(()=>Object.assign(__MA.world.stock,{money:5000,mat:5000,food:5000,oil:5000}));
  await build('landmark',23,34);
  assert.equal(await page.evaluate(()=>__MA.world.prestige),100);
@@ -74,7 +89,16 @@ try {
  report.playtest={};
  await page.click('#menu');await page.selectOption('#mode','skirmish');await page.selectOption('#opponent','GR');await page.selectOption('#difficulty','easy');await page.click('#new');
  assert.equal(await page.evaluate(()=>__MA.world.enemyCountry),'GR');
- await build('hq',24,27);
+ assert.equal(await page.evaluate(()=>__MA.world.buildings.filter(b=>!b.enemy&&b.type==='hq'&&b.progress===1).length),1,'completed starting HQ');
+ assert.equal(await page.evaluate(()=>__MA.world.units.filter(u=>!u.enemy).length),6,'six starting workers');
+ assert.equal(await page.evaluate(()=>__MA.world.stock.money),500,'no starting HQ charge');
+ await page.click('#homebase');
+ assert.ok(await page.locator('#info').innerText().then(t=>t.includes('Yönetim merkezi')));
+ await page.keyboard.press('Escape');await page.keyboard.press('b');
+ await page.locator('[data-category=military]').click();
+ assert.equal(await page.locator('[data-build=barracks]').isVisible(),true);
+ assert.equal(await page.locator('[data-build=farm]').isVisible(),false);
+ await page.locator('[data-category=all]').click();
  await page.keyboard.press('Escape');await page.keyboard.press('b');
  const gather=await page.evaluate(()=>__MA.project(13.5,20.5));
  await page.locator('#map').click({position:gather,button:'right'});
@@ -109,6 +133,7 @@ try {
  assert.equal(await page.evaluate(()=>__MA.world.outcome),'Zafer');
  assert.equal(await page.locator('#resultdialog').evaluate(e=>e.open),true);
  report.playtest.combatFixture=true;
+ report.startupAndMenus=true;
  assert.deepEqual(errors,[]);
  assert.equal(report.webgl2,true,'Actual Three.js renderer unavailable; fallback is not a pass');
  report.targetVerified=!report.software&&report.scenarios.every(s=>s.meanFPS>=59&&s.p95Ms<=17.5);
