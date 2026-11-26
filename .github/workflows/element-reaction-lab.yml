@@ -1,0 +1,29 @@
+name: ELEMENT reaction laboratory
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'games/element/**'
+      - 'tests/element-reaction-lab*'
+      - '.github/workflows/element-reaction-lab.yml'
+  pull_request:
+    paths:
+      - 'games/element/**'
+      - 'tests/element-reaction-lab*'
+      - '.github/workflows/element-reaction-lab.yml'
+  workflow_dispatch:
+jobs:
+  reaction-lab:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.2-noble
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tests/element-reaction-lab.cjs
+      - run: npm install --no-save --package-lock=false @playwright/test@1.58.2
+      - run: python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/element-http.log 2>&1 &
+      - run: npx playwright test tests/element-reaction-lab.spec.cjs --reporter=line --workers=1
