@@ -159,5 +159,5 @@ function techRender(){ensureV05();const root=$('techbody');root.innerHTML='<p>Me
 $('tech').onclick=()=>{techRender();$('techdialog').showModal()};
 $('resultreview').onclick=()=>{$('resultdialog').close();paused=true};
 $('resultrestart').onclick=()=>{$('resultdialog').close();$('start').showModal()};
-newWorld(2026,'TR');resize();bootThree();drawMini();resHud();requestAnimationFrame(loop);$('start').showModal();window.__MA={get world(){return world},get selected(){return [...selected]},project,unproject,buildAt,step,command,spawnUnit,queueUnit,ensureV2,ensureV05,get metrics(){return metrics},get renderer(){return three},get debris(){return debris},get placing(){return placing}};
+newWorld(2026,'TR');resize();bootThree();drawMini();resHud();requestAnimationFrame(loop);$('start').showModal();window.__MA={get world(){return world},get selected(){return [...selected]},project,unproject,buildAt,step,command,spawnUnit,queueUnit,ensureV2,ensureV05,canBuild:(kind,x,y)=>!!defs[kind]&&validBuild(x,y,defs[kind].size),buildingSize:kind=>defs[kind]?.size,get metrics(){return metrics},get renderer(){return three},get debris(){return debris},get placing(){return placing}};
 })();</script></body></html>
