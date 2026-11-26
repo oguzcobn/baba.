@@ -154,7 +154,8 @@
       const bonesT = c.filter(x => boneChildren(x).length).slice(0, 8);
       if (!bonesT.length || !bonesT[0].parent || !bonesT[0].parent.isBone) return;
       const d = probe(root, bonesT[0], UP, 0.1, c[c.length - 1]);
-      info.tails.push({ bones: bonesT.map(x => x.name), sideSign: d.dot(lat) >= 0 ? 1 : -1 });
+      const du = probe(root, bonesT[0], lat, 0.1, c[c.length - 1]);
+      info.tails.push({ bones: bonesT.map(x => x.name), sideSign: d.dot(lat) >= 0 ? 1 : -1, upSign: du.y >= 0 ? 1 : -1 });
     });
     // Gövde nefesi için kökten boyna omurga.
     let s = bones.find(b => !(b.parent && b.parent.isBone));
@@ -198,24 +199,29 @@
       this.q.setFromAxisAngle(ax[axisKey], angle);
       b.quaternion.premultiply(this.q);
     }
-    /* s: { speed (m/s, model ölçeğinde), head (0 dik … 1 tamamen aşağı), flying, flapRate, sleep, scale } */
+    /* s: { speed (m/s), scale, head (-1 yukarı … 1 tamamen aşağı), gait ('walk'|'gallop'), crouch 0..1,
+     *      lie 0..1 (yatma), look (rad, başı yana çevir), alarm 0..1 (kuyruk kalkar), flying, flapRate, sleep } */
     update(dt, s) {
       const I = this.info;
       this.touched.forEach(n => { const b = this.map.get(n); b && b.quaternion.copy(this.rest.get(n)); });
-      const stride = Math.max(I.legLen * 2.2 * (s.scale || 1), 0.05);
+      const gallop = s.gait === 'gallop' ? 1 : 0;
+      // Dörtnalda adım boyu bacak boyunun ~5 katı (Alexander 1984), yürüyüşte ~2.2 katı.
+      const stride = Math.max(I.legLen * (s.scale || 1) * (gallop ? 5 : 2.2), 0.05);
       const speed = s.speed || 0;
       this.phase += dt * (speed / stride) * Math.PI * 2;
       const moving = Math.min(1, speed / (0.25 * stride + 1e-6));
       const ph = this.phase, two = Math.PI * 2;
-      // Yürüyüş: dörtlüde yanal sıra (LH 0, LF .25, RH .5, RF .75), ikilide karşı faz.
+      const lie = s.lie || 0, crouch = s.crouch || 0;
+      // Yürüyüş: yanal sıra LH 0, LF .25, RH .5, RF .75. Dörtnal (döner): LH 0, RH .1, LF .5, RF .6.
       I.legs.forEach(l => {
         let off;
-        if (I.gait === 'dört') off = (l.left ? 0 : 0.5) + (l.front ? 0.25 : 0);
-        else off = l.left ? 0 : 0.5;
+        if (I.gait === 'dört') off = gallop ? (l.front ? 0.5 : 0) + (l.left ? 0 : 0.1) : (l.left ? 0 : 0.5) + (l.front ? 0.25 : 0);
+        else off = gallop ? (l.left ? 0 : 0.1) : (l.left ? 0 : 0.5);
         const a = ph + off * two;
-        const amp = (s.flying ? 0 : 0.42) * moving;
-        this.rot(l.top, 'lat', l.swingSign * amp * Math.sin(a));
-        if (l.knee) this.rot(l.knee, 'lat', l.kneeSign * (moving * 0.55 * Math.max(0, Math.cos(a)) + (s.flying ? 0.6 : 0) + (s.sleep ? 0.35 : 0)));
+        const amp = (s.flying ? 0 : 0.42 + 0.3 * gallop) * moving * (1 - lie);
+        this.rot(l.top, 'lat', l.swingSign * (amp * Math.sin(a) + lie * (l.front ? 0.5 : -0.4)));
+        if (l.knee) this.rot(l.knee, 'lat', l.kneeSign * ((moving * (0.55 + 0.35 * gallop) * Math.max(0, Math.cos(a))) * (1 - lie)
+          + (s.flying ? 0.6 : 0) + crouch * 0.7 + lie * 1.5));
       });
       I.arms.forEach(a => {
         const legPh = ph + (a.left ? 0.5 : 0) * two; // kol, aynı taraftaki bacağın tersine
@@ -227,15 +233,22 @@
         const f = s.flying ? Math.sin(this.flap) * 0.85 + 0.15 : -0.15;
         w.bones.forEach((n, i) => this.rot(n, 'fwd', w.upSign * f * (i ? 0.35 : 1)));
       });
-      this.wave += dt * (1.2 + speed * 0.8);
-      I.tails.forEach(t => t.bones.forEach((n, i) => this.rot(n, 'up', t.sideSign * 0.18 * Math.sin(this.wave - i * 0.7) * (1 + moving))));
+      this.wave += dt * (1.2 + speed * 0.5 + (s.alarm || 0) * 4);
+      I.tails.forEach(t => t.bones.forEach((n, i) => {
+        this.rot(n, 'up', t.sideSign * 0.18 * Math.sin(this.wave - i * 0.7) * (1 + moving) * (1 - lie * 0.7));
+        if (i === 0 && t.upSign) this.rot(n, 'lat', t.upSign * ((s.alarm || 0) * 0.9 + gallop * 0.3));
+      }));
       if (I.neck) {
         const k = I.neck.bones.length;
-        const down = (s.head || 0) * 1.1 + (s.sleep ? 0.35 : 0);
-        const bob = moving * 0.05 * Math.sin(ph * 2);
-        I.neck.bones.forEach((n, i) => this.rot(n, 'lat', I.neck.downSign * (down / k + (i === 0 ? bob : 0))));
+        const down = (s.head || 0) * 1.1 + (s.sleep ? 0.35 : 0) + crouch * 0.25;
+        const bob = moving * (0.05 + 0.12 * gallop) * Math.sin(ph * 2);
+        I.neck.bones.forEach((n, i) => {
+          this.rot(n, 'lat', I.neck.downSign * (down / k + (i === 0 ? bob : 0)));
+          if (s.look) this.rot(n, 'up', s.look / k);
+        });
       }
-      const br = Math.sin(this.wave * (s.sleep ? 0.4 : 1)) * 0.012;
+      // Omurga: nefes + dörtnalda bükülme-açılma (çita/at gibi).
+      const br = Math.sin(this.wave * (s.sleep ? 0.4 : 1)) * 0.012 + gallop * moving * 0.12 * Math.sin(ph);
       I.spine.forEach(n => this.rot(n, 'lat', br));
     }
   }
