@@ -12,7 +12,7 @@ await new Promise(r=>server.listen(0,'127.0.0.1',r));
 let browser;
 const errors=[],warnings=[],report={scenarios:[],viewport:[1280,800]};
 try {
- browser=await chromium.launch({args:['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist']});
+ browser=await chromium.launch({args:process.env.GPU_HARDWARE==='1'?[]:['--enable-unsafe-swiftshader','--use-gl=angle','--use-angle=swiftshader','--ignore-gpu-blocklist'],headless:process.env.HEADED!=='1'});
  const page=await browser.newPage({viewport:{width:1280,height:800}});
  page.on('pageerror',e=>errors.push(String(e)));
  page.on('console',m=>{if(m.type()==='warning'||m.type()==='error')warnings.push(m.text().slice(0,1000))});
@@ -52,11 +52,15 @@ try {
  for(const count of [100,500,1500]){
    await page.evaluate(count=>{
      const w=__MA.world;w.mode='sandbox';w.units=Array.from({length:count},(_,i)=>{
-       let x=5+(i%50)*.60,y=5+Math.floor(i/50)*.60;
-       return {id:100000+i,x,y,tx:x+.15,ty:y,role:'idle',kindUnit:'worker',path:[{x:x+.15,y}],walk:0,angle:0,hp:55,carry:0};
+       let x=6+(i%50)*.55,y=19+Math.floor(i/50)*.55;
+       return {id:100000+i,x,y,tx:x+.35,ty:y,role:'idle',kindUnit:'worker',path:[{x:x+.35,y}],walk:0,angle:0,hp:55,carry:0};
      });
+     if(window.__benchTimer)clearInterval(window.__benchTimer);
+     let direction=1;
+     window.__benchTimer=setInterval(()=>{direction=-direction;for(const u of w.units){u.tx=u.x+direction*.35;u.ty=u.y;u.path=[{x:u.tx,y:u.ty}]}},750);
    },count);await page.waitForTimeout(1000);await sample(count+' unit render + simulation');
  }
+ await page.evaluate(()=>clearInterval(window.__benchTimer));
  assert.deepEqual(errors,[]);
  assert.equal(report.webgl2,true,'Actual Three.js renderer unavailable; fallback is not a pass');
  report.targetVerified=!report.software&&report.scenarios.every(s=>s.meanFPS>=59&&s.p95Ms<=17.5);
