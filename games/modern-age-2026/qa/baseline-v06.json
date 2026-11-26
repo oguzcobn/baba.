@@ -1,0 +1,95 @@
+{
+  "scenarios": [
+    {
+      "label": "normal game",
+      "frames": 50,
+      "elapsedMs": 6116,
+      "meanFPS": 8.175277959450622,
+      "p50Ms": 116.70000000000073,
+      "p95Ms": 233.3000000000011,
+      "p99Ms": 266.7000000000007,
+      "over16_7": 47,
+      "units": 15,
+      "drawCalls": 84,
+      "triangles": 93838,
+      "resolution": [
+        524,
+        228
+      ],
+      "scale": 0.41000000000000003
+    },
+    {
+      "label": "100 unit render + simulation",
+      "frames": 57,
+      "elapsedMs": 6088.899999999907,
+      "meanFPS": 9.361296785954913,
+      "p50Ms": 83.40000000000146,
+      "p95Ms": 216.70000000000073,
+      "p99Ms": 233.29999999999927,
+      "over16_7": 56,
+      "units": 100,
+      "drawCalls": 84,
+      "triangles": 125798,
+      "resolution": [
+        512,
+        223
+      ],
+      "scale": 0.4
+    },
+    {
+      "label": "500 unit render + simulation",
+      "frames": 43,
+      "elapsedMs": 6076.29999999993,
+      "meanFPS": 7.076674950216496,
+      "p50Ms": 133.29999999999927,
+      "p95Ms": 266.6000000000058,
+      "p99Ms": 300,
+      "over16_7": 41,
+      "units": 500,
+      "drawCalls": 84,
+      "triangles": 182198,
+      "resolution": [
+        512,
+        223
+      ],
+      "scale": 0.4
+    },
+    {
+      "label": "1500 unit render + simulation",
+      "frames": 34,
+      "elapsedMs": 6222.5,
+      "meanFPS": 5.464041783848935,
+      "p50Ms": 150.09999999999854,
+      "p95Ms": 433.40000000000146,
+      "p99Ms": 483.3000000000029,
+      "over16_7": 31,
+      "units": 1500,
+      "drawCalls": 84,
+      "triangles": 370198,
+      "resolution": [
+        512,
+        223
+      ],
+      "scale": 0.4
+    }
+  ],
+  "viewport": [
+    1280,
+    800
+  ],
+  "engine": "Three.js r170",
+  "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+  "software": true,
+  "webgl2": true,
+  "playtest": {
+    "gather": true,
+    "research": true,
+    "production": true,
+    "save": true,
+    "combatFixture": true
+  },
+  "startupAndMenus": true,
+  "targetVerified": false,
+  "errors": [],
+  "warnings": []
+}

@@ -1,0 +1,102 @@
+[
+  {
+    "event": "first delivery",
+    "seconds": 18.55000000000013,
+    "stock": {
+      "money": 500,
+      "food": 200,
+      "mat": 369.99999999999994,
+      "oil": 100
+    },
+    "opponent": {
+      "stock": {
+        "money": 360,
+        "food": 149.99999999999997,
+        "mat": 270,
+        "oil": 100
+      },
+      "next": 26.00000000000012,
+      "trained": 1,
+      "order": {
+        "kind": "infantry",
+        "left": 4.450000000000002,
+        "building": 27
+      }
+    },
+    "units": 13,
+    "result": ""
+  },
+  {
+    "event": "four infantry trained",
+    "seconds": 47.59999999999943,
+    "stock": {
+      "money": 170,
+      "food": 60,
+      "mat": 159.99999999999994,
+      "oil": 100
+    },
+    "opponent": {
+      "stock": {
+        "money": 344.9999999999997,
+        "food": 164.9999999999998,
+        "mat": 339.99999999999966,
+        "oil": 100
+      },
+      "next": 50.099999999999746,
+      "trained": 5,
+      "order": null
+    },
+    "units": 21,
+    "result": ""
+  },
+  {
+    "event": "enemy HQ ordered",
+    "seconds": 48.29999999999939,
+    "stock": {
+      "money": 170,
+      "food": 60,
+      "mat": 159.99999999999994,
+      "oil": 100
+    },
+    "opponent": {
+      "stock": {
+        "money": 344.9999999999997,
+        "food": 164.9999999999998,
+        "mat": 339.99999999999966,
+        "oil": 100
+      },
+      "next": 50.099999999999746,
+      "trained": 5,
+      "order": null
+    },
+    "units": 21,
+    "result": ""
+  },
+  {
+    "event": "match ended",
+    "seconds": 66.89999999999834,
+    "stock": {
+      "money": 170,
+      "food": 60,
+      "mat": 159.99999999999994,
+      "oil": 100
+    },
+    "opponent": {
+      "stock": {
+        "money": 329.99999999999955,
+        "food": 119.99999999999972,
+        "mat": 359.9999999999996,
+        "oil": 100
+      },
+      "next": 74.24999999999838,
+      "trained": 7,
+      "order": {
+        "kind": "infantry",
+        "left": 4.350000000000002,
+        "building": 27
+      }
+    },
+    "units": 23,
+    "result": "Yenilgi"
+  }
+]

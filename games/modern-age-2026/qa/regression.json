@@ -1,0 +1,80 @@
+{
+  "errors": [],
+  "startMatrix": 200,
+  "queue": "reserve / refund / capacity / timed completion passed",
+  "cargo": "material carried to depot before new food order",
+  "freight": "one-time upgrade and save/load passed",
+  "truce": "truce held then expired; opponent trained troops",
+  "victories": [
+    "Kültür",
+    "Ekonomi",
+    "Teknoloji",
+    "Diplomasi"
+  ],
+  "research": "cancel, refund, energy slowdown and completion passed",
+  "invalidSave": true,
+  "aiMatches": [
+    {
+      "seed": 101,
+      "seconds": 47.79999999999942,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 102,
+      "seconds": 47.199999999999456,
+      "trained": 4,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 103,
+      "seconds": 42.8499999999997,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 104,
+      "seconds": 47.79999999999942,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 105,
+      "seconds": 47.199999999999456,
+      "trained": 4,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 106,
+      "seconds": 42.8499999999997,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 107,
+      "seconds": 47.79999999999942,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 108,
+      "seconds": 47.199999999999456,
+      "trained": 4,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 109,
+      "seconds": 42.8499999999997,
+      "trained": 5,
+      "result": "Yenilgi"
+    },
+    {
+      "seed": 110,
+      "seconds": 47.79999999999942,
+      "trained": 5,
+      "result": "Yenilgi"
+    }
+  ],
+  "constructionAndGroups": "group recall, construction refund, persistent rally destination passed",
+  "passed": true
+}

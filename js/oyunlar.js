@@ -7,11 +7,12 @@
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
   const IMPORTED_ARCADE = new Set(["ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
-  const COVER = (id, w) => IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
-  const SRCSET = id => IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
+  const COVER = (id, w) => id === 'modern-age-2026' ? `img/library/modern-age-2026-${w <= 640 ? 640 : 1280}.webp` : IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
+  const SRCSET = id => id === 'modern-age-2026' ? `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w` : IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
+    'modern-age-2026': {cat:'str',accent:'#d7b579',time:['6 ülke','6 nations'],isNew:true,blurb:['İşçilerini yönet, üs kur ve 2026 dünyasında ekonomik, diplomatik ya da askerî zafer kazan.','Manage workers, build a base and pursue economic, diplomatic or military victory in 2026.']},
     ambermere: {cat:'sim',accent:'#e5a477',time:['30 tür','30 species'],isNew:true,blurb:['Gün batımında oltanı at, yakaladığın balığı üç boyutlu incele ve göle bırak.','Cast at sunset, inspect your catch in 3D and release it into the lake.']},
     element: {cat:'sim',accent:'#5eead4',time:['37 madde','37 materials'],isNew:true,blurb:['Kum, su, lav, elektrik ve rüzgârla kendi fizik dünyanı kur.','Build your own physics world with sand, water, lava, electricity and wind.']},
     subterra: {cat:'arc',accent:'#e8b476',time:['2.5D aksiyon','2.5D action'],isNew:true,blurb:['Dev kum solucanı ol: yerin altından fırla, insanları, arabaları ve helikopterleri kap, binaları alttan yık; polis ve ordu sana ateş ediyor.','Be a giant sandworm: burst from underground, grab people, cars and helicopters, topple buildings from below while police and army shoot back.']},
@@ -65,7 +66,7 @@ const BABALibrary = (() => {
     { id: 'all', tr: 'Tümü', en: 'All' }, { id: 'foot', tr: 'Futbol', en: 'Football' }, { id: 'str', tr: 'Strateji', en: 'Strategy' },
     { id: 'sim', tr: 'Simülasyon', en: 'Simulation' }, { id: 'puz', tr: 'Bulmaca', en: 'Puzzle' }, { id: 'arc', tr: 'Arcade', en: 'Arcade' }, { id: 'web', tr: 'Web Oyunları', en: 'Web Games' }
   ];
-  const SPOTLIGHT = ['mudafi', 'mete-cubugu', 'kartal', 'astra-orbit', 'lanternlight', 'ambermere', 'yasam', 'akvaryum', 'element', 'subterra', 'living-island', 'amsterdam-coffeeshop', 'koy', 'yelken', 'pelagos', 'serpentia', 'dune', 'operasyon-hatti', 'simitci', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
+  const SPOTLIGHT = ['modern-age-2026', 'mudafi', 'mete-cubugu', 'kartal', 'astra-orbit', 'lanternlight', 'ambermere', 'yasam', 'akvaryum', 'element', 'subterra', 'living-island', 'amsterdam-coffeeshop', 'koy', 'yelken', 'pelagos', 'serpentia', 'dune', 'operasyon-hatti', 'simitci', 'yayla-savunmasi', 'sis-hatti', 'runaway-cheese', 'rota-conference', 'kafa-topu', 'hungry-shark', 'yilan-arenasi', 'age-of-war', 'wild-ones-world', 'dsan-shipyard'];
   const ls = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
   const icon = d => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
   const I = { play: 'M7 4.5v15l12.5-7.5z', pause: 'M8 5v14M16 5v14', arrow: 'M7 17L17 7M9 7h8v8', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 4a7 7 0 100 14 7 7 0 000-14zM21 21l-4.3-4.3', trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0zM17 6h3a3 3 0 01-3 4M7 6H4a3 3 0 003 4', spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z', clock: 'M12 7v5l3 2M12 3a9 9 0 100 18 9 9 0 000-18z', prev: 'M15 6l-6 6 6 6', next: 'M9 6l6 6-6 6' };
