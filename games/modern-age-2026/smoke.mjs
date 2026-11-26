@@ -61,6 +61,45 @@ try {
    },count);await page.waitForTimeout(1000);await sample(count+' unit render + simulation');
  }
  await page.evaluate(()=>clearInterval(window.__benchTimer));
+ // A UI-driven playthrough, with accelerated simulation and explicitly seeded combat fixtures.
+ report.playtest={};
+ await page.click('#menu');await page.selectOption('#mode','skirmish');await page.selectOption('#opponent','GR');await page.selectOption('#difficulty','easy');await page.click('#new');
+ assert.equal(await page.evaluate(()=>__MA.world.enemyCountry),'GR');
+ await build('hq',24,27);
+ await page.keyboard.press('Escape');await page.keyboard.press('b');
+ const gather=await page.evaluate(()=>__MA.project(13.5,20.5));
+ await page.locator('#map').click({position:gather,button:'right'});
+ const before=await page.evaluate(()=>__MA.world.stock.mat);
+ await page.evaluate(()=>{for(let i=0;i<1400;i++)__MA.step(.05)});
+ assert.ok(await page.evaluate(b=>__MA.world.stock.mat>b,before),'worker material delivery');
+ report.playtest.gather=true;
+ await page.click('#tech');await page.locator('#techbody button').click();await page.locator('#techdialog button').last().click();
+ assert.equal(await page.evaluate(()=>__MA.world.stage),2);
+ await build('barracks',18,24);
+ await page.keyboard.press('Escape');
+ const bpos=await page.evaluate(()=>__MA.project(18,24,.2));
+ await page.locator('#map').click({position:bpos});
+ // Select completed barracks via its footprint if needed.
+ if(!(await page.locator('#commands button').filter({hasText:'Piyade'}).count())){
+   const p=await page.evaluate(()=>{const b=__MA.world.buildings.find(b=>!b.enemy&&b.type==='barracks');return __MA.project(b.x+1.5,b.y+1.5,.2)});
+   await page.locator('#map').click({position:p});
+ }
+ await page.locator('#commands button').filter({hasText:'Piyade'}).click();
+ assert.equal(await page.evaluate(()=>__MA.world.production.length),1);
+ await page.evaluate(()=>{for(let i=0;i<120;i++)__MA.step(.05)});
+ assert.equal(await page.evaluate(()=>__MA.world.units.filter(u=>!u.enemy&&u.kindUnit==='infantry').length),1);
+ report.playtest.production=true;
+ await page.click('#save');
+ await page.click('#menu');await page.click('#new');await page.click('#load');
+ assert.equal(await page.evaluate(()=>__MA.world.stage),2);
+ report.playtest.save=true;
+ await page.click('#diplomacy');await page.locator('#dipbody button').filter({hasText:'Savaş'}).click();await page.locator('#dip > button').click();
+ assert.equal(await page.evaluate(()=>__MA.world.relation),'war');
+ // Put one player unit by a weakened fictional enemy HQ to isolate actual combat resolution.
+ await page.evaluate(()=>{const w=__MA.world,b=w.buildings.find(b=>b.enemy&&b.type==='hq'),u=w.units.find(u=>!u.enemy&&u.kindUnit==='infantry');w.units=w.units.filter(v=>!v.enemy);b.hp=8;u.x=b.x-.6;u.y=b.y+1.5;u.attack=b.id;u.cool=0;u.path=[];for(let i=0;i<100&&!w.outcome;i++)__MA.step(.05)});
+ assert.equal(await page.evaluate(()=>__MA.world.outcome),'Zafer');
+ assert.equal(await page.locator('#resultdialog').evaluate(e=>e.open),true);
+ report.playtest.combatFixture=true;
  assert.deepEqual(errors,[]);
  assert.equal(report.webgl2,true,'Actual Three.js renderer unavailable; fallback is not a pass');
  report.targetVerified=!report.software&&report.scenarios.every(s=>s.meanFPS>=59&&s.p95Ms<=17.5);
