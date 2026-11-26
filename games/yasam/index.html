@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1c2620">
+<title>YAŞAM. — İskeletli Canlılar Vadisi</title>
+<style>
+:root{--bg:#141b17;--panel:rgba(20,28,24,.82);--line:rgba(220,235,220,.14);--ink:#eef3ec;--soft:#a9b8ad;--acc:#9fe0a8;--warn:#f2c46d}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:rgba(255,255,255,.07);border-radius:10px;padding:8px 11px;min-height:40px}
+button:hover{background:rgba(255,255,255,.14)}button.on{background:rgba(159,224,168,.22);border-color:rgba(159,224,168,.55)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pan{position:fixed;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+#top{left:12px;top:calc(12px + env(safe-area-inset-top));padding:9px 13px;max-width:calc(100vw - 24px)}
+#top b{font-size:19px;letter-spacing:-.03em}#top b span{color:var(--acc)}
+#top small{display:block;color:var(--soft);font-size:12px}
+#clock{font-variant-numeric:tabular-nums;color:var(--warn);font-weight:600}
+#bar{left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));padding:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px)}
+#side{right:12px;top:calc(12px + env(safe-area-inset-top));width:min(300px,calc(100vw - 24px));padding:12px 14px;max-height:calc(100dvh - 120px);overflow:auto;touch-action:pan-y}
+#side h2{margin:0 0 2px;font-size:17px}#side .sub{color:var(--soft);font-size:12px;margin-bottom:8px}
+.need{margin:7px 0}.need label{display:flex;justify-content:space-between;font-size:12px;color:var(--soft)}
+.need div{height:7px;border-radius:7px;background:rgba(255,255,255,.08);overflow:hidden}.need i{display:block;height:100%;background:linear-gradient(90deg,#6fc489,#c6e88f);border-radius:7px;transition:width .4s}
+.need.bad i{background:linear-gradient(90deg,#e7905a,#f2c46d)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px;margin-top:8px}.kv span{color:var(--soft)}
+#side[hidden],#log[hidden]{display:none}
+#log{left:12px;bottom:calc(76px + env(safe-area-inset-bottom));width:min(320px,calc(100vw - 24px));padding:9px 12px;font-size:12px;color:var(--soft);max-height:150px;overflow:hidden}
+#log p{margin:2px 0}#log p b{color:var(--ink);font-weight:600}
+#load{position:fixed;inset:0;display:grid;place-content:center;text-align:center;background:var(--bg);z-index:9;transition:opacity .6s}
+#load b{font-size:34px;letter-spacing:-.04em}#load b span{color:var(--acc)}#load p{color:var(--soft)}
+#load.off{opacity:0;pointer-events:none}
+.x{float:right;min-height:32px;padding:2px 9px}
+@media(max-width:640px){#side{top:auto;bottom:calc(132px + env(safe-area-inset-bottom));max-height:40dvh}#log{display:none}#top small{display:none}}
+</style>
+</head>
+<body>
+<canvas id="c" aria-label="Yaşayan vadi 3D sahnesi"></canvas>
+<div id="load"><b>YAŞAM<span>.</span></b><p id="lp">UniRig ile iskeletlenen canlılar uyanıyor…</p></div>
+<div id="top" class="pan"><b>YAŞAM<span>.</span></b> <span id="clock">06:00</span><small>UniRig iskeletli canlılar vadisi · <span id="pop">0</span> canlı</small></div>
+<div id="side" class="pan" hidden></div>
+<div id="log" class="pan" aria-live="polite"></div>
+<div id="bar" class="pan">
+  <span id="spawns" style="display:contents"></span>
+  <button id="own" title="UniRig ile iskeletlenmiş kendi GLB dosyanı ekle">＋ Kendi modelin</button>
+  <input id="file" type="file" accept=".glb,model/gltf-binary" hidden>
+  <button id="bones" title="İskeleti göster">🦴</button>
+  <button id="spd" title="Zaman hızı">1×</button>
+  <button id="follow" title="Seçili canlıyı takip et">🎥</button>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/GLTFLoader.js"></script>
+<script src="vendor/SkeletonUtils.js"></script>
+<script src="rig.js"></script>
+<script src="sim.js"></script>
+</body>
+</html>
