@@ -161,7 +161,7 @@ const App = (() => {
     { id: 'sis-hatti', name: ['SİS HATTI. — 02:17', 'FOG LINE. — 02:17'], tags: [['Pixel Art', 'Pixel Art'], ['Hikâye', 'Story'], ['Gizem', 'Mystery']], best: () => { try { const data=JSON.parse(localStorage.getItem('baba_sis_hatti_v1') || '{}'); return data.ending ? T('Hikâye bitti', 'Story completed') : T('4 farklı son', '4 endings'); } catch (_) { return T('4 farklı son', '4 endings'); } } },
     { id: 'living-island', name: ['ERGÜN’ÜN ÇİFTLİĞİ — Living Island', 'ERGÜN’S FARM — Living Island'], tags: [['2.5D', '2.5D'], ['Çiftlik', 'Farming'], ['Huzur', 'Cozy']], best: () => T('Yaşayan ada','Living island') },
     { id: 'koy', name: ['KÖY. — İskoç Yayla Bahçesi', 'VILLAGE. — Scottish Highland Garden'], tags: [['3D Yaşam', '3D Life'], ['Huzur', 'Relaxing'], ['Glencoe', 'Glencoe']], best: () => T('Glenmore · 3D', 'Glenmore · 3D') },
-    { id: 'surus', name: ['SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'], tags: [['Sürüş', 'Driving'], ['Simülasyon', 'Simulation']], best: () => T('3 km · Konyaaltı', '3 km · Konyaaltı') },
+    { id: 'surus', name: ['PARK. — Konyaaltı', 'PARK. — Konyaaltı'], tags: [['Park', 'Parking'], ['Simülasyon', 'Simulation']], best: () => T('6 bölüm · C32 AMG', '6 levels · C32 AMG') },
     { id: 'pelagos', name: ['PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'], tags: [['Fizik', 'Physics'], ['Akışkan', 'Fluid'], ['WebGL2', 'WebGL2']], best: () => T('6 araç · balina, yunus, köpekbalığı', '6 boats · whale, dolphins, shark') },
     { id: 'serpentia', name: ['SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'], tags: [['Simülasyon', 'Simulation'], ['Doğa', 'Nature'], ['3D', '3D']], best: () => T('10 tür · 4 doğa', '10 species · 4 habitats') },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
@@ -948,10 +948,10 @@ const App = (() => {
     else if (r === 'koy') koy();
     else if (r === 'yelken') yelken();
     else if (r === 'surus') openEmbeddedGame({
-      title: T('SÜRÜŞ. — Konyaaltı', 'DRIVE. — Konyaaltı'),
-      url: 'games/surus/index.html?v=2',
-      tag: T('Sürüş simülasyonu', 'Driving simulator'),
-      lead: T('Konyaaltı sahilinde yaklaşık 3 km sür.', 'Drive about 3 km along the Konyaaltı coast.'),
+      title: T('PARK. — Konyaaltı', 'PARK. — Konyaaltı'),
+      url: 'games/surus/park.html?v=1',
+      tag: T('Park simülatörü', 'Parking simulator'),
+      lead: T('C32 AMG ile düz, geri, açılı, paralel park ve garaj.', 'Forward, reverse, angled, parallel and garage parking in a C32 AMG.'),
       tip: T('WASD veya ok tuşlarını kullan. Telefonda ekrandaki pedallara dokun.', 'Use WASD or the arrow keys. On phones, use the on-screen controls.')
     });
     else if (r === 'simitci') simitci();
