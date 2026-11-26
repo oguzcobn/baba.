@@ -1,7 +1,7 @@
 name: Modern Age browser checks
 on:
   push:
-    branches: [modern-age-2026]
+    branches: [main, modern-age-2026]
     paths:
       - 'games/modern-age-2026/**'
       - '.github/workflows/modern-age-check.yml'
@@ -37,5 +37,6 @@ jobs:
           path: |
             games/modern-age-2026/modern-age-report.json
             games/modern-age-2026/modern-age-preview.png
+            games/modern-age-2026/modern-age-menu.png
       - name: Require working WebGL2 for 3D verification
         run: node -e "const r=require('./modern-age-report.json'); if (!r.webgl2) { console.error('3D not verified'); process.exit(1); }"
