@@ -437,6 +437,7 @@ function layout(){
   rocks = [];
   for (let i = 0; i < 5; i++){ const r = rand(2.2, 4.5, sr); rocks.push({x:rand(.08, .92, sr) * Wc, z:rand(.2, .9, sr) * Dc, r, sq:rand(.55, .8, sr), seed:(sr() * 1e9) | 0}); }
   wood = {x:rand(.55, .8, sr) * Wc, z:rand(.6, .85, sr) * Dc, lean:rand(.5, .9, sr), seed:(sr() * 1e9) | 0};
+  applyAdditions();
 }
 function renderRock(r){
   const s = r.r * PX * 1.2, c = document.createElement('canvas'), d = Math.min(DPR, 2);
@@ -707,6 +708,13 @@ function think(f, dt){
     f.sift = (f.sift || 0) - dt;
     if (f.sift < -rand(10, 20)) f.sift = rand(1.5, 3);
     if (f.sift > 0){ goal = norm(v3(f.e.x, 1.2, f.e.z)); goalW = 2.5; U = .2 * TLm; if (f.p.y > Hc - f.TL * .7 && R() < dt * 3) puff(add(mouth(f), v3(0, .3, 0))); }
+  }
+  // Optional habitat exploration never overrides feeding or breeding.
+  if(!fd && !f.task && additions.length && Math.sin(time*.12+f.id*1.7)>.55){
+    const a=additions[f.id%additions.length], angle=time*.35+f.id;
+    const radius=a.kind==='rock'?3.8:1.5;
+    const target=v3(clamp(a.x*Wc+Math.cos(angle)*radius,1,Wc-1),Hc*(sp.mode==='benthic'?.92:.72),clamp(a.z*Dc+Math.sin(angle)*radius,1,Dc-1));
+    const h=seek(f,target,.8,.5); goal=h.d;goalW=1.8;U=h.U;
   }
   // birleşik yön
   const sc2 = schoolVec(f), wv = wallVec(f);
@@ -1275,20 +1283,57 @@ const PERF = {u:0, f:0, n:0};
 function loop(t){ const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; if (W && BG){ const a = performance.now(); update(dt); const b = performance.now(); frame(); const c = performance.now(); PERF.u += b - a; PERF.f += c - b; PERF.n++; } requestAnimationFrame(loop); }
 
 /* ---------------- kayıt ---------------- */
-const KEY = 'baba-akvaryum-v2';
+const KEY = 'baba-akvaryum-v2', BANK = 'baba-akvaryum-bank-v1';
+let bank = {active:'legacy', tanks:[{id:'legacy',name:'Akvaryum 1'}]}, additions = [];
+try { const b = JSON.parse(localStorage.getItem(BANK)); if (b && Array.isArray(b.tanks) && b.tanks.length && b.tanks.some(t=>t.id===b.active)) bank=b; } catch {}
+const tankKey = () => bank.active === 'legacy' ? KEY : KEY + ':' + bank.active;
+function persistBank(){ localStorage.setItem(BANK,JSON.stringify(bank)); }
+function applyAdditions(){
+  for(const a of additions){
+    const x=a.x*Wc,z=a.z*Dc;
+    if(a.kind==='rock'){ rocks.push({x,z,r:2.4,sq:.7,seed:a.seed}); continue; }
+    for(let i=0;i<5;i++){
+      const dx=Math.sin(i*2.4+a.seed)*.8;
+      if(a.kind==='anubias') plants.push({type:'a',x:x+dx,z,ang:-Math.PI/2+(i-2)*.4,len:5+i*.6,wid:1.5,ph:i,col:hex('#548d59'),custom:true});
+      else plants.push({type:'v',x:x+dx,z,h:Hc*(a.kind==='grass'?.18:.55)*( .8+i*.08),w:.42,ph:i,col:hex(a.kind==='grass'?'#82ae62':'#5f9a58'),lean:(i-2)*.05,custom:true});
+    }
+  }
+}
+function switchTank(id){
+  if(id===bank.active)return;
+  save(); bank.active=id; persistBank();
+  fish=[]; eggs=[]; food=[]; hearts=[]; sparks=[]; bubbles=[]; puffs=[]; ripples=[]; additions=[]; nextId=1; layoutSeed=(R()*1e9)|0;
+  if(!load()) { layout(); save(); }
+  openSheet(null); rebuildArt(); setIcons(); updateCount(); refreshTanks();
+}
+function refreshTanks(){
+  const el=$('tankSelect'); el.replaceChildren();
+  for(const t of bank.tanks){const o=document.createElement('option');o.value=t.id;o.textContent=t.name;el.append(o);}
+  el.value=bank.active;
+}
+function addTank(){
+  if(bank.tanks.length>=12){toast('En fazla 12 akvaryum');return;}
+  const id=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
+  bank.tanks.push({id,name:'Akvaryum '+(bank.tanks.length+1)});switchTank(id);
+}
+function addHabitat(kind){
+  if(additions.length>=24){toast('Dekor sınırına ulaşıldı');return;}
+  additions.push({kind,x:rand(.15,.85),z:rand(.25,.85),seed:(R()*1e9)|0});
+  layout(); rebuildArt(); save(); toast('Yeni yaşam alanı eklendi');
+}
 function save(){
   try {
-    const data = {v:2, layoutSeed, nextId, lampOn, muted,
+    const data = {v:2, layoutSeed, nextId, lampOn, muted, additions,
       fish:fish.map(f => ({id:f.id, sp:f.sp, sex:f.sex, name:f.name, growth:+f.growth.toFixed(4), full:+f.full.toFixed(3), col:f.col, seed:f.seed, tsp:f.tsp, p:{x:f.p.x / Wc, y:f.p.y / Hc, z:f.p.z / Dc}, preg:f.preg, pregT:f.pregT, cool:f.cool, dad:f.dad || null})),
       eggs:eggs.filter(e => e.n > 0).map(e => ({sp:e.sp, n:e.n, t:e.t, tT:e.tT, larva:e.larva, seed:e.seed, mom:e.mom, dad:e.dad, kind:e.kind, pi:e.pi, u:e.u, x:e.x / Wc, y:e.y / Hc, z:e.z / Dc, foam:e.foam, row:e.row}))};
-    localStorage.setItem(KEY, JSON.stringify(data));
+    localStorage.setItem(tankKey(), JSON.stringify(data));
   } catch (e) {}
 }
 function load(){
   try {
-    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    const d = JSON.parse(localStorage.getItem(tankKey()) || 'null');
     if (!d || !d.fish) return false;
-    layoutSeed = d.layoutSeed; nextId = d.nextId || 1; lampOn = d.lampOn !== false; muted = !!d.muted; lampMix = lampOn ? 1 : 0;
+    additions = Array.isArray(d.additions) ? d.additions.filter(a=>['rock','anubias','grass','vallisneria'].includes(a.kind)&&Number.isFinite(a.x)&&Number.isFinite(a.z)).slice(0,24) : []; layoutSeed = d.layoutSeed; nextId = d.nextId || 1; lampOn = d.lampOn !== false; muted = !!d.muted; lampMix = lampOn ? 1 : 0;
     layout();
     fish = d.fish.filter(f => SP[f.sp]).map(f => makeFish(f.sp, f.sex, Object.assign({}, f, {p:v3(f.p.x * Wc, f.p.y * Hc, f.p.z * Dc)})));
     eggs = (d.eggs || []).filter(e => SP[e.sp]).map(e => Object.assign({}, e, {x:e.x * Wc, y:e.y * Hc, z:e.z * Dc}));
@@ -1445,6 +1490,15 @@ cvs.addEventListener('pointerdown', e => {
 document.addEventListener('visibilitychange', () => { if (document.hidden){ save(); AC && AC.suspend(); } else AC && AC.resume(); });
 
 /* ---------------- açılış ---------------- */
+const controls=document.createElement('div');
+controls.style.cssText='position:fixed;top:85px;left:12px;z-index:12;display:flex;gap:5px;flex-wrap:wrap;max-width:calc(100vw - 24px);font:13px system-ui';
+controls.innerHTML='<select id="tankSelect" aria-label="Akvaryum seç"></select><button id="newTank">+ Akvaryum</button><select id="habitatSelect" aria-label="Bitki veya dekor seç"><option value="anubias">Anubias</option><option value="vallisneria">Vallisneria</option><option value="grass">Çim bitkisi</option><option value="rock">Doğal kaya</option></select><button id="newHabitat">+ Ekle</button>';
+document.body.append(controls);
+for(const el of controls.children)el.style.cssText='background:#173e3c;color:white;border:1px solid #729a90;border-radius:9px;padding:8px;max-width:45vw';
+$('tankSelect').onchange=e=>switchTank(e.target.value);
+$('newTank').onclick=addTank;
+$('newHabitat').onclick=()=>addHabitat($('habitatSelect').value);
+refreshTanks();
 sizeCanvas();
 const restored = load();
 if (!restored) starter();
