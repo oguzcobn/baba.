@@ -38,3 +38,14 @@ Bu ileri hedeflerin tümü ilk sürümde uygulanmış değildir. Çevrimiçi gal
 - https://www.gdcvault.com/play/1025695/Exploring-the-Tech-and-DesignAt — Noita, piksel simülasyonu ve rijit cisimler.
 - https://github.com/ericleong/sand.js/ — WebGL hücresel otomat yaklaşımı.
 - https://github.com/hriztam/Falling-Sand-Game/blob/main/docs/simulation-model.md — yoğunluk ve sıvı hareketi üzerine teknik referans.
+
+## v2.1 — 26 Kasım 2026
+55 seçilebilir madde ve mekanizma. Eski 0–37 kimlikleri ve v1 dünya kayıt formatı korundu. Eklenenler: zıplayan top, klon, havai fişek, oyun içi enerji bloğu, virüs, hassas sıvı, karınca, meşale, yıldırım, bomba, lazer, sarmaşık, cıva, fitil, pompa, sabunlu su, baloncuk, kuş.
+
+Komşu çiftleri dört yönde değerlendirilir; tuz/su, lav/su, buz/su, kar/su, su/odun, su ve tuzlu su/metal, tuzlu su/bitki, asit, yanma, ısı geçişleri, yük yayılımı, klon, taşıma, lazer ve canlı davranışı için özgün kurallar eklendi. Pompa soldan alıp sağa taşır; lazer yatay/dikey durumları, metal/cıva yansıması ve en çok 12 hücre geçirgen ortam geçişiyle yaklaşık modellenir. Kuşlar yerel komşu yönelimi kullanır, gerçek aerodinamik değildir. Enerji olayları tamamen soyut oyun kurallarıdır.
+
+Dört ek deney: klon, pompa, lazer aynası ve reaksiyon bahçesi. Maddeler seçildiğinde açıklamalar gösterilir. Eski 6 deney ve araçlar korunur.
+
+Doğrulama: İlk revizyonda 10 motor kontrolü geçti (su/tuz, lav/su, klon, devre, pompa, lazer/metal, asit/cam, kum, enerji darbesi, üç sıvının korunması). Son revizyonda 5 ek motor kontrolü (4 hücre pompa, kalın cam, cıva yansıması, tuz, kuş) ve tüm JS sözdizimi kontrolü geçti. Bunlar küçük deterministik 40×30 grid testleridir. Tam 55×55 kombinasyon matrisi, orijinal oyunun etkileşimli karşılaştırması, tarayıcı/mobil FPS ve tüm UI akışları henüz doğrulanmamıştır. Orijinaldeki nesneler (oyuncu, dişli, kutu, fizik topu) bu revizyonda yoktur. Reaksiyonlar gerçek kimya değildir.
+
+Ek kaynaklar: https://danball.fandom.com/wiki/Powder_Game_Reaction_Table ; https://danball.fandom.com/wiki/Water_(Powder_Game_element) ; https://danball.fandom.com/wiki/Clone_(Powder_Game_element) ; https://danball.fandom.com/wiki/Pump_(Powder_Game_element) ; https://danball.fandom.com/wiki/Laser_(Powder_Game_element) ; https://danball.fandom.com/wiki/Seawater_(Powder_Game_element) . Wiki tablosunun tüm hücreleri erişilebilir olmadığından birebir uyumluluk iddia edilmez.
