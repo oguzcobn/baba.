@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Lanternlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@600&family=Alegreya+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: quiet, cinematic, unhurried — a moonlit survival career
+   IDEA: a film-lit 3D night meadow: moon fill, warm torch key, real shadow maps, fog
+   PICTURE: the full-bleed WebGL canvas; UI floats as small smoked-glass pills
+   COLOUR and TYPE: moonlit slate and moss, torch gold accent; Alegreya titles, Alegreya Sans UI
+   LAYOUT: canvas fills the screen; HUD top, controls bottom-right, centred cards for menus and the base */
+:root{color-scheme:dark;--ink:#f1e9d8;--soft:#c3bcab;--gold:#ffcf8a;--glass:rgba(10,16,18,.62);--card:rgba(14,20,22,.86)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:#04070b;color:var(--ink);font:16px/1.5 "Alegreya Sans",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%!important;height:100%!important}
+.hud{display:none}body.playing .hud{display:flex}
+#top{position:fixed;top:12px;left:12px;right:12px;gap:8px;flex-wrap:wrap;align-items:flex-start;pointer-events:none}
+.pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--glass);backdrop-filter:blur(6px);font-size:15px;box-shadow:0 2px 12px rgba(0,0,0,.35);position:relative;overflow:hidden;white-space:nowrap}
+.pill svg{width:18px;height:18px;flex:none}.pill b{font-weight:700;font-variant-numeric:tabular-nums}.dim{opacity:.6}.sep{opacity:.4}
+.wname{font-weight:700;color:var(--gold);margin-right:2px}
+.rnd{width:5px;height:14px;border-radius:2.5px 2.5px 1px 1px;background:linear-gradient(#f3d79a,#b8893f);flex:none}.rnd.off{background:rgba(255,255,255,.14)}
+.bar{position:absolute;left:0;bottom:0;height:3px;background:var(--gold)}
+#ammo.empty{animation:nudge .45s}@keyframes nudge{30%{transform:translateX(-4px)}60%{transform:translateX(4px)}}
+.dot{width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(255,207,138,.55)}.dot.on{background:var(--gold);box-shadow:0 0 10px var(--gold)}
+#dawn{flex:1 1 180px;max-width:320px;margin:0 auto;flex-direction:column;align-items:stretch;gap:3px;padding:6px 14px}
+#dawn .track{height:5px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}#dawnFill{height:100%;width:0;background:linear-gradient(90deg,#6b7fb3,#ffcf8a)}
+#dawnTxt{font-size:13px;text-align:center;color:var(--soft)}
+#wlist{gap:4px}#wlist span{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;font-size:13px;background:rgba(255,255,255,.08)}#wlist span.on{background:var(--gold);color:#2a2116;font-weight:700}
+#btns{position:fixed;right:14px;bottom:14px;gap:10px;align-items:flex-end}
+button{font:inherit;color:var(--ink);cursor:pointer;border:0}
+.rb{width:48px;height:48px;border-radius:50%;background:var(--glass);display:grid;place-items:center;box-shadow:0 2px 10px rgba(0,0,0,.35);font-weight:700;font-size:16px}.rb svg{width:22px;height:22px}
+#flareBtn{width:72px;height:72px;border-radius:50%;font-weight:700;background:conic-gradient(rgba(255,207,138,.85) calc(var(--p,1)*360deg),rgba(255,255,255,.08) 0);padding:5px}
+#flareBtn span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:rgba(14,22,22,.94)}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.arrow{position:fixed;left:0;top:0;width:28px;height:28px;display:none;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:var(--glass);font-size:16px;opacity:0;transition:opacity .6s;pointer-events:none;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}#toast.show{opacity:1}
+#vig{position:fixed;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle,transparent 45%,rgba(110,20,30,.55))}
+#cross{position:fixed;left:0;top:0;width:24px;height:24px;pointer-events:none;display:none}body.playing #cross{display:block}@media(pointer:coarse){body.playing #cross{display:none}}
+#joy{position:fixed;width:104px;height:104px;border-radius:50%;border:2px solid rgba(241,233,216,.3);display:none;pointer-events:none}#knob{position:absolute;left:32px;top:32px;width:40px;height:40px;border-radius:50%;background:rgba(241,233,216,.35)}
+#overlay{position:fixed;inset:0;display:none;place-items:center;padding:16px;background:radial-gradient(circle at 50% 45%,rgba(6,10,12,.1),rgba(3,6,8,.6))}#overlay.show{display:grid}
+.card{width:min(480px,100%);max-height:calc(100vh - 32px);overflow:auto;padding:26px 26px 22px;border-radius:22px;background:var(--card);backdrop-filter:blur(10px);box-shadow:0 20px 60px rgba(0,0,0,.55);text-align:center}
+.card.wide{width:min(620px,100%);text-align:left}
+.card h1{font:600 clamp(36px,7vw,52px)/1.05 Alegreya,Georgia,serif;margin:0 0 10px;color:var(--gold);text-wrap:balance}.card h2{font:600 30px/1.1 Alegreya,Georgia,serif;margin:0;color:var(--gold)}
+.card p{margin:0 0 14px;color:var(--soft);text-wrap:pretty}.small{font-size:14px;color:var(--soft)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;text-align:left;margin:4px auto 16px;width:fit-content;font-size:15px;color:var(--soft)}.keys span:nth-child(odd){color:var(--ink);font-weight:700}
+.row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
+.go{padding:12px 24px;min-height:48px;border-radius:999px;background:var(--gold);color:#2a2116;font-weight:700;font-size:17px;box-shadow:0 6px 24px rgba(255,207,138,.25)}
+.card.wide .go{width:100%;margin-top:14px}
+.ghost{padding:12px 20px;min-height:48px;border-radius:999px;background:rgba(255,255,255,.08);font-weight:600}.ghost.small{min-height:40px;padding:8px 16px;font-size:14px;margin-top:8px}
+.hubhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.scrap{display:flex;align-items:center;gap:6px;font-size:17px}.scrap svg{width:20px;height:20px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.tab{padding:8px 14px;min-height:40px;border-radius:999px;background:rgba(255,255,255,.07);font-weight:600}.tab.on{background:rgba(255,207,138,.18);color:var(--gold)}
+.list{display:grid;gap:8px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.05)}
+.item b{display:block}.item small{display:block;color:var(--soft);font-size:14px;line-height:1.35}.lv{color:var(--gold);letter-spacing:2px;font-size:12px;margin-left:6px}
+.buy{flex:none;min-width:84px;min-height:44px;padding:8px 14px;border-radius:12px;background:var(--gold);color:#2a2116;font-weight:700;font-variant-numeric:tabular-nums}.buy:disabled{opacity:.35;cursor:not-allowed}
+.tag{flex:none;font-size:14px;color:var(--gold);padding:6px 10px}
+.slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:4px}
+.slot{padding:8px 4px;min-height:58px;border-radius:12px;background:rgba(255,255,255,.06);text-align:center}.slot b{display:block;font-size:16px}.slot small{display:block;font-size:12px;color:var(--soft);line-height:1.2}.slot.on{background:rgba(255,207,138,.2);outline:1.5px solid var(--gold)}
+#loading{position:fixed;inset:0;display:grid;place-items:center;color:var(--soft);font-size:18px;background:#04070b;z-index:5}
+@media(max-width:600px){.pill{font-size:14px;padding:5px 10px}.slots{grid-template-columns:repeat(3,minmax(0,1fr))}#toast{bottom:96px}#dawn{order:5;flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="vig"></div>
+<div id="top" class="hud"><div class="pill" id="hearts"></div><div class="pill" id="ammo"></div><div class="pill" id="wlist"></div><div class="pill" id="dawn"><div class="track"><div id="dawnFill"></div></div><div id="dawnTxt"></div></div><div class="pill" id="scrap"></div><div class="pill" id="lan"></div></div>
+<div id="btns" class="hud">
+  <button class="rb" id="muteBtn" aria-label="Sesi aç/kapat"></button>
+  <button class="rb" id="pauseBtn" aria-label="Duraklat"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="2"/><rect x="14" y="5" width="4" height="14" rx="2"/></svg></button>
+  <button class="rb" id="swapBtn" aria-label="Silah değiştir">⇄</button>
+  <button class="rb" id="reloadBtn" aria-label="Şarjör değiştir (R)">R</button>
+  <button id="flareBtn" aria-label="Fişek (Boşluk)"><span>Fişek</span></button>
+</div>
+<svg class="arrow" id="lanArrow" viewBox="0 0 28 28"><path d="M26 14L6 4l5 10-5 10z" fill="#ffcf8a" opacity=".85"/></svg>
+<svg class="arrow" id="baseArrow" viewBox="0 0 28 28"><path d="M26 14L6 4l5 10-5 10z" fill="#9fb6d8" opacity=".85"/></svg>
+<svg id="cross" viewBox="0 0 24 24" fill="none" stroke="rgba(255,226,170,.85)" stroke-width="1.5"><circle cx="12" cy="12" r="7"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg>
+<div id="joy"><div id="knob"></div></div>
+<div id="toast"></div>
+<div id="overlay"><div class="card" id="card"></div></div>
+<div id="loading">Gece hazırlanıyor…</div>
+<script>window.LL_CALIBRATED=null;</script>
+<script type="module" src="game.js"></script>
+</body>
+</html>

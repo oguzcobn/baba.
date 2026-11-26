@@ -171,6 +171,7 @@ const App = (() => {
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
+    { id: 'lanternlight', name: ['LANTERNLIGHT. — Gece Hayatta Kalma', 'LANTERNLIGHT. — Night Survival'], tags: [['Hayatta kalma', 'Survival'], ['Kariyer · Üs', 'Career · Base'], ['3D PBR', '3D PBR']], best: () => { try { const d = JSON.parse(localStorage.getItem('ll_career') || 'null'); return d ? T(`Gece ${d.night}`, `Night ${d.night}`) : T('Yeni', 'New'); } catch (_) { return T('Yeni', 'New'); } } },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['Market simülasyonu', 'Store sim'], ['3D birinci şahıs', '3D first person'], ['39 karakter', '39 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
     { id: 'kafa-topu', name: ['Kafa Topu: Süper Lig', 'Sports Heads: Süper Lig'], tags: [['Futbol', 'Football'], ['Süper Lig', 'Süper Lig'], ['1v1 / 2P', '1v1 / 2P']], best: () => { const b = ls.get('bb_best_kafa_topu', 0); return b ? b + T(' Kupa', ' Cups') : T('Yeni', 'New'); } },
@@ -616,6 +617,16 @@ const App = (() => {
     });
   }
 
+  function lanternlight() {
+    openEmbeddedGame({
+      title: 'Lanternlight',
+      url: 'games/lanternlight/index.html?v=1',
+      tag: T('BABA. HAYATTA KALMA · 3D', 'BABA. SURVIVAL · 3D'),
+      lead: T('El feneri ve kıt mermiyle geceyi atlat: fenerleri yak, hurda topla, silah al, üssünü kur ve geliştir.', 'Survive the night with a torch and scarce ammo: light lanterns, earn scrap, buy weapons, build your base.'),
+      tip: T('WASD yürü, fare ile nişan al, tık ateş, R şarjör, 1–4 silah, Boşluk fişek.', 'WASD move, mouse aim, click fire, R reload, 1–4 weapons, Space flare.')
+    });
+  }
+
   /* ==================== TRABZON YAYLA SAVUNMASI / 3D TOWER DEFENSE ==================== */
   function yaylaSavunmasi() {
     openEmbeddedGame({
@@ -990,6 +1001,7 @@ const App = (() => {
     else if (r === 'yasam') yasamGame();
     else if (r === 'akvaryum') akvaryumGame();
     else if (r === 'dune') duneGame();
+    else if (r === 'lanternlight') lanternlight();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
     else if (r === '2048') g2048();
