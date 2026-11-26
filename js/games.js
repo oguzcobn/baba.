@@ -149,6 +149,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    { id:'ambermere',name:['Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'],tags:[['Simülasyon','Simulation'],['Balıkçılık','Fishing']],best:()=>T('30 tür','30 species') },
     { id:'element',name:['ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'],tags:[['Simülasyon','Simulation'],['Sandbox','Sandbox'],['Fizik','Physics']],best:()=>T('37 madde','37 materials') },
     { id: 'subterra', name: ['SUBTERRA. — Dev Solucan Saldırısı', 'SUBTERRA. — Giant Worm Attack'], tags: [['Aksiyon','Action'],['2.5D','2.5D'],['Fare ile','Mouse']], best: () => { const b = +(localStorage.getItem('baba_subterra_score') || 0); return b ? T('Rekor ' + b + ' puan', 'Best ' + b + ' pts') : T('6 bölüm + sonsuz', '6 levels + endless'); } },
     { id:'hayat-oyunu',name:['HAYAT. — Gerçek Yaşam','LIFE. — Life Simulator'],tags:[['Simülasyon','Simulation'],['Kariyer','Career'],['İlişkiler','Relationships']],best:()=>T('Kendi hikâyeni yaz','Write your story') },
@@ -243,6 +244,7 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
+    'ambermere': 'img/library/ambermere-1280.svg',
     'element': 'img/library/element-1280.svg',
     'hayat-oyunu': 'img/library/hayat-oyunu-1280.webp',
     'futbol': 'img/library/futbol-1280.webp',
@@ -981,6 +983,7 @@ const App = (() => {
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'pelagos') pelagosGame();
+    else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
     else if (r === 'subterra') openEmbeddedGame({title:T('SUBTERRA. — Dev Solucan Saldırısı','SUBTERRA. — Giant Worm Attack'),url:'games/subterra/index.html?v=4',tag:T('BABA. SUBTERRA. · 2.5D aksiyon','BABA. SUBTERRA. · 2.5D action'),lead:T('Yerin altından fırla, kasabaları ve şehri yerle bir et: insanlar, inekler, arabalar, tanklar ve helikopterler menüde.','Burst from underground and wreck towns and cities: people, cows, cars, tanks and helicopters are on the menu.'),tip:T('Fareyi gezdir: solucan imlece doğru kazar. Sol tık basılı hızlanır; hızla yukarı çıkınca havaya fırlarsın, havadaki her av kombo verir. Binaları alttan hızla çarparak yık. Derinde can dolar. Dokunmatikte parmağını sürükle, HIZ düğmesine bas.','Move the mouse: the worm digs toward the cursor. Hold left click to speed up; rush upward to leap into the air, every catch in the air builds a combo. Smash buildings from below. Health regenerates deep underground. On touch, drag and press HIZ.')});
     else if (r === 'serpentia') serpentiaGame();
