@@ -972,12 +972,16 @@ function physics(f, dt){
   f.p.x = clamp(f.p.x, m, Wc - m); f.p.z = clamp(f.p.z, m * .6, Dc - m * .6);
   f.p.y = clamp(f.p.y, f.TL * .15, Hc - f.TL * SP[f.sp].h * .35);
   // görsel faz: gerçek frekans 9 Hz üstünde ekranda örneklenemez, çizim fazı 9 Hz'de kırpılır
-  const fVis = Math.min(f.omega / TAU, 9);
-  f.phase += TAU * fVis * dt;
-  const ampT = f.omega > 1 ? clamp(.45 + f.omega / (TAU * 4), .45, 1) : 0;
-  f.amp += (ampT - f.amp) * Math.min(1, dt * (ampT > f.amp ? 14 : 9));
-  const fp = f.fan ? 3.5 : f.omegaP / TAU;
-  f.phaseP += TAU * Math.min(fp, 6) * dt + (sp.mode !== 'bcf' ? .8 * dt : 0);
+  // görsel dalga: gerçek kuyruk frekansı (5–20 Hz) ekranda titreme gibi görünür; çizimde 0,8–2,6 Hz'e
+  // sıkıştırılır ve frekans/genlik yumuşak değişir (vuruş↔süzülme geçişi ani değil)
+  const fReal = f.omega / TAU, fT = fReal > .2 ? .8 + 1.8 * (1 - Math.exp(-fReal / 6)) : .5;
+  f.fVis = (f.fVis || fT) + (fT - (f.fVis || fT)) * (1 - Math.exp(-dt * 2));
+  f.phase += TAU * f.fVis * dt;
+  const ampT = f.omega > 1 ? clamp(.4 + f.omega / (TAU * 8), .4, .8) : .12;
+  f.amp += (ampT - f.amp) * (1 - Math.exp(-dt * (ampT > f.amp ? 3 : 1.6)));
+  const fp = f.fan ? 2.2 : Math.min(f.omegaP / TAU, 2.6);
+  f.fP = (f.fP || fp) + (fp - (f.fP || fp)) * (1 - Math.exp(-dt * 2));
+  f.phaseP += TAU * f.fP * dt + (sp.mode !== 'bcf' ? .6 * dt : 0);
   f.ampP = f.fan ? 1 : clamp(f.omegaP / (TAU * 2.5), .15, 1);
 }
 
@@ -1085,7 +1089,7 @@ function lateral(f, u){
   let h = TL * env * f.amp * Math.sin(TAU * (u / lam) - f.phase);
   const ub = Math.min(u, 1) - uc;
   h += .5 * f.kTL * TL * ub * ub;
-  if (f.pose === 'sigmoid') h += TL * (.07 * Math.sin(TAU * (u * 1.05) + .4) + .008 * Math.sin(time * TAU * 7 + u * 4));
+  if (f.pose === 'sigmoid') h += TL * (.07 * Math.sin(TAU * (u * 1.05) + .4) + .006 * Math.sin(time * TAU * 2.2 + u * 4));
   if (f.pose === 'embrace') h += .5 * 3.4 * TL * (u - .45) * (u - .45) * (f.id % 2 ? 1 : -1);
   if (f.startle > 0){ const k = f.startle > .07 ? (0.14 - f.startle) / .07 : f.startle / .07; h += .5 * 3.2 * k * f.cdir * TL * (u - uc) * (u - uc); }
   if (f.sp === 'beta' && f.sex === 'm' || f.pose) h += 0;
@@ -1133,7 +1137,7 @@ function drawFish(f){
   // göğüs yüzgeci: kürek vuruşu
   const pu = .26, pp = projP(add(f.p, add(mul(e, (.42 - pu) * f.TL), add(mul(n, lateral(f, pu)), mul(up, -f.TL * SP[f.sp].h * .12)))));
   const bodyAng = Math.atan2(O[0][1] - O[N][1], O[0][0] - O[N][0]);
-  const flap = Math.sin(f.phaseP) * .55 * (f.ampP || .3), finL = f.TL * .13 * PX * s;
+  const flap = Math.sin(f.phaseP) * .4 * (f.ampP || .3), finL = f.TL * .13 * PX * s;
   ctx.save(); ctx.translate(pp[0], pp[1]); ctx.rotate(bodyAng + Math.PI + (O[0][0] > O[N][0] ? -1 : 1) * (.9 + flap));
   ctx.fillStyle = rgba(hex(f.col.fin), .4); ctx.beginPath(); ctx.ellipse(finL * .5, 0, finL * .6, finL * .24, 0, 0, TAU); ctx.fill(); ctx.restore();
 }
