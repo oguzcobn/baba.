@@ -168,6 +168,7 @@ const App = (() => {
     { id: 'yasam', name: ['YAŞAM. — İskeletli Canlılar Vadisi', 'LIFE. — Valley of Rigged Creatures'], tags: [['Simülasyon', 'Simulation'], ['UniRig', 'UniRig'], ['3D', '3D']], best: () => T('UniRig · canlı ekosistem', 'UniRig · living ecosystem') },
     { id: 'akvaryum', name: ['AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'], tags: [['Simülasyon', 'Simulation'], ['Biyomekanik', 'Biomechanics'], ['Huzur', 'Relaxing']], best: () => { try { const d = JSON.parse(localStorage.getItem('baba-akvaryum-v2') || 'null'); return d && d.fish ? T(`${d.fish.length} balık`, `${d.fish.length} fish`) : T('14 tür', '14 species'); } catch (_) { return T('14 tür', '14 species'); } } },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
+    { id: 'astra-orbit', name: ['ASTRA ORBIT. — Uzay Sektör Savaşı', 'ASTRA ORBIT. — Space Sector War'], tags: [['Uzay','Space'],['2.5D','2.5D'],['Aksiyon','Action']], best: () => { const b = +(localStorage.getItem('astra_orbit_25d_best') || 0); return b ? T('Rekor ' + b, 'Best ' + b) : T('4 sektör · 8 düşman', '4 sectors · 8 enemies'); } },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
@@ -258,6 +259,7 @@ const App = (() => {
     'koy': 'img/library/koy-1280.webp',
     'simitci': 'img/library/simitci-1280.webp',
     'operasyon-hatti': 'img/library/operasyon-hatti-1280.webp',
+    'astra-orbit': 'img/library/astra-orbit-1280.webp',
     'pelagos': 'img/library/pelagos-1280.webp',
     'serpentia': 'img/library/serpentia-1280.webp',
     'yasam': 'img/library/yasam-1280.webp',
@@ -581,6 +583,17 @@ const App = (() => {
       tag: T('BABA. DUNE. · Açık dünya sürüş · 2.5D', 'BABA. DUNE. · Open-world driving · 2.5D'),
       lead: T('Kum tepelerinde 4×4: lastik basıncı, diferansiyel kilidi, vinç, garaj yükseltmeleri ve günbatımı çölünde serbest sürüş.', '4×4 across the dunes: tyre pressure, diff lock, winch, garage upgrades and free roam in a sunset desert.'),
       tip: T('W/S gaz-fren, A/D direksiyon, Space el freni. L diferansiyel kilidi, R vinç, C kamera, P fotoğraf modu. Yumuşak kumda lastik basıncını düşür.', 'W/S throttle-brake, A/D steer, Space handbrake. L diff lock, R winch, C camera, P photo mode. Lower tyre pressure in soft sand.')
+    });
+  }
+
+  /* ==================== ASTRA ORBIT. / UZAY SEKTÖR SAVAŞI ==================== */
+  function astraOrbit() {
+    openEmbeddedGame({
+      title: T('ASTRA ORBIT. — Uzay Sektör Savaşı', 'ASTRA ORBIT. — Space Sector War'),
+      url: 'games/astra-orbit/index.html?v=1',
+      tag: T('BABA. ASTRA ORBIT. · Uzay aksiyon · 2.5D', 'BABA. ASTRA ORBIT. · Space action · 2.5D'),
+      lead: T('Üç gemiden birini seç, 4 sektörde ışınlanma kapılarından geç, 8 düşman gemisini avla; diroit, P.E.T. ve hangar yükseltmeleriyle filonu büyüt. İlerleme otomatik kaydedilir.', 'Pick one of three ships, jump through gates across 4 sectors and hunt 8 enemy ship types; grow your fleet with drones, a P.E.T. and hangar upgrades. Progress saves automatically.'),
+      tip: T('Fareyle uç; sol tık hedefe kilitlen ve oto-lazer, sağ tık güdümlü füze. 1–4 cephane, Q gemi yeteneği, M mayın, E EMP, J ışınlan, U hangar.', 'Fly with the mouse; left click locks on with auto-laser, right click fires a homing missile. 1–4 ammo, Q ship skill, M mine, E EMP, J jump, U hangar.')
     });
   }
 
@@ -993,6 +1006,7 @@ const App = (() => {
     });
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
+    else if (r === 'astra-orbit') astraOrbit();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});

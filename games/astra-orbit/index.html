@@ -1,0 +1,3779 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Astra Orbit 2.5D — Tam Sürüm Uzay Sektör Savaşı</title>
+  <style>
+    :root {
+      --bg: #02050d;
+      --panel: rgba(7, 13, 26, 0.87);
+      --panel-border: rgba(56, 189, 248, 0.3);
+      --cyan: #38bdf8;
+      --cyan-glow: rgba(56, 189, 248, 0.45);
+      --amber: #f59e0b;
+      --rose: #fb7185;
+      --emerald: #34d399;
+      --violet: #a78bfa;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    #game-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #02050d;
+    }
+
+    canvas#game {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    /* Top HUD */
+    .hud-top {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .hud-card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 12px;
+      padding: 8px 11px;
+      pointer-events: auto;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.48);
+    }
+
+    .vitals {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 192px;
+      max-width: 250px;
+    }
+
+    .pilot-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--cyan);
+      letter-spacing: 0.04em;
+    }
+
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .bar-label { width: 46px; color: var(--muted); }
+    .bar-track {
+      flex: 1;
+      height: 6.5px;
+      background: rgba(148, 163, 184, 0.16);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill { height: 100%; border-radius: 999px; transition: width 0.1s linear; }
+    .bar-shield { background: linear-gradient(90deg, #0ea5e9, #38bdf8); box-shadow: 0 0 8px var(--cyan-glow); }
+    .bar-hull { background: linear-gradient(90deg, #10b981, #34d399); }
+    .bar-hull.low { background: linear-gradient(90deg, #e11d48, #fb7185); }
+    .bar-flare { background: linear-gradient(90deg, #d97706, #fbbf24); }
+
+    .ammo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--muted);
+      padding-top: 2px;
+    }
+
+    .missile-pips { display: flex; gap: 3px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .pip {
+      width: 8px; height: 8px; border-radius: 2px;
+      background: rgba(148, 163, 184, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .pip.ready { background: var(--amber); box-shadow: 0 0 6px rgba(245, 158, 11, 0.7); }
+
+    .boost-badges {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .boost-pill {
+      font-size: 9px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 99px;
+      background: rgba(245, 158, 11, 0.2);
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      color: #fde68a;
+    }
+
+    /* Center Telemetry */
+    .hud-center {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 13px;
+    }
+
+    .stat-block { display: flex; flex-direction: column; align-items: center; line-height: 1.1; }
+    .stat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+    .stat-val { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; color: #f8fafc; }
+    .stat-val.accent { color: var(--cyan); }
+    .stat-val.credits { color: var(--emerald); }
+    .stat-val.uri { color: var(--violet); }
+    .stat-val.ore { color: var(--amber); }
+    .stat-val.zone { color: var(--cyan); font-size: 12px; }
+    .divider { width: 1px; height: 22px; background: rgba(148, 163, 184, 0.22); }
+
+    /* Right Controls */
+    .hud-actions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+    .icon-btn {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    }
+    .icon-btn:hover { background: rgba(30, 41, 59, 0.92); border-color: rgba(56, 189, 248, 0.65); }
+    .icon-btn:active { transform: scale(0.96); }
+    .icon-btn.active { border-color: var(--cyan); color: var(--cyan); }
+    .icon-btn.upgrade-btn { border-color: rgba(52, 211, 153, 0.55); color: #6ee7b7; }
+    .icon-btn.upgrade-btn.glow { box-shadow: 0 0 14px rgba(52, 211, 153, 0.45); background: rgba(16, 185, 129, 0.22); }
+
+    /* Left Stack: Safe Zone + Quest Tracker */
+    .hud-left-stack {
+      position: absolute;
+      top: 122px;
+      left: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      pointer-events: none;
+      z-index: 11;
+      max-width: 245px;
+    }
+
+    #safezone-banner {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(14, 165, 233, 0.22);
+      border: 1px solid rgba(56, 189, 248, 0.65);
+      color: #bae6fd;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: none;
+      width: fit-content;
+    }
+    #safezone-banner.show { display: inline-block; }
+
+    #quest-card {
+      background: rgba(7, 13, 26, 0.82);
+      border: 1px solid rgba(245, 158, 11, 0.36);
+      border-radius: 11px;
+      padding: 8px 10px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+    }
+    .quest-tag { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; color: var(--amber); text-transform: uppercase; }
+    .quest-title { font-size: 12px; font-weight: 800; color: #f8fafc; margin-top: 2px; }
+    .quest-prog { font-size: 10.5px; color: var(--muted); margin-top: 2px; display: flex; justify-content: space-between; }
+    .quest-reward { font-size: 10px; color: var(--emerald); font-weight: 700; margin-top: 3px; }
+
+    /* Jump Gate Prompt */
+    #jump-prompt {
+      position: absolute;
+      bottom: 76px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.92), rgba(139, 92, 246, 0.92));
+      border: 1.5px solid #e0f2fe;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      z-index: 18;
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.6);
+      display: none;
+    }
+    #jump-prompt.show { display: block; }
+
+    /* Locked Target Card */
+    #target-card {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 220px;
+      max-width: 280px;
+      background: rgba(9, 14, 28, 0.88);
+      border: 1px solid rgba(251, 113, 133, 0.55);
+      border-radius: 11px;
+      padding: 7px 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 11;
+    }
+    #target-card.show { opacity: 1; }
+    .target-head { display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; margin-bottom: 5px; }
+    .target-name { color: #fecdd3; }
+    .target-lvl { color: var(--amber); font-size: 10px; }
+
+    #warning-banner {
+      position: absolute;
+      top: 130px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 5px 15px;
+      border-radius: 999px;
+      background: rgba(225, 29, 72, 0.28);
+      border: 1px solid rgba(251, 113, 133, 0.8);
+      color: #fecdd3;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 12;
+      white-space: nowrap;
+    }
+    #warning-banner.show { opacity: 1; animation: pulseWarn 0.45s infinite alternate; }
+    @keyframes pulseWarn {
+      from { transform: translateX(-50%) scale(1); }
+      to { transform: translateX(-50%) scale(1.04); }
+    }
+
+    /* Bottom Action Hotbar */
+    .action-bar {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 13px;
+      padding: 6px 8px;
+      z-index: 15;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+      max-width: 96vw;
+      overflow-x: auto;
+    }
+
+    .slot-btn {
+      position: relative;
+      min-width: 50px;
+      height: 46px;
+      padding: 4px 5px;
+      border-radius: 9px;
+      background: rgba(15, 23, 42, 0.84);
+      border: 1.5px solid rgba(148, 163, 184, 0.25);
+      color: #f8fafc;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+      flex-shrink: 0;
+      transition: border-color 0.12s, background 0.12s, transform 0.1s;
+    }
+    .slot-btn:hover { border-color: rgba(56, 189, 248, 0.65); }
+    .slot-btn:active { transform: scale(0.95); }
+    .slot-btn.selected { border-color: var(--cyan); background: rgba(14, 165, 233, 0.24); box-shadow: 0 0 12px rgba(56, 189, 248, 0.35); }
+    .slot-btn.attack-on { border-color: var(--rose); background: rgba(225, 29, 72, 0.26); box-shadow: 0 0 12px rgba(244, 63, 94, 0.4); }
+    .slot-btn.skill-ready { border-color: rgba(167, 139, 250, 0.7); background: rgba(139, 92, 246, 0.2); }
+    .slot-btn.disabled { opacity: 0.42; }
+
+    .slot-key { position: absolute; top: 2px; left: 4px; font-size: 8px; font-weight: 800; color: var(--muted); }
+    .slot-name { font-size: 10.5px; font-weight: 800; letter-spacing: 0.02em; }
+    .slot-count { font-size: 8.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* Overlays & Modals */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(3, 6, 15, 0.68);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 30;
+      padding: 14px;
+      transition: opacity 0.22s;
+      overflow-y: auto;
+    }
+    .overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .modal {
+      width: 100%;
+      max-width: 680px;
+      max-height: 94vh;
+      overflow-y: auto;
+      background: rgba(9, 15, 30, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.36);
+      border-radius: 18px;
+      padding: 20px 22px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72), 0 0 40px rgba(56, 189, 248, 0.14);
+      text-align: center;
+    }
+    .modal.compact { max-width: 440px; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.32);
+      margin-bottom: 8px;
+    }
+
+    .modal h1 { font-size: clamp(22px, 4vw, 31px); font-weight: 900; letter-spacing: 0.04em; color: #f8fafc; margin-bottom: 6px; }
+    .modal p.subtitle { font-size: 12.5px; line-height: 1.45; color: var(--muted); margin-bottom: 13px; }
+
+    .ship-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-bottom: 13px; text-align: left; }
+    .ship-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1.5px solid rgba(148, 163, 184, 0.22);
+      border-radius: 12px;
+      padding: 9px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .ship-card:hover { border-color: rgba(56, 189, 248, 0.6); transform: translateY(-2px); }
+    .ship-card.selected { border-color: var(--cyan); background: rgba(14, 165, 233, 0.16); box-shadow: 0 0 18px rgba(56, 189, 248, 0.25); }
+    .ship-tag { font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan); }
+    .ship-name { font-size: 14px; font-weight: 800; color: #f8fafc; }
+    .ship-desc { font-size: 10.5px; color: var(--muted); line-height: 1.3; min-height: 27px; }
+    .ship-skill { font-size: 10px; color: #c4b5fd; font-weight: 700; margin-top: 2px; }
+
+    .mini-stat { display: flex; align-items: center; gap: 6px; font-size: 9.5px; color: var(--muted); }
+    .mini-stat span:first-child { width: 32px; }
+    .mini-bar { flex: 1; height: 5px; background: rgba(148, 163, 184, 0.18); border-radius: 99px; overflow: hidden; }
+    .mini-bar i { display: block; height: 100%; background: linear-gradient(90deg, #0ea5e9, #38bdf8); border-radius: 99px; }
+
+    .controls-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; text-align: left; margin-bottom: 14px; }
+    .ctrl-item {
+      background: rgba(15, 23, 42, 0.68);
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .ctrl-item strong { color: #f1f5f9; font-size: 11px; font-weight: 700; }
+
+    /* Hangar */
+    .hangar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      border-radius: 12px;
+      padding: 9px 14px;
+      margin-bottom: 10px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .currency-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+    .credits-pill { font-size: 14px; font-weight: 800; color: var(--emerald); font-variant-numeric: tabular-nums; }
+    .uri-pill { font-size: 14px; font-weight: 800; color: var(--violet); font-variant-numeric: tabular-nums; }
+    .ore-pill { font-size: 14px; font-weight: 800; color: var(--amber); font-variant-numeric: tabular-nums; }
+
+    .repair-btn {
+      background: rgba(16, 185, 129, 0.18);
+      border: 1px solid rgba(52, 211, 153, 0.6);
+      color: #a7f3d0;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .repair-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .hangar-tabs { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+    .tab-btn {
+      flex: 1;
+      min-width: 110px;
+      padding: 7px 8px;
+      border-radius: 9px;
+      background: rgba(15, 23, 42, 0.72);
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .tab-btn.active { border-color: var(--cyan); color: var(--cyan); background: rgba(14, 165, 233, 0.16); }
+
+    .upgrade-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; text-align: left; }
+    .upg-card {
+      background: rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 11px;
+      padding: 9px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .upg-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .upg-title { font-size: 12.5px; font-weight: 800; color: #f8fafc; }
+    .upg-lvl { font-size: 10px; font-weight: 700; color: var(--cyan); background: rgba(56, 189, 248, 0.14); padding: 2px 7px; border-radius: 99px; }
+    .upg-desc { font-size: 10.5px; color: var(--muted); line-height: 1.3; }
+    .upg-pips { display: flex; gap: 4px; }
+    .upg-pip { flex: 1; height: 4px; border-radius: 99px; background: rgba(148, 163, 184, 0.2); }
+    .upg-pip.on { background: linear-gradient(90deg, #0ea5e9, #38bdf8); }
+    .upg-buy {
+      margin-top: 2px;
+      width: 100%;
+      padding: 6px 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.5);
+      background: rgba(14, 165, 233, 0.18);
+      color: #e0f2fe;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .upg-buy:hover:not(:disabled) { background: rgba(14, 165, 233, 0.35); }
+    .upg-buy:disabled { opacity: 0.4; cursor: not-allowed; border-color: rgba(148, 163, 184, 0.25); }
+
+    .primary-btn {
+      width: 100%;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0284c7, #38bdf8);
+      color: #020617;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(56, 189, 248, 0.35);
+    }
+    .primary-btn:hover { filter: brightness(1.08); }
+
+    .secondary-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 9px 16px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 11px;
+      background: rgba(15, 23, 42, 0.65);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .secondary-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+    .summary-box { background: rgba(15, 23, 42, 0.72); border: 1px solid rgba(148, 163, 184, 0.18); border-radius: 10px; padding: 9px 6px; }
+    .summary-box .s-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+    .summary-box .s-val { font-size: 18px; font-weight: 800; color: #f8fafc; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    /* Touch Controls */
+    #touch-controls {
+      position: absolute;
+      left: 0; right: 0; bottom: 72px;
+      padding: 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+      z-index: 20;
+    }
+    #touch-controls.hidden { display: none; }
+    .pad-group { display: flex; gap: 9px; align-items: center; pointer-events: auto; }
+    .touch-btn {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: rgba(15, 23, 42, 0.76);
+      border: 1.5px solid rgba(56, 189, 248, 0.45);
+      color: #f8fafc; font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; touch-action: none;
+    }
+    .touch-btn:active, .touch-btn.pressed { background: rgba(56, 189, 248, 0.35); transform: scale(0.94); }
+    .touch-btn.fire { width: 62px; height: 62px; border-color: rgba(56, 189, 248, 0.85); background: rgba(14, 165, 233, 0.26); }
+    .touch-btn.missile { border-color: rgba(245, 158, 11, 0.85); background: rgba(245, 158, 11, 0.22); color: #fde68a; }
+    .touch-btn.flare { width: 46px; height: 46px; font-size: 10px; border-color: rgba(52, 211, 153, 0.75); background: rgba(16, 185, 129, 0.2); color: #a7f3d0; }
+
+    @media (max-width: 760px) {
+      .hud-top { flex-wrap: wrap; gap: 5px; }
+      .vitals { min-width: 155px; padding: 6px 9px; }
+      .hud-center { order: 3; width: 100%; justify-content: space-around; padding: 6px 8px; }
+      .hud-left-stack { top: 154px; max-width: 195px; }
+      .stat-val { font-size: 13px; }
+      .action-bar { bottom: 8px; gap: 4px; padding: 5px 6px; }
+      .slot-btn { min-width: 44px; height: 42px; }
+      .ship-grid, .upgrade-grid, .controls-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrap">
+    <canvas id="game"></canvas>
+
+    <!-- Top HUD -->
+    <div class="hud-top">
+      <div class="hud-card vitals">
+        <div class="pilot-line">
+          <span id="hud-rank">Lv.1 Acemi Pilot</span>
+          <span id="hud-xp" style="color:var(--muted);font-weight:700;">0 XP</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">KALKAN</span>
+          <div class="bar-track"><div id="bar-shield" class="bar-fill bar-shield" style="width:100%"></div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">GÖVDE</span>
+          <div class="bar-track"><div id="bar-hull" class="bar-fill bar-hull" style="width:100%"></div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">EMP</span>
+          <div class="bar-track"><div id="bar-flare" class="bar-fill bar-flare" style="width:100%"></div></div>
+        </div>
+        <div class="ammo-row">
+          <span>FÜZE</span>
+          <div id="missile-pips" class="missile-pips"></div>
+        </div>
+        <div id="boost-badges" class="boost-badges"></div>
+      </div>
+
+      <div class="hud-card hud-center">
+        <div class="stat-block">
+          <span class="stat-label">Harita</span>
+          <span id="hud-zone" class="stat-val zone">X-1 ANA ÜS</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">Kredi</span>
+          <span id="hud-credits" class="stat-val credits">0</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">Uridium</span>
+          <span id="hud-uri" class="stat-val uri">0</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">Maden</span>
+          <span id="hud-ore" class="stat-val ore">0</span>
+        </div>
+        <div class="divider"></div>
+        <div class="stat-block">
+          <span class="stat-label">Skor</span>
+          <span id="hud-score" class="stat-val">0</span>
+        </div>
+      </div>
+
+      <div class="hud-actions">
+        <button id="btn-hangar" class="icon-btn upgrade-btn" type="button" title="Hangar, Diroit, Rafineri [U]">Hangar [U]</button>
+        <button id="btn-touch" class="icon-btn" type="button" title="Dokunmatik kontroller">Pad</button>
+        <button id="btn-mute" class="icon-btn" type="button" title="Ses efektleri">Ses Açık</button>
+        <button id="btn-pause" class="icon-btn" type="button" title="Duraklat [P]">Duraklat</button>
+      </div>
+    </div>
+
+    <!-- Left Stack: Safe Zone & Active Quest -->
+    <div class="hud-left-stack">
+      <div id="safezone-banner">🛡 GÜVENLİ BÖLGE — OTO ONARIM</div>
+      <div id="quest-card">
+        <div class="quest-tag">AKTİF GÖREV</div>
+        <div id="quest-title" class="quest-title">5 Streuner İmha Et</div>
+        <div class="quest-prog">
+          <span id="quest-progress">0 / 5</span>
+          <span id="quest-step" style="color:var(--cyan);">1/8</span>
+        </div>
+        <div id="quest-reward" class="quest-reward">Ödül: +220 CR, +20 URI</div>
+      </div>
+    </div>
+
+    <!-- Target Lock Card -->
+    <div id="target-card">
+      <div class="target-head">
+        <span id="target-name" class="target-name">STREUNER</span>
+        <span id="target-lvl" class="target-lvl">Lv.1</span>
+      </div>
+      <div class="bar-row" style="margin-bottom:4px;">
+        <span class="bar-label" style="width:36px;">SHD</span>
+        <div class="bar-track"><div id="target-shield" class="bar-fill bar-shield" style="width:100%"></div></div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label" style="width:36px;">HP</span>
+        <div class="bar-track"><div id="target-hull" class="bar-fill bar-hull low" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div id="warning-banner">⚠ FÜZE KİLİTLENDİ — EMP [E / TEKERLEK]</div>
+
+    <button id="jump-prompt" type="button">⚡ ATLA [J] → X-2 ASTEROİT</button>
+
+    <!-- Bottom DarkOrbit Action Bar -->
+    <div class="action-bar" id="action-bar">
+      <button class="slot-btn selected" id="slot-x1" type="button">
+        <span class="slot-key">1</span>
+        <span class="slot-name" style="color:#38bdf8;">x1</span>
+        <span class="slot-count" id="cnt-x1">∞</span>
+      </button>
+      <button class="slot-btn" id="slot-x2" type="button">
+        <span class="slot-key">2</span>
+        <span class="slot-name" style="color:#34d399;">x2</span>
+        <span class="slot-count" id="cnt-x2">120</span>
+      </button>
+      <button class="slot-btn" id="slot-x4" type="button">
+        <span class="slot-key">3</span>
+        <span class="slot-name" style="color:#fef08a;">x4</span>
+        <span class="slot-count" id="cnt-x4">40</span>
+      </button>
+      <button class="slot-btn" id="slot-sab" type="button">
+        <span class="slot-key">4</span>
+        <span class="slot-name" style="color:#a78bfa;">SAB</span>
+        <span class="slot-count" id="cnt-sab">60</span>
+      </button>
+      <button class="slot-btn" id="slot-attack" type="button">
+        <span class="slot-key">A</span>
+        <span class="slot-name" style="color:#fb7185;">LAZER</span>
+        <span class="slot-count" id="cnt-attack">KAPALI</span>
+      </button>
+      <button class="slot-btn" id="slot-rocket" type="button">
+        <span class="slot-key">R</span>
+        <span class="slot-name" style="color:#fbbf24;">ROKET</span>
+        <span class="slot-count" id="cnt-rocket">6</span>
+      </button>
+      <button class="slot-btn skill-ready" id="slot-skill" type="button">
+        <span class="slot-key">Q</span>
+        <span class="slot-name" style="color:#c4b5fd;" id="lbl-skill">YETENEK</span>
+        <span class="slot-count" id="cnt-skill">HAZIR</span>
+      </button>
+      <button class="slot-btn" id="slot-mine" type="button">
+        <span class="slot-key">M</span>
+        <span class="slot-name" style="color:#fb923c;">MAYIN</span>
+        <span class="slot-count" id="cnt-mine">3</span>
+      </button>
+      <button class="slot-btn" id="slot-emp" type="button">
+        <span class="slot-key">E</span>
+        <span class="slot-name" style="color:#f59e0b;">EMP</span>
+        <span class="slot-count" id="cnt-emp">HAZIR</span>
+      </button>
+      <button class="slot-btn" id="slot-bot" type="button">
+        <span class="slot-key">F</span>
+        <span class="slot-name" style="color:#34d399;">ONAR</span>
+        <span class="slot-count" id="cnt-bot">BOT</span>
+      </button>
+    </div>
+
+    <!-- Touch Controls -->
+    <div id="touch-controls" class="hidden">
+      <div class="pad-group">
+        <button class="touch-btn" id="tc-left" type="button">◀</button>
+        <button class="touch-btn" id="tc-thrust" type="button">▲</button>
+        <button class="touch-btn" id="tc-right" type="button">▶</button>
+      </div>
+      <div class="pad-group">
+        <button class="touch-btn flare" id="tc-flare" type="button">EMP</button>
+        <button class="touch-btn missile" id="tc-missile" type="button">ROKET</button>
+        <button class="touch-btn fire" id="tc-fire" type="button">ATEŞ</button>
+      </div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="overlay-start" class="overlay">
+      <div class="modal">
+        <div class="badge">2.5D Çoklu Sektör • Diroit &amp; P.E.T. • Otomatik Kayıt</div>
+        <h1>ASTRA ORBIT 2.5D</h1>
+        <p class="subtitle">
+          4 farklı haritada ışınlanma kapılarından geç, 8 özgün 3B düşman gemisini avla, Flax/Iris diroitleri ve P.E.T. yoldaşınla filonu büyüt. İlerlemen otomatik kaydedilir.
+        </p>
+
+        <div id="ship-selector" class="ship-grid"></div>
+
+        <div class="controls-grid">
+          <div class="ctrl-item"><strong>Fare &amp; Mini Harita</strong><span>İmlece uç; mini haritaya tıklayıp oto-rota çiz</span></div>
+          <div class="ctrl-item"><strong>Sol Tık / Sağ Tık</strong><span>Düşmana kilitle + Oto-Lazer / Güdümlü Füze</span></div>
+          <div class="ctrl-item"><strong>Q (Gemi Yeteneği) &amp; M (Mayın)</strong><span>Özel gemi gücü ve takipçilere uzay mayını</span></div>
+          <div class="ctrl-item"><strong>J (Işınlanma) &amp; U (Hangar)</strong><span>Kapılardan yeni sektöre atla, diroit &amp; rafineri kur</span></div>
+        </div>
+        <button id="btn-start" class="primary-btn" type="button">Sektöre Çık</button>
+        <button id="btn-reset-save" class="secondary-btn" type="button" style="display:none;">Kayıtlı İlerlemeyi Sıfırla</button>
+      </div>
+    </div>
+
+    <!-- Hangar / Station Overlay -->
+    <div id="overlay-hangar" class="overlay hidden">
+      <div class="modal">
+        <div class="badge" style="color:#34d399; border-color:rgba(52,211,153,0.4); background:rgba(16,185,129,0.12);">Yörünge İstasyonu • Hangar, Diroit &amp; Rafineri</div>
+        <h1>İSTASYON HANGARI</h1>
+        <p class="subtitle">Sistemlerini yükselt, Flax/Iris diroitleri ve P.E.T. satın al, asteroit madenlerini güçlendiriciye dönüştür veya gemini boya.</p>
+
+        <div class="hangar-header">
+          <div class="currency-row">
+            <div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Kredi</div>
+              <div id="hangar-credits" class="credits-pill">0 CR</div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Uridium</div>
+              <div id="hangar-uri" class="uri-pill">0 URI</div>
+            </div>
+            <div>
+              <div style="font-size:9px;color:var(--muted);text-transform:uppercase;">Maden</div>
+              <div id="hangar-ore" class="ore-pill">0 ORE</div>
+            </div>
+          </div>
+          <button id="btn-repair" class="repair-btn" type="button">Hızlı Onarım (+40%) — 60 CR</button>
+        </div>
+
+        <div class="hangar-tabs">
+          <button id="tab-systems" class="tab-btn active" type="button">Sistemler</button>
+          <button id="tab-drones" class="tab-btn" type="button">Diroit &amp; P.E.T.</button>
+          <button id="tab-refinery" class="tab-btn" type="button">Rafineri &amp; Cephane</button>
+          <button id="tab-ships" class="tab-btn" type="button">Gemi &amp; Boya</button>
+        </div>
+
+        <div id="upgrade-grid" class="upgrade-grid"></div>
+
+        <button id="btn-hangar-close" class="primary-btn" type="button">Sektöre Dön</button>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="overlay-pause" class="overlay hidden">
+      <div class="modal compact">
+        <div class="badge">Uçuş Duraklatıldı</div>
+        <h1>DURAKLATILDI</h1>
+        <p class="subtitle">İlerlemen otomatik olarak kaydedildi.</p>
+        <button id="btn-resume" class="primary-btn" type="button">Devam Et</button>
+        <button id="btn-restart-pause" class="secondary-btn" type="button">Sıfırdan Yeni Oyun</button>
+      </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="modal compact">
+        <div class="badge" style="color:#fb7185; border-color:rgba(251,113,133,0.4); background:rgba(225,29,72,0.12);">Gemi İmha Edildi</div>
+        <h1>GÖVDE PARÇALANDI</h1>
+        <p id="gameover-reason" class="subtitle">Gemin derin uzayda imha edildi.</p>
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="s-label">Skor</div>
+            <div id="go-score" class="s-val">0</div>
+          </div>
+          <div class="summary-box">
+            <div class="s-label">Seviye</div>
+            <div id="go-lvl" class="s-val">1</div>
+          </div>
+          <div class="summary-box">
+            <div class="s-label">Rekor</div>
+            <div id="go-best" class="s-val" style="color:#38bdf8;">0</div>
+          </div>
+        </div>
+        <button id="btn-respawn-base" class="primary-btn" type="button">X-1 Ana Üste Doğ (Her Şey Korunur)</button>
+        <button id="btn-restart" class="secondary-btn" type="button">Sıfırdan Başla</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // =========================================================================
+      // 1. CANVAS & DOM
+      // =========================================================================
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      let viewW = 960, viewH = 620, dpr = 1;
+
+      function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        viewW = Math.max(320, Math.floor(rect.width));
+        viewH = Math.max(320, Math.floor(rect.height));
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(viewW * dpr);
+        canvas.height = Math.floor(viewH * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        render();
+      }
+
+      const barShield = document.getElementById('bar-shield');
+      const barHull = document.getElementById('bar-hull');
+      const barFlare = document.getElementById('bar-flare');
+      const missilePipsEl = document.getElementById('missile-pips');
+      const boostBadgesEl = document.getElementById('boost-badges');
+      const hudRank = document.getElementById('hud-rank');
+      const hudXp = document.getElementById('hud-xp');
+      const hudZone = document.getElementById('hud-zone');
+      const hudCredits = document.getElementById('hud-credits');
+      const hudUri = document.getElementById('hud-uri');
+      const hudOre = document.getElementById('hud-ore');
+      const hudScore = document.getElementById('hud-score');
+      const safezoneBanner = document.getElementById('safezone-banner');
+      const warningBanner = document.getElementById('warning-banner');
+      const jumpPrompt = document.getElementById('jump-prompt');
+
+      const questTitleEl = document.getElementById('quest-title');
+      const questProgressEl = document.getElementById('quest-progress');
+      const questStepEl = document.getElementById('quest-step');
+      const questRewardEl = document.getElementById('quest-reward');
+
+      const targetCard = document.getElementById('target-card');
+      const targetNameEl = document.getElementById('target-name');
+      const targetLvlEl = document.getElementById('target-lvl');
+      const targetShieldEl = document.getElementById('target-shield');
+      const targetHullEl = document.getElementById('target-hull');
+
+      const slotX1 = document.getElementById('slot-x1');
+      const slotX2 = document.getElementById('slot-x2');
+      const slotX4 = document.getElementById('slot-x4');
+      const slotSab = document.getElementById('slot-sab');
+      const slotAttack = document.getElementById('slot-attack');
+      const slotRocket = document.getElementById('slot-rocket');
+      const slotSkill = document.getElementById('slot-skill');
+      const slotMine = document.getElementById('slot-mine');
+      const slotEmp = document.getElementById('slot-emp');
+      const slotBot = document.getElementById('slot-bot');
+
+      const cntX2 = document.getElementById('cnt-x2');
+      const cntX4 = document.getElementById('cnt-x4');
+      const cntSab = document.getElementById('cnt-sab');
+      const cntAttack = document.getElementById('cnt-attack');
+      const cntRocket = document.getElementById('cnt-rocket');
+      const lblSkill = document.getElementById('lbl-skill');
+      const cntSkill = document.getElementById('cnt-skill');
+      const cntMine = document.getElementById('cnt-mine');
+      const cntEmp = document.getElementById('cnt-emp');
+      const cntBot = document.getElementById('cnt-bot');
+
+      const overlayStart = document.getElementById('overlay-start');
+      const overlayHangar = document.getElementById('overlay-hangar');
+      const overlayPause = document.getElementById('overlay-pause');
+      const overlayGameover = document.getElementById('overlay-gameover');
+      const shipSelectorEl = document.getElementById('ship-selector');
+      const upgradeGridEl = document.getElementById('upgrade-grid');
+      const hangarCreditsEl = document.getElementById('hangar-credits');
+      const hangarUriEl = document.getElementById('hangar-uri');
+      const hangarOreEl = document.getElementById('hangar-ore');
+      const btnRepair = document.getElementById('btn-repair');
+      const btnHangarClose = document.getElementById('btn-hangar-close');
+      const tabSystems = document.getElementById('tab-systems');
+      const tabDrones = document.getElementById('tab-drones');
+      const tabRefinery = document.getElementById('tab-refinery');
+      const tabShips = document.getElementById('tab-ships');
+
+      const goScore = document.getElementById('go-score');
+      const goLvl = document.getElementById('go-lvl');
+      const goBest = document.getElementById('go-best');
+      const goReason = document.getElementById('gameover-reason');
+
+      const btnStart = document.getElementById('btn-start');
+      const btnResetSave = document.getElementById('btn-reset-save');
+      const btnResume = document.getElementById('btn-resume');
+      const btnRespawnBase = document.getElementById('btn-respawn-base');
+      const btnRestart = document.getElementById('btn-restart');
+      const btnRestartPause = document.getElementById('btn-restart-pause');
+      const btnHangar = document.getElementById('btn-hangar');
+      const btnPause = document.getElementById('btn-pause');
+      const btnMute = document.getElementById('btn-mute');
+      const btnTouch = document.getElementById('btn-touch');
+      const touchControlsEl = document.getElementById('touch-controls');
+
+      const SAVE_KEY = 'astra_orbit_25d_save_v2';
+      let highScore = 0;
+      try { highScore = parseInt(localStorage.getItem('astra_orbit_25d_best') || '0', 10) || 0; } catch (e) {}
+
+      function saveHighScore(val) {
+        if (val > highScore) {
+          highScore = val;
+          try { localStorage.setItem('astra_orbit_25d_best', String(highScore)); } catch (e) {}
+        }
+      }
+
+      // =========================================================================
+      // 2. SYNTHESIZED WEB AUDIO
+      // =========================================================================
+      const Sound = (() => {
+        let actx = null, muted = false, lastWarnTime = 0;
+        function init() {
+          if (!actx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) actx = new AudioCtx();
+          }
+          if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+        }
+        function setMuted(m) {
+          muted = m;
+          btnMute.textContent = muted ? 'Ses Kapalı' : 'Ses Açık';
+          btnMute.classList.toggle('active', !muted);
+        }
+        function isMuted() { return muted; }
+
+        function playLaser(isEnemy = false, pitchScale = 1) {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = isEnemy ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime((isEnemy ? 460 : 880) * pitchScale, now);
+          osc.frequency.exponentialRampToValueAtTime((isEnemy ? 140 : 210) * pitchScale, now + 0.1);
+          gain.gain.setValueAtTime(isEnemy ? 0.036 : 0.065, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain); gain.connect(actx.destination);
+          osc.start(now); osc.stop(now + 0.11);
+        }
+
+        function playMissileLaunch() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const bufLen = Math.floor(actx.sampleRate * 0.22);
+          const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+          const src = actx.createBufferSource(); src.buffer = buf;
+          const filter = actx.createBiquadFilter(); filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(920, now); filter.frequency.exponentialRampToValueAtTime(240, now + 0.22);
+          const gain = actx.createGain(); gain.gain.setValueAtTime(0.13, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+          src.connect(filter); filter.connect(gain); gain.connect(actx.destination); src.start(now);
+        }
+
+        function playExplosion(scale = 1) {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const dur = Math.min(0.65, 0.22 + scale * 0.15);
+          const bufLen = Math.floor(actx.sampleRate * dur);
+          const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufLen; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.5);
+          const src = actx.createBufferSource(); src.buffer = buf;
+          const filter = actx.createBiquadFilter(); filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(680 * Math.min(1.5, scale), now); filter.frequency.exponentialRampToValueAtTime(85, now + dur);
+          const gain = actx.createGain(); gain.gain.setValueAtTime(Math.min(0.22, 0.1 * scale), now); gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+          src.connect(filter); filter.connect(gain); gain.connect(actx.destination); src.start(now);
+        }
+
+        function playLockChirp() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = 'sine'; osc.frequency.setValueAtTime(1180, now); osc.frequency.setValueAtTime(1640, now + 0.04);
+          gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.connect(gain); gain.connect(actx.destination); osc.start(now); osc.stop(now + 0.095);
+        }
+
+        function playWarp() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.exponentialRampToValueAtTime(1400, now + 0.42);
+          gain.gain.setValueAtTime(0.12, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+          osc.connect(gain); gain.connect(actx.destination); osc.start(now); osc.stop(now + 0.46);
+        }
+
+        function playWarningBeep() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          if (now - lastWarnTime < 0.36) return;
+          lastWarnTime = now;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = 'square'; osc.frequency.setValueAtTime(920, now); osc.frequency.setValueAtTime(700, now + 0.06);
+          gain.gain.setValueAtTime(0.036, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.13);
+          osc.connect(gain); gain.connect(actx.destination); osc.start(now); osc.stop(now + 0.14);
+        }
+
+        function playFlare() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = 'triangle'; osc.frequency.setValueAtTime(280, now); osc.frequency.exponentialRampToValueAtTime(920, now + 0.18);
+          gain.gain.setValueAtTime(0.09, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+          osc.connect(gain); gain.connect(actx.destination); osc.start(now); osc.stop(now + 0.21);
+        }
+
+        function playPickup() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          [523, 659, 880].forEach((freq, idx) => {
+            const osc = actx.createOscillator(), gain = actx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now + idx * 0.045);
+            gain.gain.setValueAtTime(0.07, now + idx * 0.045); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.045 + 0.1);
+            osc.connect(gain); gain.connect(actx.destination); osc.start(now + idx * 0.045); osc.stop(now + idx * 0.045 + 0.11);
+          });
+        }
+
+        function playUpgrade() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          [440, 554, 659, 880].forEach((freq, idx) => {
+            const osc = actx.createOscillator(), gain = actx.createGain();
+            osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+            gain.gain.setValueAtTime(0.08, now + idx * 0.05); gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.13);
+            osc.connect(gain); gain.connect(actx.destination); osc.start(now + idx * 0.05); osc.stop(now + idx * 0.05 + 0.14);
+          });
+        }
+
+        function playHit() {
+          if (muted || !actx) return;
+          const now = actx.currentTime;
+          const osc = actx.createOscillator(), gain = actx.createGain();
+          osc.type = 'sawtooth'; osc.frequency.setValueAtTime(155, now); osc.frequency.exponentialRampToValueAtTime(52, now + 0.1);
+          gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+          osc.connect(gain); gain.connect(actx.destination); osc.start(now); osc.stop(now + 0.12);
+        }
+
+        return { init, setMuted, isMuted, playLaser, playMissileLaunch, playExplosion, playLockChirp, playWarp, playWarningBeep, playFlare, playPickup, playUpgrade, playHit };
+      })();
+
+      // =========================================================================
+      // 3. 2.5D MATHEMATICAL 3D MESH ENGINE
+      // =========================================================================
+      const LIGHT_DIR = (() => {
+        const lx = -0.45, ly = -0.55, lz = 0.70, len = Math.hypot(lx, ly, lz);
+        return { x: lx / len, y: ly / len, z: lz / len };
+      })();
+      const VIEW_DIR = { x: 0, y: 0.24, z: 0.97 };
+      const HALF_VEC = (() => {
+        const hx = LIGHT_DIR.x + VIEW_DIR.x, hy = LIGHT_DIR.y + VIEW_DIR.y, hz = LIGHT_DIR.z + VIEW_DIR.z;
+        const len = Math.hypot(hx, hy, hz);
+        return { x: hx / len, y: hy / len, z: hz / len };
+      })();
+
+      function rgbShade(rgb, diffuse, spec, ambient = 0.24, emissive = 0) {
+        const lum = Math.min(1.38, ambient + diffuse * 0.85 + emissive);
+        const r = Math.min(255, Math.floor(rgb[0] * lum + spec * 255));
+        const g = Math.min(255, Math.floor(rgb[1] * lum + spec * 255));
+        const b = Math.min(255, Math.floor(rgb[2] * lum + spec * 255));
+        return `rgb(${r},${g},${b})`;
+      }
+
+      function addBox(mesh, cx, cy, cz, sx, sy, sz, mat, taperFront = 1, taperBack = 1) {
+        const hx = sx * 0.5, hy = sy * 0.5, hz = sz * 0.5;
+        const base = mesh.verts.length;
+        const v = [
+          [cx - hx, cy - hy * taperBack, cz - hz * taperBack],
+          [cx - hx, cy + hy * taperBack, cz - hz * taperBack],
+          [cx - hx, cy + hy * taperBack, cz + hz * taperBack],
+          [cx - hx, cy - hy * taperBack, cz + hz * taperBack],
+          [cx + hx, cy - hy * taperFront, cz - hz * taperFront],
+          [cx + hx, cy + hy * taperFront, cz - hz * taperFront],
+          [cx + hx, cy + hy * taperFront, cz + hz * taperFront],
+          [cx + hx, cy - hy * taperFront, cz + hz * taperFront]
+        ];
+        for (const p of v) mesh.verts.push(p);
+        const faces = [
+          [base + 3, base + 2, base + 6, base + 7],
+          [base + 0, base + 4, base + 5, base + 1],
+          [base + 4, base + 7, base + 6, base + 5],
+          [base + 0, base + 1, base + 2, base + 3],
+          [base + 1, base + 5, base + 6, base + 2],
+          [base + 0, base + 3, base + 7, base + 4]
+        ];
+        for (const f of faces) mesh.faces.push({ idx: f, mat });
+      }
+
+      function addSweptWings(mesh, rootX, rootY, tipX, tipY, rootChord, tipChord, thick, zOff, dihedralZ, mat) {
+        for (const s of [-1, 1]) {
+          const base = mesh.verts.length;
+          const ht = thick * 0.5;
+          const v = [
+            [rootX + rootChord * 0.5, s * rootY, zOff + ht],
+            [rootX - rootChord * 0.5, s * rootY, zOff + ht],
+            [tipX - tipChord * 0.5, s * tipY, zOff + dihedralZ + ht * 0.5],
+            [tipX + tipChord * 0.5, s * tipY, zOff + dihedralZ + ht * 0.5],
+            [rootX + rootChord * 0.5, s * rootY, zOff - ht],
+            [rootX - rootChord * 0.5, s * rootY, zOff - ht],
+            [tipX - tipChord * 0.5, s * tipY, zOff + dihedralZ - ht * 0.5],
+            [tipX + tipChord * 0.5, s * tipY, zOff + dihedralZ - ht * 0.5]
+          ];
+          for (const p of v) mesh.verts.push(p);
+          if (s === 1) {
+            mesh.faces.push({ idx: [base + 0, base + 1, base + 2, base + 3], mat });
+            mesh.faces.push({ idx: [base + 4, base + 7, base + 6, base + 5], mat });
+            mesh.faces.push({ idx: [base + 0, base + 3, base + 7, base + 4], mat });
+            mesh.faces.push({ idx: [base + 1, base + 5, base + 6, base + 2], mat });
+            mesh.faces.push({ idx: [base + 3, base + 2, base + 6, base + 7], mat });
+          } else {
+            mesh.faces.push({ idx: [base + 0, base + 3, base + 2, base + 1], mat });
+            mesh.faces.push({ idx: [base + 4, base + 5, base + 6, base + 7], mat });
+            mesh.faces.push({ idx: [base + 0, base + 4, base + 7, base + 3], mat });
+            mesh.faces.push({ idx: [base + 1, base + 2, base + 6, base + 5], mat });
+            mesh.faces.push({ idx: [base + 3, base + 7, base + 6, base + 2], mat });
+          }
+        }
+      }
+
+      function buildStationMesh() {
+        const m = { verts: [], faces: [] };
+        addBox(m, 0, 0, 0, 46, 46, 26, 'hullDark', 1, 1);
+        addBox(m, 0, 0, 14, 26, 26, 12, 'canopy', 0.65, 0.65);
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2, cx = Math.cos(a) * 52, cy = Math.sin(a) * 52;
+          const isX = Math.abs(Math.cos(a)) > 0.5;
+          addBox(m, cx * 0.5, cy * 0.5, 0, isX ? 52 : 12, isX ? 12 : 52, 10, 'hull', 1, 1);
+          addBox(m, cx, cy, 0, 22, 22, 16, 'accent', 0.85, 0.85);
+          addBox(m, cx, cy, 9, 10, 10, 4, 'engine', 1, 1);
+        }
+        return m;
+      }
+
+      function buildAllMeshes() {
+        const meshes = {};
+
+        // Player 1: VF-09 FALCON
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 16, 0, 0, 16, 5.5, 4.2, 'hull', 0.12, 1.0);
+          addBox(m, 2, 0, 0.3, 16, 8.2, 5.8, 'hull', 0.72, 1.0);
+          addBox(m, -10, 0, 0.2, 11, 9.2, 5.2, 'hullDark', 0.9, 0.75);
+          addBox(m, 5, 0, 3.6, 11, 4.4, 2.8, 'canopy', 0.45, 0.65);
+          addSweptWings(m, -1, 4.2, -12, 22, 13, 4.2, 2.2, -0.3, -1.8, 'hull');
+          addSweptWings(m, 11, 3.0, 7, 10.5, 5.5, 2.2, 1.4, 0.1, 0.6, 'accent');
+          for (const s of [-1, 1]) {
+            addBox(m, -12, s * 5.2, 4.2, 8.5, 1.4, 6.2, 'accent', 0.35, 0.85);
+            addBox(m, -14, s * 4.5, -0.2, 9, 3.6, 3.6, 'hullDark', 0.9, 0.8);
+            addBox(m, -18.8, s * 4.5, -0.2, 1.8, 2.6, 2.6, 'engine', 1, 1);
+          }
+          meshes.falcon = m;
+        }
+
+        // Player 2: A-42 VALKYRIE
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 15, 0, 0, 14, 7.6, 5.0, 'hull', 0.25, 1.0);
+          addBox(m, 1, 0, 0.4, 17, 11.4, 6.8, 'hull', 0.82, 1.0);
+          addBox(m, -11, 0, 0.2, 11, 12.2, 6.2, 'hullDark', 0.95, 0.82);
+          addBox(m, 4, 0, 4.2, 11.5, 5.2, 3.2, 'canopy', 0.5, 0.68);
+          addSweptWings(m, 0, 5.6, -9, 25, 14, 6.0, 2.8, -0.4, -1.2, 'hull');
+          for (const s of [-1, 1]) {
+            addBox(m, -1, s * 11.5, 1.8, 10.5, 3.6, 3.4, 'accent', 0.85, 0.85);
+            addBox(m, -6, s * 22.5, -0.8, 9, 2.2, 2.2, 'hullDark', 0.6, 0.9);
+            addBox(m, -15, s * 5.2, 0, 9.5, 4.4, 4.4, 'hullDark', 0.95, 0.85);
+            addBox(m, -20.2, s * 5.2, 0, 2.0, 3.2, 3.2, 'engine', 1, 1);
+          }
+          meshes.valkyrie = m;
+        }
+
+        // Player 3: X-77 TITAN
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 12, 0, 0.6, 15, 10.5, 6.6, 'hull', 0.45, 1.0);
+          addBox(m, -2, 0, 0.8, 18, 13.5, 7.6, 'hullDark', 0.95, 0.9);
+          addBox(m, 3, 0, 4.8, 10, 6.0, 3.2, 'canopy', 0.55, 0.7);
+          addSweptWings(m, -2, 6.5, -7, 24, 15, 9.0, 3.2, -0.2, 0.4, 'hull');
+          for (const s of [-1, 1]) {
+            addBox(m, 8, s * 12.5, 0.2, 22, 4.6, 4.4, 'hull', 0.35, 0.95);
+            addBox(m, 14, s * 12.5, 2.6, 8, 2.8, 1.6, 'accent', 0.4, 0.9);
+            addBox(m, -14, s * 10.5, 0.2, 10, 4.8, 4.6, 'hullDark', 0.95, 0.82);
+            addBox(m, -19.5, s * 10.5, 0.2, 2.0, 3.4, 3.4, 'engine', 1, 1);
+          }
+          addBox(m, -14, 0, 0.2, 8, 5.4, 5.2, 'hullDark', 0.9, 0.82);
+          addBox(m, -18.5, 0, 0.2, 2.0, 4.0, 3.8, 'engine', 1, 1);
+          meshes.titan = m;
+        }
+
+        // Companion: Flax/Iris 3D Drone & P.E.T. Mini-Escort
+        {
+          const d = { verts: [], faces: [] };
+          addBox(d, 4, 0, 0, 7, 3.6, 2.8, 'hull', 0.2, 1.0);
+          addBox(d, -1, 0, 0, 5, 5.2, 3.2, 'accent', 0.8, 0.7);
+          addBox(d, -4.2, 0, 0, 1.6, 2.4, 2.2, 'engine', 1, 1);
+          meshes.drone = d;
+
+          const pet = { verts: [], faces: [] };
+          addBox(pet, 7, 0, 0, 9, 4.4, 3.4, 'hull', 0.2, 1.0);
+          addBox(pet, -1, 0, 0.2, 8, 6.2, 4.2, 'hullDark', 0.85, 0.75);
+          addBox(pet, 2, 0, 2.6, 5, 3.0, 1.8, 'canopy', 0.5, 0.7);
+          addSweptWings(pet, -1, 3.0, -5, 11, 6, 2.5, 1.4, 0, 1.0, 'accent');
+          addBox(pet, -6, 0, 0, 1.8, 2.8, 2.6, 'engine', 1, 1);
+          meshes.pet = pet;
+        }
+
+        // 8 Distinct Enemy 3D Spaceships
+        // 1. Streuner
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 7, 0, 0, 10, 4.6, 3.2, 'hull', 0.15, 1.0);
+          addBox(m, -2, 0, 0, 9, 6.4, 4.0, 'hullDark', 0.85, 0.65);
+          addSweptWings(m, -2, 3.0, 3, 13, 7, 2.5, 1.6, 0, 0.8, 'accent');
+          addBox(m, -8, 0, 0, 2.0, 3.0, 2.8, 'engine', 1, 1);
+          meshes.streuner = m;
+        }
+        // 2. Lordakia
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 12, 0, 0, 14, 5.0, 3.6, 'hull', 0.1, 1.0);
+          addBox(m, -2, 0, 0.2, 14, 7.2, 4.8, 'hullDark', 0.85, 0.72);
+          addBox(m, 2, 0, 3.0, 8, 3.6, 2.4, 'canopy', 0.4, 0.65);
+          addSweptWings(m, -4, 3.4, 7, 18, 9.5, 3.2, 1.8, -0.2, 1.4, 'accent');
+          addBox(m, -11, 0, 0, 2.2, 3.6, 3.2, 'engine', 1, 1);
+          meshes.lordakia = m;
+        }
+        // 3. Saimon
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 14, 0, 0, 14, 6.8, 4.8, 'hull', 0.22, 1.0);
+          addBox(m, -1, 0, 0.4, 16, 10.4, 6.2, 'hullDark', 0.9, 0.85);
+          addBox(m, 3, 0, 3.8, 9, 4.6, 2.8, 'canopy', 0.45, 0.7);
+          addSweptWings(m, -2, 5.0, -10, 22, 13, 5.5, 2.5, 0, -1.6, 'hull');
+          for (const s of [-1, 1]) {
+            addBox(m, 1, s * 10.5, 1.6, 9.5, 3.4, 3.2, 'accent', 0.8, 0.8);
+            addBox(m, -13, s * 4.5, 0, 6, 3.8, 3.8, 'hullDark', 0.9, 0.8);
+            addBox(m, -16.5, s * 4.5, 0, 2.0, 2.8, 2.8, 'engine', 1, 1);
+          }
+          meshes.saimon = m;
+        }
+        // 4. Mordon
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 16, 0, 0.4, 18, 11.5, 7.0, 'hull', 0.35, 1.0);
+          addBox(m, -4, 0, 0.8, 20, 15.5, 8.2, 'hullDark', 0.95, 0.88);
+          addBox(m, 4, 0, 5.2, 11, 6.6, 3.4, 'canopy', 0.55, 0.75);
+          addSweptWings(m, -2, 7.6, -12, 26, 16, 7.5, 3.2, 0, -2.0, 'accent');
+          for (const s of [-1, 1]) {
+            addBox(m, -16, s * 6.5, 0.4, 7, 4.8, 4.6, 'hullDark', 0.9, 0.8);
+            addBox(m, -20, s * 6.5, 0.4, 2.2, 3.6, 3.4, 'engine', 1, 1);
+          }
+          meshes.mordon = m;
+        }
+        // 5. Kristallin (Split-Wing X-Wing Stealth Fighter)
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 15, 0, 0, 15, 4.4, 3.4, 'hull', 0.14, 1.0);
+          addBox(m, 0, 0, 0.2, 16, 6.8, 5.0, 'hullDark', 0.85, 0.88);
+          addBox(m, 4, 0, 3.4, 9.5, 3.6, 2.4, 'canopy', 0.42, 0.68);
+          addSweptWings(m, -2, 3.4, -10, 22, 10, 3.6, 1.5, 1.4, 4.2, 'hull');
+          addSweptWings(m, -2, 3.4, -10, 22, 10, 3.6, 1.5, -1.4, -4.2, 'accent');
+          for (const s of [-1, 1]) {
+            addBox(m, -10, s * 3.8, 0, 6.5, 2.6, 2.6, 'hullDark', 0.9, 0.8);
+            addBox(m, -13.8, s * 3.8, 0, 1.8, 2.0, 2.0, 'engine', 1, 1);
+          }
+          meshes.kristallin = m;
+        }
+        // 6. Kristallon (Arrowhead Capital Destroyer)
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 26, 0, 0, 26, 15, 7.2, 'hull', 0.16, 1.0);
+          addBox(m, 0, 0, 0.8, 28, 24, 10.5, 'hullDark', 0.72, 1.0);
+          addBox(m, -20, 0, 0.6, 16, 26, 9.6, 'hull', 1.0, 0.82);
+          addBox(m, -8, 0, 8.2, 14, 10.5, 6.2, 'hull', 0.65, 0.85);
+          addBox(m, -2, 0, 10.2, 7.5, 6.8, 2.8, 'canopy', 0.55, 0.8);
+          addSweptWings(m, -6, 12, -22, 36, 24, 10, 4.2, -0.4, -1.8, 'accent');
+          for (const s of [-1, 1]) {
+            addBox(m, 10, s * 13.5, 2.2, 12, 4.2, 3.6, 'accent', 0.5, 0.9);
+            addBox(m, -28, s * 9.5, 0.4, 5.5, 5.4, 5.0, 'hullDark', 0.9, 0.85);
+            addBox(m, -31.2, s * 9.5, 0.4, 2.2, 4.2, 3.8, 'engine', 1, 1);
+            addBox(m, -28, s * 3.4, 0.4, 5.5, 4.4, 4.4, 'hullDark', 0.9, 0.85);
+            addBox(m, -31.2, s * 3.4, 0.4, 2.2, 3.4, 3.4, 'engine', 1, 1);
+          }
+          meshes.kristallon = m;
+        }
+        // 7. Cubikon (Twin-Hull Catamaran Drone Carrier)
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, -4, 0, 2.5, 24, 14, 9.5, 'hullDark', 0.8, 0.95);
+          addBox(m, 4, 0, 8.2, 11, 8.2, 3.8, 'canopy', 0.5, 0.75);
+          addBox(m, -2, 0, 0.2, 22, 38, 5.2, 'hull', 0.9, 0.9);
+          for (const s of [-1, 1]) {
+            addBox(m, 6, s * 21, 0.4, 48, 12.5, 9.2, 'hull', 0.58, 0.92);
+            addBox(m, 26, s * 21, 1.2, 10, 7.6, 5.6, 'accent', 0.4, 1.0);
+            addBox(m, 4, s * 21, 5.4, 26, 4.4, 2.2, 'accent', 0.85, 0.85);
+            addBox(m, -22, s * 21, 0.4, 10, 10.5, 8.0, 'hullDark', 0.95, 0.82);
+            addBox(m, -28, s * 21, 0.4, 2.6, 7.8, 6.0, 'engine', 1, 1);
+          }
+          meshes.cubikon = m;
+        }
+        // 8. Protegit (Twin-Panel Escort Fighter)
+        {
+          const m = { verts: [], faces: [] };
+          addBox(m, 2, 0, 0, 11, 7.2, 6.4, 'hullDark', 0.72, 0.72);
+          addBox(m, 6.5, 0, 1.8, 4.8, 4.4, 3.2, 'canopy', 0.55, 0.8);
+          addBox(m, -4.5, 0, 0, 2.0, 4.0, 3.6, 'engine', 1, 1);
+          for (const s of [-1, 1]) {
+            addBox(m, 0, s * 5.8, 0, 3.2, 5.2, 2.0, 'hull', 1, 1);
+            addBox(m, 0, s * 10.2, 0, 16, 1.8, 11.5, 'accent', 0.6, 0.6);
+          }
+          meshes.protegit = m;
+        }
+
+        meshes.station = buildStationMesh();
+        return meshes;
+      }
+
+      const MESHES = buildAllMeshes();
+
+      function buildAsteroidMesh(radius, seed) {
+        const phi = (1 + Math.sqrt(5)) / 2;
+        const rawV = [
+          [-1, phi, 0], [1, phi, 0], [-1, -phi, 0], [1, -phi, 0],
+          [0, -1, phi], [0, 1, phi], [0, -1, -phi], [0, 1, -phi],
+          [phi, 0, -1], [phi, 0, 1], [-phi, 0, -1], [-phi, 0, 1]
+        ];
+        const facesIdx = [
+          [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+          [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+          [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+          [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+        ];
+        const verts = rawV.map(([vx, vy, vz]) => {
+          const len = Math.hypot(vx, vy, vz);
+          const nx = vx / len, ny = vy / len, nz = vz / len;
+          const h1 = Math.sin(nx * 3.1 + seed) * Math.cos(ny * 2.7 - seed * 0.7);
+          const h2 = Math.sin(nz * 4.3 + nx * 2.1 + seed * 1.3);
+          const r = radius * (0.86 + h1 * 0.16 + h2 * 0.10);
+          return [nx * r, ny * r, nz * r];
+        });
+        return { verts, faces: facesIdx.map((idx, i) => ({ idx, mat: (i % 5 === 0) ? 'crater' : 'rock' })) };
+      }
+
+      function renderMesh25D(mesh, worldX, worldY, yaw, pitch, roll, scale, palette, hitFlash = 0) {
+        const cy = Math.cos(yaw), sy = Math.sin(yaw);
+        const cp = Math.cos(pitch), sp = Math.sin(pitch);
+        const cr = Math.cos(roll), sr = Math.sin(roll);
+        const tv = new Array(mesh.verts.length), pv = new Array(mesh.verts.length);
+        const persp = 0.0021;
+
+        for (let i = 0; i < mesh.verts.length; i++) {
+          const v = mesh.verts[i];
+          const lx = v[0] * scale, ly = v[1] * scale, lz = v[2] * scale;
+          const y1 = ly * cr - lz * sr, z1 = ly * sr + lz * cr, x1 = lx;
+          const x2 = x1 * cp + z1 * sp, z2 = -x1 * sp + z1 * cp, y2 = y1;
+          const wx = x2 * cy - y2 * sy, wy = x2 * sy + y2 * cy, wz = z2;
+          tv[i] = [wx, wy, wz];
+          const factor = 1 / (1 - wz * persp);
+          pv[i] = [worldX + wx * factor, worldY + (wy * 0.94 - wz * 0.34) * factor, wz];
+        }
+
+        const drawList = [];
+        for (let i = 0; i < mesh.faces.length; i++) {
+          const f = mesh.faces[i], idx = f.idx;
+          const a = tv[idx[0]], b = tv[idx[1]], c = tv[idx[2]];
+          const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
+          const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
+          let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+          const nLen = Math.hypot(nx, ny, nz) || 1;
+          nx /= nLen; ny /= nLen; nz /= nLen;
+          if (nx * VIEW_DIR.x + ny * VIEW_DIR.y + nz * VIEW_DIR.z <= -0.08) continue;
+          let avgZ = 0;
+          for (let k = 0; k < idx.length; k++) avgZ += tv[idx[k]][2];
+          drawList.push({ idx, mat: f.mat, nx, ny, nz, avgZ: avgZ / idx.length });
+        }
+
+        drawList.sort((a, b) => a.avgZ - b.avgZ);
+        for (let i = 0; i < drawList.length; i++) {
+          const f = drawList[i];
+          const diff = Math.max(0, f.nx * LIGHT_DIR.x + f.ny * LIGHT_DIR.y + f.nz * LIGHT_DIR.z);
+          const halfDot = Math.max(0, f.nx * HALF_VEC.x + f.ny * HALF_VEC.y + f.nz * HALF_VEC.z);
+          let fillStyle, strokeStyle = 'rgba(15, 23, 42, 0.35)';
+          if (hitFlash > 0) fillStyle = '#f8fafc';
+          else if (f.mat === 'engine') { fillStyle = palette.engineCss || '#38bdf8'; strokeStyle = fillStyle; }
+          else if (f.mat === 'canopy') { fillStyle = rgbShade(palette.canopy, diff, Math.pow(halfDot, 22) * 0.95, 0.35, 0.15); strokeStyle = 'rgba(186, 230, 253, 0.45)'; }
+          else if (f.mat === 'accent') fillStyle = rgbShade(palette.accent, diff, Math.pow(halfDot, 10) * 0.35, 0.28, 0.08);
+          else if (f.mat === 'hullDark') fillStyle = rgbShade(palette.hullDark, diff, Math.pow(halfDot, 8) * 0.22, 0.22, 0);
+          else if (f.mat === 'crater') { fillStyle = rgbShade(palette.crater, diff, 0, 0.16, 0); strokeStyle = 'rgba(15, 23, 42, 0.55)'; }
+          else if (f.mat === 'rock') { fillStyle = rgbShade(palette.rock, diff, Math.pow(halfDot, 6) * 0.1, 0.24, 0); strokeStyle = 'rgba(148, 163, 184, 0.22)'; }
+          else fillStyle = rgbShade(palette.hull, diff, Math.pow(halfDot, 12) * 0.32, 0.28, 0);
+
+          ctx.beginPath();
+          const p0 = pv[f.idx[0]];
+          ctx.moveTo(p0[0], p0[1]);
+          for (let k = 1; k < f.idx.length; k++) ctx.lineTo(pv[f.idx[k]][0], pv[f.idx[k]][1]);
+          ctx.closePath();
+          ctx.fillStyle = fillStyle; ctx.fill();
+          ctx.strokeStyle = strokeStyle; ctx.lineWidth = 0.85; ctx.stroke();
+        }
+      }
+
+      // =========================================================================
+      // 4. SECTORS (MULTI-MAP JUMP GATES), SHIPS, SKINS, QUESTS & CATALOGS
+      // =========================================================================
+      const WORLD_SIZE = 7200;
+      const HALF_WORLD = WORLD_SIZE / 2;
+      const SAFE_RADIUS = 380;
+
+      const SECTORS = {
+        'X-1': {
+          id: 'X-1', name: 'X-1 ANA ÜS', bgInner: '#0a162d', bgOuter: '#02050e',
+          planetA: 'rgba(56, 189, 248, 0.28)', planetB: 'rgba(30, 58, 138, 0.22)',
+          hasBase: true, rewardMult: 1.0, asteroids: 46,
+          quotas: [
+            { type: 'streuner', count: 16, minR: 620, maxR: 2200 },
+            { type: 'lordakia', count: 12, minR: 1100, maxR: 3100 },
+            { type: 'saimon', count: 6, minR: 2000, maxR: 3300 }
+          ],
+          gates: [
+            { x: 2950, y: -2600, target: 'X-2', label: 'X-2 ASTEROİT KUŞAĞI', color: '#34d399' }
+          ]
+        },
+        'X-2': {
+          id: 'X-2', name: 'X-2 ASTEROİT', bgInner: '#0d1f24', bgOuter: '#03080b',
+          planetA: 'rgba(52, 211, 153, 0.26)', planetB: 'rgba(6, 78, 59, 0.24)',
+          hasBase: false, rewardMult: 1.35, asteroids: 78,
+          quotas: [
+            { type: 'lordakia', count: 10, minR: 400, maxR: 2800 },
+            { type: 'saimon', count: 12, minR: 500, maxR: 3100 },
+            { type: 'mordon', count: 9, minR: 900, maxR: 3200 },
+            { type: 'kristallin', count: 7, minR: 1500, maxR: 3300 }
+          ],
+          gates: [
+            { x: -2950, y: 2600, target: 'X-1', label: 'X-1 ANA ÜS', color: '#38bdf8' },
+            { x: 2950, y: 2600, target: 'X-3', label: 'X-3 DERİN UZAY', color: '#fb7185' }
+          ]
+        },
+        'X-3': {
+          id: 'X-3', name: 'X-3 DERİN UZAY', bgInner: '#210d1b', bgOuter: '#080309',
+          planetA: 'rgba(244, 63, 94, 0.26)', planetB: 'rgba(88, 28, 135, 0.24)',
+          hasBase: false, rewardMult: 1.75, asteroids: 56,
+          quotas: [
+            { type: 'mordon', count: 9, minR: 500, maxR: 3100 },
+            { type: 'kristallin', count: 12, minR: 500, maxR: 3200 },
+            { type: 'kristallon', count: 4, minR: 900, maxR: 3200 },
+            { type: 'cubikon', count: 2, minR: 1200, maxR: 3100 }
+          ],
+          gates: [
+            { x: -2950, y: -2600, target: 'X-2', label: 'X-2 ASTEROİT', color: '#34d399' },
+            { x: 2950, y: -2600, target: 'GG', label: 'GG-Ω BOSS ARENASI', color: '#e879f9' }
+          ]
+        },
+        'GG': {
+          id: 'GG', name: 'GG-Ω BOSS ARENASI', bgInner: '#1b1033', bgOuter: '#05020d',
+          planetA: 'rgba(232, 121, 249, 0.30)', planetB: 'rgba(126, 34, 206, 0.25)',
+          hasBase: false, rewardMult: 2.4, asteroids: 36,
+          quotas: [
+            { type: 'kristallin', count: 10, minR: 600, maxR: 2800 },
+            { type: 'kristallon', count: 6, minR: 700, maxR: 2900 },
+            { type: 'cubikon', count: 4, minR: 900, maxR: 2900 }
+          ],
+          gates: [
+            { x: -2800, y: 0, target: 'X-1', label: 'X-1 ANA ÜS', color: '#38bdf8' },
+            { x: 2800, y: 0, target: 'X-3', label: 'X-3 DERİN UZAY', color: '#fb7185' }
+          ]
+        }
+      };
+
+      const SHIP_SKINS = [
+        { id: 'cyan', name: 'Vanguard Mavi', cost: 0, cur: 'CR', hull: [196, 214, 234], hullDark: [71, 85, 105], accent: [56, 189, 248], canopy: [56, 189, 248], engineCss: '#38bdf8' },
+        { id: 'crimson', name: 'Kızıl Korsan', cost: 160, cur: 'CR', hull: [204, 178, 186], hullDark: [76, 42, 54], accent: [244, 63, 94], canopy: [251, 113, 133], engineCss: '#fb7185' },
+        { id: 'gold', name: 'Altın Elit', cost: 45, cur: 'URI', hull: [232, 216, 172], hullDark: [88, 72, 42], accent: [251, 191, 36], canopy: [254, 240, 138], engineCss: '#fbbf24' },
+        { id: 'emerald', name: 'Zümrüt Hayalet', cost: 40, cur: 'URI', hull: [176, 218, 204], hullDark: [34, 72, 62], accent: [52, 211, 153], canopy: [167, 243, 208], engineCss: '#34d399' }
+      ];
+
+      const PLAYER_MODELS = [
+        {
+          id: 'falcon', code: 'VF-09', name: 'Falcon', role: 'Hızlı Avcı',
+          desc: 'Yüksek hız, keskin manevra ve seri ikiz lazerler.',
+          skillName: 'HAYALET', skillDesc: '4 sn gizlenme + turbo hız', skillCd: 14,
+          mesh: MESHES.falcon,
+          stats: { speed: 445, accel: 590, hull: 125, shield: 125, missiles: 6, fireRate: 0.16, damage: 15, barrels: 2 },
+          bars: { speed: 96, armor: 58, firepower: 74 }
+        },
+        {
+          id: 'valkyrie', code: 'A-42', name: 'Valkyrie', role: 'Savaş Kruvazörü',
+          desc: 'Dengeli kalkan, geniş füze yuvası ve güçlü lazerler.',
+          skillName: 'SALVO', skillDesc: 'Anında 4 güdümlü füze salvosu', skillCd: 13,
+          mesh: MESHES.valkyrie,
+          stats: { speed: 398, accel: 525, hull: 170, shield: 170, missiles: 8, fireRate: 0.175, damage: 18, barrels: 2 },
+          bars: { speed: 80, armor: 78, firepower: 88 }
+        },
+        {
+          id: 'titan', code: 'X-77', name: 'Titan', role: 'Ağır Dretnot',
+          desc: 'Çift gövdeli ağır zırh, dev kalkan ve üçlü lazer yaylımı.',
+          skillName: 'KALE', skillDesc: '5 sn %75 hasar azaltma + kalkan yenileme', skillCd: 16,
+          mesh: MESHES.titan,
+          stats: { speed: 355, accel: 470, hull: 235, shield: 225, missiles: 8, fireRate: 0.2, damage: 17, barrels: 3 },
+          bars: { speed: 64, armor: 98, firepower: 95 }
+        }
+      ];
+
+      const ENEMY_TYPES = {
+        streuner: { name: 'Streuner', lvl: 1, radius: 15, hp: 48, shield: 15, speed: 255, turnRate: 4.0, fireCd: 1.0, dmg: 7, missile: false, xp: 40, score: 120, cr: 34, uri: 3, mesh: MESHES.streuner, mapColor: '#fb923c', palette: { hull: [168, 154, 144], hullDark: [68, 56, 52], accent: [251, 146, 60], canopy: [253, 186, 116], engineCss: '#fb923c' } },
+        lordakia: { name: 'Lordakia', lvl: 2, radius: 17, hp: 78, shield: 38, speed: 295, turnRate: 4.2, fireCd: 0.85, dmg: 9, missile: false, xp: 68, score: 190, cr: 55, uri: 5, mesh: MESHES.lordakia, mapColor: '#f59e0b', palette: { hull: [158, 166, 184], hullDark: [58, 62, 78], accent: [245, 158, 11], canopy: [251, 191, 36], engineCss: '#f59e0b' } },
+        saimon: { name: 'Saimon', lvl: 3, radius: 20, hp: 118, shield: 68, speed: 265, turnRate: 3.3, fireCd: 0.9, dmg: 11, missile: true, missileCd: 6.5, xp: 110, score: 310, cr: 90, uri: 8, mesh: MESHES.saimon, mapColor: '#fb7185', palette: { hull: [176, 148, 164], hullDark: [68, 44, 58], accent: [244, 63, 94], canopy: [251, 113, 133], engineCss: '#fb7185' } },
+        mordon: { name: 'Mordon', lvl: 4, radius: 24, hp: 190, shield: 145, speed: 225, turnRate: 2.6, fireCd: 0.72, dmg: 14, missile: true, missileCd: 5.5, xp: 175, score: 480, cr: 155, uri: 14, mesh: MESHES.mordon, mapColor: '#f43f5e', palette: { hull: [152, 164, 188], hullDark: [48, 56, 78], accent: [225, 29, 72], canopy: [253, 164, 175], engineCss: '#f43f5e' } },
+        kristallin: { name: 'Kristallin', lvl: 5, radius: 20, hp: 165, shield: 155, speed: 320, turnRate: 4.1, fireCd: 0.65, dmg: 15, missile: false, xp: 245, score: 660, cr: 215, uri: 20, mesh: MESHES.kristallin, mapColor: '#38bdf8', palette: { hull: [110, 210, 250], hullDark: [30, 82, 128], accent: [186, 230, 253], canopy: [224, 242, 254], engineCss: '#38bdf8' } },
+        kristallon: { name: 'Kristallon', lvl: 7, radius: 36, hp: 540, shield: 430, speed: 185, turnRate: 1.9, fireCd: 0.48, dmg: 22, missile: true, missileCd: 4.4, xp: 700, score: 1850, cr: 620, uri: 60, mesh: MESHES.kristallon, mapColor: '#a78bfa', boss: true, palette: { hull: [130, 170, 255], hullDark: [44, 52, 124], accent: [192, 132, 252], canopy: [233, 213, 255], engineCss: '#c084fc' } },
+        cubikon: { name: 'Cubikon', lvl: 9, radius: 40, hp: 850, shield: 680, speed: 90, turnRate: 1.2, fireCd: 0.55, dmg: 24, missile: true, missileCd: 4.8, xp: 1300, score: 3500, cr: 1150, uri: 120, mesh: MESHES.cubikon, mapColor: '#e879f9', boss: true, spawner: true, palette: { hull: [148, 163, 184], hullDark: [42, 34, 68], accent: [232, 121, 249], canopy: [245, 208, 254], engineCss: '#f0abfc' } },
+        protegit: { name: 'Protegit', lvl: 4, radius: 13, hp: 72, shield: 55, speed: 345, turnRate: 4.8, fireCd: 0.72, dmg: 10, missile: false, xp: 85, score: 230, cr: 70, uri: 7, mesh: MESHES.protegit, mapColor: '#f0abfc', palette: { hull: [232, 121, 249], hullDark: [88, 28, 135], accent: [250, 232, 255], canopy: [255, 255, 255], engineCss: '#e879f9' } }
+      };
+
+      const QUESTS = [
+        { title: '5 Streuner İmha Et', kind: 'kill', target: 'streuner', goal: 5, cr: 220, uri: 20, x4: 15 },
+        { title: '4 Bonus veya Kargo Kutusu Topla', kind: 'box', goal: 4, cr: 260, uri: 25, x4: 20 },
+        { title: '6 Asteroit Madeni Topla', kind: 'ore', goal: 6, cr: 300, uri: 30, x4: 25 },
+        { title: 'Işınlanma Kapısıyla X-2 Sektörüne Geç', kind: 'sector', target: 'X-2', goal: 1, cr: 350, uri: 35, x4: 30 },
+        { title: '5 Saimon veya Mordon İmha Et', kind: 'kill_multi', targets: ['saimon', 'mordon'], goal: 5, cr: 480, uri: 45, x4: 40 },
+        { title: 'X-3 Derin Uzay Sektörüne Atla', kind: 'sector', target: 'X-3', goal: 1, cr: 550, uri: 55, x4: 45 },
+        { title: '1 Dev Kristallon Muhribi Devir', kind: 'kill', target: 'kristallon', goal: 1, cr: 900, uri: 95, x4: 60 },
+        { title: '1 Cubikon Uçak Gemisi İmha Et', kind: 'kill', target: 'cubikon', goal: 1, cr: 1500, uri: 160, x4: 100 }
+      ];
+
+      const AMMO_TYPES = {
+        x1: { name: 'LCB-10 (x1)', mult: 1.0, color: '#38bdf8', shieldDrain: false, pitch: 1.0 },
+        x2: { name: 'MCB-25 (x2)', mult: 2.0, color: '#34d399', shieldDrain: false, pitch: 1.15 },
+        x4: { name: 'UCB-100 (x4)', mult: 4.0, color: '#fef08a', shieldDrain: false, pitch: 1.32 },
+        sab: { name: 'SAB-50', mult: 1.8, color: '#a78bfa', shieldDrain: true, pitch: 0.85 }
+      };
+
+      const STATION_PALETTE = { hull: [156, 174, 198], hullDark: [48, 60, 82], accent: [56, 189, 248], canopy: [125, 211, 252], engineCss: '#38bdf8' };
+      const ASTEROID_PALETTE = { rock: [118, 128, 144], crater: [68, 76, 92] };
+      const DRONE_PALETTE_FLAX = { hull: [190, 208, 224], hullDark: [60, 72, 92], accent: [56, 189, 248], canopy: [125, 211, 252], engineCss: '#38bdf8' };
+      const DRONE_PALETTE_IRIS = { hull: [240, 224, 176], hullDark: [84, 68, 38], accent: [251, 191, 36], canopy: [254, 240, 138], engineCss: '#fbbf24' };
+      const PET_PALETTE = { hull: [184, 230, 214], hullDark: [36, 76, 66], accent: [52, 211, 153], canopy: [167, 243, 208], engineCss: '#34d399' };
+
+      const UPGRADE_DEFS = [
+        { id: 'weapons', name: 'LF-4 Plazma Topları', desc: 'Lazer hasarını artırır; Lv3 ve Lv5 ekstra namlu ekler.', baseCost: 110, step: 110, max: 5 },
+        { id: 'missiles', name: 'PLT Roket Rampası', desc: 'Füze kapasitesi, takip manevrası ve patlama hasarı.', baseCost: 120, step: 115, max: 5 },
+        { id: 'engines', name: 'G3N İyon Motorları', desc: 'Azami hız, ivmelenme ve 3B yatış manevra hızı.', baseCost: 95, step: 95, max: 5 },
+        { id: 'shields', name: 'SG3N-B02 Kalkan', desc: 'Maksimum kalkan gücü ve hızlı kalkan yenilenmesi.', baseCost: 105, step: 105, max: 5 },
+        { id: 'hull', name: 'Titanyum Zırh', desc: 'Maksimum gövde HP artırır ve +%25 onarır.', baseCost: 95, step: 95, max: 5 },
+        { id: 'flares', name: 'EMP-01 & Afterburner', desc: 'EMP bekleme süresini kısaltır, şaşırtma menzilini açar.', baseCost: 90, step: 90, max: 5 }
+      ];
+
+      const RANKS = [
+        { xp: 0, title: 'Acemi Pilot' },
+        { xp: 220, title: 'Uzay Çavuşu' },
+        { xp: 600, title: 'Filo Teğmeni' },
+        { xp: 1300, title: 'Kaptan' },
+        { xp: 2400, title: 'Yarbay' },
+        { xp: 4000, title: 'Galaksi Komutanı' },
+        { xp: 6500, title: 'Yıldız Generali' }
+      ];
+
+      // =========================================================================
+      // 5. GAME STATE & AUTO-SAVE
+      // =========================================================================
+      const state = {
+        mode: 'start',
+        hangarTab: 'systems',
+        sectorId: 'X-1',
+        selectedModelId: 'falcon',
+        skinId: 'cyan',
+        ownedSkins: ['cyan'],
+        score: 0,
+        credits: 180,
+        uri: 35,
+        ore: 0,
+        xp: 0,
+        level: 1,
+        ammoType: 'x1',
+        ammo: { x2: 120, x4: 40, sab: 60 },
+        minesCount: 3,
+        drones: [], // e.g. ['flax', 'iris'] up to 4
+        hasPet: false,
+        pet: { x: 40, y: 120, vx: 0, vy: 0, angle: 0, fireCd: 0 },
+        laserBoostTimer: 0,
+        shieldBoostTimer: 0,
+        questIdx: 0,
+        questProg: 0,
+        autoAttack: false,
+        repairBotOn: false,
+        waypoint: null,
+        nearbyGate: null,
+        warpFlash: 0,
+        shake: 0,
+        time: 0,
+        camera: { x: 0, y: 0 },
+        player: null,
+        selectedTargetId: null,
+        upgrades: { weapons: 1, missiles: 1, engines: 1, shields: 1, hull: 1, flares: 1 },
+        enemies: [],
+        asteroids: [],
+        lasers: [],
+        missiles: [],
+        mines: [],
+        flares: [],
+        particles: [],
+        pickups: [],
+        popups: [],
+        stars: [],
+        nebulas: [],
+        nextEntityId: 1,
+        respawnTimer: 0,
+        saveTimer: 0
+      };
+
+      function saveProgress() {
+        try {
+          const data = {
+            sectorId: state.sectorId,
+            selectedModelId: state.selectedModelId,
+            skinId: state.skinId,
+            ownedSkins: state.ownedSkins,
+            score: state.score,
+            credits: state.credits,
+            uri: state.uri,
+            ore: state.ore,
+            xp: state.xp,
+            level: state.level,
+            ammo: state.ammo,
+            minesCount: state.minesCount,
+            drones: state.drones,
+            hasPet: state.hasPet,
+            questIdx: state.questIdx,
+            questProg: state.questProg,
+            upgrades: state.upgrades
+          };
+          localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+        } catch (e) {}
+      }
+
+      function loadProgress() {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return false;
+          const d = JSON.parse(raw);
+          if (!d || typeof d !== 'object') return false;
+          if (SECTORS[d.sectorId]) state.sectorId = d.sectorId;
+          if (PLAYER_MODELS.some(m => m.id === d.selectedModelId)) state.selectedModelId = d.selectedModelId;
+          if (SHIP_SKINS.some(sk => sk.id === d.skinId)) state.skinId = d.skinId;
+          if (Array.isArray(d.ownedSkins)) state.ownedSkins = d.ownedSkins;
+          state.score = Number(d.score) || 0;
+          state.credits = Number(d.credits) || 180;
+          state.uri = Number(d.uri) || 35;
+          state.ore = Number(d.ore) || 0;
+          state.xp = Number(d.xp) || 0;
+          state.level = Number(d.level) || 1;
+          if (d.ammo) state.ammo = { x2: Number(d.ammo.x2) || 0, x4: Number(d.ammo.x4) || 0, sab: Number(d.ammo.sab) || 0 };
+          state.minesCount = Number(d.minesCount) >= 0 ? Number(d.minesCount) : 3;
+          if (Array.isArray(d.drones)) state.drones = d.drones.slice(0, 4);
+          state.hasPet = !!d.hasPet;
+          state.questIdx = Number(d.questIdx) || 0;
+          state.questProg = Number(d.questProg) || 0;
+          if (d.upgrades) Object.assign(state.upgrades, d.upgrades);
+          return true;
+        } catch (e) { return false; }
+      }
+
+      function resetProgress() {
+        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+        state.sectorId = 'X-1';
+        state.skinId = 'cyan';
+        state.ownedSkins = ['cyan'];
+        state.score = 0; state.credits = 180; state.uri = 35; state.ore = 0; state.xp = 0; state.level = 1;
+        state.ammoType = 'x1'; state.ammo = { x2: 120, x4: 40, sab: 60 }; state.minesCount = 3;
+        state.drones = []; state.hasPet = false;
+        state.laserBoostTimer = 0; state.shieldBoostTimer = 0;
+        state.questIdx = 0; state.questProg = 0;
+        state.upgrades = { weapons: 1, missiles: 1, engines: 1, shields: 1, hull: 1, flares: 1 };
+      }
+
+      const keys = Object.create(null);
+      const touchState = { left: false, right: false, thrust: false, fire: false, missile: false, flare: false };
+      const mouse = { x: 480, y: 310, active: false };
+      let mouseFire = false;
+      let missileCooldownInput = 0;
+
+      function rand(min, max) { return min + Math.random() * (max - min); }
+      function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+      function distSq(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; }
+      function angleDiff(a, b) {
+        let d = (b - a + Math.PI) % (Math.PI * 2) - Math.PI;
+        if (d < -Math.PI) d += Math.PI * 2;
+        return d;
+      }
+      function getSelectedModel() { return PLAYER_MODELS.find(m => m.id === state.selectedModelId) || PLAYER_MODELS[0]; }
+      function getPlayerPalette() { return SHIP_SKINS.find(sk => sk.id === state.skinId) || SHIP_SKINS[0]; }
+      function getCurrentSector() { return SECTORS[state.sectorId] || SECTORS['X-1']; }
+      function inSafeZone(x, y) { return getCurrentSector().hasBase && (x * x + y * y <= SAFE_RADIUS * SAFE_RADIUS); }
+
+      function getMinimapRect() {
+        const size = viewW < 640 ? 116 : 156;
+        const x = viewW - size - 12;
+        const y = viewH - size - (touchControlsEl.classList.contains('hidden') ? 12 : 136);
+        return { x, y, size };
+      }
+
+      // =========================================================================
+      // 6. QUEST TRACKER
+      // =========================================================================
+      function renderQuestUI() {
+        const q = QUESTS[state.questIdx];
+        if (!q) {
+          questTitleEl.textContent = 'Tüm Görevler Tamamlandı!';
+          questProgressEl.textContent = 'Serbest Galaksi Avı';
+          questStepEl.textContent = `${QUESTS.length}/${QUESTS.length}`;
+          questRewardEl.textContent = 'GG-Ω Boss Arenası Açık';
+          return;
+        }
+        questTitleEl.textContent = q.title;
+        questProgressEl.textContent = `${Math.min(state.questProg, q.goal)} / ${q.goal}`;
+        questStepEl.textContent = `${state.questIdx + 1}/${QUESTS.length}`;
+        questRewardEl.textContent = `Ödül: +${q.cr} CR, +${q.uri} URI, +${q.x4} x4`;
+      }
+
+      function advanceQuest(eventKind, payload) {
+        const q = QUESTS[state.questIdx];
+        if (!q) return;
+        let matched = false;
+        if (q.kind === 'kill' && eventKind === 'kill' && payload === q.target) matched = true;
+        if (q.kind === 'kill_multi' && eventKind === 'kill' && q.targets.includes(payload)) matched = true;
+        if (q.kind === 'box' && eventKind === 'box') matched = true;
+        if (q.kind === 'ore' && eventKind === 'ore') matched = true;
+        if (q.kind === 'sector' && eventKind === 'sector' && payload === q.target) matched = true;
+
+        if (!matched) return;
+        state.questProg++;
+        if (state.questProg >= q.goal) {
+          state.credits += q.cr;
+          state.uri += q.uri;
+          state.ammo.x4 += q.x4;
+          gainXp(180 + state.questIdx * 90);
+          if (state.player) addPopup(state.player.x, state.player.y - 42, `GÖREV TAMAMLANDI! +${q.cr} CR +${q.uri} URI`, '#fbbf24');
+          Sound.playUpgrade();
+          state.questIdx++;
+          state.questProg = 0;
+          saveProgress();
+        }
+        renderQuestUI();
+        updateActionBar();
+      }
+
+      // =========================================================================
+      // 7. HANGAR, DRONES, PET, REFINERY & SKINS UI
+      // =========================================================================
+      function renderShipSelector() {
+        shipSelectorEl.innerHTML = PLAYER_MODELS.map(m => `
+          <div class="ship-card${m.id === state.selectedModelId ? ' selected' : ''}" data-ship-id="${m.id}">
+            <div class="ship-tag">${m.code} • ${m.role}</div>
+            <div class="ship-name">${m.name}</div>
+            <div class="ship-desc">${m.desc}</div>
+            <div class="ship-skill">⚡ Q: ${m.skillName} — ${m.skillDesc}</div>
+            <div class="mini-stat"><span>HIZ</span><div class="mini-bar"><i style="width:${m.bars.speed}%"></i></div></div>
+            <div class="mini-stat"><span>ZIRH</span><div class="mini-bar"><i style="width:${m.bars.armor}%"></i></div></div>
+            <div class="mini-stat"><span>ATEŞ</span><div class="mini-bar"><i style="width:${m.bars.firepower}%"></i></div></div>
+          </div>
+        `).join('');
+      }
+
+      shipSelectorEl.addEventListener('click', (e) => {
+        const card = e.target.closest('.ship-card');
+        if (!card) return;
+        Sound.init();
+        state.selectedModelId = card.dataset.shipId;
+        Sound.playLockChirp();
+        renderShipSelector();
+      });
+
+      function getUpgradeCost(def, lvl) { return def.baseCost + (lvl - 1) * def.step; }
+      function canAffordAnyUpgrade() {
+        for (const def of UPGRADE_DEFS) {
+          const lvl = state.upgrades[def.id];
+          if (lvl < def.max && state.credits >= getUpgradeCost(def, lvl)) return true;
+        }
+        return false;
+      }
+
+      function renderHangarUI() {
+        hangarCreditsEl.textContent = `${state.credits.toLocaleString()} CR`;
+        hangarUriEl.textContent = `${state.uri.toLocaleString()} URI`;
+        hangarOreEl.textContent = `${state.ore.toLocaleString()} ORE`;
+        const p = state.player;
+        const needRepair = p && p.hull < p.maxHull - 1;
+        btnRepair.disabled = !needRepair || state.credits < 60;
+        btnRepair.textContent = needRepair ? 'Hızlı Onarım (+40%) — 60 CR' : 'Gövde Tam (%100)';
+
+        tabSystems.classList.toggle('active', state.hangarTab === 'systems');
+        tabDrones.classList.toggle('active', state.hangarTab === 'drones');
+        tabRefinery.classList.toggle('active', state.hangarTab === 'refinery');
+        tabShips.classList.toggle('active', state.hangarTab === 'ships');
+
+        if (state.hangarTab === 'systems') {
+          upgradeGridEl.innerHTML = UPGRADE_DEFS.map(def => {
+            const lvl = state.upgrades[def.id];
+            const isMax = lvl >= def.max;
+            const cost = getUpgradeCost(def, lvl);
+            const canBuy = !isMax && state.credits >= cost;
+            let pips = '';
+            for (let i = 1; i <= def.max; i++) pips += `<span class="upg-pip${i <= lvl ? ' on' : ''}"></span>`;
+            return `
+              <div class="upg-card">
+                <div class="upg-top"><span class="upg-title">${def.name}</span><span class="upg-lvl">Lv ${lvl}/${def.max}</span></div>
+                <div class="upg-desc">${def.desc}</div>
+                <div class="upg-pips">${pips}</div>
+                <button class="upg-buy" type="button" data-upg-id="${def.id}" ${canBuy ? '' : 'disabled'}>
+                  ${isMax ? 'MAKSİMUM SEVİYE' : `Geliştir — ${cost} CR`}
+                </button>
+              </div>
+            `;
+          }).join('');
+        } else if (state.hangarTab === 'drones') {
+          const dCount = state.drones.length;
+          const flaxCount = state.drones.filter(d => d === 'flax').length;
+          const irisCount = state.drones.filter(d => d === 'iris').length;
+          const full = dCount >= 4;
+          upgradeGridEl.innerHTML = `
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">Flax Diroiti (3B)</span><span class="upg-lvl">${flaxCount} Adet (${dCount}/4)</span></div>
+              <div class="upg-desc">Etrafında formasyonda uçar, hedefine ekstra lazer sıkar (+%12 hasar, +18 kalkan).</div>
+              <button class="upg-buy" type="button" data-drone="flax" ${(!full && state.credits >= 180) ? '' : 'disabled'}>
+                ${full ? 'FİLO DOLU (4/4)' : 'Flax Satın Al — 180 CR'}
+              </button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">Iris Elit Diroiti (3B)</span><span class="upg-lvl">${irisCount} Adet (${dCount}/4)</span></div>
+              <div class="upg-desc">Altın elit diroit; yüksek ateş desteği ve ağır kalkan (+%24 hasar, +40 kalkan).</div>
+              <button class="upg-buy" type="button" data-drone="iris" ${(!full && state.uri >= 55) ? '' : 'disabled'}>
+                ${full ? 'FİLO DOLU (4/4)' : 'Iris Satın Al — 55 URI'}
+              </button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">P.E.T. Yoldaş Gemisi</span><span class="upg-lvl">${state.hasPet ? 'AKTİF' : 'YOK'}</span></div>
+              <div class="upg-desc">Çevredeki Bonus Kutuları, Kargo ve Madenleri otomatik toplar ve kilitli hedefe ateş desteği verir.</div>
+              <button class="upg-buy" type="button" data-buy-pet="cr" ${(state.hasPet || state.credits < 320) ? 'disabled' : ''}>
+                ${state.hasPet ? 'P.E.T. HİZMETTE' : 'P.E.T. Satın Al — 320 CR'}
+              </button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">P.E.T. (Uridium ile)</span><span class="upg-lvl">${state.hasPet ? 'AKTİF' : 'HIZLI'}</span></div>
+              <div class="upg-desc">Kredi biriktirmeden Uridium kullanarak P.E.T. toplayıcı yoldaşını anında devreye al.</div>
+              <button class="upg-buy" type="button" data-buy-pet="uri" ${(state.hasPet || state.uri < 85) ? 'disabled' : ''}>
+                ${state.hasPet ? 'P.E.T. HİZMETTE' : 'P.E.T. Satın Al — 85 URI'}
+              </button>
+            </div>
+          `;
+        } else if (state.hangarTab === 'refinery') {
+          upgradeGridEl.innerHTML = `
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">Seprom Lazer Besleme</span><span class="upg-lvl">${state.laserBoostTimer > 0 ? Math.ceil(state.laserBoostTimer) + 's' : 'PASİF'}</span></div>
+              <div class="upg-desc">Asteroit madenlerini işleyerek 60 sn boyunca lazer hasarını +%35 artırır.</div>
+              <button class="upg-buy" type="button" data-refine="laser" ${state.ore >= 5 ? '' : 'disabled'}>Rafine Et — 5 ORE</button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">Promerium Kalkan Besleme</span><span class="upg-lvl">${state.shieldBoostTimer > 0 ? Math.ceil(state.shieldBoostTimer) + 's' : 'PASİF'}</span></div>
+              <div class="upg-desc">60 sn boyunca kalkan yenilenme hızını 2 katına çıkarır ve kalkanı full doldurur.</div>
+              <button class="upg-buy" type="button" data-refine="shield" ${state.ore >= 5 ? '' : 'disabled'}>Rafine Et — 5 ORE</button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">MCB-25 (x2 Lazer)</span><span class="upg-lvl">${state.ammo.x2}</span></div>
+              <div class="upg-desc">+150 adet çift hasarlı yeşil lazer cephanesi.</div>
+              <button class="upg-buy" type="button" data-shop-id="buy_x2" ${state.credits >= 90 ? '' : 'disabled'}>Satın Al — 90 CR</button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">UCB-100 (x4 Elit)</span><span class="upg-lvl">${state.ammo.x4}</span></div>
+              <div class="upg-desc">+80 adet 4 kat hasarlı elit beyaz-altın lazer cephanesi.</div>
+              <button class="upg-buy" type="button" data-shop-id="buy_x4" ${state.uri >= 25 ? '' : 'disabled'}>Satın Al — 25 URI</button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">SAB-50 Kalkan Emici</span><span class="upg-lvl">${state.ammo.sab}</span></div>
+              <div class="upg-desc">+100 adet düşman kalkanını emip sana aktaran mor lazer.</div>
+              <button class="upg-buy" type="button" data-shop-id="buy_sab" ${state.credits >= 110 ? '' : 'disabled'}>Satın Al — 110 CR</button>
+            </div>
+            <div class="upg-card">
+              <div class="upg-top"><span class="upg-title">ACM-01 Uzay Mayını (+3)</span><span class="upg-lvl">${state.minesCount}</span></div>
+              <div class="upg-desc">Peşindeki düşmanlara ağır alan hasarı veren 3 uzay mayını.</div>
+              <button class="upg-buy" type="button" data-shop-id="buy_mine" ${state.credits >= 80 ? '' : 'disabled'}>Satın Al — 80 CR</button>
+            </div>
+          `;
+        } else {
+          const shipsHtml = PLAYER_MODELS.map(m => {
+            const active = m.id === state.selectedModelId;
+            return `
+              <div class="upg-card" style="border-color:${active ? 'var(--cyan)' : 'rgba(148,163,184,0.2)'}">
+                <div class="upg-top"><span class="upg-title">${m.code} ${m.name}</span><span class="upg-lvl">Q: ${m.skillName}</span></div>
+                <div class="upg-desc">${m.desc}</div>
+                <button class="upg-buy" type="button" data-switch-ship="${m.id}" ${active ? 'disabled' : ''}>
+                  ${active ? 'AKTİF GEMİ' : 'Bu Gemiye Geç (Ücretsiz)'}
+                </button>
+              </div>
+            `;
+          }).join('');
+          const skinsHtml = SHIP_SKINS.map(sk => {
+            const owned = state.ownedSkins.includes(sk.id);
+            const active = state.skinId === sk.id;
+            const canBuy = !owned && (sk.cur === 'CR' ? state.credits >= sk.cost : state.uri >= sk.cost);
+            return `
+              <div class="upg-card" style="border-color:${active ? sk.engineCss : 'rgba(148,163,184,0.2)'}">
+                <div class="upg-top"><span class="upg-title">${sk.name}</span><span class="upg-lvl" style="color:${sk.engineCss};">BOYA</span></div>
+                <div class="upg-desc">3B gemi gövde ve motor kaplama tasarımı.</div>
+                <button class="upg-buy" type="button" data-skin="${sk.id}" ${(active || (!owned && !canBuy)) ? 'disabled' : ''}>
+                  ${active ? 'KUŞANILDI' : (owned ? 'Kuşan' : `Satın Al — ${sk.cost} ${sk.cur}`)}
+                </button>
+              </div>
+            `;
+          }).join('');
+          upgradeGridEl.innerHTML = shipsHtml + skinsHtml;
+        }
+      }
+
+      upgradeGridEl.addEventListener('click', (e) => {
+        const btn = e.target.closest('.upg-buy');
+        if (!btn || btn.disabled) return;
+
+        if (btn.dataset.upgId) {
+          const id = btn.dataset.upgId, def = UPGRADE_DEFS.find(d => d.id === id);
+          if (!def) return;
+          const lvl = state.upgrades[id], cost = getUpgradeCost(def, lvl);
+          if (lvl >= def.max || state.credits < cost) return;
+          state.credits -= cost; state.upgrades[id] = lvl + 1;
+          applyUpgradesToPlayer(id === 'hull');
+          if (id === 'missiles' && state.player) state.player.missiles = Math.min(state.player.maxMissiles, state.player.missiles + 1);
+          Sound.playUpgrade();
+        } else if (btn.dataset.drone) {
+          const dt = btn.dataset.drone;
+          if (state.drones.length >= 4) return;
+          if (dt === 'flax' && state.credits >= 180) { state.credits -= 180; state.drones.push('flax'); }
+          else if (dt === 'iris' && state.uri >= 55) { state.uri -= 55; state.drones.push('iris'); }
+          else return;
+          applyUpgradesToPlayer(false);
+          Sound.playUpgrade();
+        } else if (btn.dataset.buyPet) {
+          if (state.hasPet) return;
+          if (btn.dataset.buyPet === 'cr' && state.credits >= 320) { state.credits -= 320; state.hasPet = true; }
+          else if (btn.dataset.buyPet === 'uri' && state.uri >= 85) { state.uri -= 85; state.hasPet = true; }
+          else return;
+          if (state.player) { state.pet.x = state.player.x + 40; state.pet.y = state.player.y + 40; }
+          Sound.playUpgrade();
+        } else if (btn.dataset.refine) {
+          if (state.ore < 5) return;
+          state.ore -= 5;
+          if (btn.dataset.refine === 'laser') state.laserBoostTimer = 60;
+          else if (btn.dataset.refine === 'shield') {
+            state.shieldBoostTimer = 60;
+            if (state.player) state.player.shield = state.player.maxShield;
+          }
+          Sound.playUpgrade();
+        } else if (btn.dataset.shopId) {
+          const sid = btn.dataset.shopId;
+          if (sid === 'buy_x2' && state.credits >= 90) { state.credits -= 90; state.ammo.x2 += 150; }
+          else if (sid === 'buy_x4' && state.uri >= 25) { state.uri -= 25; state.ammo.x4 += 80; }
+          else if (sid === 'buy_sab' && state.credits >= 110) { state.credits -= 110; state.ammo.sab += 100; }
+          else if (sid === 'buy_mine' && state.credits >= 80) { state.credits -= 80; state.minesCount += 3; }
+          Sound.playPickup();
+        } else if (btn.dataset.switchShip) {
+          state.selectedModelId = btn.dataset.switchShip;
+          applyUpgradesToPlayer(false);
+          if (state.player) { state.player.hull = state.player.maxHull; state.player.shield = state.player.maxShield; }
+          Sound.playUpgrade();
+        } else if (btn.dataset.skin) {
+          const sk = SHIP_SKINS.find(x => x.id === btn.dataset.skin);
+          if (!sk) return;
+          if (!state.ownedSkins.includes(sk.id)) {
+            if (sk.cur === 'CR' && state.credits >= sk.cost) state.credits -= sk.cost;
+            else if (sk.cur === 'URI' && state.uri >= sk.cost) state.uri -= sk.cost;
+            else return;
+            state.ownedSkins.push(sk.id);
+          }
+          state.skinId = sk.id;
+          Sound.playUpgrade();
+        }
+
+        saveProgress();
+        renderHangarUI();
+        updateHudBars();
+        updateActionBar();
+      });
+
+      function applyUpgradesToPlayer(healHullBonus = false) {
+        const p = state.player;
+        if (!p) return;
+        const base = getSelectedModel().stats;
+        const u = state.upgrades;
+        const droneShieldBonus = state.drones.reduce((s, d) => s + (d === 'iris' ? 40 : 18), 0);
+
+        p.modelId = state.selectedModelId;
+        p.maxHull = Math.round(base.hull + (u.hull - 1) * 35);
+        p.maxShield = Math.round(base.shield + (u.shields - 1) * 35 + droneShieldBonus);
+        p.shieldRegen = 15 + (u.shields - 1) * 5;
+        p.maxMissiles = base.missiles + (u.missiles - 1);
+        p.missileReloadTime = Math.max(2.2, 4.8 - (u.missiles - 1) * 0.55);
+        p.maxSpeed = base.speed + (u.engines - 1) * 34;
+        p.accel = base.accel + (u.engines - 1) * 48;
+        p.turnSpeed = 8.6 + (u.engines - 1) * 0.9;
+        p.flareMaxCd = Math.max(3.0, 6.0 - (u.flares - 1) * 0.65);
+
+        if (healHullBonus) p.hull = Math.min(p.maxHull, p.hull + Math.round(p.maxHull * 0.25));
+        p.hull = Math.min(p.hull, p.maxHull);
+        p.shield = Math.min(p.shield, p.maxShield);
+        updateHudPips();
+        updateHudBars();
+      }
+
+      function openHangar() {
+        if (state.mode !== 'playing') return;
+        state.mode = 'hangar';
+        mouseFire = false;
+        renderHangarUI();
+        overlayHangar.classList.remove('hidden');
+      }
+
+      function closeHangar() {
+        if (state.mode !== 'hangar') return;
+        overlayHangar.classList.add('hidden');
+        state.mode = 'playing';
+      }
+
+      // =========================================================================
+      // 8. MULTI-SECTOR LOADING & JUMP GATES
+      // =========================================================================
+      function initBackdrop() {
+        state.stars = [];
+        for (let i = 0; i < 420; i++) {
+          state.stars.push({
+            x: rand(-HALF_WORLD, HALF_WORLD), y: rand(-HALF_WORLD, HALF_WORLD),
+            r: rand(0.6, 2.3), parallax: rand(0.14, 0.78), alpha: rand(0.25, 0.95),
+            twinkle: rand(0, Math.PI * 2),
+            hue: Math.random() < 0.22 ? '#7dd3fc' : (Math.random() < 0.16 ? '#fde68a' : '#f8fafc')
+          });
+        }
+        state.nebulas = [
+          { x: -1600, y: -1300, r: 1050, color: 'rgba(14, 165, 233, 0.08)' },
+          { x: 1800, y: 1200, r: 1150, color: 'rgba(139, 92, 246, 0.08)' },
+          { x: 1500, y: -1700, r: 950, color: 'rgba(244, 63, 94, 0.06)' },
+          { x: -1800, y: 1650, r: 1000, color: 'rgba(16, 185, 129, 0.06)' }
+        ];
+      }
+
+      function createPlayer() {
+        const model = getSelectedModel(), s = model.stats;
+        return {
+          id: state.nextEntityId++, modelId: model.id,
+          x: 0, y: 120, vx: 0, vy: 0, angle: -Math.PI / 2, roll: 0, pitch: 0,
+          radius: 19, hull: s.hull, maxHull: s.hull, shield: s.shield, maxShield: s.shield,
+          shieldRegen: 15, shieldDelay: 0, combatTimer: 0,
+          missiles: s.missiles, maxMissiles: s.missiles, missileRegen: 0, missileReloadTime: 4.8,
+          maxSpeed: s.speed, accel: s.accel, turnSpeed: 8.6,
+          fireCd: 0, missileCd: 0, flareCd: 0, flareMaxCd: 6.0,
+          skillCd: 0, cloakTimer: 0, fortressTimer: 0,
+          boostTimer: 0, invuln: 1.8, thrusting: false
+        };
+      }
+
+      function createAsteroid(x, y, sizeTier = 3) {
+        const radius = sizeTier === 3 ? rand(48, 66) : (sizeTier === 2 ? rand(28, 38) : rand(15, 22));
+        const speed = sizeTier === 3 ? rand(14, 34) : (sizeTier === 2 ? rand(28, 58) : rand(48, 86));
+        const dir = rand(0, Math.PI * 2);
+        return {
+          id: state.nextEntityId++, x, y, vx: Math.cos(dir) * speed, vy: Math.sin(dir) * speed,
+          rx: rand(0, Math.PI * 2), ry: rand(0, Math.PI * 2), rz: rand(0, Math.PI * 2),
+          vrx: rand(-0.55, 0.55), vry: rand(-0.55, 0.55), vrz: rand(-0.45, 0.45),
+          radius, sizeTier, hp: sizeTier === 3 ? 95 : (sizeTier === 2 ? 46 : 20), maxHp: sizeTier === 3 ? 95 : (sizeTier === 2 ? 46 : 20),
+          mesh: buildAsteroidMesh(radius, rand(0, 100)), hitFlash: 0
+        };
+      }
+
+      function createEnemy(typeKey, x, y) {
+        const def = ENEMY_TYPES[typeKey];
+        return {
+          id: state.nextEntityId++, type: typeKey, name: def.name, lvl: def.lvl,
+          x, y, homeX: x, homeY: y, vx: 0, vy: 0, angle: rand(0, Math.PI * 2), roll: 0,
+          radius: def.radius, hp: def.hp, maxHp: def.hp, shield: def.shield, maxShield: def.shield,
+          shieldDelay: 0, speed: def.speed, turnRate: def.turnRate,
+          fireCd: rand(0.6, 1.5), missileCd: def.missile ? rand(3.0, def.missileCd) : 999,
+          spawnCd: def.spawner ? 5.0 : 999, strafeDir: Math.random() < 0.5 ? 1 : -1, strafeTimer: rand(1.6, 3.6),
+          aggro: false, patrolAngle: rand(0, Math.PI * 2), hitFlash: 0, shieldFlash: 0
+        };
+      }
+
+      function spawnPointInRing(minR, maxR) {
+        const a = rand(0, Math.PI * 2), r = rand(minR, maxR);
+        return {
+          x: clamp(Math.cos(a) * r, -HALF_WORLD + 240, HALF_WORLD - 240),
+          y: clamp(Math.sin(a) * r, -HALF_WORLD + 240, HALF_WORLD - 240)
+        };
+      }
+
+      function loadSector(sectorId, spawnX = 0, spawnY = 120) {
+        state.sectorId = sectorId;
+        const sec = getCurrentSector();
+        state.enemies = [];
+        state.asteroids = [];
+        state.lasers = [];
+        state.missiles = [];
+        state.mines = [];
+        state.flares = [];
+        state.pickups = [];
+        state.particles = [];
+        state.selectedTargetId = null;
+        state.autoAttack = false;
+        state.waypoint = null;
+        state.nearbyGate = null;
+
+        if (state.player) {
+          state.player.x = spawnX; state.player.y = spawnY;
+          state.player.vx = 0; state.player.vy = 0; state.player.invuln = 2.0;
+          state.camera.x = spawnX; state.camera.y = spawnY;
+          state.pet.x = spawnX + 40; state.pet.y = spawnY + 40;
+        }
+
+        while (state.asteroids.length < sec.asteroids) {
+          const pt = spawnPointInRing(sec.hasBase ? SAFE_RADIUS + 260 : 320, HALF_WORLD - 280);
+          state.asteroids.push(createAsteroid(pt.x, pt.y, Math.random() < 0.65 ? 3 : 2));
+        }
+
+        for (let i = 0; i < 24; i++) {
+          const pt = spawnPointInRing(sec.hasBase ? SAFE_RADIUS + 180 : 250, HALF_WORLD - 260);
+          state.pickups.push({ id: state.nextEntityId++, x: pt.x, y: pt.y, vx: 0, vy: 0, kind: 'bonus_box', life: 9999, pulse: rand(0, Math.PI * 2) });
+        }
+
+        maintainEnemyPopulation();
+        advanceQuest('sector', sectorId);
+        saveProgress();
+        updateHudBars();
+        updateActionBar();
+      }
+
+      function maintainEnemyPopulation() {
+        const sec = getCurrentSector();
+        for (const q of sec.quotas) {
+          const cur = state.enemies.filter(e => e.type === q.type).length;
+          for (let i = cur; i < q.count; i++) {
+            const pt = spawnPointInRing(q.minR, q.maxR);
+            if (state.player && distSq(pt.x, pt.y, state.player.x, state.player.y) < 560 * 560) continue;
+            state.enemies.push(createEnemy(q.type, pt.x, pt.y));
+          }
+        }
+      }
+
+      function jumpThroughGate(gate) {
+        if (!gate) return;
+        Sound.playWarp();
+        state.warpFlash = 1.0;
+        const destSec = SECTORS[gate.target];
+        const returnGate = destSec.gates.find(g => g.target === state.sectorId);
+        const sx = destSec.hasBase ? 0 : (returnGate ? returnGate.x * 0.88 : 0);
+        const sy = destSec.hasBase ? 130 : (returnGate ? returnGate.y * 0.88 : 0);
+        loadSector(gate.target, sx, sy);
+        if (state.player) addPopup(state.player.x, state.player.y - 36, `${destSec.name} SEKTÖRÜNE GİRİLDİ`, '#38bdf8');
+      }
+
+      // =========================================================================
+      // 9. WEAPONS, SHIP SKILLS, MINES, DRONES & DAMAGE
+      // =========================================================================
+      function spawnExplosion(x, y, color, count = 20, speedScale = 1, shakeAmt = 4) {
+        for (let i = 0; i < count; i++) {
+          const a = rand(0, Math.PI * 2), spd = rand(45, 260) * speedScale;
+          state.particles.push({
+            x, y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+            life: rand(0.28, 0.72), maxLife: 0.72,
+            r: rand(1.8, 4.4) * Math.min(1.4, speedScale),
+            color: i % 3 === 0 ? '#fef08a' : color, drag: 0.96,
+            shard: i % 4 === 0, rot: rand(0, Math.PI * 2), vrot: rand(-9, 9)
+          });
+        }
+        state.particles.push({ x, y, vx: 0, vy: 0, life: 0.36, maxLife: 0.36, r: 10, maxR: 54 * speedScale, color, ring: true });
+        state.shake = Math.min(16, state.shake + shakeAmt);
+      }
+
+      function addPopup(x, y, text, color = '#f8fafc') {
+        state.popups.push({ x, y, vy: -38, text, color, life: 1.15, maxLife: 1.15 });
+      }
+
+      function gainXp(amount) {
+        state.xp += amount;
+        let newLvl = 1;
+        for (let i = 0; i < RANKS.length; i++) if (state.xp >= RANKS[i].xp) newLvl = i + 1;
+        if (newLvl > state.level) {
+          state.level = newLvl;
+          const r = RANKS[newLvl - 1];
+          if (state.player) addPopup(state.player.x, state.player.y - 34, `SEVİYE ${newLvl}: ${r.title.toUpperCase()}!`, '#38bdf8');
+          Sound.playUpgrade();
+        }
+      }
+
+      function selectAmmo(type) {
+        if (type !== 'x1' && state.ammo[type] <= 0) return;
+        state.ammoType = type;
+        updateActionBar();
+      }
+
+      function triggerShipSkill() {
+        const p = state.player;
+        if (!p || p.skillCd > 0) return;
+        const model = getSelectedModel();
+        p.skillCd = model.skillCd;
+
+        if (model.id === 'falcon') {
+          p.cloakTimer = 4.2;
+          p.boostTimer = 2.0;
+          for (const e of state.enemies) e.aggro = false;
+          for (const m of state.missiles) if (m.owner === 'enemy') m.targetId = null;
+          addPopup(p.x, p.y - 30, 'HAYALET MODU AKTİF!', '#38bdf8');
+          Sound.playWarp();
+        } else if (model.id === 'valkyrie') {
+          const targets = [...state.enemies].sort((a, b) => distSq(p.x, p.y, a.x, a.y) - distSq(p.x, p.y, b.x, b.y));
+          const locked = state.enemies.find(e => e.id === state.selectedTargetId);
+          for (let i = 0; i < 4; i++) {
+            const tgt = locked || targets[i % Math.max(1, targets.length)] || null;
+            const ang = p.angle + (i - 1.5) * 0.25;
+            state.missiles.push({
+              id: state.nextEntityId++,
+              x: p.x + Math.cos(ang) * 18, y: p.y + Math.sin(ang) * 18,
+              vx: Math.cos(ang) * 260, vy: Math.sin(ang) * 260,
+              angle: ang, speed: 560, turnRate: 5.5,
+              owner: 'player', targetId: tgt ? tgt.id : null,
+              damage: 78 + (state.upgrades.missiles - 1) * 20, life: 4.8, trail: []
+            });
+          }
+          addPopup(p.x, p.y - 30, '4x FÜZE SALVOSU!', '#fbbf24');
+          Sound.playMissileLaunch();
+        } else {
+          p.fortressTimer = 5.0;
+          p.shield = Math.min(p.maxShield, p.shield + p.maxShield * 0.35);
+          state.particles.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.45, maxLife: 0.45, r: 16, maxR: 95, color: '#34d399', ring: true });
+          addPopup(p.x, p.y - 30, 'KALKAN KALESİ AKTİF!', '#34d399');
+          Sound.playUpgrade();
+        }
+        updateActionBar();
+      }
+
+      function dropMine() {
+        const p = state.player;
+        if (!p || state.minesCount <= 0 || inSafeZone(p.x, p.y)) return;
+        state.minesCount--;
+        state.mines.push({
+          id: state.nextEntityId++,
+          x: p.x - Math.cos(p.angle) * 26, y: p.y - Math.sin(p.angle) * 26,
+          armTimer: 0.7, life: 18, pulse: 0
+        });
+        addPopup(p.x, p.y - 22, 'ACM-01 MAYIN BIRAKILDI', '#fb923c');
+        Sound.playLockChirp();
+        updateActionBar();
+      }
+
+      function firePlayerLaser(aimTarget = null) {
+        const p = state.player;
+        if (!p || p.fireCd > 0 || inSafeZone(p.x, p.y)) return;
+        if (state.ammoType !== 'x1' && state.ammo[state.ammoType] <= 0) { state.ammoType = 'x1'; updateActionBar(); }
+
+        const ammoDef = AMMO_TYPES[state.ammoType];
+        const base = getSelectedModel().stats;
+        const wLvl = state.upgrades.weapons;
+        p.fireCd = Math.max(0.09, base.fireRate - (wLvl - 1) * 0.012);
+        p.combatTimer = 4.0;
+        p.cloakTimer = 0; // Firing breaks cloak
+        state.repairBotOn = false;
+
+        if (state.ammoType !== 'x1') {
+          state.ammo[state.ammoType] = Math.max(0, state.ammo[state.ammoType] - 1);
+          updateActionBar();
+        }
+
+        const droneMult = 1 + state.drones.reduce((s, d) => s + (d === 'iris' ? 0.24 : 0.12), 0);
+        const boostMult = state.laserBoostTimer > 0 ? 1.35 : 1.0;
+        const dmg = Math.round((base.damage + (wLvl - 1) * 5) * ammoDef.mult * droneMult * boostMult);
+        const barrels = base.barrels + (wLvl >= 3 ? 1 : 0) + (wLvl >= 5 ? 1 : 0);
+
+        let fireAngle = p.angle;
+        if (aimTarget) {
+          const dist = Math.hypot(aimTarget.x - p.x, aimTarget.y - p.y);
+          const leadT = clamp(dist / 920, 0, 0.3);
+          fireAngle = Math.atan2(aimTarget.y + aimTarget.vy * leadT - p.y, aimTarget.x + aimTarget.vx * leadT - p.x);
+        }
+
+        const cos = Math.cos(fireAngle), sin = Math.sin(fireAngle), perpX = -sin, perpY = cos;
+        const offsets = barrels === 2 ? [-9, 9] : (barrels === 3 ? [-11, 0, 11] : (barrels === 4 ? [-14, -5, 5, 14] : [-15, -7.5, 0, 7.5, 15]));
+        offsets.forEach(off => {
+          state.lasers.push({
+            x: p.x + cos * 18 + perpX * off, y: p.y + sin * 18 + perpY * off,
+            vx: cos * 920, vy: sin * 920, angle: fireAngle,
+            owner: 'player', damage: dmg, shieldDrain: ammoDef.shieldDrain, color: ammoDef.color, life: 0.78
+          });
+        });
+
+        // Drones also fire synchronized mini-beams!
+        state.drones.forEach((dType, idx) => {
+          const orbitA = state.time * 1.4 + (idx / state.drones.length) * Math.PI * 2;
+          const dx = p.x + Math.cos(orbitA) * 40, dy = p.y + Math.sin(orbitA) * 40;
+          const dAng = aimTarget ? Math.atan2(aimTarget.y - dy, aimTarget.x - dx) : fireAngle;
+          state.lasers.push({
+            x: dx, y: dy, vx: Math.cos(dAng) * 900, vy: Math.sin(dAng) * 900, angle: dAng,
+            owner: 'player', damage: Math.round(dmg * 0.25), shieldDrain: ammoDef.shieldDrain,
+            color: dType === 'iris' ? '#fbbf24' : '#38bdf8', life: 0.65
+          });
+        });
+
+        Sound.playLaser(false, ammoDef.pitch);
+      }
+
+      function firePlayerMissile() {
+        const p = state.player;
+        if (!p || p.missiles <= 0 || p.missileCd > 0) return;
+        if (inSafeZone(p.x, p.y)) { addPopup(p.x, p.y - 24, 'GÜVENLİ BÖLGEDE ATEŞ KAPALI', '#38bdf8'); return; }
+        p.missiles--; p.missileCd = 0.45; p.combatTimer = 4.0; p.cloakTimer = 0; state.repairBotOn = false;
+        const mLvl = state.upgrades.missiles;
+        let target = state.enemies.find(e => e.id === state.selectedTargetId) || null;
+        if (!target && state.enemies.length > 0) {
+          let bestD = 820 * 820;
+          for (const e of state.enemies) {
+            const d2 = distSq(p.x, p.y, e.x, e.y);
+            if (d2 < bestD) { bestD = d2; target = e; }
+          }
+        }
+        const launchAngle = target ? Math.atan2(target.y - p.y, target.x - p.x) : p.angle;
+        state.missiles.push({
+          id: state.nextEntityId++, x: p.x + Math.cos(launchAngle) * 16, y: p.y + Math.sin(launchAngle) * 16,
+          vx: Math.cos(launchAngle) * 260, vy: Math.sin(launchAngle) * 260, angle: launchAngle,
+          speed: 530 + (mLvl - 1) * 35, turnRate: 5.0 + (mLvl - 1) * 0.65,
+          owner: 'player', targetId: target ? target.id : null, damage: 75 + (mLvl - 1) * 22, life: 4.8, trail: []
+        });
+        Sound.playMissileLaunch();
+        updateHudPips(); updateActionBar();
+      }
+
+      function fireEnemyMissile(e) {
+        const p = state.player;
+        if (!p) return;
+        const cos = Math.cos(e.angle), sin = Math.sin(e.angle);
+        state.missiles.push({
+          id: state.nextEntityId++, x: e.x + cos * 18, y: e.y + sin * 18,
+          vx: cos * 200, vy: sin * 200, angle: e.angle, speed: 385, turnRate: 2.9,
+          owner: 'enemy', targetId: p.id, damage: 28, life: 5.0, trail: []
+        });
+        Sound.playMissileLaunch();
+      }
+
+      function triggerFlareAndBoost() {
+        const p = state.player;
+        if (!p || p.flareCd > 0) return;
+        const fLvl = state.upgrades.flares;
+        p.flareCd = p.flareMaxCd; p.boostTimer = 0.65 + (fLvl - 1) * 0.14;
+        const cos = Math.cos(p.angle), sin = Math.sin(p.angle);
+        p.vx += cos * (310 + (fLvl - 1) * 35); p.vy += sin * (310 + (fLvl - 1) * 35);
+        state.particles.push({ x: p.x, y: p.y, vx: 0, vy: 0, life: 0.42, maxLife: 0.42, r: 16, maxR: 150, color: '#fbbf24', ring: true });
+        const flareCount = 4 + Math.floor((fLvl - 1) * 0.8);
+        for (let i = 0; i < flareCount; i++) {
+          const backAng = p.angle + Math.PI + (i - (flareCount - 1) * 0.5) * 0.34;
+          state.flares.push({
+            id: state.nextEntityId++, x: p.x - cos * 15, y: p.y - sin * 15,
+            vx: Math.cos(backAng) * rand(115, 185), vy: Math.sin(backAng) * rand(115, 185),
+            life: 2.6 + (fLvl - 1) * 0.3, maxLife: 2.6 + (fLvl - 1) * 0.3
+          });
+        }
+        const decoyRange = 580 + (fLvl - 1) * 65;
+        for (const m of state.missiles) {
+          if (m.owner === 'enemy' && state.flares.length > 0 && distSq(m.x, m.y, p.x, p.y) < decoyRange * decoyRange) {
+            m.targetId = state.flares[Math.floor(Math.random() * state.flares.length)].id;
+            m.decoyed = true;
+          }
+        }
+        addPopup(p.x, p.y - 26, 'EMP-01 + BOOST', '#fbbf24');
+        Sound.playFlare();
+      }
+
+      function damagePlayer(amount, causeText) {
+        const p = state.player;
+        if (!p || p.invuln > 0 || state.mode !== 'playing' || inSafeZone(p.x, p.y)) return;
+        if (p.fortressTimer > 0) amount *= 0.25; // Titan Fortress 75% dmg reduction!
+        p.shieldDelay = 3.4; p.combatTimer = 4.5; state.repairBotOn = false;
+        state.shake = Math.min(16, state.shake + Math.min(10, amount * 0.28));
+        Sound.playHit();
+        if (p.shield > 0) {
+          const absorbed = Math.min(p.shield, amount);
+          p.shield -= absorbed; amount -= absorbed;
+          spawnExplosion(p.x, p.y, '#38bdf8', 7, 0.5, 1.5);
+        }
+        if (amount > 0) {
+          p.hull = Math.max(0, p.hull - amount);
+          spawnExplosion(p.x, p.y, '#fb7185', 9, 0.6, 3);
+        }
+        if (p.hull <= 0) {
+          spawnExplosion(p.x, p.y, '#fb7185', 52, 1.6, 16);
+          Sound.playExplosion(1.6);
+          endGame(causeText || 'Uzay gemin düşman ateşiyle imha edildi.');
+        }
+      }
+
+      function damageEnemy(e, idx, dmg, shieldDrain = false) {
+        e.aggro = true; e.shieldDelay = 4.5; e.hitFlash = 0.08;
+        let rem = dmg;
+        if (e.shield > 0) {
+          e.shieldFlash = 0.22;
+          const absorbed = Math.min(e.shield, rem);
+          e.shield -= absorbed; rem -= absorbed;
+          if (shieldDrain && state.player) state.player.shield = Math.min(state.player.maxShield, state.player.shield + absorbed * 0.55);
+        }
+        if (rem > 0) e.hp -= shieldDrain ? rem * 0.25 : rem;
+        if (e.hp <= 0) destroyEnemy(e, idx);
+      }
+
+      function destroyAsteroid(a, index) {
+        state.asteroids.splice(index, 1);
+        const scale = a.sizeTier === 3 ? 1.25 : (a.sizeTier === 2 ? 0.85 : 0.55);
+        spawnExplosion(a.x, a.y, '#94a3b8', a.sizeTier * 7 + 5, scale, a.sizeTier * 2);
+        Sound.playExplosion(scale);
+        state.credits += a.sizeTier * 8; state.score += a.sizeTier * 20;
+        addPopup(a.x, a.y, `+${a.sizeTier * 8} CR`, '#cbd5e1');
+
+        if (a.sizeTier > 1) {
+          for (let i = 0; i < 2; i++) state.asteroids.push(createAsteroid(a.x + rand(-14, 14), a.y + rand(-14, 14), a.sizeTier - 1));
+        } else {
+          // Drop Ore crystal for Refinery!
+          state.pickups.push({ id: state.nextEntityId++, x: a.x, y: a.y, vx: 0, vy: 0, kind: 'ore', amount: 2, life: 36, pulse: 0 });
+        }
+      }
+
+      function destroyEnemy(e, index) {
+        const def = ENEMY_TYPES[e.type];
+        const mult = getCurrentSector().rewardMult;
+        state.enemies.splice(index, 1);
+        if (state.selectedTargetId === e.id) { state.selectedTargetId = null; state.autoAttack = false; updateActionBar(); }
+
+        // Multi-stage explosion for Bosses
+        spawnExplosion(e.x, e.y, def.mapColor, def.boss ? 54 : 24, def.boss ? 1.85 : 1.0, def.boss ? 14 : 5);
+        if (def.boss) {
+          spawnExplosion(e.x + rand(-24, 24), e.y + rand(-24, 24), '#fef08a', 26, 1.3, 6);
+        }
+        Sound.playExplosion(def.boss ? 1.7 : 1.0);
+
+        const cr = Math.round(def.cr * mult), uri = Math.round(def.uri * mult);
+        state.score += Math.round(def.score * mult);
+        state.credits += cr; state.uri += uri;
+        gainXp(Math.round(def.xp * mult));
+        advanceQuest('kill', e.type);
+
+        addPopup(e.x, e.y - 8, `+${cr} CR  +${uri} URI`, '#34d399');
+        addPopup(e.x, e.y + 10, `+${Math.round(def.xp * mult)} XP`, '#38bdf8');
+
+        state.pickups.push({
+          id: state.nextEntityId++, x: e.x + rand(-12, 12), y: e.y + rand(-12, 12), vx: 0, vy: 0,
+          kind: 'cargo_box', cr: Math.round(cr * 0.45), uri: Math.max(1, Math.round(uri * 0.35)),
+          ammoBonus: def.boss ? 45 : (Math.random() < 0.45 ? 18 : 0), life: 42, pulse: rand(0, Math.PI * 2)
+        });
+      }
+
+      function collectPickup(pk, idx) {
+        if (pk.kind === 'bonus_box') {
+          const roll = Math.random();
+          if (roll < 0.32) { const cr = Math.round(rand(60, 140)); state.credits += cr; addPopup(pk.x, pk.y, `BONUS: +${cr} CR`, '#fbbf24'); }
+          else if (roll < 0.60) { const u = Math.round(rand(10, 24)); state.uri += u; addPopup(pk.x, pk.y, `BONUS: +${u} URI`, '#c084fc'); }
+          else if (roll < 0.84) { state.ammo.x2 += 50; addPopup(pk.x, pk.y, 'BONUS: +50 x2 LAZER', '#34d399'); }
+          else { state.ammo.x4 += 25; addPopup(pk.x, pk.y, 'BONUS: +25 x4 ELİT!', '#fef08a'); }
+          advanceQuest('box');
+        } else if (pk.kind === 'ore') {
+          state.ore += pk.amount || 2;
+          addPopup(pk.x, pk.y, `+${pk.amount || 2} MADEN (ORE)`, '#fbbf24');
+          advanceQuest('ore');
+        } else {
+          state.credits += pk.cr || 35; state.uri += pk.uri || 2;
+          if (pk.ammoBonus) state.ammo.x2 += pk.ammoBonus;
+          addPopup(pk.x, pk.y, `KARGO: +${pk.cr} CR`, '#34d399');
+          advanceQuest('box');
+        }
+        Sound.playPickup();
+        state.pickups.splice(idx, 1);
+        updateActionBar();
+      }
+
+      // =========================================================================
+      // 10. LIFECYCLE & HUD
+      // =========================================================================
+      function startGame(isFreshReset = false) {
+        Sound.init();
+        if (isFreshReset) resetProgress();
+        state.mode = 'playing';
+        state.autoAttack = false; state.repairBotOn = false; state.waypoint = null; state.selectedTargetId = null;
+        state.player = createPlayer();
+        applyUpgradesToPlayer(false);
+        loadSector(state.sectorId, 0, 120);
+
+        overlayStart.classList.add('hidden');
+        overlayHangar.classList.add('hidden');
+        overlayPause.classList.add('hidden');
+        overlayGameover.classList.add('hidden');
+        btnPause.textContent = 'Duraklat';
+        renderQuestUI();
+        updateHudPips(); updateHudBars(); updateActionBar();
+      }
+
+      function respawnAtBase() {
+        Sound.init();
+        state.mode = 'playing';
+        state.player.hull = state.player.maxHull;
+        state.player.shield = state.player.maxShield;
+        loadSector('X-1', 0, 120);
+        overlayGameover.classList.add('hidden');
+      }
+
+      function togglePause() {
+        if (state.mode === 'playing') {
+          saveProgress();
+          state.mode = 'paused';
+          overlayPause.classList.remove('hidden');
+          btnPause.textContent = 'Devam';
+        } else if (state.mode === 'paused') {
+          state.mode = 'playing';
+          overlayPause.classList.add('hidden');
+          btnPause.textContent = 'Duraklat';
+        }
+      }
+
+      function endGame(reason) {
+        state.mode = 'gameover';
+        saveHighScore(state.score);
+        saveProgress();
+        goScore.textContent = state.score.toLocaleString();
+        goLvl.textContent = String(state.level);
+        goBest.textContent = highScore.toLocaleString();
+        goReason.textContent = reason;
+        warningBanner.classList.remove('show');
+        targetCard.classList.remove('show');
+        jumpPrompt.classList.remove('show');
+        overlayHangar.classList.add('hidden');
+        overlayGameover.classList.remove('hidden');
+      }
+
+      function updateHudPips() {
+        const p = state.player, count = p ? p.missiles : 0, max = p ? p.maxMissiles : 6;
+        let html = '';
+        for (let i = 0; i < max; i++) html += `<span class="pip${i < count ? ' ready' : ''}"></span>`;
+        missilePipsEl.innerHTML = html;
+      }
+
+      function updateActionBar() {
+        slotX1.classList.toggle('selected', state.ammoType === 'x1');
+        slotX2.classList.toggle('selected', state.ammoType === 'x2');
+        slotX4.classList.toggle('selected', state.ammoType === 'x4');
+        slotSab.classList.toggle('selected', state.ammoType === 'sab');
+        slotX2.classList.toggle('disabled', state.ammo.x2 <= 0);
+        slotX4.classList.toggle('disabled', state.ammo.x4 <= 0);
+        slotSab.classList.toggle('disabled', state.ammo.sab <= 0);
+
+        cntX2.textContent = String(state.ammo.x2);
+        cntX4.textContent = String(state.ammo.x4);
+        cntSab.textContent = String(state.ammo.sab);
+
+        slotAttack.classList.toggle('attack-on', state.autoAttack);
+        cntAttack.textContent = state.autoAttack ? 'AÇIK' : 'KAPALI';
+        cntRocket.textContent = state.player ? String(state.player.missiles) : '0';
+
+        const model = getSelectedModel();
+        lblSkill.textContent = model.skillName;
+        const skillReady = !state.player || state.player.skillCd <= 0;
+        slotSkill.classList.toggle('skill-ready', skillReady);
+        cntSkill.textContent = skillReady ? 'HAZIR' : `${Math.ceil(state.player.skillCd)}s`;
+
+        cntMine.textContent = String(state.minesCount);
+        slotMine.classList.toggle('disabled', state.minesCount <= 0);
+
+        const flareReady = !state.player || state.player.flareCd <= 0;
+        cntEmp.textContent = flareReady ? 'HAZIR' : `${Math.ceil(state.player.flareCd)}s`;
+        slotBot.classList.toggle('selected', state.repairBotOn);
+        cntBot.textContent = state.repairBotOn ? 'AKTİF' : 'BOT';
+      }
+
+      function updateHudBars() {
+        const p = state.player;
+        if (!p) return;
+        barShield.style.width = `${clamp((p.shield / p.maxShield) * 100, 0, 100)}%`;
+        const huPct = clamp((p.hull / p.maxHull) * 100, 0, 100);
+        barHull.style.width = `${huPct}%`;
+        barHull.classList.toggle('low', huPct < 35);
+        barFlare.style.width = `${clamp((1 - p.flareCd / p.flareMaxCd) * 100, 0, 100)}%`;
+
+        const rankObj = RANKS[Math.min(RANKS.length - 1, state.level - 1)];
+        hudRank.textContent = `Lv.${state.level} ${rankObj.title}`;
+        hudXp.textContent = `${state.xp.toLocaleString()} XP`;
+        hudCredits.textContent = state.credits.toLocaleString();
+        hudUri.textContent = state.uri.toLocaleString();
+        hudOre.textContent = state.ore.toLocaleString();
+        hudScore.textContent = state.score.toLocaleString();
+        hudZone.textContent = getCurrentSector().name;
+
+        safezoneBanner.classList.toggle('show', inSafeZone(p.x, p.y));
+        btnHangar.classList.toggle('glow', canAffordAnyUpgrade());
+
+        let pills = '';
+        if (state.drones.length > 0) pills += `<span class="boost-pill" style="color:#38bdf8;border-color:#38bdf8;">DİROİT ${state.drones.length}/4</span>`;
+        if (state.hasPet) pills += `<span class="boost-pill" style="color:#34d399;border-color:#34d399;">P.E.T.</span>`;
+        if (state.laserBoostTimer > 0) pills += `<span class="boost-pill">SEPROM ${Math.ceil(state.laserBoostTimer)}s</span>`;
+        if (state.shieldBoostTimer > 0) pills += `<span class="boost-pill" style="color:#a78bfa;border-color:#a78bfa;">PROMERIUM ${Math.ceil(state.shieldBoostTimer)}s</span>`;
+        boostBadgesEl.innerHTML = pills;
+
+        const tgt = state.enemies.find(e => e.id === state.selectedTargetId);
+        if (tgt) {
+          targetCard.classList.add('show');
+          targetNameEl.textContent = tgt.name.toUpperCase();
+          targetLvlEl.textContent = `Lv.${tgt.lvl}`;
+          targetShieldEl.style.width = `${tgt.maxShield > 0 ? clamp((tgt.shield / tgt.maxShield) * 100, 0, 100) : 0}%`;
+          targetHullEl.style.width = `${clamp((tgt.hp / tgt.maxHp) * 100, 0, 100)}%`;
+        } else targetCard.classList.remove('show');
+      }
+
+      // =========================================================================
+      // 11. SIMULATION UPDATE
+      // =========================================================================
+      function update(dt) {
+        state.time += dt;
+        if (state.warpFlash > 0) state.warpFlash = Math.max(0, state.warpFlash - dt * 2.2);
+
+        if (state.mode === 'start') {
+          state.camera.x = Math.cos(state.time * 0.16) * 200;
+          state.camera.y = Math.sin(state.time * 0.12) * 140;
+          for (const a of state.asteroids) {
+            a.x += a.vx * dt; a.y += a.vy * dt;
+            a.rx += a.vrx * dt; a.ry += a.vry * dt; a.rz += a.vrz * dt;
+            wrapBoundary(a, HALF_WORLD);
+          }
+          return;
+        }
+
+        if (state.mode !== 'playing') return;
+        const p = state.player;
+        if (!p) return;
+
+        state.shake = Math.max(0, state.shake - dt * 26);
+        state.laserBoostTimer = Math.max(0, state.laserBoostTimer - dt);
+        state.shieldBoostTimer = Math.max(0, state.shieldBoostTimer - dt);
+
+        state.saveTimer += dt;
+        if (state.saveTimer >= 12) { state.saveTimer = 0; saveProgress(); }
+
+        state.respawnTimer += dt;
+        if (state.respawnTimer >= 5.5) {
+          state.respawnTimer = 0;
+          maintainEnemyPopulation();
+          if (state.pickups.filter(pk => pk.kind === 'bonus_box').length < 22) {
+            const pt = spawnPointInRing(getCurrentSector().hasBase ? SAFE_RADIUS + 200 : 250, HALF_WORLD - 260);
+            state.pickups.push({ id: state.nextEntityId++, x: pt.x, y: pt.y, vx: 0, vy: 0, kind: 'bonus_box', life: 9999, pulse: 0 });
+          }
+        }
+
+        // --- Player Flight Physics ---
+        const usingTouch = touchState.left || touchState.right || touchState.thrust;
+        const wantMissile = keys['KeyR'] || keys['ShiftLeft'] || keys['ShiftRight'] || touchState.missile;
+        const wantFlare = keys['KeyE'] || keys['Space'] || touchState.flare;
+
+        const prevAngle = p.angle;
+        const accel = (p.boostTimer > 0 || p.cloakTimer > 0) ? p.accel * 1.55 : p.accel;
+        let thrustPower = 0;
+
+        if (usingTouch) {
+          state.waypoint = null;
+          if (touchState.left) p.angle -= 4.0 * dt;
+          if (touchState.right) p.angle += 4.0 * dt;
+          if (touchState.thrust) thrustPower = 1;
+        } else if (state.waypoint) {
+          const dx = state.waypoint.x - p.x, dy = state.waypoint.y - p.y, dist = Math.hypot(dx, dy);
+          if (dist < 45) state.waypoint = null;
+          else {
+            p.angle += clamp(angleDiff(p.angle, Math.atan2(dy, dx)), -p.turnSpeed * dt, p.turnSpeed * dt);
+            thrustPower = 1;
+          }
+        } else if (mouse.active) {
+          const mwX = state.camera.x + (mouse.x - viewW * 0.5), mwY = state.camera.y + (mouse.y - viewH * 0.5);
+          const dx = mwX - p.x, dy = mwY - p.y, dist = Math.hypot(dx, dy);
+          if (dist > 8) p.angle += clamp(angleDiff(p.angle, Math.atan2(dy, dx)), -p.turnSpeed * dt, p.turnSpeed * dt);
+          if (dist > 38) thrustPower = clamp((dist - 38) / 145, 0.22, 1);
+          else { p.vx *= Math.pow(0.24, dt); p.vy *= Math.pow(0.24, dt); }
+        }
+
+        const angularVel = angleDiff(prevAngle, p.angle) / Math.max(dt, 0.001);
+        p.roll += (clamp(angularVel * 0.16, -0.78, 0.78) - p.roll) * Math.min(1, dt * 8.5);
+        p.pitch += ((p.boostTimer > 0 ? -0.18 : (thrustPower > 0.2 ? -0.09 : 0.02)) - p.pitch) * Math.min(1, dt * 6);
+
+        p.thrusting = thrustPower > 0;
+        if (thrustPower > 0) {
+          p.vx += Math.cos(p.angle) * accel * thrustPower * dt;
+          p.vy += Math.sin(p.angle) * accel * thrustPower * dt;
+          if (Math.random() < 0.85) {
+            const engCol = p.boostTimer > 0 ? '#fbbf24' : getPlayerPalette().engineCss;
+            state.particles.push({
+              x: p.x - Math.cos(p.angle) * 18 + rand(-4, 4), y: p.y - Math.sin(p.angle) * 18 + rand(-4, 4),
+              vx: p.vx * 0.2 - Math.cos(p.angle) * rand(120, 210), vy: p.vy * 0.2 - Math.sin(p.angle) * rand(120, 210),
+              life: rand(0.14, 0.25), maxLife: 0.25, r: p.boostTimer > 0 ? 4.5 : 3.0, color: engCol, drag: 0.94
+            });
+          }
+        }
+
+        // Low-hull damage smoke trail on player
+        if (p.hull < p.maxHull * 0.4 && Math.random() < 0.45) {
+          state.particles.push({
+            x: p.x + rand(-8, 8), y: p.y + rand(-8, 8),
+            vx: rand(-20, 20), vy: rand(-20, 20), life: 0.55, maxLife: 0.55,
+            r: rand(3, 5.5), color: Math.random() < 0.35 ? '#fb923c' : 'rgba(148, 163, 184, 0.45)', drag: 0.96
+          });
+        }
+
+        const drag = Math.pow(0.45, dt);
+        p.vx *= drag; p.vy *= drag;
+        const maxSpd = (p.boostTimer > 0 || p.cloakTimer > 0) ? p.maxSpeed * 1.48 : p.maxSpeed;
+        const spd = Math.hypot(p.vx, p.vy);
+        if (spd > maxSpd) { p.vx = (p.vx / spd) * maxSpd; p.vy = (p.vy / spd) * maxSpd; }
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        enforceSectorBounds(p);
+
+        p.fireCd = Math.max(0, p.fireCd - dt);
+        p.missileCd = Math.max(0, p.missileCd - dt);
+        p.flareCd = Math.max(0, p.flareCd - dt);
+        p.skillCd = Math.max(0, p.skillCd - dt);
+        p.cloakTimer = Math.max(0, p.cloakTimer - dt);
+        p.fortressTimer = Math.max(0, p.fortressTimer - dt);
+        p.boostTimer = Math.max(0, p.boostTimer - dt);
+        p.invuln = Math.max(0, p.invuln - dt);
+        p.combatTimer = Math.max(0, p.combatTimer - dt);
+
+        if (p.fortressTimer > 0) p.shield = Math.min(p.maxShield, p.shield + 28 * dt);
+
+        if (inSafeZone(p.x, p.y)) {
+          p.hull = Math.min(p.maxHull, p.hull + 48 * dt);
+          p.shield = Math.min(p.maxShield, p.shield + 65 * dt);
+        } else {
+          const regenMult = state.shieldBoostTimer > 0 ? 2.0 : 1.0;
+          if (p.shieldDelay > 0) p.shieldDelay -= dt;
+          else if (p.shield < p.maxShield) p.shield = Math.min(p.maxShield, p.shield + p.shieldRegen * regenMult * dt);
+
+          if (state.repairBotOn && p.combatTimer <= 0 && p.hull < p.maxHull) {
+            p.hull = Math.min(p.maxHull, p.hull + 26 * dt);
+            if (Math.random() < 0.35) {
+              state.particles.push({ x: p.x + rand(-18, 18), y: p.y + rand(-18, 18), vx: 0, vy: -22, life: 0.4, maxLife: 0.4, r: 2.8, color: '#34d399', drag: 0.98 });
+            }
+            if (p.hull >= p.maxHull) { state.repairBotOn = false; updateActionBar(); }
+          }
+        }
+
+        if (p.missiles < p.maxMissiles) {
+          p.missileRegen += dt;
+          if (p.missileRegen >= p.missileReloadTime) { p.missileRegen = 0; p.missiles++; updateHudPips(); updateActionBar(); }
+        } else p.missileRegen = 0;
+
+        // Check nearby Jump Gate
+        state.nearbyGate = null;
+        for (const g of getCurrentSector().gates) {
+          if (distSq(p.x, p.y, g.x, g.y) < 165 * 165) { state.nearbyGate = g; break; }
+        }
+        if (state.nearbyGate) {
+          jumpPrompt.textContent = `⚡ ATLA [J] → ${state.nearbyGate.label}`;
+          jumpPrompt.classList.add('show');
+        } else jumpPrompt.classList.remove('show');
+
+        // --- P.E.T. Companion AI (Auto-Collects Boxes/Ore & Assists Combat) ---
+        if (state.hasPet) {
+          const pet = state.pet;
+          pet.fireCd = Math.max(0, pet.fireCd - dt);
+          let petTargetX = p.x - Math.cos(p.angle) * 52 - Math.sin(p.angle) * 44;
+          let petTargetY = p.y - Math.sin(p.angle) * 52 + Math.cos(p.angle) * 44;
+
+          let nearestPk = null, nearestPkIdx = -1, bestPkD = 540 * 540;
+          for (let i = 0; i < state.pickups.length; i++) {
+            const pk = state.pickups[i];
+            const d2 = distSq(p.x, p.y, pk.x, pk.y);
+            if (d2 < bestPkD) { bestPkD = d2; nearestPk = pk; nearestPkIdx = i; }
+          }
+          if (nearestPk) { petTargetX = nearestPk.x; petTargetY = nearestPk.y; }
+
+          const pdx = petTargetX - pet.x, pdy = petTargetY - pet.y, pd = Math.hypot(pdx, pdy);
+          if (pd > 12) {
+            const des = Math.atan2(pdy, pdx);
+            pet.angle += clamp(angleDiff(pet.angle, des), -7.5 * dt, 7.5 * dt);
+            const pSpd = Math.min(480, pd * 3.8);
+            pet.vx += (Math.cos(pet.angle) * pSpd - pet.vx) * Math.min(1, dt * 6);
+            pet.vy += (Math.sin(pet.angle) * pSpd - pet.vy) * Math.min(1, dt * 6);
+          } else { pet.vx *= 0.85; pet.vy *= 0.85; }
+          pet.x += pet.vx * dt; pet.y += pet.vy * dt;
+
+          if (nearestPk && distSq(pet.x, pet.y, nearestPk.x, nearestPk.y) < 32 * 32) {
+            collectPickup(nearestPk, nearestPkIdx);
+          }
+
+          // P.E.T. fires support bolt at locked enemy
+          const lockedEn = state.enemies.find(e => e.id === state.selectedTargetId);
+          if (lockedEn && state.autoAttack && pet.fireCd <= 0 && !inSafeZone(p.x, p.y) && distSq(pet.x, pet.y, lockedEn.x, lockedEn.y) < 560 * 560) {
+            pet.fireCd = 0.52;
+            const ang = Math.atan2(lockedEn.y - pet.y, lockedEn.x - pet.x);
+            state.lasers.push({
+              x: pet.x, y: pet.y, vx: Math.cos(ang) * 860, vy: Math.sin(ang) * 860, angle: ang,
+              owner: 'player', damage: 18 + state.upgrades.weapons * 4, shieldDrain: false, color: '#34d399', life: 0.65
+            });
+          }
+        }
+
+        // Auto-Laser & Free Fire
+        const lockedEnemy = state.enemies.find(e => e.id === state.selectedTargetId) || null;
+        if (!lockedEnemy && state.selectedTargetId !== null) { state.selectedTargetId = null; state.autoAttack = false; updateActionBar(); }
+        if (state.autoAttack && lockedEnemy && !inSafeZone(p.x, p.y)) {
+          if (Math.hypot(lockedEnemy.x - p.x, lockedEnemy.y - p.y) <= 660) firePlayerLaser(lockedEnemy);
+        } else if ((mouseFire || touchState.fire) && !inSafeZone(p.x, p.y)) {
+          firePlayerLaser(null);
+        }
+
+        if (missileCooldownInput > 0) missileCooldownInput -= dt;
+        if (wantMissile && missileCooldownInput <= 0) { firePlayerMissile(); missileCooldownInput = 0.25; }
+        if (wantFlare) triggerFlareAndBoost();
+
+        state.camera.x += (p.x + p.vx * 0.2 - state.camera.x) * Math.min(1, dt * 6.5);
+        state.camera.y += (p.y + p.vy * 0.2 - state.camera.y) * Math.min(1, dt * 6.5);
+
+        // --- Space Mines ---
+        for (let i = state.mines.length - 1; i >= 0; i--) {
+          const mn = state.mines[i];
+          mn.armTimer = Math.max(0, mn.armTimer - dt);
+          mn.life -= dt; mn.pulse += dt * 7;
+          if (mn.life <= 0) { state.mines.splice(i, 1); continue; }
+          if (mn.armTimer <= 0) {
+            let boom = false;
+            for (const e of state.enemies) {
+              if (distSq(mn.x, mn.y, e.x, e.y) < (e.radius + 54) * (e.radius + 54)) { boom = true; break; }
+            }
+            if (boom) {
+              spawnExplosion(mn.x, mn.y, '#fb923c', 32, 1.5, 9);
+              Sound.playExplosion(1.3);
+              for (let j = state.enemies.length - 1; j >= 0; j--) {
+                const e = state.enemies[j];
+                if (distSq(mn.x, mn.y, e.x, e.y) < 175 * 175) damageEnemy(e, j, 165, false);
+              }
+              state.mines.splice(i, 1);
+            }
+          }
+        }
+
+        // --- Asteroids ---
+        for (let i = state.asteroids.length - 1; i >= 0; i--) {
+          const a = state.asteroids[i];
+          a.x += a.vx * dt; a.y += a.vy * dt;
+          a.rx += a.vrx * dt; a.ry += a.vry * dt; a.rz += a.vrz * dt;
+          a.hitFlash = Math.max(0, a.hitFlash - dt);
+          wrapBoundary(a, HALF_WORLD + 80);
+
+          if (getCurrentSector().hasBase) {
+            const d0 = Math.hypot(a.x, a.y);
+            if (d0 < SAFE_RADIUS + a.radius + 40) { a.vx = (a.x / (d0 || 1)) * 45; a.vy = (a.y / (d0 || 1)) * 45; }
+          }
+
+          const minDist = p.radius + a.radius * 0.85, d2 = distSq(p.x, p.y, a.x, a.y);
+          if (d2 < minDist * minDist) {
+            const d = Math.sqrt(d2) || 1, nx = (p.x - a.x) / d, ny = (p.y - a.y) / d;
+            p.x += nx * (minDist - d); p.y += ny * (minDist - d);
+            p.vx = nx * 165; p.vy = ny * 165;
+            damagePlayer(14 + a.sizeTier * 5, 'Asteroit çarpışmasıyla gövde parçalandı.');
+          }
+        }
+
+        // --- Enemies ---
+        const playerSafe = inSafeZone(p.x, p.y) || p.cloakTimer > 0;
+        for (let i = state.enemies.length - 1; i >= 0; i--) {
+          const e = state.enemies[i], def = ENEMY_TYPES[e.type];
+          e.hitFlash = Math.max(0, e.hitFlash - dt);
+          e.shieldFlash = Math.max(0, e.shieldFlash - dt);
+          e.fireCd -= dt; e.missileCd -= dt; e.strafeTimer -= dt;
+          if (e.strafeTimer <= 0) { e.strafeDir *= -1; e.strafeTimer = rand(1.8, 3.8); }
+          if (e.shieldDelay > 0) e.shieldDelay -= dt;
+          else if (e.shield < e.maxShield) e.shield = Math.min(e.maxShield, e.shield + e.maxShield * 0.04 * dt);
+
+          // Damaged enemy smoke trail
+          if (e.hp < e.maxHp * 0.4 && Math.random() < 0.25 && Math.abs(e.x - state.camera.x) < viewW * 0.7) {
+            state.particles.push({
+              x: e.x + rand(-8, 8), y: e.y + rand(-8, 8), vx: rand(-15, 15), vy: rand(-15, 15),
+              life: 0.45, maxLife: 0.45, r: rand(2.5, 4.5), color: Math.random() < 0.35 ? '#fb923c' : 'rgba(148,163,184,0.4)', drag: 0.96
+            });
+          }
+
+          const dx = p.x - e.x, dy = p.y - e.y, distToPlayer = Math.hypot(dx, dy) || 1;
+          const sightRange = def.boss ? 620 : 500;
+          if (!playerSafe && distToPlayer < sightRange) e.aggro = true;
+          if (playerSafe || distToPlayer > 1250) e.aggro = false;
+
+          let desiredAngle, targetSpeed = e.speed;
+          if (e.aggro) {
+            // Low-HP enemies try to break away briefly to recharge shields
+            if (!def.boss && e.hp < e.maxHp * 0.22) {
+              desiredAngle = Math.atan2(-dy, -dx);
+            } else {
+              desiredAngle = Math.atan2(dy, dx);
+              if (distToPlayer < 250) desiredAngle += e.strafeDir * 1.15;
+              else if (distToPlayer < 400) desiredAngle += e.strafeDir * 0.35;
+              if (distToPlayer < 190) targetSpeed = e.speed * 0.7;
+            }
+            if (def.spawner) {
+              e.spawnCd -= dt;
+              const nearbyP = state.enemies.filter(o => o.type === 'protegit' && distSq(o.x, o.y, e.x, e.y) < 900 * 900).length;
+              if (e.spawnCd <= 0 && nearbyP < 4) {
+                e.spawnCd = 6.5;
+                const a = rand(0, Math.PI * 2);
+                const dr = createEnemy('protegit', e.x + Math.cos(a) * 58, e.y + Math.sin(a) * 58);
+                dr.aggro = true; state.enemies.push(dr);
+                addPopup(e.x, e.y - 44, 'PROTEGİT FİLOSU KALKIŞTA!', '#e879f9');
+              }
+            }
+          } else {
+            e.patrolAngle += rand(-0.6, 0.6) * dt;
+            if (distSq(e.x, e.y, e.homeX, e.homeY) > 540 * 540) e.patrolAngle = Math.atan2(e.homeY - e.y, e.homeX - e.x);
+            desiredAngle = e.patrolAngle; targetSpeed = e.speed * 0.48;
+          }
+
+          if (getCurrentSector().hasBase && Math.hypot(e.x, e.y) < SAFE_RADIUS + 140) {
+            desiredAngle = Math.atan2(e.y, e.x); e.aggro = false;
+          }
+
+          const prevA = e.angle;
+          e.angle += clamp(angleDiff(e.angle, desiredAngle), -e.turnRate * dt, e.turnRate * dt);
+          e.roll += (clamp((angleDiff(prevA, e.angle) / Math.max(dt, 0.001)) * 0.22, -0.7, 0.7) - e.roll) * Math.min(1, dt * 7);
+          e.vx += (Math.cos(e.angle) * targetSpeed - e.vx) * Math.min(1, dt * 3.0);
+          e.vy += (Math.sin(e.angle) * targetSpeed - e.vy) * Math.min(1, dt * 3.0);
+          e.x += e.vx * dt; e.y += e.vy * dt;
+          enforceSectorBounds(e);
+
+          if (e.aggro && !playerSafe && distToPlayer < 640) {
+            const aimAng = Math.atan2(dy, dx);
+            if (e.fireCd <= 0 && (def.boss || Math.abs(angleDiff(e.angle, aimAng)) < 0.38)) {
+              e.fireCd = def.fireCd;
+              state.lasers.push({
+                x: e.x + Math.cos(aimAng) * (e.radius + 4), y: e.y + Math.sin(aimAng) * (e.radius + 4),
+                vx: Math.cos(aimAng) * 620, vy: Math.sin(aimAng) * 620, angle: aimAng,
+                owner: 'enemy', damage: def.dmg, color: def.mapColor, life: 1.05
+              });
+              Sound.playLaser(true);
+            }
+            if (def.missile && e.missileCd <= 0 && distToPlayer > 220) { e.missileCd = def.missileCd; fireEnemyMissile(e); }
+          }
+        }
+
+        // --- Lasers ---
+        for (let i = state.lasers.length - 1; i >= 0; i--) {
+          const l = state.lasers[i];
+          l.x += l.vx * dt; l.y += l.vy * dt; l.life -= dt;
+          if (l.life <= 0) { state.lasers.splice(i, 1); continue; }
+
+          let hit = false;
+          for (let j = state.asteroids.length - 1; j >= 0; j--) {
+            const a = state.asteroids[j];
+            if (distSq(l.x, l.y, a.x, a.y) < a.radius * a.radius) {
+              a.hp -= l.damage; a.hitFlash = 0.08;
+              spawnExplosion(l.x, l.y, '#cbd5e1', 3, 0.3, 0.4);
+              if (a.hp <= 0) destroyAsteroid(a, j);
+              hit = true; break;
+            }
+          }
+          if (hit) { state.lasers.splice(i, 1); continue; }
+
+          if (l.owner === 'player') {
+            for (let j = state.enemies.length - 1; j >= 0; j--) {
+              const e = state.enemies[j];
+              if (distSq(l.x, l.y, e.x, e.y) < (e.radius + 6) * (e.radius + 6)) {
+                spawnExplosion(l.x, l.y, l.color, 4, 0.35, 0.5);
+                damageEnemy(e, j, l.damage, l.shieldDrain);
+                hit = true; break;
+              }
+            }
+            if (!hit) {
+              for (let j = state.missiles.length - 1; j >= 0; j--) {
+                const m = state.missiles[j];
+                if (m.owner === 'enemy' && distSq(l.x, l.y, m.x, m.y) < 18 * 18) {
+                  spawnExplosion(m.x, m.y, '#fb7185', 10, 0.6, 2);
+                  state.missiles.splice(j, 1); hit = true; break;
+                }
+              }
+            }
+          } else if (!playerSafe && distSq(l.x, l.y, p.x, p.y) < (p.radius + 4) * (p.radius + 4)) {
+            damagePlayer(l.damage, 'Düşman lazer ateşiyle imha edildin.'); hit = true;
+          }
+          if (hit) state.lasers.splice(i, 1);
+        }
+
+        // --- Homing Missiles ---
+        let incomingEnemyMissile = false;
+        for (let i = state.missiles.length - 1; i >= 0; i--) {
+          const m = state.missiles[i];
+          m.life -= dt;
+          if (m.life <= 0) { spawnExplosion(m.x, m.y, '#f59e0b', 8, 0.45, 1); state.missiles.splice(i, 1); continue; }
+
+          let target = null;
+          if (m.owner === 'player') target = state.enemies.find(e => e.id === m.targetId) || null;
+          else if (m.decoyed) target = state.flares.find(f => f.id === m.targetId) || null;
+          else if (!playerSafe && m.targetId === p.id) {
+            target = p;
+            if (distSq(m.x, m.y, p.x, p.y) < 760 * 760) incomingEnemyMissile = true;
+          }
+
+          if (target) {
+            const dist = Math.hypot(target.x - m.x, target.y - m.y), leadT = clamp(dist / m.speed, 0, 0.42);
+            const desired = Math.atan2(target.y + (target.vy || 0) * leadT - m.y, target.x + (target.vx || 0) * leadT - m.x);
+            m.angle += clamp(angleDiff(m.angle, desired), -m.turnRate * dt, m.turnRate * dt);
+          }
+
+          m.vx = Math.cos(m.angle) * m.speed; m.vy = Math.sin(m.angle) * m.speed;
+          m.x += m.vx * dt; m.y += m.vy * dt;
+          m.trail.push({ x: m.x, y: m.y });
+          if (m.trail.length > 18) m.trail.shift();
+
+          let exploded = false;
+          for (let j = state.asteroids.length - 1; j >= 0; j--) {
+            const a = state.asteroids[j];
+            if (distSq(m.x, m.y, a.x, a.y) < (a.radius + 6) * (a.radius + 6)) {
+              a.hp -= m.damage * 0.9; spawnExplosion(m.x, m.y, '#f59e0b', 16, 0.9, 3); Sound.playExplosion(0.75);
+              if (a.hp <= 0) destroyAsteroid(a, j);
+              exploded = true; break;
+            }
+          }
+          if (exploded) { state.missiles.splice(i, 1); continue; }
+
+          if (m.owner === 'player') {
+            for (let j = state.enemies.length - 1; j >= 0; j--) {
+              const e = state.enemies[j];
+              if (distSq(m.x, m.y, e.x, e.y) < (e.radius + 11) * (e.radius + 11)) {
+                spawnExplosion(m.x, m.y, '#f59e0b', 20, 1.0, 4); Sound.playExplosion(0.85);
+                damageEnemy(e, j, m.damage, false); exploded = true; break;
+              }
+            }
+          } else {
+            if (m.decoyed && target && distSq(m.x, m.y, target.x, target.y) < 22 * 22) {
+              spawnExplosion(m.x, m.y, '#fbbf24', 14, 0.7, 2); exploded = true;
+            } else if (!playerSafe && distSq(m.x, m.y, p.x, p.y) < (p.radius + 8) * (p.radius + 8)) {
+              spawnExplosion(m.x, m.y, '#fb7185', 22, 1.1, 7); Sound.playExplosion(1.0);
+              damagePlayer(m.damage, 'Düşman güdümlü füzesiyle imha edildin.'); exploded = true;
+            }
+          }
+          if (exploded) state.missiles.splice(i, 1);
+        }
+
+        warningBanner.classList.toggle('show', incomingEnemyMissile);
+        if (incomingEnemyMissile) Sound.playWarningBeep();
+
+        // --- Flares & Pickups ---
+        for (let i = state.flares.length - 1; i >= 0; i--) {
+          const f = state.flares[i];
+          f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= Math.pow(0.4, dt); f.vy *= Math.pow(0.4, dt); f.life -= dt;
+          if (f.life <= 0) state.flares.splice(i, 1);
+        }
+
+        for (let i = state.pickups.length - 1; i >= 0; i--) {
+          const pk = state.pickups[i];
+          pk.pulse += dt * 4.5; pk.life -= dt;
+          if (pk.life <= 0) { state.pickups.splice(i, 1); continue; }
+          const d2 = distSq(p.x, p.y, pk.x, pk.y);
+          if (d2 < 155 * 155) {
+            const d = Math.sqrt(d2) || 1;
+            pk.x += ((p.x - pk.x) / d) * 235 * dt; pk.y += ((p.y - pk.y) / d) * 235 * dt;
+          }
+          if (d2 < 36 * 36) collectPickup(pk, i);
+        }
+
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const pt = state.particles[i];
+          pt.life -= dt;
+          if (pt.life <= 0) { state.particles.splice(i, 1); continue; }
+          if (!pt.ring) {
+            pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+            pt.vx *= Math.pow(pt.drag || 0.95, dt * 60); pt.vy *= Math.pow(pt.drag || 0.95, dt * 60);
+            if (pt.shard) pt.rot += pt.vrot * dt;
+          }
+        }
+        for (let i = state.popups.length - 1; i >= 0; i--) {
+          const pop = state.popups[i]; pop.y += pop.vy * dt; pop.life -= dt;
+          if (pop.life <= 0) state.popups.splice(i, 1);
+        }
+
+        updateHudBars();
+        if (Math.floor(state.time * 4) !== Math.floor((state.time - dt) * 4)) updateActionBar();
+      }
+
+      function enforceSectorBounds(ent) {
+        const margin = HALF_WORLD - 60;
+        if (ent.x < -margin) { ent.x = -margin; ent.vx = Math.abs(ent.vx) * 0.5; }
+        if (ent.x > margin) { ent.x = margin; ent.vx = -Math.abs(ent.vx) * 0.5; }
+        if (ent.y < -margin) { ent.y = -margin; ent.vy = Math.abs(ent.vy) * 0.5; }
+        if (ent.y > margin) { ent.y = margin; ent.vy = -Math.abs(ent.vy) * 0.5; }
+      }
+      function wrapBoundary(ent, limit) {
+        if (ent.x < -limit) ent.x = limit; if (ent.x > limit) ent.x = -limit;
+        if (ent.y < -limit) ent.y = limit; if (ent.y > limit) ent.y = -limit;
+      }
+
+      // =========================================================================
+      // 12. 2.5D RENDERING PIPELINE
+      // =========================================================================
+      function render() {
+        const sec = getCurrentSector();
+        ctx.clearRect(0, 0, viewW, viewH);
+
+        const bgGrad = ctx.createRadialGradient(viewW * 0.5, viewH * 0.48, 40, viewW * 0.5, viewH * 0.5, Math.max(viewW, viewH) * 0.8);
+        bgGrad.addColorStop(0, sec.bgInner);
+        bgGrad.addColorStop(1, sec.bgOuter);
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, viewW, viewH);
+
+        const shakeX = state.shake > 0 ? rand(-state.shake, state.shake) : 0;
+        const shakeY = state.shake > 0 ? rand(-state.shake, state.shake) : 0;
+        const camX = state.camera.x + shakeX, camY = state.camera.y + shakeY;
+
+        drawDistantPlanet(camX, camY, sec);
+
+        for (const s of state.stars) {
+          const sx = ((s.x - camX * s.parallax) % (viewW + 200) + (viewW + 200)) % (viewW + 200) - 100;
+          const sy = ((s.y - camY * s.parallax) % (viewH + 200) + (viewH + 200)) % (viewH + 200) - 100;
+          const tw = 0.65 + 0.35 * Math.sin(state.time * 2.2 + s.twinkle);
+          ctx.globalAlpha = s.alpha * tw; ctx.fillStyle = s.hue;
+          ctx.beginPath(); ctx.arc(sx, sy, s.r, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        ctx.save();
+        ctx.translate(viewW * 0.5 - camX, viewH * 0.5 - camY);
+
+        for (const n of state.nebulas) {
+          const g = ctx.createRadialGradient(n.x, n.y, 10, n.x, n.y, n.r);
+          g.addColorStop(0, n.color); g.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
+        }
+
+        drawSpaceGrid(camX, camY);
+
+        // Safe Zone & Sector Border
+        ctx.save();
+        if (sec.hasBase) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.44)';
+          ctx.fillStyle = 'rgba(14, 165, 233, 0.05)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(0, 0, SAFE_RADIUS, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+          if (Math.hypot(camX, camY) < viewW + 450) {
+            renderMesh25D(MESHES.station, 0, 0, state.time * 0.14, 0, 0, 1.35, STATION_PALETTE, 0);
+          }
+        }
+        ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)'; ctx.lineWidth = 4;
+        ctx.setLineDash([18, 14]);
+        ctx.strokeRect(-HALF_WORLD + 30, -HALF_WORLD + 30, WORLD_SIZE - 60, WORLD_SIZE - 60);
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // 3D Rotating Jump Gates
+        for (const g of sec.gates) drawJumpGate(g);
+
+        // Waypoint
+        if (state.waypoint && state.mode === 'playing') {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)'; ctx.lineWidth = 1.6; ctx.setLineDash([6, 6]);
+          ctx.beginPath(); ctx.moveTo(state.player.x, state.player.y); ctx.lineTo(state.waypoint.x, state.waypoint.y); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.beginPath(); ctx.arc(state.waypoint.x, state.waypoint.y, 12 + Math.sin(state.time * 6) * 3, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+
+        const cullW = viewW * 0.65 + 150, cullH = viewH * 0.65 + 150;
+
+        // Pickups (Bonus Box, Cargo Box, Ore Crystal)
+        for (const pk of state.pickups) {
+          if (Math.abs(pk.x - camX) > cullW || Math.abs(pk.y - camY) > cullH) continue;
+          const isBonus = pk.kind === 'bonus_box', isOre = pk.kind === 'ore';
+          const col = isOre ? '#f59e0b' : (isBonus ? '#fbbf24' : '#34d399');
+          const r = (isBonus ? 11 : 9) + Math.sin(pk.pulse) * 2;
+          ctx.save();
+          ctx.translate(pk.x, pk.y);
+          ctx.rotate(state.time * (isOre ? 2.2 : (isBonus ? 1.4 : -1.0)));
+          ctx.fillStyle = 'rgba(10, 18, 36, 0.85)'; ctx.strokeStyle = col; ctx.lineWidth = 2;
+          ctx.shadowColor = col; ctx.shadowBlur = 10;
+          if (isOre) {
+            ctx.beginPath(); ctx.moveTo(0, -r); ctx.lineTo(r * 0.75, 0); ctx.lineTo(0, r); ctx.lineTo(-r * 0.75, 0); ctx.closePath();
+            ctx.fill(); ctx.stroke();
+          } else {
+            ctx.fillRect(-r, -r, r * 2, r * 2); ctx.strokeRect(-r, -r, r * 2, r * 2);
+            ctx.fillStyle = col; ctx.fillRect(-3, -3, 6, 6);
+          }
+          ctx.restore();
+        }
+
+        // Armed Space Mines
+        for (const mn of state.mines) {
+          const armed = mn.armTimer <= 0;
+          ctx.save();
+          ctx.translate(mn.x, mn.y);
+          ctx.strokeStyle = armed ? '#fb7185' : '#94a3b8';
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, 9 + Math.sin(mn.pulse) * 2, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = armed ? '#fb923c' : '#64748b';
+          ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+        }
+
+        // 3D Asteroids
+        for (const a of state.asteroids) {
+          if (Math.abs(a.x - camX) > cullW || Math.abs(a.y - camY) > cullH) continue;
+          ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+          ctx.beginPath(); ctx.ellipse(a.x + 12, a.y + 16, a.radius * 0.9, a.radius * 0.65, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          renderMesh25D(a.mesh, a.x, a.y, a.rz, a.ry, a.rx, 1, ASTEROID_PALETTE, a.hitFlash);
+        }
+
+        for (const f of state.flares) {
+          ctx.save(); ctx.globalAlpha = clamp(f.life / f.maxLife, 0, 1);
+          ctx.fillStyle = '#fef08a'; ctx.shadowColor = '#f59e0b'; ctx.shadowBlur = 14;
+          ctx.beginPath(); ctx.arc(f.x, f.y, 4.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        }
+
+        for (const l of state.lasers) {
+          if (Math.abs(l.x - camX) > cullW || Math.abs(l.y - camY) > cullH) continue;
+          ctx.save(); ctx.translate(l.x, l.y); ctx.rotate(l.angle);
+          ctx.strokeStyle = l.color; ctx.shadowColor = l.color; ctx.shadowBlur = 10; ctx.lineWidth = 3.2; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(-13, 0); ctx.lineTo(13, 0); ctx.stroke(); ctx.restore();
+        }
+
+        for (const m of state.missiles) drawMissile(m);
+        for (const e of state.enemies) {
+          if (Math.abs(e.x - camX) > cullW || Math.abs(e.y - camY) > cullH) continue;
+          drawEnemy25D(e);
+        }
+
+        // Player, 3D Drones & P.E.T.
+        if (state.mode === 'start') {
+          const model = getSelectedModel();
+          renderMesh25D(model.mesh, camX, camY - 140, state.time * 0.55, Math.sin(state.time * 0.9) * 0.22, Math.cos(state.time * 0.7) * 0.35, 2.1, getPlayerPalette(), 0);
+        } else if (state.player && state.mode !== 'gameover') {
+          drawPlayer25D(state.player);
+          drawDronesAndPet(state.player);
+        }
+
+        for (const pt of state.particles) {
+          const t = clamp(pt.life / pt.maxLife, 0, 1);
+          ctx.save(); ctx.globalAlpha = t;
+          if (pt.ring) {
+            const rad = pt.r + (pt.maxR - pt.r) * (1 - t);
+            ctx.strokeStyle = pt.color; ctx.lineWidth = 2.5 * t;
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2); ctx.stroke();
+          } else if (pt.shard) {
+            ctx.translate(pt.x, pt.y); ctx.rotate(pt.rot);
+            ctx.fillStyle = pt.color; ctx.fillRect(-pt.r, -pt.r * 0.5, pt.r * 2, pt.r);
+          } else {
+            ctx.fillStyle = pt.color; ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r * t, 0, Math.PI * 2); ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        for (const pop of state.popups) {
+          ctx.save(); ctx.globalAlpha = clamp(pop.life / pop.maxLife, 0, 1);
+          ctx.fillStyle = pop.color; ctx.font = '800 13px Inter, sans-serif'; ctx.textAlign = 'center';
+          ctx.fillText(pop.text, pop.x, pop.y); ctx.restore();
+        }
+
+        ctx.restore();
+
+        // Warp Hyperspace Flash
+        if (state.warpFlash > 0) {
+          ctx.fillStyle = `rgba(186, 230, 253, ${state.warpFlash * 0.65})`;
+          ctx.fillRect(0, 0, viewW, viewH);
+        }
+
+        if (state.mode === 'playing' || state.mode === 'paused' || state.mode === 'hangar') drawMinimap();
+        if (state.mode === 'playing' && mouse.active && touchControlsEl.classList.contains('hidden')) {
+          const mm = getMinimapRect();
+          const overMap = mouse.x >= mm.x && mouse.x <= mm.x + mm.size && mouse.y >= mm.y && mouse.y <= mm.y + mm.size;
+          canvas.style.cursor = overMap ? 'pointer' : 'none';
+          if (!overMap) drawMouseCrosshair(camX, camY);
+        } else canvas.style.cursor = 'default';
+      }
+
+      function drawJumpGate(g) {
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        // Swirling vortex core
+        const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, 105);
+        grad.addColorStop(0, g.color);
+        grad.addColorStop(0.55, 'rgba(14, 165, 233, 0.2)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(0, 0, 105, 0, Math.PI * 2); ctx.fill();
+
+        // Rotating 2.5D outer gate rings
+        ctx.rotate(state.time * 0.7);
+        ctx.strokeStyle = g.color;
+        ctx.lineWidth = 4;
+        ctx.setLineDash([28, 16]);
+        ctx.beginPath(); ctx.ellipse(0, 0, 88, 72, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.rotate(-state.time * 1.5);
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.ellipse(0, 0, 62, 52, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = '#f8fafc';
+        ctx.font = '800 12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`⚡ ${g.label}`, g.x, g.y - 96);
+        ctx.restore();
+      }
+
+      function drawDronesAndPet(p) {
+        // 3D Orbiting Flax/Iris Drones
+        state.drones.forEach((dType, idx) => {
+          const orbitA = state.time * 1.4 + (idx / state.drones.length) * Math.PI * 2;
+          const dx = p.x + Math.cos(orbitA) * 42;
+          const dy = p.y + Math.sin(orbitA) * 42;
+          const pal = dType === 'iris' ? DRONE_PALETTE_IRIS : DRONE_PALETTE_FLAX;
+          renderMesh25D(MESHES.drone, dx, dy, p.angle, -0.05, p.roll * 0.6, 1.0, pal, 0);
+        });
+
+        // 3D Autonomous P.E.T. Companion
+        if (state.hasPet) {
+          const pet = state.pet;
+          renderMesh25D(MESHES.pet, pet.x, pet.y, pet.angle, -0.05, 0, 1.0, PET_PALETTE, 0);
+          ctx.fillStyle = '#34d399';
+          ctx.font = '700 9px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('P.E.T.', pet.x, pet.y + 18);
+        }
+      }
+
+      function drawDistantPlanet(camX, camY, sec) {
+        const px = viewW * 0.78 - camX * 0.025, py = viewH * 0.24 - camY * 0.025;
+        ctx.save();
+        const g = ctx.createRadialGradient(px - 28, py - 24, 12, px, py, 94);
+        g.addColorStop(0, sec.planetA); g.addColorStop(0.55, sec.planetB); g.addColorStop(1, 'rgba(2, 6, 23, 0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 94, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(px, py); ctx.rotate(-0.32);
+        ctx.strokeStyle = sec.planetA; ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.ellipse(0, 0, 148, 28, 0, 0, Math.PI * 2); ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawSpaceGrid(camX, camY) {
+        const step = 240;
+        const startX = Math.floor((camX - viewW * 0.6) / step) * step, endX = camX + viewW * 0.6;
+        const startY = Math.floor((camY - viewH * 0.6) / step) * step, endY = camY + viewH * 0.6;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.045)'; ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = startX; x <= endX; x += step) { ctx.moveTo(x, startY); ctx.lineTo(x, endY); }
+        for (let y = startY; y <= endY; y += step) { ctx.moveTo(startX, y); ctx.lineTo(endX, y); }
+        ctx.stroke();
+      }
+
+      function drawPlayer25D(p) {
+        const model = getSelectedModel(), pal = getPlayerPalette();
+        ctx.save();
+        if (p.cloakTimer > 0) ctx.globalAlpha = 0.34;
+        else if (p.invuln > 0 && Math.floor(state.time * 16) % 2 === 0) ctx.globalAlpha = 0.55;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.beginPath(); ctx.ellipse(p.x + 10, p.y + 16, 20, 12, p.angle, 0, Math.PI * 2); ctx.fill();
+
+        if (p.thrusting || p.boostTimer > 0) {
+          const ex = p.x - Math.cos(p.angle) * 20, ey = p.y - Math.sin(p.angle) * 20;
+          const eg = ctx.createRadialGradient(ex, ey, 2, ex, ey, p.boostTimer > 0 ? 28 : 18);
+          eg.addColorStop(0, p.boostTimer > 0 ? 'rgba(251, 191, 36, 0.55)' : 'rgba(56, 189, 248, 0.45)');
+          eg.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(ex, ey, p.boostTimer > 0 ? 28 : 18, 0, Math.PI * 2); ctx.fill();
+        }
+
+        renderMesh25D(model.mesh, p.x, p.y, p.angle, p.pitch, p.roll, 1.05, pal, 0);
+
+        // Titan Fortress Shield Dome
+        if (p.fortressTimer > 0) {
+          ctx.strokeStyle = '#34d399'; ctx.fillStyle = 'rgba(52, 211, 153, 0.14)'; ctx.lineWidth = 2.5;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.radius + 15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        } else if (p.shield > 0 && p.shieldDelay > 2.95) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.68)'; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(p.x, p.y, p.radius + 9, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function drawEnemy25D(e) {
+        const def = ENEMY_TYPES[e.type], isLocked = e.id === state.selectedTargetId;
+
+        ctx.save(); ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath(); ctx.ellipse(e.x + 8, e.y + 14, e.radius * 0.9, e.radius * 0.55, e.angle, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+        if (isLocked) {
+          ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(state.time * 2.2);
+          ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2.4;
+          const r = e.radius + 14;
+          for (let i = 0; i < 4; i++) { ctx.rotate(Math.PI / 2); ctx.beginPath(); ctx.arc(0, 0, r, -0.38, 0.38); ctx.stroke(); }
+          ctx.restore();
+        }
+
+        const engDist = e.radius * 0.95;
+        const ex = e.x - Math.cos(e.angle) * engDist, ey = e.y - Math.sin(e.angle) * engDist;
+        const eg = ctx.createRadialGradient(ex, ey, 1, ex, ey, def.boss ? 26 : 14);
+        eg.addColorStop(0, def.mapColor); eg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.save(); ctx.globalAlpha = 0.45; ctx.fillStyle = eg;
+        ctx.beginPath(); ctx.arc(ex, ey, def.boss ? 26 : 14, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+
+        renderMesh25D(def.mesh, e.x, e.y, e.angle, -0.05, e.roll, 1.0, def.palette, e.hitFlash);
+
+        // Shield impact ripple on shielded enemy hit
+        if (e.shieldFlash > 0) {
+          ctx.save();
+          ctx.globalAlpha = e.shieldFlash * 3;
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.2;
+          ctx.beginPath(); ctx.arc(e.x, e.y, e.radius + 8, 0, Math.PI * 2); ctx.stroke();
+          ctx.restore();
+        }
+
+        const bw = def.boss ? 58 : 36, topY = e.y - e.radius - 20;
+        if (e.maxShield > 0 && (e.shield < e.maxShield || isLocked || def.boss)) {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; ctx.fillRect(e.x - bw / 2, topY - 5, bw, 3.5);
+          ctx.fillStyle = '#38bdf8'; ctx.fillRect(e.x - bw / 2, topY - 5, bw * clamp(e.shield / e.maxShield, 0, 1), 3.5);
+        }
+        if (e.hp < e.maxHp || isLocked || def.boss) {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'; ctx.fillRect(e.x - bw / 2, topY, bw, 4);
+          ctx.fillStyle = def.boss ? '#e879f9' : '#fb7185'; ctx.fillRect(e.x - bw / 2, topY, bw * clamp(e.hp / e.maxHp, 0, 1), 4);
+        }
+        ctx.fillStyle = isLocked ? '#fecdd3' : 'rgba(226, 232, 240, 0.72)';
+        ctx.font = '700 10px Inter, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(def.name, e.x, e.y + e.radius + 14);
+      }
+
+      function drawMissile(m) {
+        if (m.trail.length > 1) {
+          ctx.save(); ctx.beginPath();
+          m.trail.forEach((pt, idx) => { if (idx === 0) ctx.moveTo(pt.x, pt.y); else ctx.lineTo(pt.x, pt.y); });
+          ctx.strokeStyle = m.owner === 'player' ? 'rgba(251, 191, 36, 0.58)' : 'rgba(251, 113, 133, 0.68)';
+          ctx.lineWidth = 2.6; ctx.stroke(); ctx.restore();
+        }
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.angle);
+        const col = m.owner === 'player' ? '#fbbf24' : '#fb7185';
+        ctx.fillStyle = '#f8fafc'; ctx.shadowColor = col; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-6, -3.6); ctx.lineTo(-4, 0); ctx.lineTo(-6, 3.6); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(-6, 0, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+
+      function drawMouseCrosshair(camX, camY) {
+        const p = state.player;
+        if (!p) return;
+        const px = p.x - camX + viewW * 0.5, py = p.y - camY + viewH * 0.5;
+        const mx = mouse.x, my = mouse.y, d = Math.hypot(mx - px, my - py);
+        ctx.save();
+        if (d > 42) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)'; ctx.lineWidth = 1.2; ctx.setLineDash([4, 6]);
+          ctx.beginPath();
+          ctx.moveTo(px + ((mx - px) / d) * 26, py + ((my - py) / d) * 26);
+          ctx.lineTo(mx - ((mx - px) / d) * 14, my - ((my - py) / d) * 14);
+          ctx.stroke(); ctx.setLineDash([]);
+        }
+        const col = state.autoAttack ? '#fb7185' : '#38bdf8';
+        ctx.translate(mx, my); ctx.strokeStyle = col; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI * 2); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(-15, 0); ctx.lineTo(-7, 0); ctx.moveTo(7, 0); ctx.lineTo(15, 0);
+        ctx.moveTo(0, -15); ctx.lineTo(0, -7); ctx.moveTo(0, 7); ctx.lineTo(0, 15);
+        ctx.stroke();
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, 2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      }
+
+      function drawMinimap() {
+        const p = state.player;
+        if (!p) return;
+        const sec = getCurrentSector();
+        const { x, y, size } = getMinimapRect();
+        const toMapX = (wx) => x + ((wx + HALF_WORLD) / WORLD_SIZE) * size;
+        const toMapY = (wy) => y + ((wy + HALF_WORLD) / WORLD_SIZE) * size;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(5, 10, 22, 0.88)';
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.48)';
+        ctx.lineWidth = 1.5;
+        ctx.fillRect(x, y, size, size);
+        ctx.strokeRect(x, y, size, size);
+
+        if (sec.hasBase) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)'; ctx.fillStyle = 'rgba(14, 165, 233, 0.16)';
+          ctx.beginPath(); ctx.arc(toMapX(0), toMapY(0), (SAFE_RADIUS / WORLD_SIZE) * size, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        }
+
+        // Jump Gates on Minimap
+        for (const g of sec.gates) {
+          ctx.strokeStyle = g.color; ctx.lineWidth = 1.8;
+          ctx.beginPath(); ctx.arc(toMapX(g.x), toMapY(g.y), 5.5, 0, Math.PI * 2); ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(251, 191, 36, 0.72)';
+        for (const pk of state.pickups) {
+          if (pk.kind !== 'bonus_box') continue;
+          ctx.fillRect(toMapX(pk.x) - 1, toMapY(pk.y) - 1, 2, 2);
+        }
+
+        for (const e of state.enemies) {
+          const def = ENEMY_TYPES[e.type];
+          ctx.fillStyle = def.mapColor;
+          ctx.beginPath(); ctx.arc(toMapX(e.x), toMapY(e.y), def.boss ? 3.2 : 1.9, 0, Math.PI * 2); ctx.fill();
+        }
+
+        if (state.waypoint) {
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)'; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(toMapX(p.x), toMapY(p.y)); ctx.lineTo(toMapX(state.waypoint.x), toMapY(state.waypoint.y)); ctx.stroke();
+        }
+
+        const px = toMapX(p.x), py = toMapY(p.y);
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(x, py); ctx.lineTo(x + size, py); ctx.moveTo(px, y); ctx.lineTo(px, y + size); ctx.stroke();
+        ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 2.8, 0, Math.PI * 2); ctx.fill();
+
+        ctx.fillStyle = 'rgba(226, 232, 240, 0.9)'; ctx.font = '800 9px Inter, sans-serif';
+        ctx.fillText(sec.name, x + 5, y + 11);
+        ctx.restore();
+      }
+
+      // =========================================================================
+      // 13. LOOP & INPUT LISTENERS
+      // =========================================================================
+      let rafId = null, lastTime = 0;
+      function loop(ts) {
+        if (!lastTime) lastTime = ts;
+        const dt = Math.min(0.05, (ts - lastTime) / 1000);
+        lastTime = ts;
+        update(dt);
+        render();
+        rafId = requestAnimationFrame(loop);
+      }
+
+      window.addEventListener('keydown', (e) => {
+        if (['Space'].includes(e.code)) e.preventDefault();
+        if (e.code === 'KeyP' || e.code === 'Escape') {
+          if (state.mode === 'hangar') { closeHangar(); return; }
+          if (state.mode === 'playing' || state.mode === 'paused') togglePause();
+          return;
+        }
+        if (e.code === 'KeyU') {
+          if (state.mode === 'playing') openHangar();
+          else if (state.mode === 'hangar') closeHangar();
+          return;
+        }
+        if (state.mode !== 'playing') return;
+        Sound.init();
+        if (e.code === 'Digit1') selectAmmo('x1');
+        if (e.code === 'Digit2') selectAmmo('x2');
+        if (e.code === 'Digit3') selectAmmo('x4');
+        if (e.code === 'Digit4') selectAmmo('sab');
+        if (e.code === 'KeyA') { if (state.selectedTargetId) { state.autoAttack = !state.autoAttack; updateActionBar(); } }
+        if (e.code === 'KeyQ') triggerShipSkill();
+        if (e.code === 'KeyM') dropMine();
+        if (e.code === 'KeyJ' && state.nearbyGate) jumpThroughGate(state.nearbyGate);
+        if (e.code === 'KeyF') { state.repairBotOn = !state.repairBotOn; updateActionBar(); }
+        if (e.code === 'Tab') { e.preventDefault(); lockNearestEnemy(); }
+        keys[e.code] = true;
+      });
+
+      window.addEventListener('keyup', (e) => { keys[e.code] = false; });
+      window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; mouseFire = false; });
+
+      function lockNearestEnemy() {
+        const p = state.player;
+        if (!p || state.enemies.length === 0) return;
+        let best = null, bestD = 920 * 920;
+        for (const e of state.enemies) {
+          const d2 = distSq(p.x, p.y, e.x, e.y);
+          if (d2 < bestD) { bestD = d2; best = e; }
+        }
+        if (best) {
+          state.selectedTargetId = best.id; state.autoAttack = true;
+          Sound.playLockChirp(); updateActionBar(); updateHudBars();
+        }
+      }
+
+      function updateMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left; mouse.y = e.clientY - rect.top; mouse.active = true;
+      }
+
+      canvas.addEventListener('mousemove', updateMousePos);
+      canvas.addEventListener('mouseenter', updateMousePos);
+      canvas.addEventListener('mouseleave', () => { mouseFire = false; });
+
+      canvas.addEventListener('mousedown', (e) => {
+        updateMousePos(e);
+        if (state.mode !== 'playing') return;
+        Sound.init();
+
+        const mm = getMinimapRect();
+        if (e.button === 0 && mouse.x >= mm.x && mouse.x <= mm.x + mm.size && mouse.y >= mm.y && mouse.y <= mm.y + mm.size) {
+          const wx = ((mouse.x - mm.x) / mm.size) * WORLD_SIZE - HALF_WORLD;
+          const wy = ((mouse.y - mm.y) / mm.size) * WORLD_SIZE - HALF_WORLD;
+          state.waypoint = { x: clamp(wx, -HALF_WORLD + 80, HALF_WORLD - 80), y: clamp(wy, -HALF_WORLD + 80, HALF_WORLD - 80) };
+          Sound.playLockChirp();
+          return;
+        }
+
+        if (e.button === 0) {
+          state.waypoint = null;
+          const mwX = state.camera.x + (mouse.x - viewW * 0.5), mwY = state.camera.y + (mouse.y - viewH * 0.5);
+          let clickedEnemy = null, bestD = Infinity;
+          for (const en of state.enemies) {
+            const hitR = en.radius + 26, d2 = distSq(mwX, mwY, en.x, en.y);
+            if (d2 < hitR * hitR && d2 < bestD) { bestD = d2; clickedEnemy = en; }
+          }
+          if (clickedEnemy) {
+            state.selectedTargetId = clickedEnemy.id; state.autoAttack = true;
+            Sound.playLockChirp(); updateActionBar(); updateHudBars();
+          } else mouseFire = true;
+        }
+        if (e.button === 1) { e.preventDefault(); triggerFlareAndBoost(); }
+        if (e.button === 2) firePlayerMissile();
+      });
+
+      window.addEventListener('mouseup', (e) => { if (e.button === 0) mouseFire = false; });
+      canvas.addEventListener('wheel', (e) => {
+        if (state.mode !== 'playing') return;
+        e.preventDefault(); Sound.init(); triggerFlareAndBoost();
+      }, { passive: false });
+      canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+      // Action Bar Listeners (Explicit per-button bindings)
+      slotX1.addEventListener('click', () => { Sound.init(); selectAmmo('x1'); });
+      slotX2.addEventListener('click', () => { Sound.init(); selectAmmo('x2'); });
+      slotX4.addEventListener('click', () => { Sound.init(); selectAmmo('x4'); });
+      slotSab.addEventListener('click', () => { Sound.init(); selectAmmo('sab'); });
+      slotAttack.addEventListener('click', () => {
+        Sound.init();
+        if (!state.selectedTargetId) lockNearestEnemy();
+        else { state.autoAttack = !state.autoAttack; updateActionBar(); }
+      });
+      slotRocket.addEventListener('click', () => { Sound.init(); firePlayerMissile(); });
+      slotSkill.addEventListener('click', () => { Sound.init(); triggerShipSkill(); });
+      slotMine.addEventListener('click', () => { Sound.init(); dropMine(); });
+      slotEmp.addEventListener('click', () => { Sound.init(); triggerFlareAndBoost(); });
+      slotBot.addEventListener('click', () => { Sound.init(); state.repairBotOn = !state.repairBotOn; updateActionBar(); });
+      jumpPrompt.addEventListener('click', () => { if (state.nearbyGate) jumpThroughGate(state.nearbyGate); });
+
+      function bindHoldButton(id, prop, instantFn) {
+        const el = document.getElementById(id);
+        const start = (e) => {
+          e.preventDefault(); if (state.mode !== 'playing') return;
+          Sound.init(); touchState[prop] = true; el.classList.add('pressed');
+          if (instantFn) instantFn();
+        };
+        const end = (e) => { e.preventDefault(); touchState[prop] = false; el.classList.remove('pressed'); };
+        el.addEventListener('pointerdown', start); el.addEventListener('pointerup', end);
+        el.addEventListener('pointerleave', end); el.addEventListener('pointercancel', end);
+      }
+      bindHoldButton('tc-left', 'left');
+      bindHoldButton('tc-right', 'right');
+      bindHoldButton('tc-thrust', 'thrust');
+      bindHoldButton('tc-fire', 'fire');
+      bindHoldButton('tc-missile', 'missile', () => firePlayerMissile());
+      bindHoldButton('tc-flare', 'flare', () => triggerFlareAndBoost());
+
+      btnStart.addEventListener('click', () => startGame(false));
+      btnResetSave.addEventListener('click', () => {
+        resetProgress();
+        btnResetSave.style.display = 'none';
+        btnStart.textContent = 'Sektöre Çık';
+        renderShipSelector();
+      });
+      btnResume.addEventListener('click', togglePause);
+      btnRespawnBase.addEventListener('click', respawnAtBase);
+      btnRestart.addEventListener('click', () => startGame(true));
+      btnRestartPause.addEventListener('click', () => startGame(true));
+      btnHangar.addEventListener('click', () => {
+        if (state.mode === 'playing') openHangar();
+        else if (state.mode === 'hangar') closeHangar();
+      });
+      btnHangarClose.addEventListener('click', closeHangar);
+      tabSystems.addEventListener('click', () => { state.hangarTab = 'systems'; renderHangarUI(); });
+      tabDrones.addEventListener('click', () => { state.hangarTab = 'drones'; renderHangarUI(); });
+      tabRefinery.addEventListener('click', () => { state.hangarTab = 'refinery'; renderHangarUI(); });
+      tabShips.addEventListener('click', () => { state.hangarTab = 'ships'; renderHangarUI(); });
+      btnRepair.addEventListener('click', () => {
+        const p = state.player;
+        if (!p || state.credits < 60 || p.hull >= p.maxHull - 1) return;
+        state.credits -= 60;
+        p.hull = Math.min(p.maxHull, p.hull + Math.round(p.maxHull * 0.4));
+        p.shield = p.maxShield;
+        Sound.playPickup(); saveProgress(); renderHangarUI(); updateHudBars();
+      });
+      btnPause.addEventListener('click', () => {
+        if (state.mode === 'playing' || state.mode === 'paused') togglePause();
+      });
+      btnMute.addEventListener('click', () => { Sound.init(); Sound.setMuted(!Sound.isMuted()); });
+      btnTouch.addEventListener('click', () => {
+        const isHidden = touchControlsEl.classList.toggle('hidden');
+        btnTouch.classList.toggle('active', !isHidden);
+      });
+
+      window.addEventListener('resize', resizeCanvas);
+      window.onload = () => {
+        initBackdrop();
+        const hadSave = loadProgress();
+        if (hadSave) {
+          btnStart.textContent = `Kayıttan Devam Et (${state.sectorId} • Lv.${state.level})`;
+          btnResetSave.style.display = 'block';
+        }
+        renderShipSelector();
+        renderQuestUI();
+        for (let i = 0; i < 18; i++) {
+          state.asteroids.push(createAsteroid(rand(-1000, 1000), rand(-750, 750), Math.random() < 0.6 ? 3 : 2));
+        }
+        if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
+          touchControlsEl.classList.remove('hidden');
+          btnTouch.classList.add('active');
+        }
+        btnMute.classList.add('active');
+        updateHudPips();
+        updateActionBar();
+        resizeCanvas();
+        if (rafId) cancelAnimationFrame(rafId);
+        lastTime = 0;
+        rafId = requestAnimationFrame(loop);
+      };
+    })();
+  </script>
+</body>
+</html>
