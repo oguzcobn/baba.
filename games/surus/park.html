@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>PARK. — Konyaaltı Park Simülatörü</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f6efe1;--ink:#30403f;--soft:#6d7672;--acc:#d9784f;--sea:#4f9bb0;--ok:#5f9d6c}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:#e9e1cf;font-family:Nunito,system-ui,sans-serif;color:var(--ink);touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block}
+/* el boyaması kâğıt dokusu ve kenar kararması */
+#paper{position:fixed;inset:0;pointer-events:none;mix-blend-mode:multiply;opacity:.55;background-size:256px 256px}
+#vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 55%,rgba(70,55,35,.28) 100%)}
+button{font:inherit;color:inherit;cursor:pointer;border:none}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+.card{background:rgba(246,239,225,.88);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:18px;box-shadow:0 6px 24px rgba(50,45,30,.18)}
+#top{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top));display:flex;justify-content:space-between;gap:10px;pointer-events:none}
+#mission{pointer-events:auto;padding:10px 14px;max-width:min(430px,62vw)}
+#mission b{font-family:Fraunces,Georgia,serif;font-size:20px;display:block;line-height:1.1}
+#mission span{font-size:13.5px;color:var(--soft);display:block;margin-top:3px;line-height:1.35}
+#mission .stars{color:#e2a33a;font-size:15px;letter-spacing:2px}
+#tools{display:flex;gap:8px;pointer-events:auto;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end}
+.tb{height:44px;min-width:44px;padding:0 13px;border-radius:14px;background:rgba(246,239,225,.88);box-shadow:0 4px 16px rgba(50,45,30,.16);font-weight:800;font-size:14px}
+.tb.on{background:#30403f;color:#f6efe1}
+#sensor{position:fixed;left:12px;bottom:calc(150px + env(safe-area-inset-bottom));width:120px;height:150px;pointer-events:none}
+#speedo{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));padding:8px 16px;text-align:center;pointer-events:none}
+#speedo b{font-size:26px;font-variant-numeric:tabular-nums}
+#speedo small{display:block;font-size:12px;color:var(--soft)}
+#gears{position:fixed;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;padding:8px}
+#gears button{width:48px;height:44px;border-radius:12px;background:rgba(255,255,255,.55);font-weight:800;font-size:17px;font-family:Fraunces,Georgia,serif}
+#gears button.on{background:#30403f;color:#f6efe1}
+#wheelBox{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:128px;height:128px;touch-action:none}
+#wheel{width:100%;height:100%;display:block}
+#pedals{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:flex-end}
+#pedals button{width:66px;border-radius:16px;font-weight:800;font-size:13px;color:#f6efe1;box-shadow:0 5px 0 rgba(0,0,0,.18),0 8px 20px rgba(40,35,20,.2)}
+#brake{height:78px;background:#7a6a5e}
+#gas{height:104px;background:#5f8a72}
+#pedals button.down{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+#toast{position:fixed;left:50%;top:calc(96px + env(safe-area-inset-top));transform:translate(-50%,-8px);padding:10px 16px;opacity:0;transition:opacity .5s,transform .5s;pointer-events:none;font-size:15px;max-width:88vw;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#pip{position:fixed;right:76px;bottom:calc(132px + env(safe-area-inset-bottom));width:min(34vw,240px);aspect-ratio:16/10;border-radius:14px;border:3px solid rgba(246,239,225,.9);box-shadow:0 6px 20px rgba(0,0,0,.2);pointer-events:none;display:none}
+#pip span{position:absolute;left:8px;top:6px;font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 3px #000}
+/* yükleme ekranı */
+#intro{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:linear-gradient(180deg,#bfd9df 0%,#efe2c8 62%,#e7d3ae 100%);z-index:20;transition:opacity 1s}
+#intro .sheet{max-width:760px;width:100%;max-height:100%;overflow:auto;padding:26px 26px 20px;background:rgba(250,245,234,.9);border-radius:26px;box-shadow:0 18px 60px rgba(70,60,30,.25);touch-action:pan-y}
+#intro h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:clamp(34px,7vw,54px);line-height:1.02;margin:0;color:#2f4544}
+#intro h1 i{font-weight:500;color:var(--acc)}
+#intro .lead{font-size:17px;line-height:1.55;margin:12px 0 16px;color:#455451}
+#intro svg.scene{width:100%;height:auto;display:block;border-radius:18px;margin:4px 0 16px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 18px}
+.cols h3{font-family:Fraunces,Georgia,serif;font-size:17px;margin:0 0 6px}
+.cols ul{margin:0;padding-left:18px;font-size:14.5px;line-height:1.55;color:#4d5a57}
+kbd{font-family:inherit;font-size:12.5px;font-weight:800;background:#fff;border:1px solid #d8cfbd;border-bottom-width:3px;border-radius:6px;padding:0 6px}
+#bar{height:10px;border-radius:10px;background:#e4dac6;overflow:hidden;margin:18px 0 10px}
+#bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7fb3a1,#d9784f);transition:width .3s}
+#go{width:100%;height:54px;border-radius:16px;background:#30403f;color:#f6efe1;font-weight:800;font-size:18px}
+#go:disabled{opacity:.45}
+#credit{font-size:12px;color:var(--soft);margin-top:10px}
+/* seviye menüsü */
+#levels{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(232,222,200,.6);backdrop-filter:blur(4px);z-index:15;padding:16px}
+#levels .sheet{max-width:640px;width:100%;padding:20px;max-height:100%;overflow:auto}
+#levels h2{font-family:Fraunces,Georgia,serif;margin:0 0 10px;font-size:28px}
+#lvlGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
+#lvlGrid button{text-align:left;padding:12px 14px;border-radius:16px;background:rgba(255,255,255,.7);min-height:84px}
+#lvlGrid button b{font-family:Fraunces,Georgia,serif;font-size:17px;display:block}
+#lvlGrid button small{color:var(--soft);font-size:13px;display:block;margin-top:2px}
+#lvlGrid button em{font-style:normal;color:#e2a33a;letter-spacing:2px}
+#done{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);opacity:0;pointer-events:none;padding:22px 26px;text-align:center;transition:all .5s;z-index:12;width:min(420px,88vw)}
+#done.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+#done h2{font-family:Fraunces,Georgia,serif;margin:0;font-size:30px}
+#done .big{font-size:38px;color:#e2a33a;letter-spacing:6px;margin:6px 0}
+#done p{margin:6px 0 14px;color:#4d5a57;font-size:15px}
+#done .row{display:flex;gap:8px}
+#done .row button{flex:1;height:48px;border-radius:14px;font-weight:800}
+#done .row .main{background:#30403f;color:#f6efe1}
+#done .row .sec{background:#e9e0cd}
+@media (max-width:560px){#mission b{font-size:17px}#gears{top:auto;bottom:calc(150px + env(safe-area-inset-bottom));transform:none;flex-direction:row}#gears button{width:42px}#sensor{display:none}#pip{right:12px;bottom:calc(204px + env(safe-area-inset-bottom))}}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="paper"></div><div id="vig"></div>
+<div id="top">
+  <div id="mission" class="card"><b id="mTitle">PARK.</b><span id="mText">Yükleniyor…</span></div>
+  <div id="tools">
+    <button class="tb" id="bLevels">Bölümler</button>
+    <button class="tb" id="bCam" title="Kamera (V)">Kamera: Takip</button>
+    <button class="tb on" id="bGuide" title="Yol çizgileri (G)">Çizgiler</button>
+    <button class="tb on" id="bSound" title="Ses">Ses</button>
+  </div>
+</div>
+<canvas id="sensor" width="240" height="300" aria-hidden="true"></canvas>
+<div id="pip"><span>GERİ GÖRÜŞ</span></div>
+<div id="speedo" class="card"><b id="spd">0</b> km/sa<small id="gearTxt">P · el freni çekili</small></div>
+<div id="gears" class="card" aria-label="Vites"><button data-g="P" class="on">P</button><button data-g="R">R</button><button data-g="N">N</button><button data-g="D">D</button></div>
+<div id="wheelBox" aria-label="Direksiyon"><canvas id="wheel" width="256" height="256"></canvas></div>
+<div id="pedals"><button id="brake" aria-label="Fren">FREN</button><button id="gas" aria-label="Gaz">GAZ</button></div>
+<div id="toast" class="card" role="status"></div>
+<div id="done" class="card" role="dialog" aria-label="Park tamamlandı"><h2 id="dTitle">Tam yerinde!</h2><div class="big" id="dStars">★★★</div><p id="dText"></p><div class="row"><button class="sec" id="dRetry">Tekrar</button><button class="main" id="dNext">Sonraki bölüm</button></div></div>
+<div id="levels"><div class="sheet card"><h2>Bölümler</h2><div id="lvlGrid"></div><p style="font-size:13px;color:var(--soft);margin:12px 0 0">Süre yok, ceza yok. Dokunursan sadece yıldız azalır; istediğin kadar dene.</p></div></div>
+
+<div id="intro">
+  <div class="sheet">
+    <h1>PARK. <i>Konyaaltı</i></h1>
+    <p class="lead">Akdeniz'e bakan sakin bir sahil otoparkında Mercedes C32 AMG ile park etmeyi öğren. Acele yok, süre yok, kaza cezası yok: düz park, geri park, açılı park, paralel park ve dar garaj. Park sensörleri, geri görüş kamerası ve tekerlek izi çizgileri sana yardım eder.</p>
+    <svg class="scene" viewBox="0 0 720 230" aria-hidden="true">
+      <defs><linearGradient id="isky" x2="0" y2="1"><stop offset="0" stop-color="#a9cdd7"/><stop offset="1" stop-color="#f3e3c6"/></linearGradient>
+      <filter id="rough"><feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="3" seed="4"/><feDisplacementMap in="SourceGraphic" scale="6"/></filter></defs>
+      <rect width="720" height="230" fill="url(#isky)"/>
+      <g filter="url(#rough)">
+        <path d="M0 120 L80 70 140 96 210 52 300 98 360 66 440 104 520 60 610 96 720 70 V140 H0Z" fill="#8ea7a4" opacity=".7"/>
+        <path d="M0 135 L120 100 230 124 330 96 460 128 590 102 720 126 V150 H0Z" fill="#6f8f88" opacity=".75"/>
+        <rect y="140" width="720" height="22" fill="#5e9fb2"/>
+        <rect y="160" width="720" height="70" fill="#cfc3aa"/>
+        <rect x="70" y="170" width="580" height="54" fill="#9a9b94"/>
+        <g stroke="#f6f1e4" stroke-width="3"><path d="M130 172v50M190 172v50M250 172v50M310 172v50M370 172v50M430 172v50M490 172v50M550 172v50M610 172v50"/></g>
+        <rect x="140" y="180" width="40" height="30" rx="8" fill="#d9a46b"/><rect x="262" y="180" width="40" height="30" rx="8" fill="#7fa7b8"/>
+        <rect x="442" y="180" width="40" height="30" rx="8" fill="#c97a6a"/><rect x="562" y="180" width="40" height="30" rx="8" fill="#a8b97f"/>
+        <rect x="322" y="175" width="38" height="40" rx="9" fill="#2b2d33"/><rect x="326" y="182" width="30" height="12" rx="4" fill="#5d7b86"/>
+        <path d="M320 176h42v38h-42z" fill="none" stroke="#e8a85a" stroke-width="3" stroke-dasharray="6 5"/>
+        <path d="M40 160c4-30 2-52 12-74M52 86c-16-6-30 2-38 10M52 86c14-10 30-8 40 2M52 86c-4-14-16-20-28-18M52 86c8-12 20-16 32-12" stroke="#5d6b3d" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <path d="M670 160c-4-34-2-50-10-72M660 88c-16-6-30 2-38 10M660 88c14-10 30-8 40 2M660 88c-4-14-16-20-28-18" stroke="#5d6b3d" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div class="cols">
+      <div><h3>Nasıl oynanır</h3><ul>
+        <li>Turuncu çerçeveli park yerine aracı tamamen sok, düz hizala ve dur.</li>
+        <li>Vitesi <b>R</b>'ye al, geri gel; <b>D</b> ile ileri. Durduğunda <b>P</b>.</li>
+        <li>Direksiyon bıraktığında olduğu yerde kalır, gerçek araç gibi.</li>
+      </ul></div>
+      <div><h3>Klavye</h3><ul>
+        <li><kbd>W</kbd>/<kbd>↑</kbd> gaz · <kbd>S</kbd>/<kbd>↓</kbd> fren</li>
+        <li><kbd>A</kbd><kbd>D</kbd>/<kbd>←</kbd><kbd>→</kbd> direksiyon · <kbd>C</kbd> düzle</li>
+        <li><kbd>R</kbd> <kbd>D</kbd>(<kbd>E</kbd>) <kbd>P</kbd>(<kbd>Boşluk</kbd>) vites · <kbd>V</kbd> kamera</li>
+      </ul></div>
+      <div><h3>Dokunmatik</h3><ul>
+        <li>Sol alttaki direksiyonu parmağınla çevir.</li>
+        <li>Sağda GAZ ve FREN pedalları, kenarda vites.</li>
+        <li>Fren bırakılınca otomatik vites hafifçe yürür (sürünme).</li>
+      </ul></div>
+    </div>
+    <div id="bar"><i></i></div>
+    <button id="go" disabled>Yükleniyor… <span id="pct">0%</span></button>
+    <div id="credit">Araç modeli: ActsOfDoge, “2003 Mercedes-Benz C32 AMG” (Sketchfab Standard lisans). Ölçüler gerçek araca göre: 4,53 m boy, 1,73 m en, 2,72 m dingil mesafesi, 10,8 m dönüş çapı.</div>
+  </div>
+</div>
+<script type="module" src="./park.js?v=1"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@ const BABALibrary = (() => {
   const META = {
     element: {cat:'sim',accent:'#5eead4',time:['37 madde','37 materials'],isNew:true,blurb:['Kum, su, lav, elektrik ve rüzgârla kendi fizik dünyanı kur.','Build your own physics world with sand, water, lava, electricity and wind.']},
     subterra: {cat:'arc',accent:'#e8b476',time:['2.5D aksiyon','2.5D action'],isNew:true,blurb:['Dev kum solucanı ol: yerin altından fırla, insanları, arabaları ve helikopterleri kap, binaları alttan yık; polis ve ordu sana ateş ediyor.','Be a giant sandworm: burst from underground, grab people, cars and helicopters, topple buildings from below while police and army shoot back.']},
-    surus: {cat:'sim',accent:'#60dce8',time:['3 km','3 km'],isNew:true,blurb:['Konyaaltı sahil yolunda sürüş yap.','Drive the Konyaaltı coastal road.']},
+    surus: {cat:'sim',accent:'#60dce8',time:['6 bölüm','6 levels'],isNew:true,blurb:['Konyaaltı sahil otoparkında sakin park simülatörü.','A calm parking simulator by the Konyaaltı seaside.']},
     'living-island': {cat:'sim',accent:'#86c77a',time:['2.5D yaşam','2.5D life'],isNew:true,blurb:['Ergün ile adada tarım yap, köyü izle, üretim ve ticaretle çiftliğini büyüt.','Farm with Ergün, watch village life, and grow through production and trade.']},
     'hayat-oyunu': { cat: 'sim', accent: '#ff8a5c', time: ['Uzun soluklu', 'Long-form'], blurb: ['Doğumdan emekliliğe kendi hayatını kur: kariyer, ilişkiler, sağlık ve seçimler.', 'Build a life from birth to retirement: career, relationships, health and choices.'] },
     futbol: { cat: 'foot', accent: '#c8ff3a', time: ['2 mod', '2 modes'], blurb: ['Draft mı kariyer mi? Tarafını seç, kadronu kur, sahaya çık.', 'Draft or career? Pick your side, build a squad, take the pitch.'] },
