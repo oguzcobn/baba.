@@ -168,6 +168,7 @@ const App = (() => {
     { id: 'yasam', name: ['YAŞAM. — İskeletli Canlılar Vadisi', 'LIFE. — Valley of Rigged Creatures'], tags: [['Simülasyon', 'Simulation'], ['UniRig', 'UniRig'], ['3D', '3D']], best: () => T('UniRig · canlı ekosistem', 'UniRig · living ecosystem') },
     { id: 'akvaryum', name: ['AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'], tags: [['Simülasyon', 'Simulation'], ['Biyomekanik', 'Biomechanics'], ['Huzur', 'Relaxing']], best: () => { try { const d = JSON.parse(localStorage.getItem('baba-akvaryum-v2') || 'null'); return d && d.fish ? T(`${d.fish.length} balık`, `${d.fish.length} fish`) : T('14 tür', '14 species'); } catch (_) { return T('14 tür', '14 species'); } } },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
+    { id: 'kartal', name: ['ALTIN KARTAL. — Uçuş & Avlanma Simülasyonu', 'GOLDEN EAGLE. — Flight & Hunting Sim'], tags: [['Simülasyon','Simulation'],['Doğa','Nature'],['3D','3D']], best: () => T('6-DoF uçuş · av · yuva', '6-DoF flight · hunt · nest') },
     { id: 'astra-orbit', name: ['ASTRA ORBIT. — Uzay Sektör Savaşı', 'ASTRA ORBIT. — Space Sector War'], tags: [['Uzay','Space'],['2.5D','2.5D'],['Aksiyon','Action']], best: () => { const b = +(localStorage.getItem('astra_orbit_25d_best') || 0); return b ? T('Rekor ' + b, 'Best ' + b) : T('4 sektör · 8 düşman', '4 sectors · 8 enemies'); } },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
@@ -260,6 +261,7 @@ const App = (() => {
     'simitci': 'img/library/simitci-1280.webp',
     'operasyon-hatti': 'img/library/operasyon-hatti-1280.webp',
     'astra-orbit': 'img/library/astra-orbit-1280.webp',
+    'kartal': 'img/library/kartal-1280.webp',
     'pelagos': 'img/library/pelagos-1280.webp',
     'serpentia': 'img/library/serpentia-1280.webp',
     'yasam': 'img/library/yasam-1280.webp',
@@ -583,6 +585,17 @@ const App = (() => {
       tag: T('BABA. DUNE. · Açık dünya sürüş · 2.5D', 'BABA. DUNE. · Open-world driving · 2.5D'),
       lead: T('Kum tepelerinde 4×4: lastik basıncı, diferansiyel kilidi, vinç, garaj yükseltmeleri ve günbatımı çölünde serbest sürüş.', '4×4 across the dunes: tyre pressure, diff lock, winch, garage upgrades and free roam in a sunset desert.'),
       tip: T('W/S gaz-fren, A/D direksiyon, Space el freni. L diferansiyel kilidi, R vinç, C kamera, P fotoğraf modu. Yumuşak kumda lastik basıncını düşür.', 'W/S throttle-brake, A/D steer, Space handbrake. L diff lock, R winch, C camera, P photo mode. Lower tyre pressure in soft sand.')
+    });
+  }
+
+  /* ==================== ALTIN KARTAL. / UÇUŞ & AVLANMA ==================== */
+  function kartal() {
+    openEmbeddedGame({
+      title: T('ALTIN KARTAL. — Uçuş & Avlanma Simülasyonu', 'GOLDEN EAGLE. — Flight & Hunting Sim'),
+      url: 'games/kartal/index.html?v=1',
+      tag: T('BABA. ALTIN KARTAL. · Doğa simülasyonu · 3D', 'BABA. GOLDEN EAGLE. · Nature sim · 3D'),
+      lead: T('Altın kartal olarak dağların, ormanın ve nehrin üstünde süzül: termal ve yamaç rüzgârlarıyla yüksel, tavşan ve alabalık avla, yuvana dön ve yeni nesiller yetiştir.', 'Soar as a golden eagle over mountains, forest and river: ride thermals and ridge lift, hunt hares and trout, return to the nest and raise new generations.'),
+      tip: T('W/S dalış-tırmanış, A/D yatış, Shift dalış, Space kanat çırpma, B fren. İşaretli ava W ile dalıp alçaktan geçince pençeler kavrar. O otomatik kartal hayatı, E kartal görüşü, C kamera.', 'W/S dive-climb, A/D bank, Shift dive, Space flap, B brake. Dive on a marked prey with W and pass low — talons grab automatically. O autonomous eagle life, E eagle vision, C camera.')
     });
   }
 
@@ -1007,6 +1020,7 @@ const App = (() => {
     else if (r === 'simitci') simitci();
     else if (r === 'operasyon-hatti') operasyonHatti();
     else if (r === 'astra-orbit') astraOrbit();
+    else if (r === 'kartal') kartal();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});

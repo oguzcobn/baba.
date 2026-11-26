@@ -1,0 +1,4125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Altın Kartal — 6-DoF Gerçekçi Uçuş, Avlanma &amp; Yaşam Döngüsü Simülasyonu</title>
+  <script src="vendor/three.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0b1320;
+      --glass-bg: rgba(11, 19, 32, 0.68);
+      --glass-border: rgba(255, 255, 255, 0.14);
+      --accent-gold: #f5b942;
+      --accent-cyan: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-red: #f87171;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #0b1320;
+      color: var(--text-main);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    #canvas-container {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at 50% 35%, #16263d 0%, #0b1320 75%);
+      transition: filter 0.22s ease;
+    }
+
+    #canvas-container.eagle-vision {
+      filter: contrast(1.2) saturate(1.22) sepia(0.16) brightness(1.06);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Kartal Görüşü Vinyeti */
+    #vision-vignette {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 8;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+      background: radial-gradient(circle at center, transparent 48%, rgba(180, 110, 15, 0.28) 82%, rgba(8, 12, 20, 0.72) 100%);
+    }
+    #vision-vignette.active {
+      opacity: 1;
+    }
+
+    /* Ekran-Uzayı Av Hedef İşaretçileri */
+    #prey-markers-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 9;
+    }
+
+    .prey-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      will-change: transform, left, top;
+    }
+
+    .prey-box {
+      width: 30px;
+      height: 30px;
+      border: 1.5px solid rgba(245, 185, 66, 0.76);
+      border-radius: 7px;
+      box-shadow: 0 0 12px rgba(245, 185, 66, 0.28);
+      position: relative;
+      transition: border-color 0.15s, width 0.15s, height 0.15s;
+    }
+
+    .prey-marker.fish .prey-box {
+      border-color: rgba(56, 189, 248, 0.82);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.32);
+    }
+
+    .prey-marker.locked .prey-box {
+      width: 40px;
+      height: 40px;
+      border-width: 2px;
+      border-color: #fde047;
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.65);
+    }
+
+    .prey-marker.locked .prey-box::after {
+      content: '';
+      position: absolute;
+      inset: 5px;
+      border: 1px dashed rgba(253, 224, 71, 0.85);
+      border-radius: 3px;
+    }
+
+    .prey-tag {
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(8, 13, 22, 0.76);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      color: #f8fafc;
+    }
+
+    .prey-tag .state-flee { color: #f87171; }
+    .prey-tag .state-alert { color: #fbbf24; }
+    .prey-tag .state-calm { color: #4ade80; }
+
+    /* Yuva İşaretçisi */
+    #nest-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid rgba(245, 185, 66, 0.72);
+      color: #fde68a;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      box-shadow: 0 0 14px rgba(245, 185, 66, 0.28);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    /* Av Yakalama ve Yaşam Bildirimi */
+    #capture-toast {
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translate(-50%, -18px);
+      z-index: 25;
+      pointer-events: none;
+      padding: 12px 24px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.28s ease, transform 0.28s ease;
+      border-color: rgba(245, 185, 66, 0.65);
+      background: rgba(12, 20, 32, 0.85);
+    }
+    #capture-toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+    .toast-title {
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--accent-gold);
+    }
+    .toast-sub {
+      margin-top: 3px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #e2e8f0;
+    }
+
+    /* Başlangıç Ekranı */
+    #start-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 40%, rgba(15, 28, 46, 0.62), rgba(7, 12, 22, 0.86));
+      padding: 20px;
+      transition: opacity 0.35s ease;
+    }
+    #start-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .start-card {
+      max-width: 540px;
+      width: 100%;
+      padding: 32px 28px;
+      text-align: center;
+    }
+    .start-kicker {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent-gold);
+      margin-bottom: 8px;
+    }
+    .start-title {
+      margin: 0;
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      background: linear-gradient(135deg, #ffffff 15%, #f5b942 95%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .start-desc {
+      margin: 14px 0 20px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .start-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .start-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+    }
+    #start-btn {
+      width: 100%;
+      padding: 14px 22px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #f5b942, #d97706);
+      color: #0b1320;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(245, 185, 66, 0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    #start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(245, 185, 66, 0.48);
+    }
+
+    /* Hata Mesaj Kutusu */
+    #error-box {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(8, 13, 22, 0.92);
+      padding: 20px;
+    }
+    #error-box.show {
+      display: flex;
+    }
+    .error-card {
+      max-width: 480px;
+      padding: 24px;
+      border-color: rgba(248, 113, 113, 0.5);
+    }
+    .error-card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: var(--accent-red);
+    }
+    .error-card p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #cbd5e1;
+      word-break: break-word;
+    }
+
+    /* HUD */
+    #hud {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .top-left-cluster {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .pill-bar, .hunt-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(245, 185, 66, 0.18);
+      color: var(--accent-gold);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .fps-tag {
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+
+    .hunt-score {
+      color: var(--accent-gold);
+      font-weight: 800;
+    }
+
+    .life-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 13px;
+      font-size: 11.5px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      border-color: rgba(74, 222, 128, 0.35);
+    }
+
+    .ai-state-badge {
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.2);
+      color: #7dd3fc;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+
+    .ai-state-badge.auto-on {
+      background: rgba(74, 222, 128, 0.22);
+      color: #86efac;
+    }
+
+    .top-right-btns {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .auto-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.18s ease;
+    }
+    .auto-btn:hover {
+      border-color: rgba(74, 222, 128, 0.65);
+    }
+    .auto-btn.active {
+      background: rgba(22, 163, 74, 0.34);
+      border-color: #4ade80;
+      color: #bbf7d0;
+      box-shadow: 0 0 16px rgba(74, 222, 128, 0.32);
+    }
+
+    #target-lock-pill {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      border-color: rgba(250, 204, 21, 0.45);
+      color: #fef08a;
+    }
+    #target-lock-pill.active {
+      display: inline-flex;
+    }
+
+    #stall-alert {
+      display: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      background: rgba(220, 38, 38, 0.85);
+      border: 1px solid rgba(254, 202, 202, 0.65);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      animation: pulseWarn 0.6s infinite alternate;
+    }
+    #stall-alert.active {
+      display: block;
+    }
+    @keyframes pulseWarn {
+      from { opacity: 0.72; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1.02); }
+    }
+
+    /* Sağ Üst Ayar Paneli */
+    .settings-wrap {
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+    }
+    .icon-btn:hover {
+      border-color: rgba(245, 185, 66, 0.55);
+    }
+
+    #settings-panel {
+      width: 265px;
+      padding: 14px;
+      display: none;
+      flex-direction: column;
+      gap: 11px;
+      font-size: 12px;
+    }
+    #settings-panel.open {
+      display: flex;
+    }
+
+    .setting-row {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .setting-label {
+      display: flex;
+      justify-content: space-between;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+    .setting-row input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent-gold);
+      cursor: pointer;
+    }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #cbd5e1;
+      font-weight: 600;
+    }
+
+    .seg-group {
+      display: flex;
+      gap: 6px;
+    }
+    .seg-btn {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .seg-btn.active {
+      background: rgba(245, 185, 66, 0.24);
+      border-color: var(--accent-gold);
+      color: var(--accent-gold);
+    }
+
+    /* Alt Telemetri Satırı */
+    .hud-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(84px, auto));
+      gap: 10px;
+      padding: 12px 16px;
+    }
+    .tele-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .tele-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .tele-val {
+      font-size: 18px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-main);
+    }
+    .tele-unit {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 2px;
+    }
+
+    .status-panel {
+      padding: 12px 16px;
+      min-width: 240px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bar-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+    .bar-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.08s linear;
+    }
+    #stamina-fill {
+      width: 100%;
+      background: linear-gradient(90deg, #f59e0b, #4ade80);
+    }
+    #hunger-fill {
+      width: 85%;
+      background: linear-gradient(90deg, #ef4444, #f59e0b 45%, #38bdf8);
+    }
+    .lift-badges {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .lift-chip {
+      flex: 1;
+      text-align: center;
+      padding: 4px 8px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-muted);
+    }
+    .lift-chip.active-thermal {
+      background: rgba(245, 185, 66, 0.24);
+      color: var(--accent-gold);
+    }
+    .lift-chip.active-ridge {
+      background: rgba(56, 189, 248, 0.24);
+      color: var(--accent-cyan);
+    }
+
+    /* H Tuşu Kontrol Rehberi */
+    #controls-guide {
+      position: fixed;
+      left: 16px;
+      bottom: 96px;
+      z-index: 16;
+      padding: 12px 15px;
+      font-size: 11.5px;
+      line-height: 1.65;
+      color: #cbd5e1;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    #controls-guide.hidden {
+      opacity: 0;
+    }
+    .key-cap {
+      display: inline-block;
+      padding: 1px 6px;
+      margin-right: 4px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 10.5px;
+    }
+
+    @media (max-width: 768px) {
+      .telemetry-grid {
+        grid-template-columns: repeat(3, minmax(74px, auto));
+        padding: 10px 12px;
+      }
+      .tele-val { font-size: 15px; }
+      #controls-guide { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+  <div id="vision-vignette"></div>
+  <div id="prey-markers-layer">
+    <div id="nest-marker">🪺 YUVA <span id="nest-dist">0m</span></div>
+  </div>
+
+  <!-- Av Yakalama ve Yaşam Bildirimi -->
+  <div id="capture-toast" class="glass">
+    <div class="toast-title" id="toast-title">AV YAKALANDI!</div>
+    <div class="toast-sub" id="toast-sub">+200 Puan</div>
+  </div>
+
+  <!-- Hata Mesaj Kutusu -->
+  <div id="error-box">
+    <div class="error-card glass">
+      <h2>Simülasyon Başlatılamadı</h2>
+      <p id="error-message">WebGL başlatılırken bir hata oluştu.</p>
+    </div>
+  </div>
+
+  <!-- Başlangıç Ekranı -->
+  <div id="start-overlay">
+    <div class="start-card glass">
+      <div class="start-kicker">6-DoF Aerodinamik, Avlanma &amp; Nesil Yaşam Döngüsü</div>
+      <h1 class="start-title">ALTIN KARTAL</h1>
+      <p class="start-desc">
+        Akıcı ve dengeli klavye (WASD) uçuş kontrolleriyle alpin vadisinde avlanın veya <strong>Otomatik Mod (O)</strong> ile kartalınızın kendi kendine avlanıp yuva kurmasını, yavrularını beslemesini ve yeni nesiller yetiştirmesini izleyin.
+      </p>
+      <div class="start-pills">
+        <span class="start-pill">120 Hz 6-DoF Fizik</span>
+        <span class="start-pill">Kolay WASD Desteği</span>
+        <span class="start-pill">Tavşan &amp; Alabalık AI</span>
+        <span class="start-pill">Otonom Kartal Hayatı (O)</span>
+      </div>
+      <button id="start-btn" type="button">UÇUŞA VE AVA BAŞLA</button>
+    </div>
+  </div>
+
+  <!-- Telemetri HUD -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="top-left-cluster">
+        <div class="pill-bar glass">
+          <span class="badge" id="cam-mode-label">3. ŞAHIS TAKİP</span>
+          <span id="heading-label">YÖN 000° K</span>
+          <span class="fps-tag" id="fps-label">60 FPS</span>
+        </div>
+        <div class="hunt-bar glass">
+          <span>🐇 <strong id="count-rabbit">0</strong></span>
+          <span>🐟 <strong id="count-fish">0</strong></span>
+          <span class="hunt-score">★ <span id="hunt-score">0</span> PUAN</span>
+        </div>
+        <div class="life-bar glass">
+          <span class="ai-state-badge" id="ai-state-label">MANUEL UÇUŞ</span>
+          <span title="Yuvadaki Yumurta/Yavrular">🪺 <strong id="life-nest-info">Yuva Hazır</strong></span>
+          <span title="Gökyüzündeki Bağımsız Kartallar">🦅 <strong id="life-colony-count">2</strong></span>
+          <span title="Ulaşılan Nesil">🧬 Nesil <strong id="life-gen-count">1</strong></span>
+        </div>
+        <div id="target-lock-pill" class="glass">
+          <span id="target-lock-name">HEDEF: TAVŞAN</span>
+          <span id="target-lock-dist">120 m</span>
+          <span id="target-lock-angle">AÇI: 14°</span>
+        </div>
+      </div>
+
+      <div id="stall-alert">⚠ STALL — HÜCUM AÇISI KRİTİK</div>
+
+      <div class="settings-wrap">
+        <div class="top-right-btns">
+          <button id="auto-mode-btn" class="auto-btn" type="button">🤖 Otomatik Mod (O)</button>
+          <button id="settings-toggle-btn" class="icon-btn" type="button">⚙ Fizik &amp; Hava Durumu</button>
+        </div>
+        <div id="settings-panel" class="glass">
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Rüzgar Hızı</span>
+              <span id="wind-val">18 km/s</span>
+            </div>
+            <input id="wind-slider" type="range" min="0" max="60" value="18" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label">
+              <span>Güneş Açısı</span>
+              <span id="sun-val">28°</span>
+            </div>
+            <input id="sun-slider" type="range" min="8" max="75" value="28" />
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-label"><span>Grafik Kalitesi</span></div>
+            <div class="seg-group">
+              <button class="seg-btn" data-qual="low" type="button">Düşük</button>
+              <button class="seg-btn active" data-qual="med" type="button">Orta</button>
+              <button class="seg-btn" data-qual="high" type="button">Yüksek</button>
+            </div>
+          </div>
+
+          <div class="toggle-row">
+            <span>Prosedürel Ses</span>
+            <button id="audio-toggle-btn" class="seg-btn active" style="flex:0;padding:5px 12px;" type="button">Açık</button>
+          </div>
+
+          <div class="toggle-row">
+            <span>Av İşaretçileri</span>
+            <button id="markers-toggle-btn" class="seg-btn active" style="flex:0;padding:5px 12px;" type="button">Açık</button>
+          </div>
+
+          <div class="toggle-row">
+            <span>Pitch Ters Çevir</span>
+            <button id="invert-pitch-btn" class="seg-btn" style="flex:0;padding:5px 12px;" type="button">Kapalı</button>
+          </div>
+
+          <div class="toggle-row">
+            <span>Uçuş Desteği (Kolay)</span>
+            <button id="assist-toggle-btn" class="seg-btn active" style="flex:0;padding:5px 12px;" type="button">Açık</button>
+          </div>
+
+          <div class="toggle-row">
+            <span>Yaşam Döngüsü Hızı</span>
+            <button id="life-speed-btn" class="seg-btn" style="flex:0;padding:5px 12px;" type="button">1x</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="hud-bottom">
+      <div class="telemetry-grid glass">
+        <div class="tele-item">
+          <span class="tele-label">Hava Hızı</span>
+          <span class="tele-val"><span id="val-speed">65</span><span class="tele-unit">km/s</span></span>
+        </div>
+        <div class="tele-item">
+          <span class="tele-label">İrtifa (AGL)</span>
+          <span class="tele-val"><span id="val-alt">180</span><span class="tele-unit">m</span></span>
+        </div>
+        <div class="tele-item">
+          <span class="tele-label">Varyometre</span>
+          <span class="tele-val"><span id="val-vario">+0.0</span><span class="tele-unit">m/s</span></span>
+        </div>
+        <div class="tele-item">
+          <span class="tele-label">Hücum Açısı</span>
+          <span class="tele-val"><span id="val-aoa">4.2</span><span class="tele-unit">°</span></span>
+        </div>
+        <div class="tele-item">
+          <span class="tele-label">G-Kuvveti</span>
+          <span class="tele-val"><span id="val-g">1.0</span><span class="tele-unit">G</span></span>
+        </div>
+      </div>
+
+      <div class="status-panel glass">
+        <div class="bar-head">
+          <span>DAYANIKLILIK (STAMINA)</span>
+          <span id="val-stamina">100%</span>
+        </div>
+        <div class="bar-track">
+          <div id="stamina-fill" class="bar-fill"></div>
+        </div>
+        <div class="bar-head">
+          <span>TOKLUK (ENERJİ)</span>
+          <span id="val-hunger">85%</span>
+        </div>
+        <div class="bar-track">
+          <div id="hunger-fill" class="bar-fill"></div>
+        </div>
+        <div class="lift-badges">
+          <div id="chip-thermal" class="lift-chip">TERMAL: +0.0</div>
+          <div id="chip-ridge" class="lift-chip">YAMAÇ: +0.0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- H Tuşu ile Gizlenebilen Kontrol Rehberi -->
+  <div id="controls-guide" class="glass">
+    <div><span class="key-cap">W / S</span> (veya <span class="key-cap">↑ / ↓</span>) Dalış / Tırmanış &nbsp;|&nbsp; <span class="key-cap">A / D</span> (veya <span class="key-cap">← / →</span>) Yatış &amp; Dönüş</div>
+    <div><span class="key-cap">Shift</span> Dalış (Wing Tuck 280+ km/s) &nbsp;|&nbsp; <span class="key-cap">Space</span> Kanat Çırpma &nbsp;|&nbsp; <span class="key-cap">B / Ctrl</span> Hava Freni</div>
+    <div><span class="key-cap">O</span> Otomatik Kartal Hayatı &nbsp;|&nbsp; <span class="key-cap">E</span> Kartal Görüşü &nbsp;|&nbsp; <span class="key-cap">C</span> Kamera &nbsp;|&nbsp; <span class="key-cap">R</span> Sıfırla &nbsp;|&nbsp; <span class="key-cap">H</span> Rehber</div>
+    <div style="color:#fde68a;margin-top:2px;">🎯 <strong>Avlanma:</strong> İşaretli Tavşan veya Alabalığa <strong>W</strong> ile dalıp üzerinden alçaktan geçin — pençeler otomatik kavrar!</div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      function showFatalError(msg) {
+        var box = document.getElementById('error-box');
+        var el = document.getElementById('error-message');
+        if (el) el.textContent = String(msg);
+        if (box) box.classList.add('show');
+      }
+
+      /* =========================================================================
+         1. SABİTLER, MATEMATİK YARDIMCILARI VE PROSEDÜREL ARAZİ (FBM + NEHİR)
+         ========================================================================= */
+      var WORLD_SIZE = 4000.0;
+      var HALF_WORLD = WORLD_SIZE * 0.5;
+      var WATER_LEVEL = 0.0;
+
+      function clamp(v, min, max) {
+        return v < min ? min : (v > max ? max : v);
+      }
+
+      function lerp(a, b, t) {
+        return a + (b - a) * t;
+      }
+
+      function smoothstep(edge0, edge1, x) {
+        var t = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+        return t * t * (3.0 - 2.0 * t);
+      }
+
+      function wrapAngle(a) {
+        while (a > Math.PI) a -= Math.PI * 2.0;
+        while (a < -Math.PI) a += Math.PI * 2.0;
+        return a;
+      }
+
+      // Deterministik 2D Value Noise & Çok Katmanlı Alpin FBM
+      function hash2D(ix, iz) {
+        var n = Math.sin(ix * 127.1 + iz * 311.7) * 43758.5453123;
+        return n - Math.floor(n);
+      }
+
+      function valueNoise2D(x, z) {
+        var ix = Math.floor(x);
+        var iz = Math.floor(z);
+        var fx = x - ix;
+        var fz = z - iz;
+        var ux = fx * fx * (3.0 - 2.0 * fx);
+        var uz = fz * fz * (3.0 - 2.0 * fz);
+        var a = hash2D(ix, iz);
+        var b = hash2D(ix + 1, iz);
+        var c = hash2D(ix, iz + 1);
+        var d = hash2D(ix + 1, iz + 1);
+        return lerp(lerp(a, b, ux), lerp(c, d, ux), uz);
+      }
+
+      function fbm2D(x, z, octaves) {
+        var val = 0.0;
+        var amp = 0.5;
+        var freq = 1.0;
+        for (var i = 0; i < octaves; i++) {
+          val += amp * valueNoise2D(x * freq, z * freq);
+          freq *= 2.04;
+          amp *= 0.48;
+        }
+        return val;
+      }
+
+      function ridged2D(x, z, octaves) {
+        var val = 0.0;
+        var amp = 0.55;
+        var freq = 1.0;
+        for (var i = 0; i < octaves; i++) {
+          var n = 1.0 - Math.abs(valueNoise2D(x * freq, z * freq) * 2.0 - 1.0);
+          val += amp * n * n;
+          freq *= 2.08;
+          amp *= 0.46;
+        }
+        return val;
+      }
+
+      function getRiverCenterX(z) {
+        return Math.sin(z * 0.0024) * 260.0 + Math.cos(z * 0.00095) * 140.0;
+      }
+
+      function getTerrainHeight(x, z) {
+        var rx = getRiverCenterX(z);
+        var distRiver = Math.abs(x - rx);
+
+        // Nehir ve göl yatağı maskesi (0: nehir merkezi, 1: vadi dışına geçiş)
+        var valleyMask = smoothstep(32.0, 260.0, distRiver);
+        var mountainMask = smoothstep(140.0, 950.0, distRiver);
+
+        var hills = fbm2D(x * 0.0014 + 3.1, z * 0.0014 - 1.7, 4) * 95.0;
+        var peaks = ridged2D(x * 0.00085 - 5.2, z * 0.00085 + 2.4, 4) * 320.0;
+        var detail = (valueNoise2D(x * 0.0085, z * 0.0085) - 0.5) * 10.0;
+
+        // Harita kenarlarına doğru doğal dağ çemberi
+        var edgeDist = Math.max(Math.abs(x), Math.abs(z)) / HALF_WORLD;
+        var rimBoost = smoothstep(0.68, 1.0, edgeDist) * 180.0;
+
+        var landH = hills * valleyMask + peaks * mountainMask + detail * valleyMask + rimBoost;
+        var riverBed = -12.0 * (1.0 - smoothstep(18.0, 95.0, distRiver));
+
+        return landH + riverBed;
+      }
+
+      function getTerrainNormal(x, z, outVec) {
+        var eps = 2.5;
+        var hL = getTerrainHeight(x - eps, z);
+        var hR = getTerrainHeight(x + eps, z);
+        var hD = getTerrainHeight(x, z - eps);
+        var hU = getTerrainHeight(x, z + eps);
+        outVec.set(hL - hR, 2.0 * eps, hD - hU).normalize();
+        return outVec;
+      }
+
+      /* =========================================================================
+         2. PROSEDÜREL WEB AUDIO SES MOTORU (RÜZGAR, DALIŞ ISLIĞI, KANAT & ÇIĞLIK)
+         ========================================================================= */
+      function EagleAudioEngine() {
+        this.enabled = true;
+        this.initialized = false;
+        this.ctx = null;
+        this.masterGain = null;
+        this.windFilter = null;
+        this.windGain = null;
+        this.whistleOsc = null;
+        this.whistleGain = null;
+        this.noiseBuffer = null;
+      }
+
+      EagleAudioEngine.prototype.init = function () {
+        if (this.initialized) {
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(function () {});
+          }
+          return;
+        }
+        try {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          this.ctx = new AudioCtx();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.value = this.enabled ? 0.55 : 0.0;
+          this.masterGain.connect(this.ctx.destination);
+
+          // 2 saniyelik beyaz gürültü tamponu
+          var sampleRate = this.ctx.sampleRate;
+          var len = sampleRate * 2;
+          this.noiseBuffer = this.ctx.createBuffer(1, len, sampleRate);
+          var data = this.noiseBuffer.getChannelData(0);
+          for (var i = 0; i < len; i++) {
+            data[i] = Math.random() * 2.0 - 1.0;
+          }
+
+          // Sürekli Rüzgar Uğultusu
+          var windSrc = this.ctx.createBufferSource();
+          windSrc.buffer = this.noiseBuffer;
+          windSrc.loop = true;
+
+          this.windFilter = this.ctx.createBiquadFilter();
+          this.windFilter.type = 'bandpass';
+          this.windFilter.frequency.value = 260;
+          this.windFilter.Q.value = 1.1;
+
+          this.windGain = this.ctx.createGain();
+          this.windGain.gain.value = 0.05;
+
+          windSrc.connect(this.windFilter);
+          this.windFilter.connect(this.windGain);
+          this.windGain.connect(this.masterGain);
+          windSrc.start();
+
+          // Yüksek Hız Dalış Islığı
+          this.whistleOsc = this.ctx.createOscillator();
+          this.whistleOsc.type = 'sine';
+          this.whistleOsc.frequency.value = 520;
+
+          this.whistleGain = this.ctx.createGain();
+          this.whistleGain.gain.value = 0.0;
+
+          this.whistleOsc.connect(this.whistleGain);
+          this.whistleGain.connect(this.masterGain);
+          this.whistleOsc.start();
+
+          this.initialized = true;
+        } catch (e) {
+          this.initialized = false;
+        }
+      };
+
+      EagleAudioEngine.prototype.setEnabled = function (flag) {
+        this.enabled = !!flag;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setTargetAtTime(this.enabled ? 0.55 : 0.0, this.ctx.currentTime, 0.06);
+        }
+      };
+
+      EagleAudioEngine.prototype.update = function (airspeed, aoaDeg, tuck, thermalLift, isVisionActive) {
+        if (!this.initialized || !this.enabled || !this.ctx) return;
+        var now = this.ctx.currentTime;
+        var spdNorm = clamp((airspeed - 8.0) / 68.0, 0.0, 1.0);
+        var aoaNorm = clamp(Math.abs(aoaDeg) / 26.0, 0.0, 1.0);
+
+        var targetFreq = 180.0 + spdNorm * 950.0 + aoaNorm * 240.0 + tuck * 320.0;
+        var targetGain = (0.04 + spdNorm * 0.34 + aoaNorm * 0.08 + clamp(thermalLift * 0.015, 0, 0.06)) * (isVisionActive ? 0.55 : 1.0);
+
+        this.windFilter.frequency.setTargetAtTime(targetFreq, now, 0.08);
+        this.windGain.gain.setTargetAtTime(targetGain, now, 0.08);
+
+        var diveWhistle = clamp((airspeed - 42.0) / 38.0, 0.0, 1.0);
+        this.whistleOsc.frequency.setTargetAtTime(480.0 + diveWhistle * 640.0, now, 0.08);
+        this.whistleGain.gain.setTargetAtTime(diveWhistle * 0.065 * (0.4 + tuck * 0.6), now, 0.08);
+      };
+
+      EagleAudioEngine.prototype.playFlap = function (intensity) {
+        if (!this.initialized || !this.enabled || !this.ctx || !this.noiseBuffer) return;
+        try {
+          var now = this.ctx.currentTime;
+          var src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+
+          var filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(340, now);
+          filter.frequency.exponentialRampToValueAtTime(95, now + 0.24);
+
+          var gain = this.ctx.createGain();
+          var amp = 0.32 * clamp(intensity || 1.0, 0.3, 1.2);
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(amp, now + 0.045);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          src.start(now);
+          src.stop(now + 0.28);
+        } catch (e) {}
+      };
+
+      EagleAudioEngine.prototype.playSplash = function () {
+        if (!this.initialized || !this.enabled || !this.ctx || !this.noiseBuffer) return;
+        try {
+          var now = this.ctx.currentTime;
+          var src = this.ctx.createBufferSource();
+          src.buffer = this.noiseBuffer;
+
+          var filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(1150, now);
+          filter.frequency.exponentialRampToValueAtTime(320, now + 0.45);
+          filter.Q.value = 0.8;
+
+          var gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.42, now + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          src.start(now);
+          src.stop(now + 0.5);
+        } catch (e) {}
+      };
+
+      EagleAudioEngine.prototype.playEagleScreech = function () {
+        if (!this.initialized || !this.enabled || !this.ctx) return;
+        try {
+          var now = this.ctx.currentTime;
+          var osc = this.ctx.createOscillator();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(2450, now);
+          osc.frequency.exponentialRampToValueAtTime(3150, now + 0.08);
+          osc.frequency.exponentialRampToValueAtTime(1680, now + 0.52);
+
+          var filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 2350;
+          filter.Q.value = 3.2;
+
+          var gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.56);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.masterGain);
+          osc.start(now);
+          osc.stop(now + 0.58);
+        } catch (e) {}
+      };
+
+      EagleAudioEngine.prototype.playChickChirp = function () {
+        if (!this.initialized || !this.enabled || !this.ctx) return;
+        try {
+          var now = this.ctx.currentTime;
+          for (var c = 0; c < 2; c++) {
+            var t0 = now + c * 0.16;
+            var osc = this.ctx.createOscillator();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(3400, t0);
+            osc.frequency.exponentialRampToValueAtTime(4600, t0 + 0.06);
+            osc.frequency.exponentialRampToValueAtTime(3100, t0 + 0.12);
+
+            var gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.001, t0);
+            gain.gain.linearRampToValueAtTime(0.09, t0 + 0.025);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.13);
+
+            osc.connect(gain);
+            gain.connect(this.masterGain);
+            osc.start(t0);
+            osc.stop(t0 + 0.14);
+          }
+        } catch (e) {}
+      };
+
+      /* =========================================================================
+         3. ATMOSFER FİZİĞİ: TERMAL HAVA AKIMLARI & YAMAÇ KALDIRMASI (RIDGE LIFT)
+         ========================================================================= */
+      function AtmosphereField(scene) {
+        this.baseWind = new THREE.Vector3(3.6, 0.0, -3.4); // ~18 km/s
+        this.thermals = [];
+        this._tmpNorm = new THREE.Vector3();
+
+        // Güneş gören yamaçlarda ve vadilerde 16 termal akım sütunu
+        for (var i = 0; i < 16; i++) {
+          var a = (i / 16) * Math.PI * 2.0 + 0.25;
+          var r = 280.0 + (i % 4) * 290.0;
+          var tx = Math.cos(a) * r;
+          var tz = Math.sin(a) * r;
+          var th = Math.max(WATER_LEVEL + 6.0, getTerrainHeight(tx, tz));
+          this.thermals.push({
+            x: tx,
+            z: tz,
+            baseY: th,
+            topY: th + 320.0,
+            radius: 58.0 + (i % 3) * 18.0,
+            strength: 4.5 + (i % 4) * 1.15
+          });
+        }
+
+        // Termal Akımları Görünür Kılan Hafif Yükselen Partiküller
+        this.particleCount = this.thermals.length * 24;
+        this.particlePositions = new Float32Array(this.particleCount * 3);
+        this.particleMeta = [];
+        for (var t = 0; t < this.thermals.length; t++) {
+          var thm = this.thermals[t];
+          for (var p = 0; p < 24; p++) {
+            var idx = t * 24 + p;
+            var ang = Math.random() * Math.PI * 2.0;
+            var rad = Math.random() * thm.radius * 0.88;
+            var y = thm.baseY + Math.random() * (thm.topY - thm.baseY);
+            this.particlePositions[idx * 3] = thm.x + Math.cos(ang) * rad;
+            this.particlePositions[idx * 3 + 1] = y;
+            this.particlePositions[idx * 3 + 2] = thm.z + Math.sin(ang) * rad;
+            this.particleMeta.push({
+              thermalIdx: t,
+              angle: ang,
+              radius: rad,
+              speed: 6.0 + Math.random() * 5.0
+            });
+          }
+        }
+
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(this.particlePositions, 3));
+        var mat = new THREE.PointsMaterial({
+          color: 0xfef3c7,
+          size: 3.4,
+          transparent: true,
+          opacity: 0.42,
+          depthWrite: false
+        });
+        this.points = new THREE.Points(geo, mat);
+        this.points.frustumCulled = false;
+        scene.add(this.points);
+      }
+
+      AtmosphereField.prototype.setWindKmh = function (kmh) {
+        var ms = kmh / 3.6;
+        this.baseWind.set(ms * 0.72, 0.0, -ms * 0.69);
+      };
+
+      AtmosphereField.prototype.sampleAir = function (pos, outWind, outStats) {
+        outWind.copy(this.baseWind);
+        var groundH = getTerrainHeight(pos.x, pos.z);
+        var agl = Math.max(0.0, pos.y - Math.max(WATER_LEVEL, groundH));
+
+        // 1) Yamaç Kaldırması (Ridge Lift): Yatay rüzgarın arazi normaline karşı bileşeni
+        var ridgeLift = 0.0;
+        if (agl < 130.0) {
+          getTerrainNormal(pos.x, pos.z, this._tmpNorm);
+          var windDotSlope = -(this.baseWind.x * this._tmpNorm.x + this.baseWind.z * this._tmpNorm.z);
+          if (windDotSlope > 0.0) {
+            var heightFade = 1.0 - smoothstep(10.0, 130.0, agl);
+            ridgeLift = clamp(windDotSlope * 1.45 * heightFade, 0.0, 7.5);
+          }
+        }
+
+        // 2) Termal Hava Akımları
+        var thermalLift = 0.0;
+        for (var i = 0; i < this.thermals.length; i++) {
+          var th = this.thermals[i];
+          if (pos.y < th.baseY - 10.0 || pos.y > th.topY) continue;
+          var dx = pos.x - th.x;
+          var dz = pos.z - th.z;
+          var distSq = dx * dx + dz * dz;
+          if (distSq < th.radius * th.radius) {
+            var radial = 1.0 - Math.sqrt(distSq) / th.radius;
+            var vertFade = 1.0 - smoothstep(th.topY - 60.0, th.topY, pos.y);
+            thermalLift += th.strength * radial * vertFade;
+          }
+        }
+
+        outWind.y = ridgeLift + thermalLift;
+        if (outStats) {
+          outStats.thermalLift = thermalLift;
+          outStats.ridgeLift = ridgeLift;
+          outStats.groundH = groundH;
+        }
+      };
+
+      AtmosphereField.prototype.updateParticles = function (dt) {
+        for (var i = 0; i < this.particleCount; i++) {
+          var meta = this.particleMeta[i];
+          var th = this.thermals[meta.thermalIdx];
+          meta.angle += dt * 0.65;
+          var py = this.particlePositions[i * 3 + 1] + meta.speed * dt;
+          if (py > th.topY) py = th.baseY + 2.0;
+          this.particlePositions[i * 3] = th.x + Math.cos(meta.angle) * meta.radius;
+          this.particlePositions[i * 3 + 1] = py;
+          this.particlePositions[i * 3 + 2] = th.z + Math.sin(meta.angle) * meta.radius;
+        }
+        this.points.geometry.attributes.position.needsUpdate = true;
+      };
+
+      /* =========================================================================
+         4. 120 HZ 6-DoF AERODİNAMİK FİZİK MOTORU (GERÇEKÇİ AERODİNAMİK + DESTEK)
+         ========================================================================= */
+      function EaglePhysics6DoF(atmosphere, audio) {
+        this.atmosphere = atmosphere;
+        this.audio = audio;
+
+        this.baseMass = 4.6; // kg (Altın Kartal)
+        this.carriedMass = 0.0;
+        this.carriedDrag = 0.0;
+        this.mass = this.baseMass;
+
+        this.position = new THREE.Vector3(0, 185, 220);
+        this.velocity = new THREE.Vector3(0, 0, -24);
+        this.quaternion = new THREE.Quaternion();
+        this.angularVelocity = new THREE.Vector3();
+
+        this.assistEnabled = true;
+        this.stamina = 100.0;
+        this.tuck = 0.0;
+        this.brake = 0.0;
+        this.flapPower = 0.0;
+        this.flapPhase = 0.0;
+        this.flapCooldown = 0.0;
+        this.alulaDeploy = 0.0;
+
+        this.airspeed = 24.0;
+        this.aoaDeg = 4.0;
+        this.gForce = 1.0;
+        this.agl = 150.0;
+        this.vario = 0.0;
+        this.thermalLift = 0.0;
+        this.ridgeLift = 0.0;
+        this.isStalling = false;
+
+        this._wind = new THREE.Vector3();
+        this._relVel = new THREE.Vector3();
+        this._localVel = new THREE.Vector3();
+        this._invQuat = new THREE.Quaternion();
+        this._forceLocal = new THREE.Vector3();
+        this._forceWorld = new THREE.Vector3();
+        this._torqueLocal = new THREE.Vector3();
+        this._fwdWorld = new THREE.Vector3();
+        this._rightWorld = new THREE.Vector3();
+        this._upWorld = new THREE.Vector3();
+        this._dq = new THREE.Quaternion();
+        this._tmpAlign = new THREE.Vector3();
+        this._airStats = { thermalLift: 0, ridgeLift: 0, groundH: 0 };
+
+        this.reset();
+      }
+
+      EaglePhysics6DoF.prototype.setCarriedPrey = function (extraMass, extraDrag) {
+        this.carriedMass = extraMass || 0.0;
+        this.carriedDrag = extraDrag || 0.0;
+        this.mass = this.baseMass + this.carriedMass;
+      };
+
+      EaglePhysics6DoF.prototype.reset = function () {
+        var startH = Math.max(20.0, getTerrainHeight(0, 220)) + 135.0;
+        this.position.set(0, startH, 220);
+        this.velocity.set(0, 0, -24.5);
+        this.quaternion.set(0, 0, 0, 1);
+        this.angularVelocity.set(0, 0, 0);
+        this.stamina = 100.0;
+        this.tuck = 0.0;
+        this.brake = 0.0;
+        this.flapPower = 0.0;
+        this.flapCooldown = 0.0;
+        this.alulaDeploy = 0.0;
+        this.isStalling = false;
+      };
+
+      EaglePhysics6DoF.prototype.step = function (dt, input) {
+        // 1) Dinamik Kanat Geometrisi (Wing Morphing)
+        var targetTuck = input.tuck ? 1.0 : 0.0;
+        var targetBrake = input.brake ? 1.0 : 0.0;
+        this.tuck = lerp(this.tuck, targetTuck, clamp(dt * 7.5, 0, 1));
+        this.brake = lerp(this.brake, targetBrake, clamp(dt * 8.5, 0, 1));
+
+        // 2) Biyomekanik Kanat Çırpma (Aşağı Vuruş Fazına Senkronize İtki) & Stamina
+        if (this.flapCooldown > 0) this.flapCooldown -= dt;
+        if (input.flapHold && this.stamina > 4.0 && this.flapCooldown <= 0) {
+          this.flapPower = 1.0;
+          this.flapPhase = 0.0;
+          this.flapCooldown = 0.36;
+          this.stamina = Math.max(0.0, this.stamina - 3.6);
+          if (this.audio) this.audio.playFlap(1.0);
+        }
+        if (this.flapPower > 0.01) {
+          this.flapPhase += dt * 17.5;
+          this.flapPower = Math.max(0.0, this.flapPower - dt * 2.55);
+        } else {
+          this.flapPower = 0.0;
+          var regen = 7.8 + this.thermalLift * 1.45 + this.ridgeLift * 0.95;
+          this.stamina = Math.min(100.0, this.stamina + regen * dt);
+        }
+
+        // 3) Atmosfer ve Bağıl Hava Hızı
+        this.atmosphere.sampleAir(this.position, this._wind, this._airStats);
+        this.thermalLift = this._airStats.thermalLift;
+        this.ridgeLift = this._airStats.ridgeLift;
+        var surfaceH = Math.max(WATER_LEVEL, this._airStats.groundH);
+        this.agl = Math.max(0.0, this.position.y - surfaceH);
+
+        this._relVel.copy(this.velocity).sub(this._wind);
+        this._invQuat.copy(this.quaternion).invert();
+        this._localVel.copy(this._relVel).applyQuaternion(this._invQuat);
+
+        var speed = this._relVel.length();
+        this.airspeed = speed;
+
+        // İrtifaya bağlı hava yoğunluğu rho(h)
+        var rho = 1.225 * Math.exp(-Math.max(0.0, this.position.y) / 8500.0);
+
+        // Hücum Açısı (AoA) ve Yan Kayma (Sideslip)
+        var fwdSpeed = Math.max(1.5, -this._localVel.z);
+        var alphaRad = Math.atan2(-this._localVel.y, fwdSpeed);
+        var betaRad = Math.atan2(this._localVel.x, fwdSpeed);
+        this.aoaDeg = clamp(alphaRad * (180.0 / Math.PI), -45.0, 45.0);
+
+        // Alula (Başparmak Kanatçığı) Otomatik Açılımı: Yüksek AoA'da stall geciktirir
+        var targetAlula = clamp((this.aoaDeg - 9.5) / 10.5, 0.0, 1.0) * (1.0 - this.tuck);
+        this.alulaDeploy = lerp(this.alulaDeploy, targetAlula, clamp(dt * 9.0, 0, 1));
+
+        // Kanat yüzey alanı S(morph) ve açıklık oranı (Aspect Ratio)
+        var wingArea = lerp(0.80, 0.15, this.tuck) + this.brake * 0.17;
+        var aspectRatio = lerp(7.6, 3.2, this.tuck);
+
+        // Yer Etkisi (Ground Effect): 1.5 kanat açıklığı (~3.6m) altında indüklenen sürükleme düşer, kaldırma artar
+        var geMask = 1.0 - smoothstep(0.6, 4.2, this.agl);
+        var geLiftBoost = 1.0 + geMask * 0.22;
+        var geDragFactor = 1.0 - geMask * 0.34;
+
+        // Gerçekçi CL(alpha) ve CD(alpha) Eğrileri + Alula Slot Desteği
+        var stallDeg = (this.assistEnabled ? 24.5 : 19.5) + this.alulaDeploy * 3.5;
+        var absAlpha = Math.abs(this.aoaDeg);
+        var cl;
+        if (absAlpha <= stallDeg) {
+          cl = (0.37 + alphaRad * 4.65 + this.alulaDeploy * 0.16) * geLiftBoost;
+          this.isStalling = false;
+        } else {
+          var post = clamp((absAlpha - stallDeg) / 18.0, 0.0, 1.0);
+          var peakCL = (0.37 + (stallDeg * Math.PI / 180.0) * 4.65) * geLiftBoost;
+          cl = lerp(peakCL, 0.50, post) * (alphaRad >= 0 ? 1.0 : -1.0);
+          this.isStalling = speed > 8.0 && !this.assistEnabled;
+        }
+        cl *= (1.0 - this.tuck * 0.68);
+
+        var cd0 = lerp(0.024, 0.0095, this.tuck) + this.brake * 0.25 + this.carriedDrag;
+        var cdInduced = ((cl * cl) / (Math.PI * aspectRatio * 0.90)) * geDragFactor;
+        var cdStall = absAlpha > stallDeg ? (absAlpha - stallDeg) * 0.023 : 0.0;
+        var cd = cd0 + cdInduced + cdStall;
+
+        // Dinamik Basınç q = 0.5 * rho * v^2
+        var q = 0.5 * rho * speed * speed;
+        var liftMag = clamp(q * wingArea * cl, -360.0, 440.0);
+        var dragMag = clamp(q * wingArea * cd, 0.0, 290.0);
+        var sideForce = clamp(-q * wingArea * betaRad * 2.25, -180.0, 180.0);
+
+        // Yerel Kuvvet Toplamı (Lift + Drag + Side + Faz Senkronlu Kanat Çırpma)
+        this._forceLocal.set(sideForce, liftMag, 0.0);
+        if (speed > 0.2) {
+          this._forceLocal.x -= (this._localVel.x / speed) * dragMag;
+          this._forceLocal.y -= (this._localVel.y / speed) * dragMag;
+          this._forceLocal.z -= (this._localVel.z / speed) * dragMag;
+        }
+
+        if (this.flapPower > 0.01) {
+          var downstroke = 0.55 + 0.45 * Math.max(0.0, Math.cos(this.flapPhase - 0.6));
+          var thrustScale = (this.assistEnabled ? 1.38 : 1.12) * downstroke;
+          this._forceLocal.z -= 92.0 * this.flapPower * thrustScale;
+          this._forceLocal.y += 50.0 * this.flapPower * thrustScale;
+        }
+
+        // Dünya Uzayına Aktar + Yerçekimi
+        this._forceWorld.copy(this._forceLocal).applyQuaternion(this.quaternion);
+        this.gForce = clamp(this._forceLocal.y / (this.mass * 9.81), -2.0, 6.8);
+        this._forceWorld.y -= this.mass * 9.81;
+
+        // Semi-Implicit Euler Hız & Pozisyon Entegrasyonu
+        this.velocity.addScaledVector(this._forceWorld, dt / this.mass);
+        var maxSpd = this.tuck > 0.5 ? 92.0 : 64.0; // ~330 km/s dalış limiti
+        if (this.velocity.length() > maxSpd) {
+          this.velocity.setLength(maxSpd);
+        }
+        this.position.addScaledVector(this.velocity, dt);
+        this.vario = this.velocity.y;
+
+        // 4) Açısal Dinamikler, Dihedral / Kanat Ucu Sönümleme ve Kolay Uçuş Desteği
+        this._fwdWorld.set(0, 0, -1).applyQuaternion(this.quaternion);
+        this._rightWorld.set(1, 0, 0).applyQuaternion(this.quaternion);
+        this._upWorld.set(0, 1, 0).applyQuaternion(this.quaternion);
+
+        var bankRightAngle = Math.atan2(-this._rightWorld.y, this._upWorld.y);
+        var pitchAngle = Math.asin(clamp(this._fwdWorld.y, -0.99, 0.99));
+
+        var ctrlAuth = clamp(speed / 18.0, 0.58, 1.50);
+        var pitchTorque = input.pitch * 3.25 * ctrlAuth;
+        var rollTorque = -input.roll * 4.35 * ctrlAuth;
+        var yawTorque = -input.yaw * 1.95 * ctrlAuth;
+
+        // Aerodinamik Dihedral Etkisi (yan kaymada doğal dengeleme)
+        var dihedralRoll = betaRad * 1.35 * clamp(speed / 20.0, 0.2, 1.4);
+        rollTorque += dihedralRoll;
+
+        if (this.assistEnabled) {
+          var targetBankRight = input.roll * 0.84;
+          var bankErr = targetBankRight - bankRightAngle;
+          rollTorque = -(bankErr * 5.9) - this.angularVelocity.z * 2.7;
+
+          yawTorque += -bankRightAngle * 1.58;
+
+          var bankCompensation = (1.0 - Math.cos(clamp(bankRightAngle, -1.0, 1.0))) * 0.78;
+          pitchTorque += bankCompensation;
+
+          if (Math.abs(input.pitch) < 0.05 && !input.tuck) {
+            var idealPitch = -0.025;
+            pitchTorque += (idealPitch - pitchAngle) * 2.15;
+          }
+
+          if (pitchAngle > 0.66) pitchTorque -= (pitchAngle - 0.66) * 5.2;
+          if (pitchAngle < -0.94 && !input.tuck) pitchTorque -= (pitchAngle + 0.94) * 4.8;
+
+          var pullUpAlt = input.huntingSwoop ? 3.0 : 11.0;
+          if (this.agl < pullUpAlt && this.velocity.y < -3.0 && !input.tuck) {
+            pitchTorque += 2.4;
+          }
+
+          var curSpd = this.velocity.length();
+          if (curSpd > 8.0) {
+            this._tmpAlign.copy(this._fwdWorld).multiplyScalar(curSpd);
+            this.velocity.lerp(this._tmpAlign, clamp(dt * 1.65, 0, 1));
+          }
+        } else {
+          yawTorque += -bankRightAngle * 0.98;
+        }
+
+        // Hıza bağlı aerodinamik açısal sönümleme (Cl_p, Cm_q, Cn_r)
+        var aeroDampScale = clamp(speed / 24.0, 0.75, 1.45);
+        var dampP = (this.assistEnabled ? 4.0 : 2.7) * aeroDampScale;
+        var dampR = (this.assistEnabled ? 4.5 : 3.0) * aeroDampScale;
+        var dampY = (this.assistEnabled ? 3.8 : 2.6) * aeroDampScale;
+
+        this._torqueLocal.set(
+          pitchTorque - alphaRad * 1.72 - this.angularVelocity.x * dampP,
+          yawTorque - betaRad * 2.18 - this.angularVelocity.y * dampY,
+          rollTorque - this.angularVelocity.z * dampR
+        );
+
+        if (this.isStalling) {
+          this._torqueLocal.x -= 1.15;
+          this._torqueLocal.z += (Math.random() - 0.5) * 2.1;
+        }
+
+        this.angularVelocity.addScaledVector(this._torqueLocal, dt);
+        this.angularVelocity.clampLength(0.0, 3.4);
+
+        // Quaternion Güncellemesi
+        this._dq.set(
+          this.angularVelocity.x * dt * 0.5,
+          this.angularVelocity.y * dt * 0.5,
+          this.angularVelocity.z * dt * 0.5,
+          0.0
+        );
+        this._dq.multiplyQuaternions(this.quaternion, this._dq);
+        this.quaternion.x += this._dq.x;
+        this.quaternion.y += this._dq.y;
+        this.quaternion.z += this._dq.z;
+        this.quaternion.w += this._dq.w;
+        this.quaternion.normalize();
+
+        // 5) Arazi ve Harita Sınır Koruması
+        var minY = surfaceH + (input.huntingSwoop ? 1.15 : 2.0);
+        if (this.position.y < minY) {
+          this.position.y = minY;
+          if (this.velocity.y < (input.huntingSwoop ? 1.2 : 3.2)) {
+            this.velocity.y = input.huntingSwoop ? 1.2 : 3.2;
+          }
+          var horizSpd = Math.hypot(this.velocity.x, this.velocity.z);
+          if (horizSpd < 16.0) {
+            var hLen = Math.hypot(this._fwdWorld.x, this._fwdWorld.z);
+            var hx = hLen > 0.01 ? this._fwdWorld.x / hLen : 0;
+            var hz = hLen > 0.01 ? this._fwdWorld.z / hLen : -1;
+            this.velocity.x = hx * 17.5;
+            this.velocity.z = hz * 17.5;
+          }
+          if (this._fwdWorld.y < 0.02) {
+            this.angularVelocity.x = Math.max(this.angularVelocity.x, 0.95);
+          }
+        }
+        if (this.position.y > 950.0) {
+          this.position.y = 950.0;
+          if (this.velocity.y > 0) this.velocity.y *= 0.5;
+        }
+
+        var limit = HALF_WORLD - 160.0;
+        if (Math.abs(this.position.x) > limit) {
+          this.position.x = clamp(this.position.x, -limit, limit);
+          this.velocity.x *= -0.6;
+        }
+        if (Math.abs(this.position.z) > limit) {
+          this.position.z = clamp(this.position.z, -limit, limit);
+          this.velocity.z *= -0.6;
+        }
+
+        if (!isFinite(this.position.x) || !isFinite(this.position.y) || !isFinite(this.position.z)) {
+          this.reset();
+        }
+      };
+
+      /* =========================================================================
+         5. PROSEDÜREL AAA DÜNYA: GÖKYÜZÜ, ARAZİ SHADER, SU VE ORMAN
+         ========================================================================= */
+      function buildWorld(scene) {
+        // 1) Rayleigh / Mie Atmosferik Gökyüzü Kubbesi
+        var skyUniforms = {
+          uSunDir: { value: new THREE.Vector3(0.5, 0.45, -0.7).normalize() }
+        };
+        var skyMat = new THREE.ShaderMaterial({
+          side: THREE.BackSide,
+          depthWrite: false,
+          uniforms: skyUniforms,
+          vertexShader: [
+            'varying vec3 vWorldDir;',
+            'void main() {',
+            '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+            '  vWorldDir = normalize(position);',
+            '  gl_Position = projectionMatrix * viewMatrix * wp;',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform vec3 uSunDir;',
+            'varying vec3 vWorldDir;',
+            'void main() {',
+            '  vec3 dir = normalize(vWorldDir);',
+            '  float h = clamp(dir.y, 0.0, 1.0);',
+            '  float sunElev = clamp(uSunDir.y, 0.05, 1.0);',
+            '  vec3 zenith = mix(vec3(0.08, 0.16, 0.34), vec3(0.11, 0.34, 0.68), sunElev);',
+            '  vec3 horizon = mix(vec3(0.92, 0.56, 0.34), vec3(0.68, 0.83, 0.96), smoothstep(0.08, 0.55, sunElev));',
+            '  vec3 col = mix(horizon, zenith, pow(h, 0.55));',
+            '  float sunDot = max(dot(dir, normalize(uSunDir)), 0.0);',
+            '  col += vec3(1.0, 0.78, 0.45) * pow(sunDot, 12.0) * 0.38;',
+            '  col += vec3(1.0, 0.96, 0.86) * smoothstep(0.9982, 0.9997, sunDot) * 1.45;',
+            '  gl_FragColor = vec4(col, 1.0);',
+            '}'
+          ].join('\n')
+        });
+        var skyDome = new THREE.Mesh(new THREE.SphereGeometry(2800, 32, 20), skyMat);
+        scene.add(skyDome);
+
+        // 2) 4km x 4km Alpin Arazi + Özel Yükseklik/Eğim GLSL Shader
+        var segs = 190;
+        var terrainGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, segs, segs);
+        terrainGeo.rotateX(-Math.PI * 0.5);
+        var posAttr = terrainGeo.attributes.position;
+        for (var i = 0; i < posAttr.count; i++) {
+          var vx = posAttr.getX(i);
+          var vz = posAttr.getZ(i);
+          posAttr.setY(i, getTerrainHeight(vx, vz));
+        }
+        terrainGeo.computeVertexNormals();
+
+        var terrainUniforms = {
+          uSunDir: { value: skyUniforms.uSunDir.value.clone() },
+          uFogColor: { value: new THREE.Color(0x9ec0dc) }
+        };
+
+        var terrainMat = new THREE.ShaderMaterial({
+          uniforms: terrainUniforms,
+          vertexShader: [
+            'varying vec3 vWorldPos;',
+            'varying vec3 vNormalW;',
+            'void main() {',
+            '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+            '  vWorldPos = wp.xyz;',
+            '  vNormalW = normalize(mat3(modelMatrix) * normal);',
+            '  gl_Position = projectionMatrix * viewMatrix * wp;',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform vec3 uSunDir;',
+            'uniform vec3 uFogColor;',
+            'varying vec3 vWorldPos;',
+            'varying vec3 vNormalW;',
+            'float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }',
+            'void main() {',
+            '  vec3 n = normalize(vNormalW);',
+            '  float h = vWorldPos.y;',
+            '  float slope = 1.0 - clamp(n.y, 0.0, 1.0);',
+            '  float grain = hash(floor(vWorldPos.xz * 0.45)) * 0.06 - 0.03;',
+            '  vec3 sandCol = vec3(0.56, 0.50, 0.39);',
+            '  vec3 grassCol = vec3(0.19, 0.34, 0.16) + grain;',
+            '  vec3 alpineCol = vec3(0.28, 0.36, 0.20) + grain;',
+            '  vec3 rockCol = vec3(0.32, 0.31, 0.33) + grain * 1.4;',
+            '  vec3 snowCol = vec3(0.92, 0.95, 0.99);',
+            '  vec3 baseCol = mix(sandCol, grassCol, smoothstep(1.5, 11.0, h));',
+            '  baseCol = mix(baseCol, alpineCol, smoothstep(75.0, 185.0, h));',
+            '  float rockMask = smoothstep(0.22, 0.44, slope);',
+            '  baseCol = mix(baseCol, rockCol, rockMask);',
+            '  float snowLine = smoothstep(205.0, 290.0, h) * (1.0 - smoothstep(0.34, 0.62, slope));',
+            '  baseCol = mix(baseCol, snowCol, snowLine);',
+            '  vec3 sun = normalize(uSunDir);',
+            '  float ndl = max(dot(n, sun), 0.0);',
+            '  vec3 ambient = mix(vec3(0.18, 0.24, 0.34), vec3(0.36, 0.44, 0.52), n.y * 0.5 + 0.5);',
+            '  vec3 lit = baseCol * (ambient + vec3(1.05, 0.97, 0.86) * ndl);',
+            '  float dist = length(cameraPosition - vWorldPos);',
+            '  float heightFog = exp(-max(vWorldPos.y, 0.0) * 0.0042);',
+            '  float fogFactor = clamp(1.0 - exp(-dist * 0.00052 * (0.55 + 0.75 * heightFog)), 0.0, 0.92);',
+            '  vec3 finalCol = mix(lit, uFogColor, fogFactor);',
+            '  gl_FragColor = vec4(finalCol, 1.0);',
+            '}'
+          ].join('\n')
+        });
+
+        var terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+        terrainMesh.receiveShadow = true;
+        scene.add(terrainMesh);
+
+        // 3) Yansımalı ve Dalgalı Su Düzlemi
+        var waterUniforms = {
+          uTime: { value: 0.0 },
+          uSunDir: { value: skyUniforms.uSunDir.value.clone() },
+          uFogColor: { value: terrainUniforms.uFogColor.value.clone() }
+        };
+        var waterMat = new THREE.ShaderMaterial({
+          transparent: true,
+          uniforms: waterUniforms,
+          vertexShader: [
+            'varying vec3 vWorldPos;',
+            'void main() {',
+            '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+            '  vWorldPos = wp.xyz;',
+            '  gl_Position = projectionMatrix * viewMatrix * wp;',
+            '}'
+          ].join('\n'),
+          fragmentShader: [
+            'uniform float uTime;',
+            'uniform vec3 uSunDir;',
+            'uniform vec3 uFogColor;',
+            'varying vec3 vWorldPos;',
+            'void main() {',
+            '  vec2 p = vWorldPos.xz * 0.065;',
+            '  float w1 = sin(p.x * 1.4 + uTime * 1.6) * cos(p.y * 1.2 - uTime * 1.1);',
+            '  float w2 = sin(p.x * 3.1 - uTime * 2.2 + p.y * 2.4) * 0.5;',
+            '  vec3 n = normalize(vec3((w1 + w2) * 0.09, 1.0, (w1 - w2) * 0.09));',
+            '  vec3 viewDir = normalize(cameraPosition - vWorldPos);',
+            '  float fresnel = pow(1.0 - max(dot(viewDir, n), 0.0), 3.2);',
+            '  vec3 deepCol = vec3(0.05, 0.18, 0.28);',
+            '  vec3 skyRefl = mix(vec3(0.32, 0.55, 0.78), uFogColor, 0.45);',
+            '  vec3 col = mix(deepCol, skyRefl, clamp(fresnel + 0.15, 0.0, 0.92));',
+            '  vec3 halfV = normalize(normalize(uSunDir) + viewDir);',
+            '  float spec = pow(max(dot(n, halfV), 0.0), 96.0);',
+            '  col += vec3(1.0, 0.94, 0.80) * spec * 1.2;',
+            '  float dist = length(cameraPosition - vWorldPos);',
+            '  float fogF = clamp(1.0 - exp(-dist * 0.00055), 0.0, 0.92);',
+            '  col = mix(col, uFogColor, fogF);',
+            '  gl_FragColor = vec4(col, 0.90);',
+            '}'
+          ].join('\n')
+        });
+        var waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, 1, 1), waterMat);
+        waterMesh.rotation.x = -Math.PI * 0.5;
+        waterMesh.position.y = WATER_LEVEL;
+        scene.add(waterMesh);
+
+        // 4) InstancedMesh Çam Ormanı (Performans Dostu Tek Draw-Call)
+        var maxTrees = 3200;
+        var trunkGeo = new THREE.CylinderGeometry(0.35, 0.65, 5.0, 5);
+        trunkGeo.translate(0, 2.5, 0);
+        var crownGeo = new THREE.ConeGeometry(3.4, 13.5, 6);
+        crownGeo.translate(0, 10.5, 0);
+
+        var trunkMat = new THREE.MeshLambertMaterial({ color: 0x3b2618 });
+        var crownMat = new THREE.MeshLambertMaterial({ color: 0x1c3b23 });
+
+        var trunks = new THREE.InstancedMesh(trunkGeo, trunkMat, maxTrees);
+        var crowns = new THREE.InstancedMesh(crownGeo, crownMat, maxTrees);
+        var dummy = new THREE.Object3D();
+        var tmpNorm = new THREE.Vector3();
+        var placed = 0;
+
+        for (var attempt = 0; attempt < 11000 && placed < maxTrees; attempt++) {
+          var tx = (Math.random() - 0.5) * (WORLD_SIZE - 450);
+          var tz = (Math.random() - 0.5) * (WORLD_SIZE - 450);
+          var th = getTerrainHeight(tx, tz);
+          if (th < 5.0 || th > 168.0) continue;
+          getTerrainNormal(tx, tz, tmpNorm);
+          if (tmpNorm.y < 0.80) continue;
+
+          var sc = 0.72 + Math.random() * 0.95;
+          dummy.position.set(tx, th - 0.4, tz);
+          dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+          dummy.scale.set(sc, sc * (0.85 + Math.random() * 0.35), sc);
+          dummy.updateMatrix();
+          trunks.setMatrixAt(placed, dummy.matrix);
+          crowns.setMatrixAt(placed, dummy.matrix);
+          placed++;
+        }
+        trunks.count = placed;
+        crowns.count = placed;
+        trunks.instanceMatrix.needsUpdate = true;
+        crowns.instanceMatrix.needsUpdate = true;
+        scene.add(trunks);
+        scene.add(crowns);
+
+        return {
+          skyDome: skyDome,
+          skyUniforms: skyUniforms,
+          terrainUniforms: terrainUniforms,
+          waterUniforms: waterUniforms,
+          trunks: trunks,
+          crowns: crowns,
+          totalTrees: placed
+        };
+      }
+
+      /* =========================================================================
+         6. GERÇEKÇİ ANATOMİK ALTIN KARTAL MODELİ (1600+ PROSEDÜREL TÜY & AEROELASTİK)
+         ========================================================================= */
+      var EAGLE_FEATHER_CACHE = null;
+
+      function createProceduralFeatherTexture(kind) {
+        var w = kind === 'contour' ? 64 : 128;
+        var h = kind === 'contour' ? 128 : 384;
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, w, h);
+
+        var cx = w * 0.5;
+        var isPrimary = kind === 'primary';
+        var isTail = kind === 'tail';
+        var isHackle = kind === 'hackle';
+        var isCovert = kind === 'covert';
+
+        // Tüy dış konturu (asimetrik birincil uçuş tüyü veya simetrik gövde tüyü)
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(cx, h * 0.99);
+        if (isPrimary) {
+          ctx.bezierCurveTo(w * 0.10, h * 0.80, w * 0.08, h * 0.34, cx - w * 0.14, h * 0.06);
+          ctx.quadraticCurveTo(cx, 0, cx + w * 0.18, h * 0.08);
+          ctx.bezierCurveTo(w * 0.94, h * 0.36, w * 0.88, h * 0.82, cx, h * 0.99);
+        } else if (isHackle) {
+          ctx.bezierCurveTo(w * 0.14, h * 0.72, w * 0.22, h * 0.25, cx, h * 0.02);
+          ctx.bezierCurveTo(w * 0.78, h * 0.25, w * 0.86, h * 0.72, cx, h * 0.99);
+        } else {
+          ctx.bezierCurveTo(w * 0.04, h * 0.78, w * 0.06, h * 0.18, cx, h * 0.02);
+          ctx.bezierCurveTo(w * 0.94, h * 0.18, w * 0.96, h * 0.78, cx, h * 0.99);
+        }
+        ctx.closePath();
+        ctx.clip();
+
+        // Türüne göre doğal Altın Kartal pigment gradyanı
+        var grad = ctx.createLinearGradient(0, h, 0, 0);
+        if (isPrimary) {
+          grad.addColorStop(0.0, '#4c3422');
+          grad.addColorStop(0.32, '#2d1c12');
+          grad.addColorStop(0.72, '#18100b');
+          grad.addColorStop(1.0, '#0c0806');
+        } else if (isTail) {
+          grad.addColorStop(0.0, '#6a5847');
+          grad.addColorStop(0.45, '#463222');
+          grad.addColorStop(0.68, '#1e140e');
+          grad.addColorStop(1.0, '#100a07');
+        } else if (isHackle) {
+          grad.addColorStop(0.0, '#5a3818');
+          grad.addColorStop(0.45, '#b87a2e');
+          grad.addColorStop(0.82, '#e2a84b');
+          grad.addColorStop(1.0, '#f4c973');
+        } else if (isCovert) {
+          grad.addColorStop(0.0, '#2e1d12');
+          grad.addColorStop(0.60, '#52341e');
+          grad.addColorStop(0.92, '#7d5432');
+          grad.addColorStop(1.0, '#9e7044');
+        } else {
+          grad.addColorStop(0.0, '#23150d');
+          grad.addColorStop(0.55, '#3b2416');
+          grad.addColorStop(0.90, '#563722');
+          grad.addColorStop(1.0, '#6d472c');
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Kuyruk ve iç tüylerde ince mermerimsi bantlar
+        if (isTail || isPrimary) {
+          ctx.fillStyle = 'rgba(175, 145, 115, 0.14)';
+          for (var b = 0; b < 5; b++) {
+            var by = h * (0.48 + b * 0.09);
+            ctx.fillRect(0, by, w, h * 0.032);
+          }
+        }
+
+        // İnce diyagonal tüy sakalları (barbs)
+        ctx.strokeStyle = isHackle ? 'rgba(255, 224, 150, 0.22)' : 'rgba(18, 10, 6, 0.28)';
+        ctx.lineWidth = 1.0;
+        var stepY = Math.max(2, Math.floor(h / 56));
+        for (var y = h - 4; y > 6; y -= stepY) {
+          ctx.beginPath();
+          ctx.moveTo(cx, y);
+          ctx.lineTo(0, y - w * 0.38);
+          ctx.moveTo(cx, y);
+          ctx.lineTo(w, y - w * 0.38);
+          ctx.stroke();
+        }
+
+        // Hafif parlak tüy ışıldaması (iridescence)
+        ctx.strokeStyle = 'rgba(255, 232, 195, 0.10)';
+        for (var y2 = h - 8; y2 > 12; y2 -= stepY * 2) {
+          ctx.beginPath();
+          ctx.moveTo(cx, y2);
+          ctx.lineTo(w * 0.1, y2 - w * 0.34);
+          ctx.moveTo(cx, y2);
+          ctx.lineTo(w * 0.9, y2 - w * 0.34);
+          ctx.stroke();
+        }
+
+        // Merkezi tüy ekseni (Rachis)
+        var rachisGrad = ctx.createLinearGradient(0, h, 0, 0);
+        rachisGrad.addColorStop(0.0, '#c8b39a');
+        rachisGrad.addColorStop(0.45, '#6e523a');
+        rachisGrad.addColorStop(1.0, '#1e140e');
+        ctx.strokeStyle = rachisGrad;
+        ctx.lineWidth = Math.max(1.4, w * 0.036);
+        ctx.beginPath();
+        ctx.moveTo(cx, h);
+        ctx.lineTo(cx, h * 0.05);
+        ctx.stroke();
+        ctx.restore();
+
+        var tex = new THREE.CanvasTexture(canvas);
+        tex.anisotropy = 4;
+        return tex;
+      }
+
+      function getEagleFeatherAssets() {
+        if (EAGLE_FEATHER_CACHE) return EAGLE_FEATHER_CACHE;
+        var primaryTex = createProceduralFeatherTexture('primary');
+        var secondaryTex = createProceduralFeatherTexture('covert');
+        var tailTex = createProceduralFeatherTexture('tail');
+        var contourTex = createProceduralFeatherTexture('contour');
+        var hackleTex = createProceduralFeatherTexture('hackle');
+
+        // Kavisli gerçekçi tüy geometrisi (hafif camber + uç kıvrımı)
+        function makeCurvedFeatherGeo(len, width, camber) {
+          var geo = new THREE.PlaneGeometry(width, len, 2, 5);
+          geo.translate(0, len * 0.5, 0);
+          var pos = geo.attributes.position;
+          for (var i = 0; i < pos.count; i++) {
+            var px = pos.getX(i);
+            var py = pos.getY(i);
+            var t = clamp(py / Math.max(0.001, len), 0, 1);
+            // +Y eksenini +Z'ye çevir (kökten geriye/dışa uzanır), hafif aşağı-yukarı kavis ver
+            var arch = Math.sin(t * Math.PI) * camber - (px * px) * 0.12;
+            pos.setXYZ(i, px, arch, py);
+          }
+          geo.computeVertexNormals();
+          return geo;
+        }
+
+        EAGLE_FEATHER_CACHE = {
+          matPrimary: new THREE.MeshStandardMaterial({
+            map: primaryTex, alphaTest: 0.35, roughness: 0.68, metalness: 0.05, side: THREE.DoubleSide
+          }),
+          matSecondary: new THREE.MeshStandardMaterial({
+            map: secondaryTex, alphaTest: 0.35, roughness: 0.74, metalness: 0.04, side: THREE.DoubleSide
+          }),
+          matTail: new THREE.MeshStandardMaterial({
+            map: tailTex, alphaTest: 0.35, roughness: 0.72, metalness: 0.04, side: THREE.DoubleSide
+          }),
+          matContour: new THREE.MeshStandardMaterial({
+            map: contourTex, alphaTest: 0.32, roughness: 0.80, metalness: 0.03, side: THREE.DoubleSide
+          }),
+          matHackle: new THREE.MeshStandardMaterial({
+            map: hackleTex, alphaTest: 0.32, roughness: 0.62, metalness: 0.10, side: THREE.DoubleSide
+          }),
+          geoPrimary: makeCurvedFeatherGeo(1.02, 0.16, 0.035),
+          geoSecondary: makeCurvedFeatherGeo(0.74, 0.18, 0.03),
+          geoCovert: makeCurvedFeatherGeo(0.42, 0.15, 0.02),
+          geoAlula: makeCurvedFeatherGeo(0.28, 0.08, 0.015),
+          geoTail: makeCurvedFeatherGeo(1.12, 0.24, 0.025),
+          geoContour: makeCurvedFeatherGeo(0.22, 0.11, 0.012),
+          geoHackle: makeCurvedFeatherGeo(0.17, 0.065, 0.01)
+        };
+        return EAGLE_FEATHER_CACHE;
+      }
+
+      function buildAirfoilSegment(len, rootChord, tipChord, thickness, mat, sideSign) {
+        var shape = new THREE.Shape();
+        shape.moveTo(0.0, 0.0);
+        shape.quadraticCurveTo(0.28, thickness, 1.0, 0.0);
+        shape.quadraticCurveTo(0.38, -thickness * 0.32, 0.0, 0.0);
+
+        var geo = new THREE.ExtrudeGeometry(shape, {
+          depth: len,
+          bevelEnabled: false,
+          steps: 2,
+          curveSegments: 8
+        });
+
+        var pos = geo.attributes.position;
+        for (var i = 0; i < pos.count; i++) {
+          var cx = pos.getX(i);
+          var cy = pos.getY(i);
+          var cz = pos.getZ(i);
+          var t = clamp(cz / Math.max(0.001, len), 0.0, 1.0);
+          var chord = lerp(rootChord, tipChord, t);
+          var xOut = cz * sideSign;
+          var yOut = cy * chord;
+          var zOut = (cx - 0.30) * chord + t * 0.09;
+          pos.setXYZ(i, xOut, yOut, zOut);
+        }
+        geo.computeVertexNormals();
+        var mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true;
+        return mesh;
+      }
+
+      function ProceduralEagleMesh(scene, options) {
+        var opts = options || {};
+        this.isNPC = !!opts.isNPC;
+        this.root = new THREE.Group();
+        if (opts.scale) this.root.scale.setScalar(opts.scale);
+        this.bodyGroup = new THREE.Group();
+        this.root.add(this.bodyGroup);
+
+        var assets = getEagleFeatherAssets();
+
+        // Altın Kartal (Aquila chrysaetos) Anatomik Materyal Paleti
+        var matBodyDark = new THREE.MeshStandardMaterial({ color: opts.bodyColor || 0x2b1a10, roughness: 0.85, metalness: 0.04 });
+        var matChest = new THREE.MeshStandardMaterial({ color: opts.chestColor || 0x3b2416, roughness: 0.82 });
+        var matGoldenNape = new THREE.MeshStandardMaterial({ color: opts.napeColor || 0xc48636, roughness: 0.62, metalness: 0.10 });
+        var matCovertBase = new THREE.MeshStandardMaterial({ color: 0x452b19, roughness: 0.78 });
+        var matCere = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.38 });
+        var matBeak = new THREE.MeshStandardMaterial({ color: 0x231f1b, roughness: 0.28, metalness: 0.18 });
+        var matEye = new THREE.MeshStandardMaterial({ color: 0xe59010, roughness: 0.12, emissive: 0x3a1c00 });
+        var matPupil = new THREE.MeshBasicMaterial({ color: 0x050505 });
+        var matTalon = new THREE.MeshStandardMaterial({ color: 0x0f0f10, roughness: 0.22, metalness: 0.30 });
+
+        // 1) Anatomik Gövde (LatheGeometry + Göğüs Kası)
+        var lathePts = [
+          new THREE.Vector2(0.015, -0.96),
+          new THREE.Vector2(0.13, -0.80),
+          new THREE.Vector2(0.27, -0.48),
+          new THREE.Vector2(0.34, -0.12),
+          new THREE.Vector2(0.32, 0.26),
+          new THREE.Vector2(0.23, 0.64),
+          new THREE.Vector2(0.12, 0.92),
+          new THREE.Vector2(0.01, 1.06)
+        ];
+        var torsoGeo = new THREE.LatheGeometry(lathePts, 16);
+        torsoGeo.rotateX(Math.PI * 0.5);
+        torsoGeo.scale(0.86, 0.78, 1.0);
+        var torso = new THREE.Mesh(torsoGeo, matBodyDark);
+        torso.castShadow = true;
+        this.bodyGroup.add(torso);
+
+        var chest = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 10), matChest);
+        chest.scale.set(0.92, 0.84, 1.38);
+        chest.position.set(0, -0.07, -0.34);
+        this.bodyGroup.add(chest);
+
+        // 1.5) Gerçekçi Katmanlı Gövde & Altın Ense Yelesi Tüyleri (Ana Kartalda ~1.400+ Bireysel 3D Tüy!)
+        if (!this.isNPC) {
+          var dummy = new THREE.Object3D();
+          var colTmp = new THREE.Color();
+
+          // Gövde kontur tüyleri (sırt, göğüs, karın, yanlar, kuyruk kökü)
+          var bodyTransforms = [];
+          var rings = 22;
+          for (var r = 0; r < rings; r++) {
+            var t = r / (rings - 1); // 0: göğüs/boyun (-0.78), 1: kuyruk kökü (+0.88)
+            var z = lerp(-0.76, 0.88, t);
+            var radBase = Math.sin(clamp((t + 0.08) * 0.92, 0.04, 0.98) * Math.PI);
+            var rx = (0.09 + radBase * 0.23) * 0.95;
+            var ry = (0.08 + radBase * 0.21) * 0.92;
+            var segs = Math.max(12, Math.round(16 + radBase * 24));
+            for (var sIdx = 0; sIdx < segs; sIdx++) {
+              var ang = (sIdx / segs) * Math.PI * 2 + (r % 2) * (Math.PI / segs);
+              var px = Math.cos(ang) * rx;
+              var py = Math.sin(ang) * ry - 0.02;
+              bodyTransforms.push({ x: px, y: py, z: z, ang: ang, t: t, ry: ry });
+            }
+          }
+
+          var bodyInst = new THREE.InstancedMesh(assets.geoContour, assets.matContour, bodyTransforms.length);
+          for (var bi = 0; bi < bodyTransforms.length; bi++) {
+            var bt = bodyTransforms[bi];
+            dummy.position.set(bt.x, bt.y, bt.z);
+            dummy.rotation.set(0, 0, 0);
+            // Tüyü dışa doğru hafif yatır ve geriye (+Z) akış çizgisine hizala
+            var nx = Math.cos(bt.ang);
+            var ny = Math.sin(bt.ang);
+            dummy.lookAt(bt.x + nx * 0.18, bt.y + ny * 0.18, bt.z + 1.0);
+            var sc = lerp(0.75, 1.35, Math.sin(bt.t * Math.PI)) * (0.92 + (bi % 5) * 0.04);
+            dummy.scale.set(sc, 1.0, sc * 1.05);
+            dummy.updateMatrix();
+            bodyInst.setMatrixAt(bi, dummy.matrix);
+
+            // Sırt daha koyu, göğüs sıcak kahve, omuz çevresi hafif altın parıltılı
+            var shade = ny > 0.2 ? 0.78 : (ny < -0.3 ? 0.96 : 0.88);
+            colTmp.setRGB(shade, shade * 0.92, shade * 0.85);
+            bodyInst.setColorAt(bi, colTmp);
+          }
+          bodyInst.instanceMatrix.needsUpdate = true;
+          if (bodyInst.instanceColor) bodyInst.instanceColor.needsUpdate = true;
+          this.bodyGroup.add(bodyInst);
+        }
+
+        // 2) Boyun, Altın Ense Yelesi (Hackles), Yırtıcı Kaşlı Baş ve Kanca Gaga
+        this.headGroup = new THREE.Group();
+        this.headGroup.position.set(0, 0.08, -0.78);
+        this.bodyGroup.add(this.headGroup);
+
+        var neck = new THREE.Mesh(new THREE.CylinderGeometry(0.145, 0.21, 0.38, 12), matGoldenNape);
+        neck.rotation.x = Math.PI * 0.44;
+        neck.position.set(0, 0.02, 0.05);
+        this.headGroup.add(neck);
+
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(0.165, 14, 12), matBodyDark);
+        skull.scale.set(0.86, 0.80, 1.18);
+        skull.position.set(0, 0.085, -0.14);
+        this.headGroup.add(skull);
+
+        // Altın Kartal'ın meşhur altın ense yelesi (140 bireysel mızrak tüy)
+        if (!this.isNPC) {
+          var hackleDummy = new THREE.Object3D();
+          var hackleCount = 140;
+          var hackleInst = new THREE.InstancedMesh(assets.geoHackle, assets.matHackle, hackleCount);
+          for (var hi = 0; hi < hackleCount; hi++) {
+            var row = Math.floor(hi / 14); // 10 sıra
+            var col = hi % 14;
+            var ht = row / 9.0; // baştan boyun tabanına
+            var hang = (col / 14) * Math.PI * 2 + (row % 2) * 0.22;
+            var hRad = lerp(0.13, 0.20, ht);
+            var hx = Math.cos(hang) * hRad * 0.88;
+            var hy = Math.sin(hang) * hRad * 0.82 + lerp(0.085, 0.01, ht);
+            var hz = lerp(-0.18, 0.22, ht);
+            hackleDummy.position.set(hx, hy, hz);
+            hackleDummy.lookAt(hx * 1.4, hy * 1.35 + 0.05, hz + 0.85);
+            var hSc = lerp(0.65, 1.32, ht);
+            hackleDummy.scale.set(hSc, 1.0, hSc * 1.15);
+            hackleDummy.updateMatrix();
+            hackleInst.setMatrixAt(hi, hackleDummy.matrix);
+          }
+          hackleInst.instanceMatrix.needsUpdate = true;
+          this.headGroup.add(hackleInst);
+        } else {
+          var nape = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.28, 8), matGoldenNape);
+          nape.rotation.x = -Math.PI * 0.38;
+          nape.position.set(0, 0.14, -0.02);
+          this.headGroup.add(nape);
+        }
+
+        // Yırtıcı kaş çıkıntıları, kehribar gözler ve parlak yansıma
+        var browGeo = new THREE.BoxGeometry(0.062, 0.024, 0.125);
+        var eyeGeo = new THREE.SphereGeometry(0.034, 10, 10);
+        var pupilGeo = new THREE.SphereGeometry(0.018, 8, 8);
+        for (var s = -1; s <= 1; s += 2) {
+          var brow = new THREE.Mesh(browGeo, matBodyDark);
+          brow.position.set(s * 0.105, 0.132, -0.20);
+          brow.rotation.z = -s * 0.30;
+          brow.rotation.y = s * 0.12;
+          this.headGroup.add(brow);
+
+          var eye = new THREE.Mesh(eyeGeo, matEye);
+          eye.position.set(s * 0.108, 0.094, -0.205);
+          this.headGroup.add(eye);
+
+          var pupil = new THREE.Mesh(pupilGeo, matPupil);
+          pupil.position.set(s * 0.130, 0.094, -0.218);
+          this.headGroup.add(pupil);
+        }
+
+        // Sarı Cere (burun delikli) + Kavisli Üst Kanca Gaga + Hareketli Alt Çene
+        var cere = new THREE.Mesh(new THREE.CylinderGeometry(0.056, 0.078, 0.11, 10), matCere);
+        cere.rotation.x = Math.PI * 0.5;
+        cere.position.set(0, 0.072, -0.32);
+        this.headGroup.add(cere);
+
+        var upperBeak = new THREE.Mesh(new THREE.ConeGeometry(0.058, 0.20, 8), matBeak);
+        upperBeak.rotation.x = -Math.PI * 0.45;
+        upperBeak.position.set(0, 0.056, -0.44);
+        this.headGroup.add(upperBeak);
+
+        var hookTip = new THREE.Mesh(new THREE.ConeGeometry(0.030, 0.13, 7), matBeak);
+        hookTip.rotation.x = -Math.PI * 0.86;
+        hookTip.position.set(0, 0.010, -0.52);
+        this.headGroup.add(hookTip);
+
+        this.lowerBeak = new THREE.Mesh(new THREE.ConeGeometry(0.038, 0.15, 6), matBeak);
+        this.lowerBeak.rotation.x = -Math.PI * 0.50;
+        this.lowerBeak.position.set(0, 0.025, -0.39);
+        this.headGroup.add(this.lowerBeak);
+
+        // 3) 12 Gerçek Kuyruk Tüyü (Rectrices) + 10 Üst/Alt Kuyruk Örtüsü
+        this.tailGroup = new THREE.Group();
+        this.tailGroup.position.set(0, 0.02, 0.88);
+        this.bodyGroup.add(this.tailGroup);
+        this.tailFeathers = [];
+        for (var tf = 0; tf < 12; tf++) {
+          var idx = tf - 5.5; // -5.5 .. +5.5 (12 adet simetrik kuyruk tüyü)
+          var fMesh = new THREE.Mesh(assets.geoTail, assets.matTail);
+          fMesh.position.set(idx * 0.024, Math.abs(idx) * -0.005, 0.0);
+          fMesh.rotation.y = idx * 0.062;
+          var lenSc = 1.04 - Math.abs(idx) * 0.032;
+          fMesh.scale.set(1.0, 1.0, lenSc);
+          this.tailGroup.add(fMesh);
+          this.tailFeathers.push({ mesh: fMesh, index: idx });
+        }
+        // Üst kuyruk örtü tüyleri
+        for (var tc = -4; tc <= 4; tc++) {
+          var cov = new THREE.Mesh(assets.geoCovert, assets.matSecondary);
+          cov.position.set(tc * 0.032, 0.038 - Math.abs(tc) * 0.004, -0.05);
+          cov.rotation.y = tc * 0.06;
+          cov.scale.set(0.9, 1.0, 1.05);
+          this.tailGroup.add(cov);
+        }
+
+        // 4) 3 Eklemli Sağ ve Sol Kanatlar (10 Birincil + 17 İkincil + 6 Tersiyer + 3 Katman Örtü + 4 Alula)
+        var isDetailed = !this.isNPC;
+        var buildWing = function (sideSign) {
+          var shoulder = new THREE.Group();
+          shoulder.position.set(sideSign * 0.21, 0.08, -0.26);
+
+          var innerAirfoil = buildAirfoilSegment(1.06, 0.62, 0.52, 0.13, matCovertBase, sideSign);
+          shoulder.add(innerAirfoil);
+
+          // 6 Tersiyer + İç İkincil Tüyler (Gövde ile kanat arasında sıfır boşluk)
+          var innerSecCount = isDetailed ? 11 : 5;
+          for (var sc = 0; sc < innerSecCount; sc++) {
+            var st = sc / (innerSecCount - 1);
+            var sec = new THREE.Mesh(assets.geoSecondary, assets.matSecondary);
+            sec.position.set(sideSign * (0.04 + st * 0.98), -0.015 - st * 0.004, 0.22 - st * 0.04);
+            sec.rotation.y = sideSign * lerp(-0.18, -0.04, st);
+            sec.scale.set(isDetailed ? 0.85 : 1.15, 1.0, lerp(0.88, 1.06, st));
+            shoulder.add(sec);
+
+            // Büyük & Orta Kanat Örtüleri (Üst yüzey katmanlı tüy örtüsü)
+            if (isDetailed) {
+              var gCov = new THREE.Mesh(assets.geoCovert, assets.matSecondary);
+              gCov.position.set(sideSign * (0.05 + st * 0.96), 0.032, 0.02);
+              gCov.rotation.y = sideSign * -0.06;
+              gCov.scale.set(0.85, 1.0, 1.05);
+              shoulder.add(gCov);
+
+              var mCov = new THREE.Mesh(assets.geoCovert, assets.matHackle);
+              mCov.position.set(sideSign * (0.06 + st * 0.95), 0.046, -0.14);
+              mCov.rotation.y = sideSign * -0.05;
+              mCov.scale.set(0.76, 1.0, 0.72);
+              shoulder.add(mCov);
+            }
+          }
+
+          var elbow = new THREE.Group();
+          elbow.position.set(sideSign * 1.02, 0.0, 0.04);
+          shoulder.add(elbow);
+
+          var midAirfoil = buildAirfoilSegment(0.94, 0.50, 0.34, 0.10, matBodyDark, sideSign);
+          elbow.add(midAirfoil);
+
+          // Dış İkincil Uçuş Tüyleri (Secondaries)
+          var midSecCount = isDetailed ? 12 : 4;
+          for (var sc2 = 0; sc2 < midSecCount; sc2++) {
+            var mt = sc2 / (midSecCount - 1);
+            var sec2 = new THREE.Mesh(assets.geoSecondary, assets.matSecondary);
+            sec2.position.set(sideSign * (0.04 + mt * 0.86), -0.014, 0.18 - mt * 0.04);
+            sec2.rotation.y = sideSign * lerp(-0.04, 0.04, mt);
+            sec2.scale.set(isDetailed ? 0.78 : 1.05, 1.0, lerp(1.02, 0.86, mt));
+            elbow.add(sec2);
+
+            if (isDetailed) {
+              var gCov2 = new THREE.Mesh(assets.geoCovert, assets.matSecondary);
+              gCov2.position.set(sideSign * (0.04 + mt * 0.84), 0.028, -0.01);
+              gCov2.scale.set(0.75, 1.0, 0.92);
+              elbow.add(gCov2);
+
+              var lCov2 = new THREE.Mesh(assets.geoCovert, assets.matContour);
+              lCov2.position.set(sideSign * (0.04 + mt * 0.82), 0.040, -0.14);
+              lCov2.scale.set(0.68, 1.0, 0.62);
+              elbow.add(lCov2);
+            }
+          }
+
+          // Dinamik Alula (4 tüylü başparmak kanatçığı — yüksek AoA'da açılır)
+          var alulaGroup = new THREE.Group();
+          alulaGroup.position.set(sideSign * 0.84, 0.042, -0.14);
+          elbow.add(alulaGroup);
+          var alulaCount = isDetailed ? 4 : 1;
+          for (var al = 0; al < alulaCount; al++) {
+            var alMesh = new THREE.Mesh(assets.geoAlula, assets.matPrimary);
+            alMesh.position.set(sideSign * al * 0.02, al * 0.004, al * 0.018);
+            alMesh.rotation.y = sideSign * (Math.PI * 0.36 - al * 0.09);
+            alMesh.scale.set(0.85, 1.0, 1.05 - al * 0.14);
+            alulaGroup.add(alMesh);
+          }
+
+          var wrist = new THREE.Group();
+          wrist.position.set(sideSign * 0.92, 0.0, 0.03);
+          elbow.add(wrist);
+
+          // 10 Birincil Uçuş Tüyü (P1..P10 — dış 6 tüy derin yarıklı "parmak" efekti)
+          var primaries = [];
+          var pCount = isDetailed ? 10 : 7;
+          for (var p = 0; p < pCount; p++) {
+            var pt = p / (pCount - 1); // 0: en ön/dış (P10), 1: en iç (P1)
+            var pPivot = new THREE.Group();
+            pPivot.position.set(sideSign * (0.04 + (1.0 - pt) * 0.05), 0.004 * (pCount - p), -0.07 + pt * 0.24);
+            var pMesh = new THREE.Mesh(assets.geoPrimary, assets.matPrimary);
+            // Dıştan içe yelpaze açılımı
+            pMesh.rotation.y = sideSign * lerp(Math.PI * 0.48, 0.08, pt);
+            var lenScale = 1.12 - Math.abs(pt - 0.25) * 0.38;
+            pMesh.scale.set(lerp(0.72, 1.02, pt), 1.0, lenScale);
+            pPivot.add(pMesh);
+            wrist.add(pPivot);
+            primaries.push({ pivot: pPivot, index: p, norm: pt });
+          }
+
+          var tipMarker = new THREE.Object3D();
+          tipMarker.position.set(sideSign * 1.08, 0.05, 0.08);
+          wrist.add(tipMarker);
+
+          return {
+            shoulder: shoulder,
+            elbow: elbow,
+            wrist: wrist,
+            alula: alulaGroup,
+            primaries: primaries,
+            tipMarker: tipMarker
+          };
+        };
+
+        this.leftWing = buildWing(-1);
+        this.rightWing = buildWing(1);
+        this.bodyGroup.add(this.leftWing.shoulder);
+        this.bodyGroup.add(this.rightWing.shoulder);
+
+        // 5) Tüylü Paçalar (Booted Legs) & 4 Parmaklı Eklemli Pençeler
+        var buildLeg = function (sideSign) {
+          var hip = new THREE.Group();
+          hip.position.set(sideSign * 0.13, -0.18, 0.20);
+
+          var thigh = new THREE.Mesh(new THREE.ConeGeometry(0.115, 0.28, 8), matBodyDark);
+          thigh.rotation.x = Math.PI;
+          thigh.position.set(0, -0.12, 0);
+          hip.add(thigh);
+
+          var shin = new THREE.Group();
+          shin.position.set(0, -0.24, 0);
+          hip.add(shin);
+
+          // Tüylü tarsus üst kısmı (Altın Kartal belirleyici özelliği: parmaklara kadar tüylü)
+          var boot = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.040, 0.18, 7), matChest);
+          boot.position.set(0, -0.08, 0);
+          shin.add(boot);
+
+          var tarsus = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.028, 0.12, 6), matCere);
+          tarsus.position.set(0, -0.19, 0);
+          shin.add(tarsus);
+
+          var foot = new THREE.Group();
+          foot.position.set(0, -0.25, 0);
+          shin.add(foot);
+
+          var toes = [];
+          var toeGeo = new THREE.CylinderGeometry(0.014, 0.012, 0.10, 5);
+          var clawGeo = new THREE.ConeGeometry(0.016, 0.11, 5);
+
+          for (var c = -1; c <= 1; c++) {
+            var toePivot = new THREE.Group();
+            toePivot.rotation.y = c * 0.36;
+            var toeMesh = new THREE.Mesh(toeGeo, matCere);
+            toeMesh.rotation.x = Math.PI * 0.5;
+            toeMesh.position.set(0, -0.01, -0.045);
+            toePivot.add(toeMesh);
+
+            var claw = new THREE.Mesh(clawGeo, matTalon);
+            claw.position.set(0, -0.045, -0.105);
+            claw.rotation.x = -Math.PI * 0.78;
+            toePivot.add(claw);
+
+            foot.add(toePivot);
+            toes.push({ pivot: toePivot, dir: 1 });
+          }
+
+          var backPivot = new THREE.Group();
+          var backToe = new THREE.Mesh(toeGeo, matCere);
+          backToe.rotation.x = Math.PI * 0.5;
+          backToe.position.set(0, -0.01, 0.042);
+          backPivot.add(backToe);
+          var backClaw = new THREE.Mesh(clawGeo, matTalon);
+          backClaw.position.set(0, -0.048, 0.10);
+          backClaw.rotation.x = Math.PI * 0.78;
+          backPivot.add(backClaw);
+          foot.add(backPivot);
+          toes.push({ pivot: backPivot, dir: -1 });
+
+          return { hip: hip, shin: shin, foot: foot, toes: toes };
+        };
+
+        this.leftLeg = buildLeg(-1);
+        this.rightLeg = buildLeg(1);
+        this.bodyGroup.add(this.leftLeg.hip);
+        this.bodyGroup.add(this.rightLeg.hip);
+
+        // Yakalanan Avı Doğrudan Pençelerin Altına Bağlama Noktası (Kafa/Gövde ile asla çakışmaz)
+        this.preyAttachPoint = new THREE.Group();
+        this.preyAttachPoint.position.set(0, -0.68, 0.28);
+        this.bodyGroup.add(this.preyAttachPoint);
+
+        scene.add(this.root);
+
+        // 6) Kanat Ucu Hava Girdabı İzleri (Wingtip Trails — Sadece Ana Kartal)
+        this.trailLength = 28;
+        this._tipL = new THREE.Vector3();
+        this._tipR = new THREE.Vector3();
+        if (!this.isNPC) {
+          this.leftTrailPts = new Float32Array(this.trailLength * 3);
+          this.rightTrailPts = new Float32Array(this.trailLength * 3);
+          var makeTrail = function (arr) {
+            var g = new THREE.BufferGeometry();
+            g.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+            var m = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.0 });
+            var line = new THREE.Line(g, m);
+            line.frustumCulled = false;
+            scene.add(line);
+            return line;
+          };
+          this.leftTrail = makeTrail(this.leftTrailPts);
+          this.rightTrail = makeTrail(this.rightTrailPts);
+        } else {
+          this.leftTrail = null;
+          this.rightTrail = null;
+        }
+      }
+
+      ProceduralEagleMesh.prototype.update = function (physics, dt, timeSec, nearPreyDist, isCarryingPrey) {
+        this.root.position.copy(physics.position);
+        this.root.quaternion.copy(physics.quaternion);
+
+        var tuck = physics.tuck;
+        var brake = physics.brake;
+        var flapAmp = physics.flapPower;
+        var flapSin = Math.sin(physics.flapPhase);
+        var flapCos = Math.cos(physics.flapPhase);
+        var alula = physics.alulaDeploy || 0.0;
+
+        var gBend = clamp((physics.gForce - 1.0) * 0.14, -0.14, 0.44);
+        var flutter = clamp((physics.airspeed - 34.0) / 40.0, 0.0, 1.0) * Math.sin(timeSec * 48.0) * 0.055;
+
+        // Omuz / Dirsek / Bilek Hiyerarşik Animasyonu
+        var shSweep = tuck * 0.78 - brake * 0.16;
+        var shDihedral = 0.07 + gBend * 0.52 + flapSin * flapAmp * 0.58 - tuck * 0.22;
+        var elSweep = tuck * 0.86;
+        var elFlex = gBend * 0.72 + flapCos * flapAmp * 0.38 + flutter;
+        var wrFlex = gBend * 0.95 + flutter * 1.45;
+
+        this.leftWing.shoulder.rotation.set(brake * 0.28, shSweep, -shDihedral);
+        this.rightWing.shoulder.rotation.set(brake * 0.28, -shSweep, shDihedral);
+
+        this.leftWing.elbow.rotation.set(0, elSweep, -elFlex);
+        this.rightWing.elbow.rotation.set(0, -elSweep, elFlex);
+
+        this.leftWing.wrist.rotation.set(0, tuck * 0.38, -wrFlex);
+        this.rightWing.wrist.rotation.set(0, -tuck * 0.38, wrFlex);
+
+        // Alula (Başparmak Kanatçığı) yüksek AoA'da öne/yukarı açılır
+        this.leftWing.alula.rotation.set(alula * 0.42, -alula * 0.35, -alula * 0.25);
+        this.rightWing.alula.rotation.set(alula * 0.42, alula * 0.35, alula * 0.25);
+
+        // Birincil uçuş tüylerinin aeroelastik yukarı kıvrılması ve titremesi
+        for (var i = 0; i < this.leftWing.primaries.length; i++) {
+          var lp = this.leftWing.primaries[i];
+          var rp = this.rightWing.primaries[i];
+          var outerWeight = 1.0 - lp.norm * 0.65;
+          var tipCurl = (0.12 + gBend * 0.62) * outerWeight +
+            Math.sin(timeSec * 40.0 + i * 0.9) * 0.028 * clamp(physics.airspeed / 34.0, 0, 1);
+          lp.pivot.rotation.z = -tipCurl * (1.0 - tuck * 0.78);
+          rp.pivot.rotation.z = tipCurl * (1.0 - tuck * 0.78);
+        }
+
+        // 12 Tüylü Yelpaze Kuyruk Dinamiği
+        var spread = 1.0 + brake * 1.20 - tuck * 0.58;
+        this.tailGroup.rotation.x = -brake * 0.48 - physics.angularVelocity.x * 0.12;
+        this.tailGroup.rotation.z = clamp(physics.angularVelocity.z * 0.26, -0.45, 0.45);
+        for (var t = 0; t < this.tailFeathers.length; t++) {
+          var tf = this.tailFeathers[t];
+          tf.mesh.rotation.y = tf.index * 0.062 * spread;
+        }
+
+        // Baş ve Gaga Dinamiği (ava dalışta gaga hafif açılır)
+        this.headGroup.rotation.y = clamp(-physics.angularVelocity.y * 0.18, -0.35, 0.35);
+        this.headGroup.rotation.x = clamp(-physics.angularVelocity.x * 0.12, -0.25, 0.25);
+        if (this.lowerBeak) {
+          var openAmt = (nearPreyDist < 22.0 && !isCarryingPrey) ? 0.24 : 0.0;
+          this.lowerBeak.rotation.x = -Math.PI * 0.50 + openAmt;
+        }
+
+        // Doğru Bacak & Pençe Kinematiği:
+        // Three.js +X rotasyonu (-Y bacağı) ÖNE (-Z), -X rotasyonu GERİYE (+Z kuyruk altına) yatırır!
+        var hipPitch, shinPitch, toeCurl;
+        if (isCarryingPrey) {
+          // Avı taşırken bacaklar aşağı ve hafif geride, pençeler sıkıca kapalı
+          hipPitch = -0.18;
+          shinPitch = 0.08;
+          toeCurl = 0.58;
+        } else if (nearPreyDist < 26.0) {
+          // Ava dalışta bacaklar öne-aşağı uzanır, pençeler ardına kadar açık
+          hipPitch = 0.52;
+          shinPitch = -0.20;
+          toeCurl = -0.38;
+        } else {
+          // Normal süzülme/dalışta bacaklar aerodinamik olarak kuyruk altına geriye katlı
+          hipPitch = -1.12;
+          shinPitch = 0.28;
+          toeCurl = 0.35;
+        }
+
+        this.leftLeg.hip.rotation.x = lerp(this.leftLeg.hip.rotation.x, hipPitch, clamp(dt * 9.0, 0, 1));
+        this.rightLeg.hip.rotation.x = this.leftLeg.hip.rotation.x;
+        this.leftLeg.shin.rotation.x = lerp(this.leftLeg.shin.rotation.x, shinPitch, clamp(dt * 9.0, 0, 1));
+        this.rightLeg.shin.rotation.x = this.leftLeg.shin.rotation.x;
+
+        for (var ti = 0; ti < this.leftLeg.toes.length; ti++) {
+          var lToe = this.leftLeg.toes[ti];
+          var rToe = this.rightLeg.toes[ti];
+          var targetToeRot = -lToe.dir * toeCurl;
+          lToe.pivot.rotation.x = lerp(lToe.pivot.rotation.x, targetToeRot, clamp(dt * 12.0, 0, 1));
+          rToe.pivot.rotation.x = lToe.pivot.rotation.x;
+        }
+
+        // Av bağlama noktasını tam olarak pençe uçlarının altına senkronize et + rüzgar salınımı
+        var curHip = this.leftLeg.hip.rotation.x;
+        var curShin = curHip + this.leftLeg.shin.rotation.x;
+        var footY = -0.18 - 0.24 * Math.cos(curHip) - 0.26 * Math.cos(curShin);
+        var footZ = 0.20 - 0.24 * Math.sin(curHip) - 0.26 * Math.sin(curShin);
+        this.preyAttachPoint.position.set(0, footY - 0.03, footZ);
+        if (isCarryingPrey) {
+          var swayZ = clamp(-physics.angularVelocity.z * 0.22, -0.35, 0.35);
+          var dragTilt = clamp(physics.airspeed / 45.0, 0.0, 0.55);
+          this.preyAttachPoint.rotation.set(dragTilt + Math.sin(timeSec * 4.5) * 0.05, 0, swayZ);
+        } else {
+          this.preyAttachPoint.rotation.set(0, 0, 0);
+        }
+
+        // Kanat Ucu İzleri (Wingtip Trails)
+        if (!this.leftTrail || !this.rightTrail) return;
+        this.root.updateMatrixWorld(true);
+        this.leftWing.tipMarker.getWorldPosition(this._tipL);
+        this.rightWing.tipMarker.getWorldPosition(this._tipR);
+
+        for (var k = this.trailLength - 1; k > 0; k--) {
+          var i3 = k * 3;
+          var p3 = (k - 1) * 3;
+          this.leftTrailPts[i3] = this.leftTrailPts[p3];
+          this.leftTrailPts[i3 + 1] = this.leftTrailPts[p3 + 1];
+          this.leftTrailPts[i3 + 2] = this.leftTrailPts[p3 + 2];
+
+          this.rightTrailPts[i3] = this.rightTrailPts[p3];
+          this.rightTrailPts[i3 + 1] = this.rightTrailPts[p3 + 1];
+          this.rightTrailPts[i3 + 2] = this.rightTrailPts[p3 + 2];
+        }
+        this.leftTrailPts[0] = this._tipL.x;
+        this.leftTrailPts[1] = this._tipL.y;
+        this.leftTrailPts[2] = this._tipL.z;
+        this.rightTrailPts[0] = this._tipR.x;
+        this.rightTrailPts[1] = this._tipR.y;
+        this.rightTrailPts[2] = this._tipR.z;
+
+        this.leftTrail.geometry.attributes.position.needsUpdate = true;
+        this.rightTrail.geometry.attributes.position.needsUpdate = true;
+
+        var trailAlpha = clamp((physics.airspeed - 36.0) / 38.0, 0.0, 0.45);
+        this.leftTrail.material.opacity = trailAlpha;
+        this.rightTrail.material.opacity = trailAlpha;
+      };
+
+      /* =========================================================================
+         7. PARTİKÜL PATLAMA SİSTEMİ (SU / TOZ / TÜY SIÇRAMASI)
+         ========================================================================= */
+      function BurstParticleSystem(scene) {
+        this.maxParticles = 240;
+        this.positions = new Float32Array(this.maxParticles * 3);
+        this.colors = new Float32Array(this.maxParticles * 3);
+        this.pool = [];
+        for (var i = 0; i < this.maxParticles; i++) {
+          this.positions[i * 3 + 1] = -9999;
+          this.pool.push({ active: false, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1 });
+        }
+        var geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3));
+        geo.setAttribute('color', new THREE.BufferAttribute(this.colors, 3));
+        var mat = new THREE.PointsMaterial({
+          size: 2.2,
+          vertexColors: true,
+          transparent: true,
+          opacity: 0.85,
+          depthWrite: false
+        });
+        this.points = new THREE.Points(geo, mat);
+        this.points.frustumCulled = false;
+        scene.add(this.points);
+        this._col = new THREE.Color();
+      }
+
+      BurstParticleSystem.prototype.emit = function (pos, hexColor, count, speedScale) {
+        this._col.setHex(hexColor);
+        var spawned = 0;
+        for (var i = 0; i < this.maxParticles && spawned < count; i++) {
+          var p = this.pool[i];
+          if (p.active) continue;
+          p.active = true;
+          p.life = 0.75 + Math.random() * 0.55;
+          p.maxLife = p.life;
+          var a = Math.random() * Math.PI * 2;
+          var spd = (0.35 + Math.random() * 0.85) * speedScale;
+          p.vx = Math.cos(a) * spd;
+          p.vy = (0.5 + Math.random() * 0.9) * speedScale;
+          p.vz = Math.sin(a) * spd;
+
+          this.positions[i * 3] = pos.x;
+          this.positions[i * 3 + 1] = pos.y;
+          this.positions[i * 3 + 2] = pos.z;
+
+          this.colors[i * 3] = this._col.r;
+          this.colors[i * 3 + 1] = this._col.g;
+          this.colors[i * 3 + 2] = this._col.b;
+          spawned++;
+        }
+        this.points.geometry.attributes.position.needsUpdate = true;
+        this.points.geometry.attributes.color.needsUpdate = true;
+      };
+
+      BurstParticleSystem.prototype.update = function (dt) {
+        var dirty = false;
+        for (var i = 0; i < this.maxParticles; i++) {
+          var p = this.pool[i];
+          if (!p.active) continue;
+          dirty = true;
+          p.life -= dt;
+          if (p.life <= 0) {
+            p.active = false;
+            this.positions[i * 3 + 1] = -9999;
+            continue;
+          }
+          p.vy -= 14.0 * dt;
+          this.positions[i * 3] += p.vx * dt;
+          this.positions[i * 3 + 1] += p.vy * dt;
+          this.positions[i * 3 + 2] += p.vz * dt;
+        }
+        if (dirty) this.points.geometry.attributes.position.needsUpdate = true;
+      };
+
+      /* =========================================================================
+         8. DİNAMİK AVLANMA EKOSİSTEMİ (TAVŞAN & ALABALIK AI + HEDEF KİLİDİ)
+         ========================================================================= */
+      function buildRabbitMesh() {
+        var g = new THREE.Group();
+        var furMat = new THREE.MeshLambertMaterial({ color: 0xb8a38d });
+        var tailMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+        var body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 8, 8), furMat);
+        body.scale.set(0.85, 0.78, 1.32);
+        body.position.set(0, 0.36, 0);
+        g.add(body);
+
+        var head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), furMat);
+        head.position.set(0, 0.56, -0.45);
+        g.add(head);
+
+        var earGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.38, 5);
+        var earL = new THREE.Mesh(earGeo, furMat);
+        earL.position.set(-0.09, 0.82, -0.44);
+        earL.rotation.x = 0.22;
+        var earR = earL.clone();
+        earR.position.x = 0.09;
+        g.add(earL, earR);
+
+        var tail = new THREE.Mesh(new THREE.SphereGeometry(0.13, 6, 6), tailMat);
+        tail.position.set(0, 0.36, 0.52);
+        g.add(tail);
+
+        g.scale.setScalar(1.35);
+        return g;
+      }
+
+      function buildFishMesh() {
+        var g = new THREE.Group();
+        var bodyMat = new THREE.MeshStandardMaterial({ color: 0x94b8c8, roughness: 0.25, metalness: 0.45 });
+        var body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 8), bodyMat);
+        body.scale.set(0.45, 0.65, 2.2);
+        g.add(body);
+
+        var fin = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.38, 4), bodyMat);
+        fin.rotation.x = -Math.PI * 0.5;
+        fin.position.set(0, 0, 0.78);
+        g.add(fin);
+        g.scale.setScalar(1.45);
+        return g;
+      }
+
+      function HuntingEcosystem(scene, audio, bursts) {
+        this.scene = scene;
+        this.audio = audio;
+        this.bursts = bursts;
+        this.markersLayer = document.getElementById('prey-markers-layer');
+
+        this.preyList = [];
+        this.rabbitCount = 0;
+        this.fishCount = 0;
+        this.score = 0;
+        this.showMarkers = true;
+
+        this.carriedPrey = null;
+        this.carryTimer = 0.0;
+        this.slowMoTimer = 0.0;
+        this.captureShake = 0.0;
+        this.lockedPrey = null;
+        this.nearestPreyDist = 999.0;
+        this.onPreyCaptured = null;
+        this.onPreyConsumed = null;
+
+        this._proj = new THREE.Vector3();
+        this._tmpNorm = new THREE.Vector3();
+        this._toPrey = new THREE.Vector3();
+        this._fwd = new THREE.Vector3();
+        this._toastTimer = null;
+
+        this.rippleGeo = new THREE.RingGeometry(0.6, 0.9, 18);
+        this.rippleGeo.rotateX(-Math.PI * 0.5);
+
+        for (var r = 0; r < 20; r++) this.createPrey('rabbit');
+        for (var f = 0; f < 18; f++) this.createPrey('fish');
+      }
+
+      HuntingEcosystem.prototype.createPrey = function (type) {
+        var mesh = type === 'rabbit' ? buildRabbitMesh() : buildFishMesh();
+        this.scene.add(mesh);
+
+        var ripple = null;
+        if (type === 'fish') {
+          var rMat = new THREE.MeshBasicMaterial({
+            color: 0xe0f2fe,
+            transparent: true,
+            opacity: 0.45,
+            depthWrite: false
+          });
+          ripple = new THREE.Mesh(this.rippleGeo, rMat);
+          ripple.position.y = WATER_LEVEL + 0.14;
+          this.scene.add(ripple);
+        }
+
+        var markerEl = document.createElement('div');
+        markerEl.className = 'prey-marker ' + type;
+        markerEl.innerHTML = '<div class="prey-box"></div><div class="prey-tag"></div>';
+        this.markersLayer.appendChild(markerEl);
+
+        var prey = {
+          type: type,
+          mesh: mesh,
+          worldScale: type === 'rabbit' ? 1.35 : 1.45,
+          ripple: ripple,
+          markerEl: markerEl,
+          tagEl: markerEl.querySelector('.prey-tag'),
+          pos: new THREE.Vector3(),
+          heading: Math.random() * Math.PI * 2,
+          speed: 0,
+          state: 'calm',
+          hopPhase: Math.random() * 6.28,
+          zigTimer: 0,
+          depth: -0.25,
+          ripplePhase: Math.random(),
+          alive: true,
+          respawnTimer: 0
+        };
+
+        this.spawnPrey(prey);
+        this.preyList.push(prey);
+      };
+
+      HuntingEcosystem.prototype.spawnPrey = function (prey) {
+        prey.alive = true;
+        prey.state = 'calm';
+        prey.depth = -0.25;
+        prey.mesh.visible = true;
+        prey.mesh.scale.setScalar(prey.worldScale);
+        if (prey.ripple) prey.ripple.visible = true;
+
+        if (prey.type === 'rabbit') {
+          for (var a = 0; a < 80; a++) {
+            var rx = (Math.random() - 0.5) * 1800;
+            var rz = (Math.random() - 0.5) * 1800;
+            var rh = getTerrainHeight(rx, rz);
+            if (rh > 5.0 && rh < 115.0) {
+              getTerrainNormal(rx, rz, this._tmpNorm);
+              if (this._tmpNorm.y > 0.86) {
+                prey.pos.set(rx, rh, rz);
+                prey.mesh.position.copy(prey.pos);
+                return;
+              }
+            }
+          }
+          prey.pos.set(160, getTerrainHeight(160, 120), 120);
+          prey.mesh.position.copy(prey.pos);
+        } else {
+          var fz = (Math.random() - 0.5) * 1900;
+          var fx = getRiverCenterX(fz) + (Math.random() - 0.5) * 46;
+          prey.pos.set(fx, WATER_LEVEL - 0.25, fz);
+          prey.mesh.position.copy(prey.pos);
+        }
+      };
+
+      HuntingEcosystem.prototype.showToast = function (title, sub) {
+        var el = document.getElementById('capture-toast');
+        document.getElementById('toast-title').textContent = title;
+        document.getElementById('toast-sub').textContent = sub;
+        el.classList.add('show');
+        if (this._toastTimer) clearTimeout(this._toastTimer);
+        this._toastTimer = setTimeout(function () {
+          el.classList.remove('show');
+        }, 3200);
+      };
+
+      HuntingEcosystem.prototype.capturePrey = function (prey, physics, eagleMesh) {
+        prey.alive = false;
+        prey.respawnTimer = 18.0;
+        prey.markerEl.style.display = 'none';
+        if (prey.ripple) prey.ripple.visible = false;
+
+        // Pençelerin TAM ALTINA gerçekçi oranda bağla (sırtından kavranmış, başı aşağıda/geride)
+        this.scene.remove(prey.mesh);
+        if (prey.type === 'rabbit') {
+          prey.mesh.scale.setScalar(0.58);
+          prey.mesh.position.set(0, -0.36, 0.04);
+          prey.mesh.rotation.set(0.22, Math.PI, 0);
+        } else {
+          prey.mesh.scale.setScalar(0.72);
+          prey.mesh.position.set(0, -0.18, 0.0);
+          prey.mesh.rotation.set(0.08, 0, 0);
+        }
+        eagleMesh.preyAttachPoint.add(prey.mesh);
+
+        this.carriedPrey = prey;
+        this.carryTimer = (this.onPreyCaptured && this.onPreyCaptured(prey)) ? 55.0 : 4.2;
+        physics.setCarriedPrey(prey.type === 'rabbit' ? 1.45 : 0.95, 0.012);
+
+        // Stamina, slow-mo ve kamera sarsıntısı
+        physics.stamina = Math.min(100.0, physics.stamina + 60.0);
+        this.slowMoTimer = 0.42;
+        this.captureShake = 0.85;
+
+        // Puan & Bonuslar
+        var kmh = Math.round(physics.airspeed * 3.6);
+        var pts = prey.type === 'fish' ? 250 : 200;
+        var bonusTxt = [];
+        if (kmh >= 160) {
+          pts += 120;
+          bonusTxt.push('Yüksek Hızlı Dalış +120');
+        }
+        if (prey.type === 'fish') {
+          this.fishCount++;
+          pts += 60;
+          bonusTxt.push('Su Sıyırma +60');
+          this.audio.playSplash();
+          this.bursts.emit(physics.position, 0xe0f2fe, 24, 9.5);
+        } else {
+          this.rabbitCount++;
+          if (prey.state === 'flee') {
+            pts += 80;
+            bonusTxt.push('Hareketli Takip +80');
+          }
+          this.bursts.emit(physics.position, 0x84cc16, 18, 7.0);
+        }
+        this.audio.playEagleScreech();
+        this.score += pts;
+
+        document.getElementById('count-rabbit').textContent = String(this.rabbitCount);
+        document.getElementById('count-fish').textContent = String(this.fishCount);
+        document.getElementById('hunt-score').textContent = String(this.score);
+
+        var title = prey.type === 'fish' ? '🐟 ALABALIK YAKALANDI!' : '🐇 ALPİN TAVŞANI YAKALANDI!';
+        var sub = '+' + pts + ' Puan (' + kmh + ' km/s)' + (bonusTxt.length ? ' • ' + bonusTxt.join(' • ') : '');
+        this.showToast(title, sub);
+      };
+
+      HuntingEcosystem.prototype.releaseCarriedPrey = function (physics, eagleMesh) {
+        if (!this.carriedPrey) return null;
+        var prey = this.carriedPrey;
+        if (prey.mesh.parent === eagleMesh.preyAttachPoint) {
+          eagleMesh.preyAttachPoint.remove(prey.mesh);
+          this.scene.add(prey.mesh);
+        }
+        prey.mesh.scale.setScalar(prey.worldScale);
+        prey.mesh.rotation.set(0, 0, 0);
+        prey.mesh.visible = false;
+        this.carriedPrey = null;
+        this.carryTimer = 0.0;
+        physics.setCarriedPrey(0.0, 0.0);
+        return prey;
+      };
+
+      HuntingEcosystem.prototype.update = function (dt, physics, eagleMesh, camera, isVisionActive) {
+        if (this.slowMoTimer > 0) this.slowMoTimer = Math.max(0, this.slowMoTimer - dt);
+        if (this.captureShake > 0) this.captureShake = Math.max(0, this.captureShake - dt * 2.2);
+
+        // Taşınan av süresi bitince kartal avı yer
+        if (this.carriedPrey) {
+          this.carryTimer -= dt;
+          if (this.carryTimer <= 0) {
+            var eaten = this.carriedPrey;
+            this.releaseCarriedPrey(physics, eagleMesh);
+            if (this.onPreyConsumed) this.onPreyConsumed(eaten);
+          }
+        }
+
+        this.nearestPreyDist = 999.0;
+        var bestLock = null;
+        var bestScreenDist = 0.34;
+        var eaglePos = physics.position;
+
+        for (var i = 0; i < this.preyList.length; i++) {
+          var p = this.preyList[i];
+          if (!p.alive) {
+            p.respawnTimer -= dt;
+            if (p.respawnTimer <= 0 && p !== this.carriedPrey) {
+              this.spawnPrey(p);
+            }
+            continue;
+          }
+
+          var dist = p.pos.distanceTo(eaglePos);
+          if (dist < this.nearestPreyDist) this.nearestPreyDist = dist;
+
+          // Pençe Yakalama Zarfı (Yere/suya sıyırma geçişlerinde gerçekçi kavrama)
+          var horizDist = Math.hypot(p.pos.x - eaglePos.x, p.pos.z - eaglePos.z);
+          var vertDiff = eaglePos.y - p.pos.y;
+          var inStrikeEnvelope = (dist < 10.5) || (horizDist < 9.0 && vertDiff > -1.5 && vertDiff < 7.5);
+          if (!this.carriedPrey && inStrikeEnvelope && (p.type === 'rabbit' || p.depth > -2.0)) {
+            this.capturePrey(p, physics, eagleMesh);
+            continue;
+          }
+
+          // Son 20 metrede pençe kilitlenme yardımı (hizalanmış dalışta hedefi sıyırmayı önler)
+          if (!this.carriedPrey && dist < 20.0 && dist > 3.0) {
+            this._toPrey.copy(p.pos).sub(eaglePos);
+            this._toPrey.y += 1.2;
+            var toLen = this._toPrey.length();
+            if (toLen > 0.1) {
+              this._toPrey.divideScalar(toLen);
+              this._fwd.set(0, 0, -1).applyQuaternion(physics.quaternion);
+              if (this._fwd.dot(this._toPrey) > 0.55) {
+                var spdNow = physics.velocity.length();
+                physics.velocity.lerp(this._toPrey.multiplyScalar(spdNow), clamp(dt * 3.8, 0, 0.35));
+              }
+            }
+          }
+
+          // Türlere Göre Yapay Zekâ
+          if (p.type === 'rabbit') {
+            if (dist < 62.0) {
+              p.state = 'flee';
+              p.zigTimer -= dt;
+              if (p.zigTimer <= 0) {
+                var awayHdg = Math.atan2(p.pos.x - eaglePos.x, -(p.pos.z - eaglePos.z));
+                p.heading = awayHdg + (Math.random() - 0.5) * 0.85;
+                p.zigTimer = 0.85 + Math.random() * 0.65;
+              }
+              p.speed = 6.4;
+            } else if (dist < 115.0) {
+              p.state = 'alert';
+              p.speed = 0.0;
+              p.heading = Math.atan2(eaglePos.x - p.pos.x, -(eaglePos.z - p.pos.z));
+            } else {
+              p.state = 'calm';
+              p.zigTimer -= dt;
+              if (p.zigTimer <= 0) {
+                p.heading += (Math.random() - 0.5) * 1.4;
+                p.zigTimer = 2.0 + Math.random() * 3.0;
+              }
+              p.speed = 1.4;
+            }
+
+            if (p.speed > 0.1) {
+              var nx = p.pos.x + Math.sin(p.heading) * p.speed * dt;
+              var nz = p.pos.z - Math.cos(p.heading) * p.speed * dt;
+              var nh = getTerrainHeight(nx, nz);
+              if (nh > 2.5 && nh < 145.0 && Math.abs(nx) < HALF_WORLD - 250 && Math.abs(nz) < HALF_WORLD - 250) {
+                p.pos.x = nx;
+                p.pos.z = nz;
+                p.pos.y = nh;
+              } else {
+                p.heading += Math.PI * 0.75;
+              }
+              p.hopPhase += dt * (p.state === 'flee' ? 14.0 : 6.0);
+            }
+            var hopY = p.speed > 0.1 ? Math.abs(Math.sin(p.hopPhase)) * (p.state === 'flee' ? 0.55 : 0.18) : 0.0;
+            p.mesh.position.set(p.pos.x, p.pos.y + hopY, p.pos.z);
+            p.mesh.rotation.y = -p.heading;
+          } else {
+            // Alabalık AI (yüzeyde kalma süresi dengelendi, su sıyırma ile yakalanabilir)
+            if (dist < 22.0) {
+              p.state = 'flee';
+              p.depth = lerp(p.depth, -1.9, clamp(dt * 1.15, 0, 1));
+              p.speed = 5.2;
+            } else {
+              p.state = 'calm';
+              p.depth = lerp(p.depth, -0.18, clamp(dt * 1.4, 0, 1));
+              p.speed = 2.2;
+            }
+            p.pos.z += Math.cos(p.heading) * p.speed * dt;
+            var centerX = getRiverCenterX(p.pos.z);
+            p.pos.x = lerp(p.pos.x, centerX + Math.sin(p.pos.z * 0.02 + i) * 20.0, clamp(dt * 0.8, 0, 1));
+            if (Math.abs(p.pos.z) > 1050) p.heading += Math.PI;
+            p.pos.y = WATER_LEVEL + p.depth;
+            p.mesh.position.copy(p.pos);
+            p.mesh.rotation.y = p.heading;
+
+            // Su halkaları
+            if (p.ripple) {
+              p.ripplePhase = (p.ripplePhase + dt * 0.55) % 1.0;
+              var rScale = 1.0 + p.ripplePhase * 5.2;
+              p.ripple.position.set(p.pos.x, WATER_LEVEL + 0.14, p.pos.z);
+              p.ripple.scale.setScalar(rScale);
+              p.ripple.material.opacity = (1.0 - p.ripplePhase) * (p.depth > -1.2 ? 0.62 : 0.12);
+            }
+          }
+
+          // Ekran-Uzayı Hedef İşaretçileri
+          var maxVisDist = isVisionActive ? 900.0 : 440.0;
+          if (!this.showMarkers || dist > maxVisDist) {
+            p.markerEl.style.display = 'none';
+            continue;
+          }
+
+          this._proj.copy(p.pos);
+          this._proj.y += 1.2;
+          this._proj.project(camera);
+
+          if (this._proj.z < 1.0 && Math.abs(this._proj.x) <= 1.0 && Math.abs(this._proj.y) <= 1.0) {
+            var sx = (this._proj.x * 0.5 + 0.5) * window.innerWidth;
+            var sy = (-this._proj.y * 0.5 + 0.5) * window.innerHeight;
+            p.markerEl.style.display = 'flex';
+            p.markerEl.style.left = sx.toFixed(1) + 'px';
+            p.markerEl.style.top = sy.toFixed(1) + 'px';
+
+            var stateSpan = p.state === 'flee'
+              ? '<span class="state-flee">KAÇIYOR</span>'
+              : (p.state === 'alert' ? '<span class="state-alert">TEDİRGİN</span>' : '<span class="state-calm">SAKİN</span>');
+            var label = p.type === 'fish' ? 'ALABALIK' : 'TAVŞAN';
+            p.tagEl.innerHTML = label + ' ' + Math.round(dist) + 'm ' + stateSpan;
+
+            var screenDist = Math.hypot(this._proj.x, this._proj.y);
+            if ((isVisionActive || dist < 180.0) && screenDist < bestScreenDist) {
+              bestScreenDist = screenDist;
+              bestLock = p;
+            }
+          } else {
+            p.markerEl.style.display = 'none';
+          }
+        }
+
+        this.lockedPrey = bestLock;
+        var lockPill = document.getElementById('target-lock-pill');
+        for (var m = 0; m < this.preyList.length; m++) {
+          this.preyList[m].markerEl.classList.toggle('locked', this.preyList[m] === bestLock);
+        }
+
+        if (bestLock) {
+          this._toPrey.copy(bestLock.pos).sub(eaglePos);
+          var lockDist = this._toPrey.length();
+          this._toPrey.normalize();
+          this._fwd.set(0, 0, -1).applyQuaternion(physics.quaternion);
+          var angDeg = Math.round(Math.acos(clamp(this._fwd.dot(this._toPrey), -1, 1)) * (180 / Math.PI));
+          document.getElementById('target-lock-name').textContent = 'KİLİT: ' + (bestLock.type === 'fish' ? 'ALABALIK' : 'TAVŞAN');
+          document.getElementById('target-lock-dist').textContent = Math.round(lockDist) + ' m';
+          document.getElementById('target-lock-angle').textContent = 'AÇI: ' + angDeg + '°';
+          lockPill.classList.add('active');
+        } else {
+          lockPill.classList.remove('active');
+        }
+      };
+
+      /* =========================================================================
+         8.5 GERÇEK KARTAL YAŞAM DÖNGÜSÜ, YUVA, AİLE VE OTONOM YAPAY ZEKÂ
+         ========================================================================= */
+      function buildNestMesh() {
+        var g = new THREE.Group();
+        var twigMat = new THREE.MeshLambertMaterial({ color: 0x4b3621 });
+        var mossMat = new THREE.MeshLambertMaterial({ color: 0x5c6b32 });
+
+        var base = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 1.5, 0.9, 12), twigMat);
+        base.position.y = 0.45;
+        g.add(base);
+
+        var rim = new THREE.Mesh(new THREE.TorusGeometry(1.95, 0.36, 7, 16), twigMat);
+        rim.rotation.x = Math.PI * 0.5;
+        rim.position.y = 0.92;
+        g.add(rim);
+
+        var inner = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.3, 0.35, 12), mossMat);
+        inner.position.y = 0.72;
+        g.add(inner);
+
+        var twigGeo = new THREE.CylinderGeometry(0.07, 0.11, 2.7, 5);
+        twigGeo.rotateZ(Math.PI * 0.5);
+        for (var i = 0; i < 16; i++) {
+          var a = (i / 16) * Math.PI * 2;
+          var tw = new THREE.Mesh(twigGeo, twigMat);
+          tw.position.set(Math.cos(a) * 1.65, 0.65 + (i % 3) * 0.14, Math.sin(a) * 1.65);
+          tw.rotation.y = a + 0.55;
+          tw.rotation.x = (i % 2 === 0 ? 0.12 : -0.12);
+          g.add(tw);
+        }
+        return g;
+      }
+
+      function buildEggMesh() {
+        var geo = new THREE.SphereGeometry(0.24, 10, 10);
+        geo.scale(0.78, 1.15, 0.78);
+        var mat = new THREE.MeshStandardMaterial({ color: 0xf4efe1, roughness: 0.7 });
+        return new THREE.Mesh(geo, mat);
+      }
+
+      function buildChickMesh() {
+        var g = new THREE.Group();
+        var downMat = new THREE.MeshLambertMaterial({ color: 0xe7dfd1 });
+        var beakMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+        var eyeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+        var body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 9, 9), downMat);
+        body.scale.set(0.95, 0.85, 1.15);
+        body.position.set(0, 0.28, 0);
+        g.add(body);
+
+        var head = new THREE.Group();
+        head.position.set(0, 0.52, -0.18);
+        var skull = new THREE.Mesh(new THREE.SphereGeometry(0.20, 9, 9), downMat);
+        head.add(skull);
+
+        var beak = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.20, 6), beakMat);
+        beak.rotation.x = -Math.PI * 0.35;
+        beak.position.set(0, 0.04, -0.20);
+        head.add(beak);
+
+        var eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.032, 6, 6), eyeMat);
+        eyeL.position.set(-0.11, 0.05, -0.13);
+        var eyeR = eyeL.clone();
+        eyeR.position.x = 0.11;
+        head.add(eyeL, eyeR);
+
+        g.add(head);
+        return { group: g, head: head, bodyMat: downMat };
+      }
+
+      function EagleLifeEcosystem(scene, audio, bursts, hunting) {
+        this.scene = scene;
+        this.audio = audio;
+        this.bursts = bursts;
+        this.hunting = hunting;
+
+        this.autoMode = false;
+        this.lifeSpeed = 1.0;
+
+        this.hunger = 86.0;
+        this.aiState = 'SOAR_ROAM';
+        this.aiTargetPrey = null;
+        this.roamAngle = 0.0;
+        this.courtCooldown = 0.0;
+        this.maxGeneration = 1;
+        this.totalOffspringRaised = 0;
+
+        this.nestPos = this.findScenicNestPos(180, -40);
+        this.nestMesh = buildNestMesh();
+        this.nestMesh.position.copy(this.nestPos);
+        scene.add(this.nestMesh);
+
+        this.eggs = [];
+        this.chicks = [];
+        this.nestMarkerEl = document.getElementById('nest-marker');
+        this.nestDistEl = document.getElementById('nest-dist');
+
+        this.agents = [];
+        this.spawnAgent('mate', 1, this.nestPos.clone().add(new THREE.Vector3(18, 22, 12)), this.nestPos.clone());
+
+        this._proj = new THREE.Vector3();
+        this._fwd = new THREE.Vector3();
+        this._tmpVec = new THREE.Vector3();
+        this._tmpQuat = new THREE.Quaternion();
+        this._tmpEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+        var self = this;
+        hunting.onPreyCaptured = function () {
+          return self.hasHungryChicks();
+        };
+        hunting.onPreyConsumed = function (prey) {
+          var gain = prey.type === 'fish' ? 48 : 42;
+          self.hunger = Math.min(100.0, self.hunger + gain);
+          self.hunting.showToast('🍖 AV YENDİ!', 'Tokluk +' + gain + '% • Enerji Yenilendi');
+        };
+      }
+
+      EagleLifeEcosystem.prototype.findScenicNestPos = function (offsetX, offsetZ) {
+        var best = new THREE.Vector3(offsetX, 90, offsetZ);
+        var bestScore = -9999;
+        for (var i = 0; i < 60; i++) {
+          var a = (i / 60) * Math.PI * 2;
+          var r = 190 + (i % 5) * 45;
+          var x = offsetX + Math.cos(a) * r;
+          var z = offsetZ + Math.sin(a) * r;
+          var h = getTerrainHeight(x, z);
+          if (h > 45 && h < 165) {
+            var score = h - Math.abs(h - 95) * 1.4;
+            if (score > bestScore) {
+              bestScore = score;
+              best.set(x, h - 0.15, z);
+            }
+          }
+        }
+        return best;
+      };
+
+      EagleLifeEcosystem.prototype.hasHungryChicks = function () {
+        for (var i = 0; i < this.chicks.length; i++) {
+          if (this.chicks[i].hunger < 92) return true;
+        }
+        return false;
+      };
+
+      EagleLifeEcosystem.prototype.layEggs = function (count) {
+        if (this.eggs.length > 0 || this.chicks.length > 0) return;
+        for (var i = 0; i < count; i++) {
+          var eggMesh = buildEggMesh();
+          eggMesh.position.set(
+            this.nestPos.x + (i === 0 ? -0.35 : 0.35),
+            this.nestPos.y + 0.96,
+            this.nestPos.z + (i === 0 ? 0.12 : -0.12)
+          );
+          this.scene.add(eggMesh);
+          this.eggs.push({ mesh: eggMesh, progress: 0.0 });
+        }
+        this.audio.playEagleScreech();
+        this.hunting.showToast('🥚 YUVADA YENİ YUMURTALAR!', count + ' Altın Kartal yumurtası kuluçkaya girdi');
+      };
+
+      EagleLifeEcosystem.prototype.hatchEggs = function () {
+        for (var i = 0; i < this.eggs.length; i++) {
+          var egg = this.eggs[i];
+          var pos = egg.mesh.position.clone();
+          this.scene.remove(egg.mesh);
+
+          var parts = buildChickMesh();
+          parts.group.position.set(pos.x, this.nestPos.y + 0.85, pos.z);
+          parts.group.scale.setScalar(0.55);
+          this.scene.add(parts.group);
+
+          this.chicks.push({
+            mesh: parts.group,
+            head: parts.head,
+            bodyMat: parts.bodyMat,
+            growth: 0.0,
+            hunger: 55.0,
+            chirpPhase: Math.random() * 6.28
+          });
+        }
+        this.eggs = [];
+        this.audio.playChickChirp();
+        this.hunting.showToast('🐣 YAVRULAR YUMURTADAN ÇIKTI!', 'Büyümeleri için onlara av getirip besleyin');
+      };
+
+      EagleLifeEcosystem.prototype.feedChicks = function (physics, eagleMesh, fromMate) {
+        if (this.chicks.length === 0) return false;
+        if (!fromMate) {
+          this.hunting.releaseCarriedPrey(physics, eagleMesh);
+        }
+        for (var i = 0; i < this.chicks.length; i++) {
+          var c = this.chicks[i];
+          c.hunger = Math.min(100.0, c.hunger + 55.0);
+          c.growth = Math.min(100.0, c.growth + 36.0);
+        }
+        this.audio.playChickChirp();
+        this.bursts.emit(this.nestPos.clone().add(new THREE.Vector3(0, 1.5, 0)), 0xfde047, 12, 5.5);
+        this.hunting.showToast(
+          fromMate ? '🦅 EŞ KARTAL YAVRULARI BESLEDİ!' : '🪺 YAVRULAR BESLENDİ!',
+          'Yavrular hızla büyüyor ve uçuşa hazırlanıyor'
+        );
+        return true;
+      };
+
+      EagleLifeEcosystem.prototype.spawnAgent = function (role, generation, startPos, homeNestPos) {
+        if (this.agents.length >= 9) {
+          for (var i = 1; i < this.agents.length; i++) {
+            var old = this.agents[i];
+            this.scene.remove(old.mesh.root);
+            if (old.ownNestMesh) this.scene.remove(old.ownNestMesh);
+            this.agents.splice(i, 1);
+            break;
+          }
+        }
+
+        var isMate = (role === 'mate');
+        var mesh = new ProceduralEagleMesh(this.scene, {
+          isNPC: true,
+          scale: isMate ? 1.04 : 0.92,
+          bodyColor: isMate ? 0x3b2517 : 0x26180f,
+          napeColor: isMate ? 0xd4963f : 0xc68b38
+        });
+
+        var agent = {
+          role: role,
+          generation: generation,
+          mesh: mesh,
+          pos: startPos.clone(),
+          vel: new THREE.Vector3(16, 0, 0),
+          heading: Math.random() * Math.PI * 2,
+          pitch: 0.0,
+          bank: 0.0,
+          speed: 22.0,
+          hunger: 85.0,
+          age: isMate ? 100.0 : 0.0,
+          state: 'ROAM',
+          targetPrey: null,
+          homeNest: homeNestPos.clone(),
+          ownNestMesh: null,
+          hasRaisedOwnBrood: false,
+          carryingFood: false,
+          roamPhase: Math.random() * 6.28,
+          flapPhase: Math.random() * 6.28,
+          fakePhys: {
+            position: new THREE.Vector3(),
+            quaternion: new THREE.Quaternion(),
+            angularVelocity: new THREE.Vector3(),
+            tuck: 0,
+            brake: 0,
+            flapPower: 0,
+            flapPhase: 0,
+            gForce: 1.0,
+            airspeed: 22.0,
+            isStalling: false
+          }
+        };
+
+        this.agents.push(agent);
+        if (generation > this.maxGeneration) this.maxGeneration = generation;
+        return agent;
+      };
+
+      EagleLifeEcosystem.prototype.updateAgents = function (dt, timeSec) {
+        var lifeDt = dt * this.lifeSpeed;
+        for (var i = 0; i < this.agents.length; i++) {
+          var ag = this.agents[i];
+          ag.hunger = Math.max(10.0, ag.hunger - lifeDt * 0.75);
+          ag.roamPhase += dt * 0.28;
+
+          if (ag.role === 'offspring') {
+            ag.age += lifeDt * 2.2;
+            if (ag.age >= 35.0 && !ag.ownNestMesh) {
+              var newNestPos = this.findScenicNestPos(
+                clamp(ag.pos.x, -1100, 1100),
+                clamp(ag.pos.z, -1100, 1100)
+              );
+              ag.homeNest.copy(newNestPos);
+              ag.ownNestMesh = buildNestMesh();
+              ag.ownNestMesh.position.copy(newNestPos);
+              this.scene.add(ag.ownNestMesh);
+              this.hunting.showToast(
+                '🪺 ' + ag.generation + '. NESİL KARTAL YUVA KURDU!',
+                'Büyüyen yavrunuz kendi bölgesinde bağımsız hayata başladı'
+              );
+            }
+            if (ag.age >= 75.0 && !ag.hasRaisedOwnBrood && ag.hunger > 55.0) {
+              ag.hasRaisedOwnBrood = true;
+              var nextGen = ag.generation + 1;
+              this.spawnAgent('offspring', nextGen, ag.homeNest.clone().add(new THREE.Vector3(0, 14, 0)), ag.homeNest);
+              this.totalOffspringRaised++;
+              this.hunting.showToast(
+                '🦅 ' + nextGen + '. NESİL GÖKYÜZÜNDE!',
+                'Torun kartalınız yuvadan uçup kendi av döngüsüne başladı'
+              );
+            }
+          }
+
+          if (ag.carryingFood) {
+            ag.state = 'RETURN_NEST';
+          } else if (ag.hunger < 55.0 || (ag.role === 'mate' && this.hasHungryChicks())) {
+            if (!ag.targetPrey || !ag.targetPrey.alive) {
+              ag.targetPrey = this.findNearestPrey(ag.pos, 650.0);
+            }
+            ag.state = ag.targetPrey ? 'HUNT' : 'ROAM';
+          } else {
+            ag.state = 'ROAM';
+            ag.targetPrey = null;
+          }
+
+          var tx, ty, tz;
+          var desiredSpeed = 24.0;
+          var tuck = 0.0;
+
+          if (ag.state === 'HUNT' && ag.targetPrey) {
+            tx = ag.targetPrey.pos.x;
+            ty = ag.targetPrey.pos.y + 1.5;
+            tz = ag.targetPrey.pos.z;
+            desiredSpeed = 38.0;
+            tuck = 0.55;
+            if (ag.pos.distanceTo(ag.targetPrey.pos) < 8.0) {
+              ag.targetPrey.alive = false;
+              ag.targetPrey.respawnTimer = 16.0;
+              ag.targetPrey.mesh.visible = false;
+              ag.targetPrey.markerEl.style.display = 'none';
+              if (ag.targetPrey.ripple) ag.targetPrey.ripple.visible = false;
+              this.bursts.emit(ag.pos, ag.targetPrey.type === 'fish' ? 0xdbeafe : 0x84cc16, 8, 6.0);
+              ag.targetPrey = null;
+
+              if (ag.role === 'mate' && this.hasHungryChicks()) {
+                ag.carryingFood = true;
+                ag.state = 'RETURN_NEST';
+              } else {
+                ag.hunger = Math.min(100.0, ag.hunger + 50.0);
+                ag.state = 'ROAM';
+              }
+            }
+          } else if (ag.state === 'RETURN_NEST') {
+            tx = ag.homeNest.x;
+            ty = ag.homeNest.y + 4.0;
+            tz = ag.homeNest.z;
+            desiredSpeed = 22.0;
+            if (ag.pos.distanceTo(ag.homeNest) < 14.0) {
+              ag.carryingFood = false;
+              if (ag.role === 'mate' && this.chicks.length > 0) {
+                this.feedChicks(null, null, true);
+              }
+              ag.state = 'ROAM';
+            }
+          } else {
+            var orbitR = ag.role === 'mate' ? 140.0 : 280.0;
+            tx = ag.homeNest.x + Math.cos(ag.roamPhase) * orbitR;
+            tz = ag.homeNest.z + Math.sin(ag.roamPhase * 0.85) * orbitR;
+            var gH = Math.max(10.0, getTerrainHeight(tx, tz));
+            ty = gH + 55.0 + Math.sin(ag.roamPhase * 1.7) * 20.0;
+          }
+
+          var dx = tx - ag.pos.x;
+          var dy = ty - ag.pos.y;
+          var dz = tz - ag.pos.z;
+          var horiz = Math.max(1.0, Math.hypot(dx, dz));
+          var desHdg = Math.atan2(dx, -dz);
+          var hdgErr = wrapAngle(desHdg - ag.heading);
+          ag.heading = wrapAngle(ag.heading + clamp(hdgErr * 2.2, -1.6, 1.6) * dt);
+          ag.bank = lerp(ag.bank, clamp(-hdgErr * 0.9, -0.75, 0.75), clamp(dt * 4.5, 0, 1));
+
+          var desPitch = clamp(Math.atan2(dy, horiz), -0.65, 0.55);
+          ag.pitch = lerp(ag.pitch, desPitch, clamp(dt * 3.5, 0, 1));
+          ag.speed = lerp(ag.speed, desiredSpeed, clamp(dt * 2.0, 0, 1));
+
+          var cp = Math.cos(ag.pitch);
+          ag.vel.set(
+            Math.sin(ag.heading) * cp * ag.speed,
+            Math.sin(ag.pitch) * ag.speed,
+            -Math.cos(ag.heading) * cp * ag.speed
+          );
+          ag.pos.addScaledVector(ag.vel, dt);
+
+          var minTerrain = Math.max(4.0, getTerrainHeight(ag.pos.x, ag.pos.z) + 5.0);
+          if (ag.pos.y < minTerrain) ag.pos.y = minTerrain;
+
+          ag.flapPhase += dt * (ag.pitch > 0.12 ? 14.0 : 5.0);
+          this._tmpEuler.set(ag.pitch, -ag.heading, ag.bank, 'YXZ');
+          this._tmpQuat.setFromEuler(this._tmpEuler);
+
+          ag.fakePhys.position.copy(ag.pos);
+          ag.fakePhys.quaternion.copy(this._tmpQuat);
+          ag.fakePhys.tuck = tuck;
+          ag.fakePhys.flapPower = ag.pitch > 0.08 ? 0.85 : 0.18;
+          ag.fakePhys.flapPhase = ag.flapPhase;
+          ag.fakePhys.airspeed = ag.speed;
+          ag.mesh.update(ag.fakePhys, dt, timeSec, ag.state === 'HUNT' ? 15.0 : 999.0, ag.carryingFood);
+        }
+      };
+
+      EagleLifeEcosystem.prototype.findNearestPrey = function (origin, maxDist) {
+        var best = null;
+        var bestD = maxDist;
+        for (var i = 0; i < this.hunting.preyList.length; i++) {
+          var p = this.hunting.preyList[i];
+          if (!p.alive) continue;
+          if (p.type === 'fish' && p.depth < -1.2) continue;
+          var d = p.pos.distanceTo(origin);
+          if (d < bestD) {
+            bestD = d;
+            best = p;
+          }
+        }
+        return best;
+      };
+
+      EagleLifeEcosystem.prototype.update = function (dt, timeSec, physics, eagleMesh, camera) {
+        var lifeDt = dt * this.lifeSpeed;
+
+        var burn = 0.65 + (physics.flapPower > 0.1 ? 0.55 : 0.0);
+        this.hunger = Math.max(5.0, this.hunger - burn * lifeDt);
+        if (this.courtCooldown > 0) this.courtCooldown -= lifeDt;
+
+        var distToNest = physics.position.distanceTo(this.nestPos);
+        if (distToNest < 19.0) {
+          if (this.hunting.carriedPrey && this.chicks.length > 0) {
+            this.feedChicks(physics, eagleMesh, false);
+          } else if (this.eggs.length === 0 && this.chicks.length === 0 && this.hunger > 58.0 && this.courtCooldown <= 0) {
+            this.layEggs(2);
+            this.courtCooldown = 14.0;
+          }
+        }
+
+        if (this.eggs.length > 0) {
+          var allReady = true;
+          for (var e = 0; e < this.eggs.length; e++) {
+            this.eggs[e].progress += lifeDt * 7.5;
+            this.eggs[e].mesh.rotation.z = Math.sin(timeSec * 8.0 + e) * (this.eggs[e].progress > 75 ? 0.18 : 0.02);
+            if (this.eggs[e].progress < 100.0) allReady = false;
+          }
+          if (allReady) this.hatchEggs();
+        }
+
+        if (this.chicks.length > 0) {
+          for (var c = this.chicks.length - 1; c >= 0; c--) {
+            var ch = this.chicks[c];
+            ch.hunger = Math.max(10.0, ch.hunger - lifeDt * 1.1);
+            if (ch.hunger > 35.0) {
+              ch.growth = Math.min(100.0, ch.growth + lifeDt * 1.8);
+            }
+            var sc = lerp(0.55, 1.35, ch.growth / 100.0);
+            ch.mesh.scale.setScalar(sc);
+            ch.bodyMat.color.setRGB(
+              lerp(0.90, 0.30, ch.growth / 100.0),
+              lerp(0.87, 0.21, ch.growth / 100.0),
+              lerp(0.82, 0.14, ch.growth / 100.0)
+            );
+            ch.chirpPhase += dt * (ch.hunger < 60 ? 11.0 : 4.0);
+            ch.head.rotation.x = 0.25 + Math.sin(ch.chirpPhase) * 0.28;
+
+            if (ch.growth >= 100.0) {
+              this.scene.remove(ch.mesh);
+              this.chicks.splice(c, 1);
+              this.totalOffspringRaised++;
+              this.spawnAgent(
+                'offspring',
+                2,
+                this.nestPos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 6, 8, (Math.random() - 0.5) * 6)),
+                this.nestPos
+              );
+              this.audio.playEagleScreech();
+              this.hunting.showToast(
+                '🦅 YAVRU BÜYÜDÜ VE UÇTU!',
+                'Artık bağımsız avlanıp kendi yuvasını kuracak!'
+              );
+              this.courtCooldown = 12.0;
+            }
+          }
+        }
+
+        this.updateAgents(dt, timeSec);
+
+        if (this.hunting.showMarkers) {
+          this._proj.copy(this.nestPos);
+          this._proj.y += 3.2;
+          this._proj.project(camera);
+          if (this._proj.z < 1.0 && Math.abs(this._proj.x) <= 1.02 && Math.abs(this._proj.y) <= 1.02) {
+            this.nestMarkerEl.style.display = 'inline-flex';
+            this.nestMarkerEl.style.left = ((this._proj.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + 'px';
+            this.nestMarkerEl.style.top = ((-this._proj.y * 0.5 + 0.5) * window.innerHeight).toFixed(1) + 'px';
+            this.nestDistEl.textContent = Math.round(distToNest) + 'm';
+          } else {
+            this.nestMarkerEl.style.display = 'none';
+          }
+        } else {
+          this.nestMarkerEl.style.display = 'none';
+        }
+
+        var elHunger = document.getElementById('val-hunger');
+        var elHungerFill = document.getElementById('hunger-fill');
+        var hInt = Math.round(this.hunger);
+        elHunger.textContent = hInt + '%';
+        elHungerFill.style.width = hInt + '%';
+
+        var nestTxt = 'Yuva Hazır';
+        if (this.eggs.length > 0) {
+          nestTxt = this.eggs.length + ' Yumurta (' + Math.round(this.eggs[0].progress) + '%)';
+        } else if (this.chicks.length > 0) {
+          nestTxt = this.chicks.length + ' Yavru (Büyüme ' + Math.round(this.chicks[0].growth) + '%)';
+        }
+        document.getElementById('life-nest-info').textContent = nestTxt;
+        document.getElementById('life-colony-count').textContent = String(1 + this.agents.length);
+        document.getElementById('life-gen-count').textContent = String(this.maxGeneration);
+
+        var aiBadge = document.getElementById('ai-state-label');
+        aiBadge.classList.toggle('auto-on', this.autoMode);
+        if (!this.autoMode) {
+          aiBadge.textContent = 'MANUEL UÇUŞ';
+        } else {
+          var stateNames = {
+            SOAR_ROAM: 'OTONOM: SÜZÜLÜYOR',
+            HUNT_DIVE: 'OTONOM: AVA DALIYOR',
+            RETURN_NEST: 'OTONOM: YAVRU BESLİYOR',
+            COURT_MATE: 'OTONOM: YUVAYA DÖNÜYOR'
+          };
+          aiBadge.textContent = stateNames[this.aiState] || 'OTONOM HAYAT';
+        }
+      };
+
+      EagleLifeEcosystem.prototype.computeAutopilotInput = function (dt, physics) {
+        this.roamAngle += dt * 0.16;
+
+        if (this.hunting.carriedPrey && this.chicks.length > 0) {
+          this.aiState = 'RETURN_NEST';
+        } else if (this.hunting.carriedPrey) {
+          this.aiState = 'SOAR_ROAM';
+        } else if (this.hunger < 65.0 || this.hasHungryChicks()) {
+          if (!this.aiTargetPrey || !this.aiTargetPrey.alive) {
+            this.aiTargetPrey = this.findNearestPrey(physics.position, 950.0);
+          }
+          this.aiState = this.aiTargetPrey ? 'HUNT_DIVE' : 'SOAR_ROAM';
+        } else if (this.eggs.length === 0 && this.chicks.length === 0 && this.hunger > 68.0 && this.courtCooldown <= 0) {
+          this.aiState = 'COURT_MATE';
+        } else {
+          this.aiState = 'SOAR_ROAM';
+          this.aiTargetPrey = null;
+        }
+
+        var target = this._tmpVec;
+        var wantTuck = false;
+        var wantBrake = false;
+        var inFinalSwoop = false;
+
+        if (this.aiState === 'HUNT_DIVE' && this.aiTargetPrey) {
+          var prey = this.aiTargetPrey;
+          target.copy(prey.pos);
+          var horizPrey = Math.hypot(target.x - physics.position.x, target.z - physics.position.z);
+
+          // Hareketli avın gideceği noktayı öngör (Lead-Pursuit)
+          if (prey.speed > 0.5 && horizPrey < 140.0) {
+            var leadT = clamp(horizPrey / Math.max(18.0, physics.airspeed), 0.1, 1.4);
+            if (prey.type === 'rabbit') {
+              target.x += Math.sin(prey.heading) * prey.speed * leadT * 0.7;
+              target.z -= Math.cos(prey.heading) * prey.speed * leadT * 0.7;
+            } else {
+              target.z += Math.cos(prey.heading) * prey.speed * leadT * 0.7;
+            }
+          }
+
+          if (horizPrey > 90.0) {
+            // Faz 1: Güvenli süzülme irtifasından ava yaklaş
+            var midGround = Math.max(WATER_LEVEL, getTerrainHeight(
+              (physics.position.x + target.x) * 0.5,
+              (physics.position.z + target.z) * 0.5
+            ));
+            target.y = Math.max(target.y + 34.0, midGround + 32.0);
+          } else {
+            // Faz 2: Kesin av dalışı (Final Swoop)
+            inFinalSwoop = true;
+            target.y = prey.pos.y + (horizPrey > 26.0 ? 4.5 : 1.4);
+            if (horizPrey > 24.0 && physics.position.y - target.y > 12.0) {
+              wantTuck = true;
+            }
+            // Çok hızlı yaklaşıyorsa son anda hafif frenleyip keskin kavra
+            if (horizPrey < 32.0 && physics.airspeed > 34.0) {
+              wantBrake = true;
+              wantTuck = false;
+            }
+          }
+        } else if (this.aiState === 'RETURN_NEST' || this.aiState === 'COURT_MATE') {
+          target.copy(this.nestPos);
+          var dNest = physics.position.distanceTo(this.nestPos);
+          target.y += dNest > 55.0 ? 28.0 : 5.0;
+          if (dNest < 45.0 && physics.airspeed > 22.0) {
+            wantBrake = true;
+          }
+        } else {
+          var r = 340.0;
+          var rx = this.nestPos.x + Math.cos(this.roamAngle) * r;
+          var rz = this.nestPos.z + Math.sin(this.roamAngle * 0.8) * r;
+          var gH = Math.max(10.0, getTerrainHeight(rx, rz));
+          target.set(rx, gH + 95.0 + Math.sin(this.roamAngle * 2.1) * 26.0, rz);
+        }
+
+        this._fwd.set(0, 0, -1).applyQuaternion(physics.quaternion);
+        var eagleHdg = Math.atan2(this._fwd.x, -this._fwd.z);
+        var dx = target.x - physics.position.x;
+        var dy = target.y - physics.position.y;
+        var dz = target.z - physics.position.z;
+        var horiz = Math.max(1.0, Math.hypot(dx, dz));
+
+        var desHdg = Math.atan2(dx, -dz);
+        var hdgErr = wrapAngle(desHdg - eagleHdg);
+        var rollCmd = clamp(hdgErr * 1.25, -0.92, 0.92);
+
+        var curPitch = Math.asin(clamp(this._fwd.y, -0.99, 0.99));
+        var desPitch = clamp(Math.atan2(dy, horiz), inFinalSwoop ? -0.78 : -0.58, 0.45);
+        var pitchCmd = clamp((desPitch - curPitch) * (inFinalSwoop ? 3.2 : 2.4), -0.92, 0.92);
+
+        // İki kademeli ön arazi taraması (Son av dalışında uzak tepeler yüzünden dalışı iptal etme)
+        var dangerLow = false;
+        if (inFinalSwoop) {
+          dangerLow = (physics.agl < 2.2 && horiz > 20.0);
+        } else {
+          var aheadNear = Math.max(WATER_LEVEL, getTerrainHeight(
+            physics.position.x + this._fwd.x * 26.0,
+            physics.position.z + this._fwd.z * 26.0
+          ));
+          var aheadFar = Math.max(WATER_LEVEL, getTerrainHeight(
+            physics.position.x + this._fwd.x * 60.0,
+            physics.position.z + this._fwd.z * 60.0
+          ));
+          dangerLow = (physics.position.y < Math.max(aheadNear, aheadFar) + 24.0) || (physics.agl < 18.0);
+        }
+        if (dangerLow) {
+          pitchCmd = Math.max(pitchCmd, 0.82);
+          wantTuck = false;
+        }
+
+        var needFlap = (
+          dangerLow ||
+          (physics.airspeed < 21.0 && !wantBrake) ||
+          (dy > 10.0 && physics.airspeed < 27.0)
+        ) && physics.stamina > (dangerLow ? 6.0 : 18.0) && !wantTuck;
+
+        return {
+          pitch: pitchCmd,
+          roll: rollCmd,
+          yaw: 0.0,
+          tuck: wantTuck && Math.abs(hdgErr) < 0.42 && !dangerLow,
+          brake: wantBrake && !dangerLow,
+          flapHold: needFlap,
+          huntingSwoop: inFinalSwoop
+        };
+      };
+
+      /* =========================================================================
+         9. ANA SİMÜLASYON BAŞLATMA VE DÖNGÜ
+         ========================================================================= */
+      function bootSimulation() {
+        try {
+          if (typeof THREE === 'undefined') {
+            showFatalError('Three.js kütüphanesi yüklenemedi. İnternet bağlantınızı kontrol edip sayfayı yenileyin.');
+            return;
+          }
+
+          var container = document.getElementById('canvas-container');
+          var renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+          renderer.setSize(window.innerWidth, window.innerHeight);
+          renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          container.appendChild(renderer.domElement);
+
+          var scene = new THREE.Scene();
+          scene.background = new THREE.Color(0x8db2d4);
+
+          var camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.25, 4500);
+
+          // Işıklandırma
+          var hemiLight = new THREE.HemisphereLight(0xaad2ff, 0x3b3528, 0.65);
+          scene.add(hemiLight);
+
+          var sunLight = new THREE.DirectionalLight(0xfff5e0, 1.45);
+          sunLight.castShadow = true;
+          sunLight.shadow.mapSize.width = 1024;
+          sunLight.shadow.mapSize.height = 1024;
+          sunLight.shadow.camera.near = 10;
+          sunLight.shadow.camera.far = 350;
+          sunLight.shadow.camera.left = -45;
+          sunLight.shadow.camera.right = 45;
+          sunLight.shadow.camera.top = 45;
+          sunLight.shadow.camera.bottom = -45;
+          scene.add(sunLight);
+          scene.add(sunLight.target);
+
+          // Sistemleri Kur
+          var world = buildWorld(scene);
+          var audio = new EagleAudioEngine();
+          var atmosphere = new AtmosphereField(scene);
+          var physics = new EaglePhysics6DoF(atmosphere, audio);
+          var eagleMesh = new ProceduralEagleMesh(scene);
+          var bursts = new BurstParticleSystem(scene);
+          var hunting = new HuntingEcosystem(scene, audio, bursts);
+          var life = new EagleLifeEcosystem(scene, audio, bursts, hunting);
+
+          // Güneş Açısı Güncelleme
+          var sunElevDeg = 28;
+          function updateSunAngle(deg) {
+            sunElevDeg = deg;
+            var rad = deg * (Math.PI / 180.0);
+            var az = 0.65;
+            var sx = Math.cos(rad) * Math.sin(az);
+            var sy = Math.sin(rad);
+            var sz = -Math.cos(rad) * Math.cos(az);
+            world.skyUniforms.uSunDir.value.set(sx, sy, sz).normalize();
+            world.terrainUniforms.uSunDir.value.copy(world.skyUniforms.uSunDir.value);
+            world.waterUniforms.uSunDir.value.copy(world.skyUniforms.uSunDir.value);
+
+            var warmT = smoothstep(8.0, 42.0, deg);
+            var fogCol = new THREE.Color().setRGB(
+              lerp(0.84, 0.62, warmT),
+              lerp(0.62, 0.77, warmT),
+              lerp(0.50, 0.90, warmT)
+            );
+            world.terrainUniforms.uFogColor.value.copy(fogCol);
+            world.waterUniforms.uFogColor.value.copy(fogCol);
+            sunLight.intensity = lerp(0.95, 1.55, warmT);
+          }
+          updateSunAngle(sunElevDeg);
+
+          // Kontroller (%100 Klavye — Fare uçuşta devre dışı)
+          var keys = {};
+          var isStarted = false;
+          var isVisionActive = false;
+          var invertPitch = false;
+          var camMode = 0; // 0: 3. Şahıs, 1: 1. Şahıs, 2: Sinematik
+          var camNames = ['3. ŞAHIS TAKİP', '1. ŞAHIS GÖZ', 'SİNEMATİK'];
+
+          var startOverlay = document.getElementById('start-overlay');
+          document.getElementById('start-btn').addEventListener('click', function () {
+            isStarted = true;
+            startOverlay.classList.add('hidden');
+            audio.init();
+          });
+
+          var autoModeBtn = document.getElementById('auto-mode-btn');
+          function toggleAutoMode() {
+            life.autoMode = !life.autoMode;
+            autoModeBtn.classList.toggle('active', life.autoMode);
+            autoModeBtn.textContent = life.autoMode ? '🤖 Otomatik Mod: AÇIK (O)' : '🤖 Otomatik Mod (O)';
+            if (life.autoMode && !isStarted) {
+              isStarted = true;
+              startOverlay.classList.add('hidden');
+              audio.init();
+            }
+          }
+          autoModeBtn.addEventListener('click', toggleAutoMode);
+
+          window.addEventListener('keydown', function (e) {
+            keys[e.code] = true;
+            if (e.code === 'Space') e.preventDefault();
+
+            if (e.code === 'KeyO') {
+              toggleAutoMode();
+            } else if (e.code === 'KeyE' && isStarted) {
+              isVisionActive = !isVisionActive;
+              container.classList.toggle('eagle-vision', isVisionActive);
+              document.getElementById('vision-vignette').classList.toggle('active', isVisionActive);
+            } else if (e.code === 'KeyC') {
+              camMode = (camMode + 1) % 3;
+              document.getElementById('cam-mode-label').textContent = camNames[camMode];
+            } else if (e.code === 'KeyH') {
+              document.getElementById('controls-guide').classList.toggle('hidden');
+            } else if (e.code === 'KeyR' && isStarted) {
+              physics.reset();
+            }
+          });
+
+          window.addEventListener('keyup', function (e) {
+            keys[e.code] = false;
+          });
+
+          // Ayar Paneli Etkileşimleri
+          var settingsPanel = document.getElementById('settings-panel');
+          document.getElementById('settings-toggle-btn').addEventListener('click', function () {
+            settingsPanel.classList.toggle('open');
+          });
+
+          var windSlider = document.getElementById('wind-slider');
+          windSlider.addEventListener('input', function () {
+            var v = parseFloat(windSlider.value);
+            document.getElementById('wind-val').textContent = Math.round(v) + ' km/s';
+            atmosphere.setWindKmh(v);
+          });
+
+          var sunSlider = document.getElementById('sun-slider');
+          sunSlider.addEventListener('input', function () {
+            var v = parseFloat(sunSlider.value);
+            document.getElementById('sun-val').textContent = Math.round(v) + '°';
+            updateSunAngle(v);
+          });
+
+          var qualBtns = document.querySelectorAll('.seg-btn[data-qual]');
+          for (var qb = 0; qb < qualBtns.length; qb++) {
+            qualBtns[qb].addEventListener('click', function () {
+              var q = this.getAttribute('data-qual');
+              for (var j = 0; j < qualBtns.length; j++) qualBtns[j].classList.remove('active');
+              this.classList.add('active');
+              if (q === 'low') {
+                renderer.setPixelRatio(1);
+                world.trunks.count = Math.floor(world.totalTrees * 0.45);
+                world.crowns.count = world.trunks.count;
+              } else if (q === 'med') {
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+                world.trunks.count = Math.floor(world.totalTrees * 0.8);
+                world.crowns.count = world.trunks.count;
+              } else {
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2.0));
+                world.trunks.count = world.totalTrees;
+                world.crowns.count = world.trunks.count;
+              }
+            });
+          }
+
+          var audioBtn = document.getElementById('audio-toggle-btn');
+          audioBtn.addEventListener('click', function () {
+            var next = !audio.enabled;
+            audio.setEnabled(next);
+            audioBtn.textContent = next ? 'Açık' : 'Kapalı';
+            audioBtn.classList.toggle('active', next);
+          });
+
+          var markersBtn = document.getElementById('markers-toggle-btn');
+          markersBtn.addEventListener('click', function () {
+            hunting.showMarkers = !hunting.showMarkers;
+            markersBtn.textContent = hunting.showMarkers ? 'Açık' : 'Kapalı';
+            markersBtn.classList.toggle('active', hunting.showMarkers);
+          });
+
+          var invertBtn = document.getElementById('invert-pitch-btn');
+          invertBtn.addEventListener('click', function () {
+            invertPitch = !invertPitch;
+            invertBtn.textContent = invertPitch ? 'Açık' : 'Kapalı';
+            invertBtn.classList.toggle('active', invertPitch);
+          });
+
+          var assistBtn = document.getElementById('assist-toggle-btn');
+          assistBtn.addEventListener('click', function () {
+            physics.assistEnabled = !physics.assistEnabled;
+            assistBtn.textContent = physics.assistEnabled ? 'Açık' : 'Kapalı';
+            assistBtn.classList.toggle('active', physics.assistEnabled);
+          });
+
+          var lifeSpeedBtn = document.getElementById('life-speed-btn');
+          lifeSpeedBtn.addEventListener('click', function () {
+            life.lifeSpeed = life.lifeSpeed === 1.0 ? 2.5 : 1.0;
+            lifeSpeedBtn.textContent = life.lifeSpeed === 1.0 ? '1x' : '2.5x';
+            lifeSpeedBtn.classList.toggle('active', life.lifeSpeed > 1.0);
+          });
+
+          // Yumuşak Klavye Girişi
+          var smoothPitch = 0.0;
+          var smoothRoll = 0.0;
+          function gatherInput(dt) {
+            var rawPitch = 0.0;
+            if (keys.KeyW || keys.ArrowUp) rawPitch -= 1.0;
+            if (keys.KeyS || keys.ArrowDown) rawPitch += 1.0;
+            if (invertPitch) rawPitch = -rawPitch;
+
+            var rawRoll = 0.0;
+            if (keys.KeyA || keys.ArrowLeft) rawRoll -= 1.0;
+            if (keys.KeyD || keys.ArrowRight) rawRoll += 1.0;
+
+            var rate = clamp(dt * 8.5, 0, 1);
+            smoothPitch = lerp(smoothPitch, rawPitch, rate);
+            smoothRoll = lerp(smoothRoll, rawRoll, rate);
+
+            return {
+              pitch: smoothPitch,
+              roll: smoothRoll,
+              yaw: 0.0,
+              tuck: !!(keys.ShiftLeft || keys.ShiftRight),
+              brake: !!(keys.KeyB || keys.ControlLeft || keys.ControlRight),
+              flapHold: !!keys.Space,
+              huntingSwoop: hunting.nearestPreyDist < 65.0
+            };
+          }
+
+          window.addEventListener('resize', function () {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+          });
+
+          // Kamera ve Döngü Değişkenleri
+          var camPos = new THREE.Vector3(0, 195, 232);
+          var camLook = new THREE.Vector3(0, 185, 200);
+          var _camTargetPos = new THREE.Vector3();
+          var _camTargetLook = new THREE.Vector3();
+          var _eagleFwd = new THREE.Vector3();
+          var _eagleUp = new THREE.Vector3();
+
+          var FIXED_DT = 1.0 / 120.0;
+          var accumulator = 0.0;
+          var lastTime = performance.now();
+          var fpsFrames = 0;
+          var fpsTimer = 0.0;
+
+          var elSpeed = document.getElementById('val-speed');
+          var elAlt = document.getElementById('val-alt');
+          var elVario = document.getElementById('val-vario');
+          var elAoa = document.getElementById('val-aoa');
+          var elG = document.getElementById('val-g');
+          var elStam = document.getElementById('val-stamina');
+          var elStamFill = document.getElementById('stamina-fill');
+          var elThermal = document.getElementById('chip-thermal');
+          var elRidge = document.getElementById('chip-ridge');
+          var elStall = document.getElementById('stall-alert');
+          var elHeading = document.getElementById('heading-label');
+          var elFps = document.getElementById('fps-label');
+
+          function animate(now) {
+            requestAnimationFrame(animate);
+            var rawDt = clamp((now - lastTime) * 0.001, 0.001, 0.05);
+            lastTime = now;
+
+            var timeScale = hunting.slowMoTimer > 0 ? 0.38 : 1.0;
+            var dt = rawDt * timeScale;
+            var timeSec = now * 0.001;
+
+            // Fizik Adımları
+            var input;
+            if (!isStarted) {
+              input = { pitch: 0, roll: 0.16, yaw: 0, tuck: false, brake: false, flapHold: false };
+            } else if (life.autoMode) {
+              input = life.computeAutopilotInput(rawDt, physics);
+            } else {
+              input = gatherInput(rawDt);
+            }
+
+            accumulator += dt;
+            var steps = 0;
+            while (accumulator >= FIXED_DT && steps < 6) {
+              var savedAssist = physics.assistEnabled;
+              if (life.autoMode) physics.assistEnabled = true;
+              physics.step(FIXED_DT, input);
+              physics.assistEnabled = savedAssist;
+              accumulator -= FIXED_DT;
+              steps++;
+            }
+
+            // Dünya, Kartal, Av ve Yaşam Döngüsü Güncellemesi
+            world.waterUniforms.uTime.value = timeSec;
+            atmosphere.updateParticles(dt);
+            bursts.update(dt);
+            eagleMesh.update(physics, dt, timeSec, hunting.nearestPreyDist, !!hunting.carriedPrey);
+            hunting.update(dt, physics, eagleMesh, camera, isVisionActive);
+            life.update(dt, timeSec, physics, eagleMesh, camera);
+
+            // Güneş gölge takibi & gökyüzü kubbesi merkezleme
+            world.skyDome.position.copy(physics.position);
+            sunLight.position.copy(physics.position).addScaledVector(world.skyUniforms.uSunDir.value, 140);
+            sunLight.target.position.copy(physics.position);
+
+            // Kamera Takibi (Spring-Damped + Dinamik FOV + Sarsıntı)
+            _eagleFwd.set(0, 0, -1).applyQuaternion(physics.quaternion);
+            _eagleUp.set(0, 1, 0).applyQuaternion(physics.quaternion);
+
+            if (camMode === 0) {
+              _camTargetPos.copy(physics.position)
+                .addScaledVector(_eagleFwd, -7.8 - physics.tuck * 1.4)
+                .addScaledVector(_eagleUp, 2.35);
+              _camTargetLook.copy(physics.position).addScaledVector(_eagleFwd, 16.0);
+              camPos.lerp(_camTargetPos, clamp(rawDt * 7.5, 0, 1));
+              camLook.lerp(_camTargetLook, clamp(rawDt * 12.0, 0, 1));
+            } else if (camMode === 1) {
+              camPos.copy(physics.position).addScaledVector(_eagleFwd, 0.95).addScaledVector(_eagleUp, 0.28);
+              camLook.copy(camPos).addScaledVector(_eagleFwd, 25.0);
+            } else {
+              var ang = timeSec * 0.35;
+              _camTargetPos.set(
+                physics.position.x + Math.cos(ang) * 12.5,
+                physics.position.y + 3.8,
+                physics.position.z + Math.sin(ang) * 12.5
+              );
+              camPos.lerp(_camTargetPos, clamp(rawDt * 4.5, 0, 1));
+              camLook.lerp(physics.position, clamp(rawDt * 8.0, 0, 1));
+            }
+
+            var camGround = Math.max(WATER_LEVEL, getTerrainHeight(camPos.x, camPos.z)) + 1.5;
+            if (camPos.y < camGround) camPos.y = camGround;
+
+            var diveShake = clamp((physics.airspeed - 45.0) / 35.0, 0, 1) * 0.14;
+            var totalShake = diveShake + hunting.captureShake * 0.25;
+            camera.position.copy(camPos);
+            if (totalShake > 0.005) {
+              camera.position.x += (Math.random() - 0.5) * totalShake;
+              camera.position.y += (Math.random() - 0.5) * totalShake;
+            }
+            camera.lookAt(camLook);
+
+            var baseFov = isVisionActive ? 30.0 : (60.0 + clamp((physics.airspeed - 20.0) * 0.42, 0.0, 24.0));
+            camera.fov = lerp(camera.fov, baseFov, clamp(rawDt * 6.5, 0, 1));
+            camera.updateProjectionMatrix();
+
+            // Prosedürel Ses Güncellemesi
+            audio.update(physics.airspeed, physics.aoaDeg, physics.tuck, physics.thermalLift, isVisionActive);
+
+            // HUD Telemetri Güncellemesi
+            elSpeed.textContent = String(Math.round(physics.airspeed * 3.6));
+            elAlt.textContent = String(Math.round(physics.agl));
+            elVario.textContent = (physics.vario >= 0 ? '+' : '') + physics.vario.toFixed(1);
+            elAoa.textContent = physics.aoaDeg.toFixed(1);
+            elG.textContent = physics.gForce.toFixed(1);
+
+            var stamPct = Math.round(physics.stamina);
+            elStam.textContent = stamPct + '%';
+            elStamFill.style.width = stamPct + '%';
+
+            elThermal.textContent = 'TERMAL: +' + physics.thermalLift.toFixed(1);
+            elThermal.classList.toggle('active-thermal', physics.thermalLift > 0.4);
+            elRidge.textContent = 'YAMAÇ: +' + physics.ridgeLift.toFixed(1);
+            elRidge.classList.toggle('active-ridge', physics.ridgeLift > 0.4);
+            elStall.classList.toggle('active', physics.isStalling);
+
+            var hdg = (Math.atan2(_eagleFwd.x, -_eagleFwd.z) * (180 / Math.PI) + 360) % 360;
+            var dirs = ['K', 'KD', 'D', 'GD', 'G', 'GB', 'B', 'KB'];
+            var dirStr = dirs[Math.round(hdg / 45) % 8];
+            elHeading.textContent = 'YÖN ' + String(Math.round(hdg)).padStart(3, '0') + '° ' + dirStr;
+
+            fpsFrames++;
+            fpsTimer += rawDt;
+            if (fpsTimer >= 0.5) {
+              elFps.textContent = Math.round(fpsFrames / fpsTimer) + ' FPS';
+              fpsFrames = 0;
+              fpsTimer = 0;
+            }
+
+            renderer.render(scene, camera);
+          }
+
+          requestAnimationFrame(animate);
+        } catch (err) {
+          showFatalError(err && err.message ? err.message : String(err));
+        }
+      }
+
+      window.onload = bootSimulation;
+    })();
+  </script>
+</body>
+</html>
