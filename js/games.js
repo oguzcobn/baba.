@@ -168,6 +168,7 @@ const App = (() => {
     { id: 'yasam', name: ['YAŞAM. — İskeletli Canlılar Vadisi', 'LIFE. — Valley of Rigged Creatures'], tags: [['Simülasyon', 'Simulation'], ['UniRig', 'UniRig'], ['3D', '3D']], best: () => T('UniRig · canlı ekosistem', 'UniRig · living ecosystem') },
     { id: 'akvaryum', name: ['AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'], tags: [['Simülasyon', 'Simulation'], ['Biyomekanik', 'Biomechanics'], ['Huzur', 'Relaxing']], best: () => { try { const d = JSON.parse(localStorage.getItem('baba-akvaryum-v2') || 'null'); return d && d.fish ? T(`${d.fish.length} balık`, `${d.fish.length} fish`) : T('14 tür', '14 species'); } catch (_) { return T('14 tür', '14 species'); } } },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
+    { id: 'mudafi', name: ['MÜDAFİ. — Ağır Ceza Dosyası', 'MÜDAFİ. — Criminal Defense Case'], tags: [['Hukuk','Law'],['Hikâye','Story'],['3D','3D']], best: () => T('Liman Gecesi · 5 son', 'Harbour Night · 5 endings') },
     { id: 'mete-cubugu', name: ['Mete\'nin Çubuğu', 'Mete\'nin Çubuğu'], tags: [['Zanaat','Craft'],['Tarih','History'],['3D','3D']], best: () => T('7 kılıç · Bedesten mezadı', '7 swords · Bedesten auction') },
     { id: 'kartal', name: ['ALTIN KARTAL. — Uçuş & Avlanma Simülasyonu', 'GOLDEN EAGLE. — Flight & Hunting Sim'], tags: [['Simülasyon','Simulation'],['Doğa','Nature'],['3D','3D']], best: () => T('6-DoF uçuş · av · yuva', '6-DoF flight · hunt · nest') },
     { id: 'astra-orbit', name: ['ASTRA ORBIT. — Uzay Sektör Savaşı', 'ASTRA ORBIT. — Space Sector War'], tags: [['Uzay','Space'],['2.5D','2.5D'],['Aksiyon','Action']], best: () => { const b = +(localStorage.getItem('astra_orbit_25d_best') || 0); return b ? T('Rekor ' + b, 'Best ' + b) : T('4 sektör · 8 düşman', '4 sectors · 8 enemies'); } },
@@ -264,6 +265,7 @@ const App = (() => {
     'astra-orbit': 'img/library/astra-orbit-1280.webp',
     'kartal': 'img/library/kartal-1280.webp',
     'mete-cubugu': 'img/library/mete-cubugu-1280.webp',
+    'mudafi': 'img/library/mudafi-1280.webp',
     'pelagos': 'img/library/pelagos-1280.webp',
     'serpentia': 'img/library/serpentia-1280.webp',
     'yasam': 'img/library/yasam-1280.webp',
@@ -587,6 +589,17 @@ const App = (() => {
       tag: T('BABA. DUNE. · Açık dünya sürüş · 2.5D', 'BABA. DUNE. · Open-world driving · 2.5D'),
       lead: T('Kum tepelerinde 4×4: lastik basıncı, diferansiyel kilidi, vinç, garaj yükseltmeleri ve günbatımı çölünde serbest sürüş.', '4×4 across the dunes: tyre pressure, diff lock, winch, garage upgrades and free roam in a sunset desert.'),
       tip: T('W/S gaz-fren, A/D direksiyon, Space el freni. L diferansiyel kilidi, R vinç, C kamera, P fotoğraf modu. Yumuşak kumda lastik basıncını düşür.', 'W/S throttle-brake, A/D steer, Space handbrake. L diff lock, R winch, C camera, P photo mode. Lower tyre pressure in soft sand.')
+    });
+  }
+
+  /* ==================== MÜDAFİ. / AĞIR CEZA DOSYASI ==================== */
+  function mudafi() {
+    openEmbeddedGame({
+      title: T('MÜDAFİ. — Ağır Ceza Dosyası', 'MÜDAFİ. — Criminal Defense Case'),
+      url: 'games/mudafi/index.html?v=1',
+      tag: T('BABA. MÜDAFİ. · Hukuk simülasyonu · 3D', 'BABA. MÜDAFİ. · Legal sim · 3D'),
+      lead: T('Av. Kaan olarak "Liman Gecesi" dosyasında Kerem Demir\'in müdafiliğini üstlen: cezaevinde müvekkilinle görüş, UYAP ve bilirkişi raporlarından delil topla, olay yerini incele ve 14. Ağır Ceza duruşmasında çapraz sorguyla gerçek faili ortaya çıkar.', 'As Attorney Kaan, defend Kerem Demir in the "Harbour Night" case: meet your client in prison, gather evidence from case files and expert reports, inspect the scene and expose the real culprit through cross-examination in court.'),
+      tip: T('Savunmayı Üstlen ile başla. Alttaki menüden Cezaevi, UYAP, Bilirkişi, TCK/CMK, Olay Yeri ve Dosya ekranlarına geç; hazır olunca Duruşma\'ya çık. 5 farklı son var.', 'Start with Take the Defense. Use the bottom menu for Prison, Case Files, Expert, Law, Scene and Dossier; go to Court when ready. There are 5 endings.')
     });
   }
 
@@ -1035,6 +1048,7 @@ const App = (() => {
     else if (r === 'astra-orbit') astraOrbit();
     else if (r === 'kartal') kartal();
     else if (r === 'mete-cubugu') meteCubugu();
+    else if (r === 'mudafi') mudafi();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});

@@ -1,0 +1,3642 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MÜDAFİ: Ağır Ceza Dosyası — 2026/418 E. "Liman Gecesi" | Av. Kaan</title>
+  <!-- Tailwind CSS -->
+  <link rel="stylesheet" href="tailwind.css" />
+  <!-- Three.js for Interactive 3D Main Menu Scene -->
+  <script src="vendor/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg-noir: #0a0c12;
+      --bg-mahogany: #1b1313;
+      --bg-leather: #281c1a;
+      --parchment: #f5f0e6;
+      --ink: #1c1917;
+      --gold: #c9a227;
+      --gold-light: #ebd075;
+      --crimson: #991b1b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background-color: var(--bg-noir);
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(201, 162, 39, 0.09), transparent 42%),
+        radial-gradient(circle at 80% 88%, rgba(153, 27, 27, 0.11), transparent 46%),
+        linear-gradient(180deg, #090b10 0%, #11141e 100%);
+      color: #ebe6dd;
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .font-serif-display { font-family: 'Playfair Display', Georgia, serif; }
+    .font-legal { font-family: 'Merriweather', Georgia, serif; }
+
+    /* Prestige Mahogany & Glass Cards */
+    .mahogany-card {
+      background: linear-gradient(155deg, rgba(39, 27, 25, 0.92), rgba(18, 14, 16, 0.96));
+      border: 1px solid rgba(201, 162, 39, 0.28);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.58), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .parchment-card {
+      background: linear-gradient(180deg, #f8f3e9 0%, #ede4d1 100%);
+      color: var(--ink);
+      border: 1px solid #d2c2a3;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.48), inset 0 0 42px rgba(139, 108, 66, 0.14);
+    }
+
+    /* Suspicious Clause in UYAP Indictment */
+    .suspicious-clause {
+      background: rgba(201, 162, 39, 0.24);
+      border-bottom: 2px dashed #991b1b;
+      cursor: pointer;
+      padding: 1px 5px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+    .suspicious-clause:hover {
+      background: rgba(153, 27, 27, 0.2);
+      color: #7f1d1d;
+    }
+    .suspicious-clause.inspected {
+      background: rgba(22, 163, 74, 0.18);
+      border-bottom: 2px solid #15803d;
+    }
+
+    /* Stamps */
+    .stamp {
+      display: inline-block;
+      font-family: 'Playfair Display', serif;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border: 3px solid currentColor;
+      padding: 0.22rem 0.72rem;
+      border-radius: 6px;
+      transform: rotate(-6deg);
+      box-shadow: inset 0 0 0 1px currentColor;
+    }
+
+    /* Buttons */
+    .btn-gold {
+      background: linear-gradient(180deg, #deb841 0%, #a57d15 100%);
+      color: #161108;
+      font-weight: 700;
+      border: 1px solid #f4dc85;
+      box-shadow: 0 4px 16px rgba(201, 162, 39, 0.34);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    .btn-gold:hover:not(:disabled) {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 22px rgba(201, 162, 39, 0.48);
+    }
+
+    .btn-crimson {
+      background: linear-gradient(180deg, #c62828 0%, #7f1d1d 100%);
+      color: #fef2f2;
+      font-weight: 700;
+      border: 1px solid #f87171;
+      box-shadow: 0 4px 18px rgba(185, 28, 28, 0.45);
+      transition: transform 0.15s ease, filter 0.15s ease;
+    }
+    .btn-crimson:hover:not(:disabled) {
+      filter: brightness(1.12);
+      transform: translateY(-1px);
+    }
+
+    .btn-noir {
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid rgba(201, 162, 39, 0.3);
+      color: #ebe6dd;
+      transition: all 0.16s ease;
+    }
+    .btn-noir:hover:not(:disabled) {
+      background: rgba(201, 162, 39, 0.15);
+      border-color: rgba(201, 162, 39, 0.72);
+    }
+
+    /* =====================================================================
+       3D PERSPECTIVE SPATIAL MENU BAR (FLOATING GLASSMORPHIC DOCK)
+       ===================================================================== */
+    .spatial-dock-stage {
+      position: fixed;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 35;
+      perspective: 950px;
+      width: auto;
+      max-width: calc(100vw - 16px);
+      pointer-events: none;
+    }
+
+    .spatial-dock-bar {
+      pointer-events: auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      padding: 8px 12px 10px;
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(35, 25, 25, 0.76) 0%, rgba(14, 12, 17, 0.9) 100%);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(235, 208, 117, 0.32);
+      border-bottom: 3px solid rgba(110, 82, 24, 0.65);
+      box-shadow:
+        0 20px 44px rgba(0, 0, 0, 0.78),
+        0 6px 14px rgba(0, 0, 0, 0.55),
+        inset 0 1px 1px rgba(255, 244, 210, 0.25),
+        inset 0 -8px 20px rgba(0, 0, 0, 0.45);
+      transform: rotateX(15deg);
+      transform-style: preserve-3d;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .spatial-dock-bar::-webkit-scrollbar { display: none; }
+
+    .spatial-dock-bar:hover {
+      transform: rotateX(7deg) translateY(-2px);
+      box-shadow:
+        0 26px 54px rgba(0, 0, 0, 0.85),
+        0 0 28px rgba(201, 162, 39, 0.16),
+        inset 0 1px 1px rgba(255, 244, 210, 0.32);
+    }
+
+    .dock-item {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 66px;
+      padding: 8px 11px 7px;
+      border-radius: 15px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      border: 1px solid rgba(201, 162, 39, 0.22);
+      color: #e6dfd4;
+      cursor: pointer;
+      transform-origin: bottom center;
+      transform: translateZ(0px);
+      transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .dock-item:hover {
+      transform: translateY(-10px) translateZ(26px) scale(1.12);
+      background: linear-gradient(180deg, rgba(201, 162, 39, 0.28), rgba(127, 29, 29, 0.22));
+      border-color: rgba(235, 208, 117, 0.85);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.65), 0 0 16px rgba(201, 162, 39, 0.35);
+      color: #fff8e1;
+      z-index: 10;
+    }
+
+    .dock-item.active {
+      background: linear-gradient(180deg, rgba(201, 162, 39, 0.3), rgba(201, 162, 39, 0.08));
+      border-color: #ebd075;
+      color: #fef3c7;
+      box-shadow: 0 8px 20px rgba(201, 162, 39, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .dock-item.active::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 20%;
+      right: 20%;
+      height: 3px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, transparent, #f4dc85, transparent);
+      box-shadow: 0 0 10px #f4dc85;
+    }
+
+    .dock-item.dock-crimson {
+      background: linear-gradient(180deg, rgba(185, 28, 28, 0.65), rgba(127, 29, 29, 0.85));
+      border-color: rgba(248, 113, 113, 0.6);
+      color: #fef2f2;
+    }
+    .dock-item.dock-crimson:hover {
+      background: linear-gradient(180deg, rgba(220, 38, 38, 0.88), rgba(127, 29, 29, 0.95));
+      border-color: #fca5a5;
+      box-shadow: 0 12px 26px rgba(220, 38, 38, 0.45);
+    }
+
+    .dock-divider {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(180deg, transparent, rgba(201, 162, 39, 0.45), transparent);
+      margin: 0 2px;
+      align-self: center;
+      flex-shrink: 0;
+    }
+
+    /* Visual Novel Stage & Portrait Animations */
+    .vn-stage {
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+      border: 1px solid rgba(201, 162, 39, 0.34);
+      box-shadow: 0 18px 44px rgba(0, 0, 0, 0.65), inset 0 0 60px rgba(0, 0, 0, 0.45);
+      background: #0d0f16;
+    }
+
+    @keyframes portraitSpeak {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-4px) scale(1.015); }
+    }
+    .portrait-speaking {
+      animation: portraitSpeak 0.65s ease-in-out infinite;
+    }
+
+    @keyframes portraitEnter {
+      from { opacity: 0; transform: translateY(14px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .portrait-enter {
+      animation: portraitEnter 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes flashBoom {
+      0% { opacity: 0.85; }
+      100% { opacity: 0; }
+    }
+    .animate-flash {
+      animation: flashBoom 0.48s ease-out forwards;
+    }
+
+    @keyframes stampSlam {
+      0% { transform: scale(2.8) rotate(-14deg); opacity: 0; }
+      55% { transform: scale(0.92) rotate(-5deg); opacity: 1; }
+      75% { transform: scale(1.05) rotate(-7deg); opacity: 1; }
+      100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+    }
+    .animate-stamp { animation: stampSlam 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+
+    @keyframes screenShake {
+      0%, 100% { transform: translateX(0); }
+      15% { transform: translateX(-8px) translateY(3px); }
+      30% { transform: translateX(8px) translateY(-3px); }
+      45% { transform: translateX(-6px) translateY(2px); }
+      60% { transform: translateX(6px) translateY(-2px); }
+      75% { transform: translateX(-3px); }
+    }
+    .animate-shake { animation: screenShake 0.42s ease-in-out; }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fadeSlideUp 0.28s ease-out forwards; }
+
+    @keyframes rainFall {
+      0% { transform: translateY(-20px); }
+      100% { transform: translateY(20px); }
+    }
+    .rain-layer { animation: rainFall 0.45s linear infinite; }
+
+    @keyframes pulseGold {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(201, 162, 39, 0.48); }
+      50% { box-shadow: 0 0 0 11px rgba(201, 162, 39, 0); }
+    }
+    .pulse-gold { animation: pulseGold 2.2s infinite; }
+
+    /* CSS 3D Fallback for Title Screen when Three.js is unavailable */
+    .css-3d-fallback {
+      background:
+        radial-gradient(circle at 68% 34%, rgba(235, 190, 90, 0.22), transparent 44%),
+        radial-gradient(circle at 25% 75%, rgba(153, 27, 27, 0.22), transparent 48%),
+        linear-gradient(180deg, #0b0d14 0%, #1b1212 65%, #2b1a14 100%);
+    }
+
+    ::-webkit-scrollbar { width: 7px; height: 7px; }
+    ::-webkit-scrollbar-track { background: #12141c; }
+    ::-webkit-scrollbar-thumb { background: #4a3932; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #c9a227; }
+
+    @media (max-width: 640px) {
+      .dock-item { min-width: 56px; padding: 7px 8px 6px; }
+      .spatial-dock-bar { padding: 6px 8px 8px; gap: 4px; }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-amber-600/40 selection:text-amber-100">
+
+  <!-- Main Application Shell -->
+  <div id="app" class="min-h-screen flex flex-col"></div>
+
+  <!-- Dramatic Flash Layer -->
+  <div id="flash-overlay" class="fixed inset-0 z-50 hidden bg-amber-100 pointer-events-none"></div>
+
+  <!-- Dramatic Fullscreen Splash Overlay (Objection / Contradiction / Gavel + Evidence Card) -->
+  <div id="dramatic-overlay" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/78 backdrop-blur-sm pointer-events-none p-4">
+    <div id="dramatic-content" class="text-center max-w-xl w-full"></div>
+  </div>
+
+  <!-- Modal Root -->
+  <div id="modal-root" class="fixed inset-0 z-40 hidden items-center justify-center bg-black/82 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto">
+    <div id="modal-box" class="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl animate-fade-in"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <script>
+    /* =========================================================================
+       1. WEB AUDIO API PROCEDURAL SOUND ENGINE (No External Audio URLs)
+       ========================================================================= */
+    const SoundEngine = (() => {
+      let ctx = null;
+      let lastTickTime = 0;
+
+      function getCtx() {
+        if (!ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) ctx = new AudioCtx();
+        }
+        if (ctx && ctx.state === 'suspended') {
+          ctx.resume().catch(() => {});
+        }
+        return ctx;
+      }
+
+      function isMuted() {
+        return !!(window.gameState && window.gameState.muted);
+      }
+
+      function playClick() {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(540, c.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(190, c.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.07, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.042);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start();
+        osc.stop(c.currentTime + 0.045);
+      }
+
+      function playTypeTick() {
+        if (isMuted()) return;
+        const now = performance.now();
+        if (now - lastTickTime < 48) return;
+        lastTickTime = now;
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(760 + Math.random() * 140, c.currentTime);
+        gain.gain.setValueAtTime(0.018, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0008, c.currentTime + 0.018);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start();
+        osc.stop(c.currentTime + 0.02);
+      }
+
+      function playPaper() {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const bufferSize = Math.floor(c.sampleRate * 0.16);
+        const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.34));
+        }
+        const noise = c.createBufferSource();
+        noise.buffer = buffer;
+        const filter = c.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1850;
+        filter.Q.value = 1.2;
+        const gain = c.createGain();
+        gain.gain.setValueAtTime(0.13, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.16);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(c.destination);
+        noise.start();
+      }
+
+      function playGavel(doubleHit = false) {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const hit = (offset) => {
+          const t = c.currentTime + offset;
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(170, t);
+          osc.frequency.exponentialRampToValueAtTime(46, t + 0.16);
+          gain.gain.setValueAtTime(0.38, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(t);
+          osc.stop(t + 0.19);
+
+          const osc2 = c.createOscillator();
+          const g2 = c.createGain();
+          osc2.type = 'square';
+          osc2.frequency.setValueAtTime(430, t);
+          osc2.frequency.exponentialRampToValueAtTime(105, t + 0.05);
+          g2.gain.setValueAtTime(0.11, t);
+          g2.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+          osc2.connect(g2);
+          g2.connect(c.destination);
+          osc2.start(t);
+          osc2.stop(t + 0.07);
+        };
+        hit(0);
+        if (doubleHit) hit(0.22);
+      }
+
+      function playObjection() {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const freqs = [220, 277.18, 329.63, 440];
+        freqs.forEach((f, idx) => {
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = idx % 2 === 0 ? 'sawtooth' : 'triangle';
+          osc.frequency.setValueAtTime(f, c.currentTime);
+          const filter = c.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(2400, c.currentTime);
+          filter.frequency.exponentialRampToValueAtTime(520, c.currentTime + 0.55);
+          gain.gain.setValueAtTime(0.085, c.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.6);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(c.destination);
+          osc.start();
+          osc.stop(c.currentTime + 0.62);
+        });
+      }
+
+      function playContradiction() {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const notes = [329.63, 392.0, 493.88, 659.25];
+        notes.forEach((f, i) => {
+          const t = c.currentTime + i * 0.055;
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(0.13, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(t);
+          osc.stop(t + 0.48);
+        });
+      }
+
+      function playError() {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const osc = c.createOscillator();
+        const gain = c.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(145, c.currentTime);
+        osc.frequency.linearRampToValueAtTime(108, c.currentTime + 0.28);
+        gain.gain.setValueAtTime(0.11, c.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(c.destination);
+        osc.start();
+        osc.stop(c.currentTime + 0.32);
+      }
+
+      function playVerdict(positive) {
+        if (isMuted()) return;
+        const c = getCtx();
+        if (!c) return;
+        const chord = positive ? [261.63, 329.63, 392.0, 523.25] : [220, 261.63, 311.13, 415.3];
+        chord.forEach((f, idx) => {
+          const t = c.currentTime + idx * 0.08;
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(f, t);
+          gain.gain.setValueAtTime(0.11, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 1.1);
+          osc.connect(gain);
+          gain.connect(c.destination);
+          osc.start(t);
+          osc.stop(t + 1.15);
+        });
+      }
+
+      return { playClick, playTypeTick, playPaper, playGavel, playObjection, playContradiction, playError, playVerdict };
+    })();
+
+    /* =========================================================================
+       2. THREE.JS 3D INTERACTIVE LAW OFFICE / COURTROOM BENCH SCENE
+       ========================================================================= */
+    const Scene3D = (() => {
+      let renderer = null;
+      let scene = null;
+      let camera = null;
+      let animId = null;
+      let scalesBeam = null;
+      let leftPanGroup = null;
+      let rightPanGroup = null;
+      let dustPoints = null;
+      let lampLight = null;
+
+      let mouseX = 0;
+      let mouseY = 0;
+      let focusPreset = 'default';
+
+      const CAMERA_PRESETS = {
+        default: { pos: [0, 3.05, 6.9], look: [0, 0.85, 0] },
+        dossier: { pos: [-2.1, 2.45, 5.2], look: [-1.5, 0.55, 0.4] },
+        scales:  { pos: [0.25, 2.75, 5.1], look: [0, 1.55, -0.3] },
+        gavel:   { pos: [2.2, 2.35, 5.1], look: [1.65, 0.45, 0.45] }
+      };
+
+      const currentLook = { x: 0, y: 0.85, z: 0 };
+
+      function setFocus(preset) {
+        focusPreset = CAMERA_PRESETS[preset] ? preset : 'default';
+      }
+
+      function onMouseMove(e) {
+        mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+      }
+
+      function onResize() {
+        const container = document.getElementById('three-bg-container');
+        if (!renderer || !camera || !container) return;
+        const w = container.clientWidth || window.innerWidth;
+        const h = container.clientHeight || window.innerHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      }
+
+      function mount() {
+        dispose();
+        const container = document.getElementById('three-bg-container');
+        if (!container) return;
+
+        // Graceful CSS 3D fallback if Three.js CDN failed
+        if (typeof THREE === 'undefined') {
+          container.classList.add('css-3d-fallback');
+          return;
+        }
+
+        try {
+          const w = container.clientWidth || window.innerWidth;
+          const h = container.clientHeight || window.innerHeight;
+
+          scene = new THREE.Scene();
+          scene.fog = new THREE.FogExp2(0x0b0c12, 0.068);
+
+          camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 50);
+          camera.position.set(0, 3.05, 6.9);
+
+          renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+          renderer.setSize(w, h);
+          renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+          renderer.shadowMap.enabled = true;
+          renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          container.innerHTML = '';
+          container.appendChild(renderer.domElement);
+
+          // --- Lighting: Warm Banker's Lamp + Ambient + Crimson Rim ---
+          const ambient = new THREE.AmbientLight(0x3a2e2e, 0.9);
+          scene.add(ambient);
+
+          lampLight = new THREE.PointLight(0xffcb6b, 2.8, 18, 1.5);
+          lampLight.position.set(-2.6, 3.9, 2.2);
+          lampLight.castShadow = true;
+          scene.add(lampLight);
+
+          const goldSpot = new THREE.SpotLight(0xf6d379, 1.7, 20, Math.PI / 4, 0.55);
+          goldSpot.position.set(0.4, 6.2, 3.8);
+          goldSpot.castShadow = true;
+          scene.add(goldSpot);
+
+          const rimLight = new THREE.DirectionalLight(0x991b1b, 0.65);
+          rimLight.position.set(4, 2.5, -4);
+          scene.add(rimLight);
+
+          // --- Materials ---
+          const mahoganyMat = new THREE.MeshStandardMaterial({ color: 0x2d1814, roughness: 0.42, metalness: 0.12 });
+          const darkWoodMat = new THREE.MeshStandardMaterial({ color: 0x1d100e, roughness: 0.55, metalness: 0.08 });
+          const brassMat = new THREE.MeshStandardMaterial({ color: 0xd8b146, roughness: 0.24, metalness: 0.88 });
+          const burgundyMat = new THREE.MeshStandardMaterial({ color: 0x6b141a, roughness: 0.65, metalness: 0.1 });
+          const navyBookMat = new THREE.MeshStandardMaterial({ color: 0x1a263b, roughness: 0.68, metalness: 0.1 });
+          const paperMat = new THREE.MeshStandardMaterial({ color: 0xefe6d5, roughness: 0.85, metalness: 0.02 });
+          const leatherMat = new THREE.MeshStandardMaterial({ color: 0x1e2b22, roughness: 0.72, metalness: 0.05 });
+
+          // --- 1. Mahogany Bench / Desk ---
+          const deskTop = new THREE.Mesh(new THREE.BoxGeometry(14, 0.4, 7), mahoganyMat);
+          deskTop.position.set(0, -0.2, 0);
+          deskTop.receiveShadow = true;
+          scene.add(deskTop);
+
+          // Desk leather blotter
+          const blotter = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.03, 3.1), leatherMat);
+          blotter.position.set(0, 0.015, 0.3);
+          blotter.receiveShadow = true;
+          scene.add(blotter);
+
+          // Back wood paneling wall
+          const backWall = new THREE.Mesh(new THREE.BoxGeometry(18, 9, 0.3), darkWoodMat);
+          backWall.position.set(0, 3.5, -3.5);
+          scene.add(backWall);
+
+          // Gold horizontal accent molding on back wall
+          const molding = new THREE.Mesh(new THREE.BoxGeometry(16, 0.08, 0.35), brassMat);
+          molding.position.set(0, 2.4, -3.38);
+          scene.add(molding);
+
+          // --- 2. Brass Scales of Justice (Center) ---
+          const scalesGroup = new THREE.Group();
+          scalesGroup.position.set(0, 0, -0.35);
+
+          const base1 = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.72, 0.18, 28), brassMat);
+          base1.position.y = 0.09;
+          base1.castShadow = true;
+          scalesGroup.add(base1);
+
+          const base2 = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.45, 0.16, 24), brassMat);
+          base2.position.y = 0.25;
+          scalesGroup.add(base2);
+
+          const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.095, 2.3, 20), brassMat);
+          pillar.position.y = 1.45;
+          pillar.castShadow = true;
+          scalesGroup.add(pillar);
+
+          const finial = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 20), brassMat);
+          finial.position.y = 2.66;
+          scalesGroup.add(finial);
+
+          // Swaying Beam
+          scalesBeam = new THREE.Group();
+          scalesBeam.position.set(0, 2.46, 0);
+
+          const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 2.35, 16), brassMat);
+          bar.rotation.z = Math.PI / 2;
+          bar.castShadow = true;
+          scalesBeam.add(bar);
+
+          function buildPan(xPos) {
+            const g = new THREE.Group();
+            g.position.set(xPos, 0, 0);
+            // 3 delicate chains
+            for (let i = 0; i < 3; i++) {
+              const angle = (i / 3) * Math.PI * 2;
+              const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 1.05, 8), brassMat);
+              chain.position.set(Math.cos(angle) * 0.18, -0.52, Math.sin(angle) * 0.18);
+              chain.rotation.z = Math.cos(angle) * 0.17;
+              chain.rotation.x = -Math.sin(angle) * 0.17;
+              g.add(chain);
+            }
+            const pan = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.28, 0.09, 24), brassMat);
+            pan.position.y = -1.04;
+            pan.castShadow = true;
+            g.add(pan);
+            return g;
+          }
+
+          leftPanGroup = buildPan(-1.08);
+          rightPanGroup = buildPan(1.08);
+          scalesBeam.add(leftPanGroup);
+          scalesBeam.add(rightPanGroup);
+          scalesGroup.add(scalesBeam);
+          scene.add(scalesGroup);
+
+          // --- 3. Judge's Gavel & Sounding Block (Right) ---
+          const gavelGroup = new THREE.Group();
+          gavelGroup.position.set(1.85, 0, 0.55);
+
+          const soundBlock = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.18, 28), mahoganyMat);
+          soundBlock.position.y = 0.09;
+          soundBlock.castShadow = true;
+          soundBlock.receiveShadow = true;
+          gavelGroup.add(soundBlock);
+
+          const blockRing = new THREE.Mesh(new THREE.TorusGeometry(0.56, 0.02, 10, 32), brassMat);
+          blockRing.rotation.x = Math.PI / 2;
+          blockRing.position.y = 0.17;
+          gavelGroup.add(blockRing);
+
+          const gavelObj = new THREE.Group();
+          gavelObj.position.set(-0.08, 0.42, 0.05);
+          gavelObj.rotation.set(0.18, -0.55, -0.28);
+
+          const head = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.85, 24), mahoganyMat);
+          head.rotation.z = Math.PI / 2;
+          head.castShadow = true;
+          gavelObj.add(head);
+
+          const bandL = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.23, 0.06, 24), brassMat);
+          bandL.rotation.z = Math.PI / 2;
+          bandL.position.x = -0.32;
+          gavelObj.add(bandL);
+
+          const bandR = bandL.clone();
+          bandR.position.x = 0.32;
+          gavelObj.add(bandR);
+
+          const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.08, 1.55, 16), mahoganyMat);
+          handle.position.set(0, -0.05, 0.78);
+          handle.rotation.x = Math.PI / 2;
+          handle.castShadow = true;
+          gavelObj.add(handle);
+
+          gavelGroup.add(gavelObj);
+          scene.add(gavelGroup);
+
+          // --- 4. Stacked Law Volumes & Case Dossier (Left) ---
+          const booksGroup = new THREE.Group();
+          booksGroup.position.set(-2.05, 0, 0.25);
+
+          const book1 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.26, 1.05), burgundyMat);
+          book1.position.set(0, 0.13, 0);
+          book1.rotation.y = 0.12;
+          book1.castShadow = true;
+          booksGroup.add(book1);
+
+          const book2 = new THREE.Mesh(new THREE.BoxGeometry(1.42, 0.24, 0.98), navyBookMat);
+          book2.position.set(-0.04, 0.38, -0.02);
+          book2.rotation.y = -0.06;
+          book2.castShadow = true;
+          booksGroup.add(book2);
+
+          const book3 = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.22, 0.92), burgundyMat);
+          book3.position.set(0.05, 0.61, 0.03);
+          book3.rotation.y = 0.2;
+          book3.castShadow = true;
+          booksGroup.add(book3);
+
+          // Gold spine stripes
+          const spineStripe = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.04, 0.04), brassMat);
+          spineStripe.position.set(0, 0.13, 0.52);
+          spineStripe.rotation.y = 0.12;
+          booksGroup.add(spineStripe);
+
+          // Cream Dossier Folder resting in front
+          const dossier = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.07, 1.6), paperMat);
+          dossier.position.set(0.55, 0.04, 1.15);
+          dossier.rotation.y = 0.32;
+          dossier.castShadow = true;
+          booksGroup.add(dossier);
+
+          const ribbon = new THREE.Mesh(new THREE.BoxGeometry(1.27, 0.08, 0.12), burgundyMat);
+          ribbon.position.set(0.55, 0.045, 1.15);
+          ribbon.rotation.y = 0.32;
+          booksGroup.add(ribbon);
+
+          scene.add(booksGroup);
+
+          // --- 5. Floating Golden Dust Particles ---
+          const particleCount = 130;
+          const positions = new Float32Array(particleCount * 3);
+          for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 11;
+            positions[i * 3 + 1] = Math.random() * 5 + 0.3;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 7;
+          }
+          const pGeo = new THREE.BufferGeometry();
+          pGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          const pMat = new THREE.PointsMaterial({
+            color: 0xf4dc85,
+            size: 0.045,
+            transparent: true,
+            opacity: 0.55
+          });
+          dustPoints = new THREE.Points(pGeo, pMat);
+          scene.add(dustPoints);
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('resize', onResize);
+
+          const clock = new THREE.Clock();
+          function animate() {
+            animId = requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            // Gentle Scales of Justice Sway
+            if (scalesBeam) {
+              const sway = Math.sin(t * 0.9) * 0.075;
+              scalesBeam.rotation.z = sway;
+              if (leftPanGroup) leftPanGroup.rotation.z = -sway;
+              if (rightPanGroup) rightPanGroup.rotation.z = -sway;
+            }
+
+            // Warm lamp subtle flicker
+            if (lampLight) {
+              lampLight.intensity = 2.75 + Math.sin(t * 2.4) * 0.12;
+            }
+
+            // Floating dust drift
+            if (dustPoints) {
+              dustPoints.rotation.y = t * 0.025;
+              dustPoints.position.y = Math.sin(t * 0.5) * 0.12;
+            }
+
+            // Smooth camera parallax + hover focus
+            const preset = CAMERA_PRESETS[focusPreset] || CAMERA_PRESETS.default;
+            const targetX = preset.pos[0] + mouseX * 0.65;
+            const targetY = preset.pos[1] + mouseY * 0.32;
+            const targetZ = preset.pos[2];
+
+            camera.position.x += (targetX - camera.position.x) * 0.045;
+            camera.position.y += (targetY - camera.position.y) * 0.045;
+            camera.position.z += (targetZ - camera.position.z) * 0.045;
+
+            currentLook.x += (preset.look[0] - currentLook.x) * 0.055;
+            currentLook.y += (preset.look[1] - currentLook.y) * 0.055;
+            currentLook.z += (preset.look[2] - currentLook.z) * 0.055;
+
+            camera.lookAt(currentLook.x, currentLook.y, currentLook.z);
+            renderer.render(scene, camera);
+          }
+
+          animate();
+        } catch (err) {
+          container.classList.add('css-3d-fallback');
+        }
+      }
+
+      function dispose() {
+        if (animId) {
+          cancelAnimationFrame(animId);
+          animId = null;
+        }
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('resize', onResize);
+        if (renderer) {
+          renderer.dispose();
+          renderer = null;
+        }
+        scene = null;
+        camera = null;
+      }
+
+      return { mount, dispose, setFocus };
+    })();
+
+    /* =========================================================================
+       3. HIGH-DETAIL SVG SCENE BACKGROUNDS, CHARACTER PORTRAITS & EVIDENCE CARDS
+       ========================================================================= */
+    function getSceneBackgroundSVG(sceneId) {
+      if (sceneId === 'office') {
+        return `
+          <svg viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+            <defs>
+              <linearGradient id="offNight" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#0b1224"/>
+                <stop offset="100%" stop-color="#1b2640"/>
+              </linearGradient>
+              <radialGradient id="lampGlow" cx="76%" cy="56%" r="42%">
+                <stop offset="0%" stop-color="#f5c451" stop-opacity="0.48"/>
+                <stop offset="60%" stop-color="#c98c27" stop-opacity="0.12"/>
+                <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- Mahogany Wall -->
+            <rect width="960" height="320" fill="#1b1210"/>
+            <!-- Bookshelf Left -->
+            <rect x="24" y="20" width="230" height="280" rx="6" fill="#251612" stroke="#4a2e22" stroke-width="3"/>
+            <g fill="#5b181b" stroke="#c9a227" stroke-width="0.6">
+              <rect x="38" y="40" width="20" height="58"/><rect x="60" y="46" width="18" height="52"/><rect x="80" y="38" width="22" height="60"/>
+              <rect x="108" y="44" width="18" height="54" fill="#1d2b44"/><rect x="128" y="40" width="20" height="58" fill="#2c3e2e"/>
+              <rect x="154" y="45" width="24" height="53"/><rect x="180" y="38" width="19" height="60" fill="#1d2b44"/>
+              <rect x="38" y="122" width="22" height="56" fill="#1d2b44"/><rect x="62" y="126" width="18" height="52"/><rect x="84" y="120" width="24" height="58"/>
+              <rect x="112" y="128" width="20" height="50" fill="#2c3e2e"/><rect x="136" y="122" width="22" height="56"/><rect x="162" y="125" width="26" height="53" fill="#1d2b44"/>
+            </g>
+            <rect x="30" y="98" width="218" height="8" fill="#3a231b"/>
+            <rect x="30" y="178" width="218" height="8" fill="#3a231b"/>
+            <!-- Night City Window Center -->
+            <rect x="295" y="22" width="370" height="215" rx="4" fill="url(#offNight)" stroke="#4c3124" stroke-width="7"/>
+            <g fill="#0e1629">
+              <rect x="310" y="120" width="44" height="115"/><rect x="364" y="92" width="52" height="143"/>
+              <rect x="426" y="135" width="40" height="100"/><rect x="480" y="78" width="58" height="157"/>
+              <rect x="550" y="114" width="48" height="121"/><rect x="606" y="98" width="46" height="137"/>
+            </g>
+            <!-- City Lights -->
+            <g fill="#f4d06f" opacity="0.72">
+              <rect x="376" y="106" width="6" height="6"/><rect x="392" y="122" width="6" height="6"/>
+              <rect x="494" y="96" width="7" height="7"/><rect x="514" y="112" width="7" height="7"/><rect x="494" y="132" width="7" height="7"/>
+              <rect x="564" y="130" width="6" height="6"/><rect x="618" y="118" width="6" height="6"/>
+            </g>
+            <line x1="480" y1="22" x2="480" y2="237" stroke="#4c3124" stroke-width="5"/>
+            <line x1="295" y1="130" x2="665" y2="130" stroke="#4c3124" stroke-width="4"/>
+            <!-- Right Banker's Lamp -->
+            <rect x="700" y="235" width="240" height="85" fill="#261612"/>
+            <path d="M775 235 L785 162 L795 235 Z" fill="#b88e28"/>
+            <ellipse cx="785" cy="156" rx="46" ry="20" fill="#166534" stroke="#d4af37" stroke-width="2.5"/>
+            <rect width="960" height="320" fill="url(#lampGlow)"/>
+            <!-- Desk Foreground -->
+            <rect x="0" y="255" width="960" height="65" fill="#22130f" stroke="#5c3b28" stroke-width="2"/>
+          </svg>`;
+      }
+
+      if (sceneId === 'prison') {
+        return `
+          <svg viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+            <defs>
+              <linearGradient id="prWall" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#181f29"/>
+                <stop offset="100%" stop-color="#10151d"/>
+              </linearGradient>
+              <linearGradient id="glassGlare" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#cbd5e1" stop-opacity="0.16"/>
+                <stop offset="45%" stop-color="#94a3b8" stop-opacity="0.03"/>
+                <stop offset="100%" stop-color="#e2e8f0" stop-opacity="0.12"/>
+              </linearGradient>
+            </defs>
+            <rect width="960" height="320" fill="url(#prWall)"/>
+            <!-- Concrete block lines -->
+            <g stroke="#263140" stroke-width="1.2" opacity="0.55">
+              <line x1="0" y1="60" x2="960" y2="60"/><line x1="0" y1="120" x2="960" y2="120"/><line x1="0" y1="180" x2="960" y2="180"/>
+              <line x1="160" y1="0" x2="160" y2="240"/><line x1="360" y1="0" x2="360" y2="240"/><line x1="600" y1="0" x2="600" y2="240"/><line x1="800" y1="0" x2="800" y2="240"/>
+            </g>
+            <!-- Overhead Cold Fluorescent Light -->
+            <rect x="340" y="10" width="280" height="12" rx="6" fill="#cbd5e1" opacity="0.75"/>
+            <ellipse cx="480" cy="40" rx="260" ry="60" fill="#93c5fd" opacity="0.09"/>
+            <!-- Steel Security Bars Behind Glass -->
+            <g stroke="#0b0f16" stroke-width="10" opacity="0.5">
+              <line x1="120" y1="0" x2="120" y2="255"/><line x1="220" y1="0" x2="220" y2="255"/>
+              <line x1="740" y1="0" x2="740" y2="255"/><line x1="840" y1="0" x2="840" y2="255"/>
+            </g>
+            <!-- Glass Partition Frame -->
+            <rect x="85" y="16" width="790" height="232" rx="4" fill="url(#glassGlare)" stroke="#475569" stroke-width="6"/>
+            <line x1="145" y1="18" x2="215" y2="246" stroke="#ffffff" stroke-width="18" opacity="0.04"/>
+            <line x1="690" y1="18" x2="755" y2="246" stroke="#ffffff" stroke-width="24" opacity="0.035"/>
+            <!-- Intercom Speaker Grille -->
+            <circle cx="770" cy="175" r="24" fill="#1e293b" stroke="#64748b" stroke-width="3"/>
+            <circle cx="770" cy="175" r="14" fill="#0f172a" stroke="#475569" stroke-width="1.5" stroke-dasharray="2 3"/>
+            <!-- Wall Phone Handset Right -->
+            <rect x="888" y="110" width="44" height="92" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+            <path d="M902 126 C902 118 918 118 918 126 L918 186 C918 194 902 194 902 186 Z" fill="#0f172a"/>
+            <!-- Metal Counter -->
+            <rect x="0" y="248" width="960" height="72" fill="#1e2430" stroke="#475569" stroke-width="3"/>
+            <text x="110" y="274" fill="#64748b" font-size="11" font-family="Inter" letter-spacing="3" font-weight="700">METRİS CEZAEVİ — AVUKAT GÖRÜŞ KABİNİ 04</text>
+          </svg>`;
+      }
+
+      if (sceneId === 'pier') {
+        return `
+          <svg viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+            <defs>
+              <linearGradient id="pierSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#050811"/>
+                <stop offset="65%" stop-color="#0f1b2e"/>
+                <stop offset="100%" stop-color="#17253a"/>
+              </linearGradient>
+              <linearGradient id="beam1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#fde68a" stop-opacity="0.34"/>
+                <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <rect width="960" height="320" fill="url(#pierSky)"/>
+            <!-- Port Cranes Silhouette -->
+            <g stroke="#080d18" stroke-width="6" fill="none">
+              <path d="M120 210 L145 75 L175 210 M80 95 L255 62 M145 75 L235 68"/>
+              <path d="M680 210 L710 68 L745 210 M620 82 L835 55"/>
+            </g>
+            <!-- Searchlight Beams -->
+            <polygon points="145,75 430,275 270,275" fill="url(#beam1)"/>
+            <polygon points="710,68 560,260 440,260" fill="url(#beam1)"/>
+            <!-- Warehouse Office Building -->
+            <rect x="330" y="112" width="290" height="106" fill="#0d1321" stroke="#1e293b" stroke-width="2"/>
+            <rect x="355" y="132" width="52" height="32" fill="#f59e0b" opacity="0.28"/>
+            <rect x="425" y="132" width="52" height="32" fill="#dc2626" opacity="0.22"/>
+            <rect x="495" y="132" width="52" height="32" fill="#f59e0b" opacity="0.18"/>
+            <text x="356" y="126" fill="#94a3b8" font-size="10" font-family="Inter" letter-spacing="2" font-weight="700">DEMİRCİ LOJİSTİK — LİMAN OFİSİ</text>
+            <!-- Dark Sea & Ripples -->
+            <rect x="0" y="215" width="960" height="105" fill="#07101d"/>
+            <g stroke="#38bdf8" stroke-width="1.4" opacity="0.22">
+              <line x1="60" y1="238" x2="180" y2="238"/><line x1="290" y1="255" x2="460" y2="255"/>
+              <line x1="560" y1="242" x2="720" y2="242"/><line x1="760" y1="268" x2="910" y2="268"/>
+            </g>
+            <!-- Pier Deck & Crime Scene Tape -->
+            <polygon points="0,268 960,256 960,320 0,320" fill="#111827"/>
+            <line x1="0" y1="286" x2="960" y2="274" stroke="#facc15" stroke-width="7" stroke-dasharray="22 14" opacity="0.82"/>
+            <!-- Animated Rain Streaks -->
+            <g class="rain-layer" stroke="#bae6fd" stroke-width="1" opacity="0.25">
+              <line x1="90" y1="10" x2="78" y2="65"/><line x1="210" y1="40" x2="198" y2="95"/>
+              <line x1="340" y1="15" x2="328" y2="70"/><line x1="490" y1="50" x2="478" y2="105"/>
+              <line x1="630" y1="20" x2="618" y2="75"/><line x1="790" y1="35" x2="778" y2="90"/>
+              <line x1="890" y1="15" x2="878" y2="70"/><line x1="150" y1="130" x2="138" y2="185"/>
+              <line x1="420" y1="145" x2="408" y2="200"/><line x1="720" y1="135" x2="708" y2="190"/>
+            </g>
+          </svg>`;
+      }
+
+      // Default: 'courtroom' (14. Ağır Ceza Mahkemesi Salonu)
+      return `
+        <svg viewBox="0 0 960 320" preserveAspectRatio="xMidYMid slice" class="w-full h-full">
+          <defs>
+            <linearGradient id="ctWall" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#1c1110"/>
+              <stop offset="100%" stop-color="#2b1915"/>
+            </linearGradient>
+            <radialGradient id="ctSpot" cx="50%" cy="22%" r="58%">
+              <stop offset="0%" stop-color="#f6d379" stop-opacity="0.24"/>
+              <stop offset="100%" stop-color="#000" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="960" height="320" fill="url(#ctWall)"/>
+          <!-- Wooden Wall Panels -->
+          <g fill="#221411" stroke="#4a2e22" stroke-width="2">
+            <rect x="30" y="25" width="160" height="210" rx="4"/>
+            <rect x="215" y="25" width="530" height="210" rx="4"/>
+            <rect x="770" y="25" width="160" height="210" rx="4"/>
+          </g>
+          <!-- Turkish Flag Left of Bench -->
+          <g transform="translate(80, 42)">
+            <rect x="0" y="0" width="5" height="190" fill="#c9a227"/>
+            <circle cx="2.5" cy="0" r="6" fill="#ebd075"/>
+            <path d="M5 10 Q42 18 74 10 L70 112 Q40 120 5 110 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="1"/>
+            <!-- Crescent & Star -->
+            <circle cx="34" cy="60" r="14" fill="#f8fafc"/>
+            <circle cx="38" cy="60" r="11" fill="#b91c1c"/>
+            <polygon points="52,55 54,60 59,60 55,63 56,68 52,65 48,68 49,63 45,60 50,60" fill="#f8fafc"/>
+          </g>
+          <!-- Gold Plaque: ADALET MÜLKÜN TEMELİDİR -->
+          <rect x="255" y="42" width="450" height="44" rx="4" fill="#160d0c" stroke="#c9a227" stroke-width="2"/>
+          <text x="480" y="70" text-anchor="middle" fill="#ebd075" font-size="18" font-family="Playfair Display, Georgia, serif" font-weight="800" letter-spacing="3">ADALET MÜLKÜN TEMELİDİR</text>
+          <!-- Justice Emblem -->
+          <g transform="translate(480, 122)" stroke="#c9a227" stroke-width="2" fill="none" opacity="0.65">
+            <circle cx="0" cy="0" r="26"/>
+            <line x1="0" y1="-16" x2="0" y2="16"/>
+            <line x1="-15" y1="-7" x2="15" y2="-7"/>
+            <path d="M-15 -7 L-20 4 H-10 Z M15 -7 L10 4 H20 Z"/>
+          </g>
+          <!-- Judge's Bench & Witness Podium Foreground -->
+          <rect x="0" y="232" width="960" height="88" fill="#2d1a14" stroke="#6b442b" stroke-width="3"/>
+          <rect x="190" y="242" width="580" height="72" fill="#3a2219" stroke="#c9a227" stroke-width="1.5" opacity="0.85"/>
+          <text x="480" y="286" text-anchor="middle" fill="#c9a227" font-size="11" font-family="Inter" letter-spacing="4" font-weight="700" opacity="0.8">İSTANBUL 14. AĞIR CEZA MAHKEMESİ</text>
+          <rect width="960" height="320" fill="url(#ctSpot)"/>
+        </svg>`;
+    }
+
+    /* High-Detail Stylized SVG Character Portraits with Dynamic Expressions */
+    function getCharacterPortraitSVG(charId, mood = 'normal', size = 165) {
+      // Facial expression primitives based on mood
+      const expr = {
+        normal: {
+          brows: `<path d="M84 82 Q93 79 102 82 M118 82 Q127 79 136 82" stroke="#2c1d18" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+          eyes: `<circle cx="93" cy="92" r="4" fill="#181210"/><circle cx="127" cy="92" r="4" fill="#181210"/><circle cx="94.5" cy="90.5" r="1.3" fill="#fff"/><circle cx="128.5" cy="90.5" r="1.3" fill="#fff"/>`,
+          mouth: `<path d="M98 118 Q110 121 122 118" stroke="#6b3e32" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+          extra: ''
+        },
+        emin: {
+          brows: `<path d="M84 81 Q93 77 103 82 M117 82 Q127 77 136 81" stroke="#2c1d18" stroke-width="3.2" fill="none" stroke-linecap="round"/>`,
+          eyes: `<circle cx="93" cy="92" r="4.1" fill="#181210"/><circle cx="127" cy="92" r="4.1" fill="#181210"/><circle cx="94.5" cy="90.5" r="1.5" fill="#fff"/><circle cx="128.5" cy="90.5" r="1.5" fill="#fff"/>`,
+          mouth: `<path d="M97 117 Q110 126 123 116" stroke="#6b3e32" stroke-width="2.8" fill="none" stroke-linecap="round"/>`,
+          extra: ''
+        },
+        rahat: {
+          brows: `<path d="M84 80 Q93 76 102 80 M118 80 Q127 76 136 80" stroke="#2c1d18" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+          eyes: `<path d="M87 92 Q93 87 99 92 M121 92 Q127 87 133 92" stroke="#181210" stroke-width="2.8" fill="none" stroke-linecap="round"/>`,
+          mouth: `<path d="M96 116 Q110 127 124 116" stroke="#6b3e32" stroke-width="2.8" fill="none" stroke-linecap="round"/>`,
+          extra: ''
+        },
+        gergin: {
+          brows: `<path d="M83 84 Q93 78 103 80 M117 80 Q127 78 137 84" stroke="#2c1d18" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+          eyes: `<ellipse cx="93" cy="92" rx="4.5" ry="3.8" fill="#181210"/><ellipse cx="127" cy="92" rx="4.5" ry="3.8" fill="#181210"/><circle cx="94.5" cy="90.5" r="1.4" fill="#fff"/><circle cx="128.5" cy="90.5" r="1.4" fill="#fff"/>`,
+          mouth: `<path d="M97 120 Q104 116 110 119 Q116 122 123 118" stroke="#6b3e32" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
+          extra: `<path d="M144 78 Q149 86 144 92 Q139 86 144 78 Z" fill="#7dd3fc" opacity="0.9"/>`
+        },
+        sok: {
+          brows: `<path d="M82 77 Q93 71 103 77 M117 77 Q127 71 138 77" stroke="#2c1d18" stroke-width="3.2" fill="none" stroke-linecap="round"/>`,
+          eyes: `<circle cx="93" cy="92" r="6" fill="#fff" stroke="#181210" stroke-width="1.6"/><circle cx="93" cy="92" r="2.5" fill="#111"/><circle cx="127" cy="92" r="6" fill="#fff" stroke="#181210" stroke-width="1.6"/><circle cx="127" cy="92" r="2.5" fill="#111"/>`,
+          mouth: `<ellipse cx="110" cy="120" rx="9" ry="7" fill="#4a1d1d" stroke="#2c1d18" stroke-width="1.8"/>`,
+          extra: `<path d="M145 74 Q151 83 145 90 Q139 83 145 74 Z" fill="#7dd3fc"/><path d="M74 84 Q78 91 74 96 Q70 91 74 84 Z" fill="#7dd3fc"/>`
+        },
+        ofkeli: {
+          brows: `<path d="M82 79 L104 86 M138 79 L116 86" stroke="#2c1d18" stroke-width="3.6" fill="none" stroke-linecap="round"/>`,
+          eyes: `<circle cx="93" cy="93" r="4" fill="#181210"/><circle cx="127" cy="93" r="4" fill="#181210"/><circle cx="94" cy="91.5" r="1.2" fill="#fff"/><circle cx="128" cy="91.5" r="1.2" fill="#fff"/>`,
+          mouth: `<path d="M96 122 Q110 113 124 122" stroke="#5c2420" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+          extra: ''
+        }
+      };
+
+      const ex = expr[mood] || expr.normal;
+
+      // Character-specific styling (clothing, hair, accessories)
+      const chars = {
+        avukat: {
+          skin: '#e6bc9a',
+          bgGlow: 'rgba(22, 163, 74, 0.22)',
+          robe: `
+            <!-- Turkish Lawyer Robe (Black with Crimson & Emerald Green Stripes) -->
+            <path d="M26 220 C26 154 194 154 194 220 Z" fill="#111318"/>
+            <path d="M74 154 L110 218 L146 154 Z" fill="#15803d"/>
+            <path d="M84 154 L110 205 L136 154 Z" fill="#b91c1c"/>
+            <path d="M96 154 L110 190 L124 154 Z" fill="#f8fafc"/>
+            <path d="M106 164 L110 186 L114 164 Z" fill="#1e293b"/>
+          `,
+          hair: `<path d="M68 86 C66 34 154 34 152 86 C144 64 128 56 110 58 C92 56 76 66 68 86 Z" fill="#231c1a"/>`,
+          acc: ``
+        },
+        hakim: {
+          skin: '#dfb597',
+          bgGlow: 'rgba(201, 162, 39, 0.24)',
+          robe: `
+            <!-- Turkish Heavy Penal Judge Robe (Black with Crimson & Gold Collar) -->
+            <path d="M24 220 C24 152 196 152 196 220 Z" fill="#0f1014"/>
+            <path d="M70 153 L110 216 L150 153 Z" fill="#991b1b" stroke="#d4af37" stroke-width="3"/>
+            <path d="M95 154 L110 186 L125 154 Z" fill="#f1f5f9"/>
+          `,
+          hair: `<path d="M68 86 C68 38 152 38 152 86 C142 64 78 64 68 86 Z" fill="#9ca3af"/>`,
+          acc: `
+            <rect x="81" y="85" width="24" height="14" rx="4" fill="none" stroke="#d4af37" stroke-width="2.2"/>
+            <rect x="115" y="85" width="24" height="14" rx="4" fill="none" stroke="#d4af37" stroke-width="2.2"/>
+            <line x1="105" y1="92" x2="115" y2="92" stroke="#d4af37" stroke-width="2.2"/>
+          `
+        },
+        savci: {
+          skin: '#ddb08f',
+          bgGlow: 'rgba(185, 28, 28, 0.25)',
+          robe: `
+            <!-- Turkish Prosecutor Robe -->
+            <path d="M26 220 C26 154 194 154 194 220 Z" fill="#101116"/>
+            <path d="M74 154 L110 214 L146 154 Z" fill="#7f1d1d" stroke="#c9a227" stroke-width="2.4"/>
+            <path d="M96 154 L110 188 L124 154 Z" fill="#e2e8f0"/>
+          `,
+          hair: `<path d="M69 84 C68 38 152 38 151 84 C138 60 82 60 69 84 Z" fill="#1f2937"/>`,
+          acc: `<path d="M97 110 Q110 107 123 110" stroke="#1f2937" stroke-width="2.4" fill="none" opacity="0.65"/>`
+        },
+        kerem: {
+          skin: '#e4b997',
+          bgGlow: 'rgba(56, 189, 248, 0.18)',
+          robe: `
+            <path d="M30 220 C30 156 190 156 190 220 Z" fill="#334155"/>
+            <path d="M88 156 L110 196 L132 156 Z" fill="#cbd5e1"/>
+            <path d="M74 158 L92 220 M146 158 L128 220" stroke="#1e293b" stroke-width="3"/>
+          `,
+          hair: `<path d="M67 88 C65 36 155 36 153 88 C142 62 84 60 67 88 Z" fill="#3e2b22"/>`,
+          acc: `<path d="M85 130 Q110 144 135 130" stroke="#3e2b22" stroke-width="4" fill="none" opacity="0.22"/>`
+        },
+        riza: {
+          skin: '#d7a380',
+          bgGlow: 'rgba(59, 130, 246, 0.2)',
+          robe: `
+            <!-- Security Guard Uniform -->
+            <path d="M26 220 C26 154 194 154 194 220 Z" fill="#1e3a5f"/>
+            <path d="M96 155 L110 198 L124 155 Z" fill="#93c5fd"/>
+            <polygon points="106,162 114,162 112,202 108,202" fill="#0f172a"/>
+            <circle cx="148" cy="186" r="8" fill="#eab308" stroke="#854d0e" stroke-width="1.5"/>
+          `,
+          hair: `
+            <!-- Security Cap -->
+            <path d="M66 68 L154 68 L145 40 L75 40 Z" fill="#0f172a"/>
+            <rect x="60" y="66" width="100" height="10" rx="5" fill="#1e293b"/>
+            <circle cx="110" cy="54" r="6" fill="#eab308"/>
+          `,
+          acc: `<path d="M94 111 Q110 107 126 111" stroke="#3b2820" stroke-width="4.2" fill="none" stroke-linecap="round"/>`
+        },
+        hakan: {
+          skin: '#e5bc9c',
+          bgGlow: 'rgba(20, 184, 166, 0.2)',
+          robe: `
+            <!-- Forensic Lab Coat -->
+            <path d="M26 220 C26 154 194 154 194 220 Z" fill="#e2e8f0"/>
+            <path d="M84 154 L110 210 L136 154 Z" fill="#0f766e"/>
+            <rect x="136" y="178" width="22" height="16" rx="2" fill="#0284c7" stroke="#0f172a" stroke-width="1"/>
+          `,
+          hair: `<path d="M69 84 C69 40 151 40 151 84 C140 64 80 64 69 84 Z" fill="#475569"/>`,
+          acc: `
+            <circle cx="93" cy="92" r="11" fill="rgba(255,255,255,0.12)" stroke="#1e293b" stroke-width="2.2"/>
+            <circle cx="127" cy="92" r="11" fill="rgba(255,255,255,0.12)" stroke="#1e293b" stroke-width="2.2"/>
+            <line x1="104" y1="92" x2="116" y2="92" stroke="#1e293b" stroke-width="2.2"/>
+          `
+        },
+        selin: {
+          skin: '#f0c7a8',
+          bgGlow: 'rgba(225, 29, 72, 0.24)',
+          robe: `
+            <!-- Chic Blazer & Signature Red Silk Scarf -->
+            <path d="M30 220 C30 156 190 156 190 220 Z" fill="#18181b"/>
+            <path d="M82 155 Q110 182 138 155 L130 198 Q110 212 90 198 Z" fill="#dc2626"/>
+            <path d="M96 158 Q110 174 124 158" stroke="#991b1b" stroke-width="2.5" fill="none"/>
+          `,
+          hair: `
+            <path d="M56 148 L60 76 C60 32 160 32 160 76 L164 148 C154 136 148 112 146 84 C132 62 88 62 74 84 C72 112 66 136 56 148 Z" fill="#2a1510"/>
+          `,
+          acc: `<circle cx="67" cy="108" r="3.5" fill="#facc15"/><circle cx="153" cy="108" r="3.5" fill="#facc15"/>`
+        }
+      };
+
+      const ch = chars[charId] || chars.hakim;
+      return `
+        <svg width="${size}" height="${size}" viewBox="0 0 220 220" class="drop-shadow-[0_14px_24px_rgba(0,0,0,0.75)] select-none shrink-0">
+          <defs>
+            <radialGradient id="halo_${charId}" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="${ch.bgGlow}"/>
+              <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+            </radialGradient>
+          </defs>
+          <circle cx="110" cy="112" r="98" fill="url(#halo_${charId})"/>
+          <!-- Back Hair for Selin -->
+          ${charId === 'selin' ? `<path d="M56 90 C54 150 58 175 72 185 L148 185 C162 175 166 150 164 90 Z" fill="#2a1510"/>` : ''}
+          <!-- Clothing / Robe -->
+          ${ch.robe}
+          <!-- Neck -->
+          <rect x="96" y="130" width="28" height="30" rx="8" fill="${ch.skin}"/>
+          <!-- Ears -->
+          <circle cx="71" cy="96" r="8" fill="${ch.skin}"/>
+          <circle cx="149" cy="96" r="8" fill="${ch.skin}"/>
+          <!-- Head -->
+          <rect x="72" y="54" width="76" height="86" rx="36" fill="${ch.skin}"/>
+          <!-- Nose -->
+          <path d="M110 92 L107 105 L113 106" stroke="#b98664" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <!-- Hair / Hat -->
+          ${ch.hair}
+          <!-- Expression -->
+          ${ex.brows}
+          ${ex.eyes}
+          ${ex.mouth}
+          <!-- Accessories -->
+          ${ch.acc}
+          ${ex.extra}
+        </svg>`;
+    }
+
+    /* Representative Evidence Illustration Cards (Shown in Dramatic Splash & Modals) */
+    function getEvidenceVisualSVG(evId) {
+      if (evId === 'ev_hts') {
+        return `
+          <svg viewBox="0 0 320 150" class="w-full h-36 rounded-xl border border-amber-500/40 bg-slate-950">
+            <rect width="320" height="150" fill="#0b1324"/>
+            <g stroke="#1e3a5f" stroke-width="1"><line x1="0" y1="35" x2="320" y2="35"/><line x1="0" y1="75" x2="320" y2="75"/><line x1="0" y1="115" x2="320" y2="115"/><line x1="80" y1="0" x2="80" y2="150"/><line x1="160" y1="0" x2="160" y2="150"/><line x1="240" y1="0" x2="240" y2="150"/></g>
+            <circle cx="72" cy="98" r="28" fill="#ef4444" opacity="0.16" stroke="#ef4444" stroke-dasharray="4 3"/>
+            <circle cx="72" cy="98" r="5" fill="#ef4444"/>
+            <text x="24" y="138" fill="#fca5a5" font-size="9" font-family="Inter" font-weight="700">LİMAN BAZI (ÇIKIŞ: 23:31)</text>
+            <path d="M72 98 Q165 40 250 48" stroke="#facc15" stroke-width="2.5" stroke-dasharray="6 4" fill="none"/>
+            <circle cx="250" cy="48" r="24" fill="#22c55e" opacity="0.18" stroke="#22c55e"/>
+            <circle cx="250" cy="48" r="5" fill="#22c55e"/>
+            <text x="180" y="22" fill="#86efac" font-size="9" font-family="Inter" font-weight="700">TEM KUZEY (23:39 • 8 KM)</text>
+          </svg>`;
+      }
+      if (evId === 'ev_bilisim') {
+        return `
+          <svg viewBox="0 0 320 150" class="w-full h-36 rounded-xl border border-amber-500/40 bg-black">
+            <rect width="320" height="150" fill="#07110c"/>
+            <text x="14" y="24" fill="#4ade80" font-size="10" font-family="monospace" font-weight="700">&gt; ADLİ BİLİŞİM LOG ANALİZİ [OK]</text>
+            <text x="14" y="48" fill="#cbd5e1" font-size="9.5" font-family="monospace">23:18:04 [CCTV_OFF] USER: SKARAHAN_ADM</text>
+            <text x="14" y="68" fill="#facc15" font-size="9.5" font-family="monospace">23:36:19 [SWIFT_OUT] 400.000 EUR -&gt; CYPRUS</text>
+            <text x="14" y="88" fill="#cbd5e1" font-size="9.5" font-family="monospace">23:55:11 [CCTV_ON]  USER: SKARAHAN_ADM</text>
+            <rect x="14" y="106" width="292" height="28" rx="4" fill="#7f1d1d" opacity="0.65" stroke="#ef4444"/>
+            <text x="160" y="124" text-anchor="middle" fill="#fecaca" font-size="10" font-family="Inter" font-weight="700">YETKİLİ HESAP: SELİN KARAHAN</text>
+          </svg>`;
+      }
+      if (evId === 'ev_adlitip') {
+        return `
+          <svg viewBox="0 0 320 150" class="w-full h-36 rounded-xl border border-amber-500/40 bg-slate-950">
+            <rect width="320" height="150" fill="#0d161b"/>
+            <circle cx="92" cy="74" r="36" fill="none" stroke="#94a3b8" stroke-width="2"/>
+            <path d="M52 44 L80 62" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="82" cy="63" r="6" fill="#ef4444" opacity="0.7"/>
+            <text x="146" y="42" fill="#5eead4" font-size="10" font-family="Inter" font-weight="700">OTOPSİ AÇI ŞEMASI</text>
+            <text x="146" y="64" fill="#e2e8f0" font-size="9.5" font-family="Inter">• Darbe: ARKADAN &amp; SOLAK</text>
+            <text x="146" y="84" fill="#e2e8f0" font-size="9.5" font-family="Inter">• Ödül DNA: KEREM YOK</text>
+            <text x="146" y="104" fill="#fca5a5" font-size="9.5" font-family="Inter" font-weight="700">• Lif: KIRMIZI İPEK EŞARP</text>
+          </svg>`;
+      }
+      if (evId === 'ev_fis' || evId === 'ev_ik_arsiv') {
+        const label = evId === 'ev_fis' ? 'CAM-04 • TEM SHELL • 23:39:14' : 'CAM-01 • LOBİ • 19:15:02 (KIRMIZI EŞARP)';
+        return `
+          <svg viewBox="0 0 320 150" class="w-full h-36 rounded-xl border border-amber-500/40 bg-stone-950">
+            <rect width="320" height="150" fill="#13161c"/>
+            <rect x="10" y="10" width="300" height="130" fill="none" stroke="#64748b" stroke-dasharray="6 4"/>
+            <circle cx="26" cy="24" r="5" fill="#ef4444"/>
+            <text x="38" y="28" fill="#f8fafc" font-size="9.5" font-family="monospace" font-weight="700">REC • ${label}</text>
+            <circle cx="160" cy="70" r="18" fill="#cbd5e1" opacity="0.75"/>
+            <path d="M130 125 C130 92 190 92 190 125 Z" fill="${evId === 'ev_ik_arsiv' ? '#dc2626' : '#334155'}"/>
+            <text x="160" y="136" text-anchor="middle" fill="#fde047" font-size="9" font-family="monospace">NOTER &amp; BİLİRKİŞİ ONAYLI GÖRÜNTÜ</text>
+          </svg>`;
+      }
+      return `
+        <svg viewBox="0 0 320 150" class="w-full h-36 rounded-xl border border-amber-500/40 bg-stone-900">
+          <rect width="320" height="150" fill="#1d1815"/>
+          <rect x="22" y="16" width="276" height="118" rx="6" fill="#f4efe6"/>
+          <text x="160" y="46" text-anchor="middle" fill="#1c1917" font-size="11" font-family="Playfair Display" font-weight="800">T.C. RESMİ DAVA EVRAKI</text>
+          <line x1="48" y1="64" x2="272" y2="64" stroke="#a8a29e" stroke-width="2"/>
+          <line x1="48" y1="80" x2="245" y2="80" stroke="#a8a29e" stroke-width="2"/>
+          <rect x="92" y="92" width="136" height="26" rx="4" fill="none" stroke="#b91c1c" stroke-width="2.5"/>
+          <text x="160" y="109" text-anchor="middle" fill="#b91c1c" font-size="10" font-family="Inter" font-weight="800">CMK m. 134 / 206</text>
+        </svg>`;
+    }
+
+    /* =========================================================================
+       4. STATIC GAME DATA: EVIDENCE, LAWS, INVESTIGATIONS, DIALOGUES
+       ========================================================================= */
+    const STORAGE_KEY = 'mudafi_liman_gecesi_3d_v2';
+    const ENDINGS_STORAGE_KEY = 'mudafi_liman_gecesi_endings_v1';
+
+    const ALL_ENDINGS_META = [
+      { id: 'legend', label: 'Tam Beraat & Gerçek Fail' },
+      { id: 'acquittal', label: 'Beraat (CMK 223/2-e)' },
+      { id: 'reduced', label: 'Haksız Tahrik (14 Yıl)' },
+      { id: 'guilty', label: 'Müebbet Hapis (TCK 81)' },
+      { id: 'baro', label: 'Baro & Usul İhtarı' }
+    ];
+
+    const EVIDENCE_DB = {
+      ev_iddianame: {
+        id: 'ev_iddianame',
+        title: 'İddianame & Olay Yeri Özeti',
+        tag: 'RESMİ EVRAK',
+        short: 'TCK m. 81 (Kasten Öldürme) istemiyle düzenlenen 2026/418 E. sayılı iddianame.',
+        detail: 'Savcılık; 14 Ekim gecesi saat 23:40 sıralarında Demirci Lojistik liman merkez ofisinde sanık Kerem Demir’in, maktul Haluk Demirci’yi ağır kristal ödül ile başına vurarak öldürdüğünü iddia etmektedir. İddianame temel olarak WhatsApp tehdidi, kırık bardaktaki kan ve liman bekçisinin beyanına dayanmaktadır.'
+      },
+      ev_tutanak: {
+        id: 'ev_tutanak',
+        title: 'Usulsüz Arama & Elkoyma Tutanağı',
+        tag: 'USUL İHLALİ',
+        short: 'Maktulün telefonundaki WhatsApp yazışmaları hakim kararı olmadan alınmış.',
+        detail: 'Olay gecesi kolluk görevlileri, maktul Haluk Demirci’nin şifresiz telefonundan WhatsApp ekran görüntüsünü nöbetçi Sulh Ceza Hakimliği kararı (CMK m. 134) olmaksızın tutanağa geçirmiştir. Bu kayıt hukuka aykırı delil niteliğindedir.'
+      },
+      ev_hts: {
+        id: 'ev_hts',
+        title: 'HTS & Baz İstasyonu Kayıtları',
+        tag: 'TEKNİK DELİL',
+        short: 'Kerem’in telefonu saat 23:31’de Liman baz istasyonundan tamamen ayrılmış.',
+        detail: 'BTK onaylı baz istasyonu dökümlerine göre sanık Kerem Demir’in cep telefonu 14 Ekim gecesi 23:19’da liman ofis bölgesine giriş yapmış, 23:31 itibarıyla liman baz istasyonundan çıkarak kuzey otobanı yönündeki baz istasyonlarına bağlanmıştır. Saat 23:40 ve 23:45’te olay yerinde bulunması teknik olarak imkansızdır.'
+      },
+      ev_fis: {
+        id: 'ev_fis',
+        title: '23:39 Akaryakıt Fişi & Kamera Kaydı',
+        tag: 'KESİN ALİBİ',
+        short: 'Kerem saat 23:39’da ofisten 8 km uzaktaki akaryakıt istasyonunda görüntülenmiş.',
+        detail: 'Olay yerine 8 kilometre mesafedeki TEM Kuzey Shell istasyonu POS cihazı slipi ve ön saha güvenlik kamerası görüntüsü: Kerem Demir, saat 23:39:14’te kendi kredi kartıyla yakıt almış ve elindeki kesiğe peçete bastırırken net biçimde kayda girmiştir.'
+      },
+      ev_bilisim: {
+        id: 'ev_bilisim',
+        title: 'Özel Adli Bilişim Raporu',
+        tag: 'KRİTİK BULGU',
+        short: 'CCTV 23:18’de Selin’in şifresiyle kapatılmış; 23:36’da 400.000 € transfer edilmiş!',
+        detail: 'Bağımsız adli bilişim uzmanı log incelemesi: (1) Ofis katı güvenlik kameraları saat 23:18 ile 23:55 arasında iş ortağı Selin Karahan’ın yönetici hesabı (SKARAHAN_ADM) üzerinden manuel olarak devre dışı bırakılmış. (2) Saat 23:36’da Haluk Demirci’nin ofis bilgisayarından Kıbrıs merkezli bir paravan hesaba 400.000 Euro acil SWIFT talimatı girilmiş.'
+      },
+      ev_adlitip: {
+        id: 'ev_adlitip',
+        title: 'Bağımsız Adli Tıp Mütalaası',
+        tag: 'ADLİ TIP',
+        short: 'Ölümcül darbe arkadan ve SOLAK bir failce vurulmuş; Kerem’in kanı sadece bardakta.',
+        detail: 'Prof. Dr. Ayşe Erdem imzalı mütalaa: (1) Kerem Demir’in DNA’sı yalnızca kapı yakınındaki kırık viski bardağındadır; cinayet aleti kristal ödülde Kerem’e ait hiçbir kan veya parmak izi yoktur. (2) Kafatasındaki çökme açısı, darbenin maktul masasında otururken ARKADAN ve SOLAK bir kişi tarafından vurulduğunu kanıtlar (Kerem sağlaktır). (3) Maktulün kol düğmesinde kırmızı ipek eşarp lifi tespit edilmiştir.'
+      },
+      ev_ik_arsiv: {
+        id: 'ev_ik_arsiv',
+        title: 'Liman Lobi Kamerası & İK Arşivi',
+        tag: 'FAİL PROFİLİ',
+        short: 'Selin Karahan solak ve 14 Ekim akşamı kırmızı ipek eşarp taktığı fotoğraflanmış.',
+        detail: 'Demirci Lojistik İK dosyasında Selin Karahan’ın baskın elinin SOL olduğu kayıtlıdır. Ayrıca şirket giriş lobisi 19:15 tarihli güvenlik kamerası karesinde Selin Karahan’ın o akşam boynunda parlak kırmızı ipek bir eşarp taktığı açıkça görülmektedir.'
+      }
+    };
+
+    const LAWS_DB = {
+      law_cmk206: {
+        id: 'law_cmk206',
+        code: 'CMK m. 206/2-a & 217/2',
+        title: 'Hukuka Aykırı Delilin Reddi',
+        apCost: 0,
+        summary: 'Kanuna aykırı olarak elde edilen deliller hükme esas alınamaz ve duruşmada reddedilir.',
+        usage: 'Hakim kararı olmadan alınan WhatsApp ekran görüntüsüne usul itirazında bulunmak için kullanılır.'
+      },
+      law_cmk223: {
+        id: 'law_cmk223',
+        code: 'CMK m. 223/2-e',
+        title: 'Şüpheden Sanık Yararlanır (In Dubio Pro Reo)',
+        apCost: 0,
+        summary: 'Yüklenen suçun sanık tarafından işlendiğinin sabit olmaması hâlinde beraat kararı verilir.',
+        usage: 'Savcılığın kesin ve şüpheden uzak delil sunamadığı durumlarda beraat talebinin hukuki temelidir.'
+      },
+      law_cmk201: {
+        id: 'law_cmk201',
+        code: 'CMK m. 201',
+        title: 'Doğrudan Soru Sorma Hakkı',
+        apCost: 0,
+        summary: 'Müdafi, duruşma disiplinine uygun olarak tanıklara ve bilirkişilere doğrudan soru yöneltebilir.',
+        usage: 'Çapraz sorguda tanıkların çelişkili beyanları üzerine baskı kurarken savcının müdahalesini bertaraf eder.'
+      },
+      law_tck29: {
+        id: 'law_tck29',
+        code: 'TCK m. 29',
+        title: 'Haksız Tahrik İndirimi',
+        apCost: 1,
+        summary: 'Haksız bir fiilin meydana getirdiği hiddet veya şiddetli elemin etkisi altında suç işleyen kimseye indirimli ceza verilir.',
+        usage: 'Beraat ihtimalinin zayıfladığı durumlarda müebbet hapsi 12-18 yıl aralığına düşürmek için alternatif savunma hattıdır.'
+      },
+      law_tck25: {
+        id: 'law_tck25',
+        code: 'TCK m. 25 & TCK m. 81',
+        title: 'Kasten Öldürme & Meşru Savunma Sınırları',
+        apCost: 1,
+        summary: 'TCK m. 81 kasten öldürmeyi müebbet hapisle cezalandırır; TCK m. 25 ise orantılı haksız saldırı savunmasını düzenler.',
+        usage: 'İddianamenin sevk maddesini çürütmek ve orantılılık analizini mahkemeye sunmak için çantada bulundurulur.'
+      }
+    };
+
+    const INVESTIGATIONS_DB = [
+      {
+        id: 'inv_tutanak',
+        title: 'Arama & Elkoyma Tutanağı İncelemesi',
+        subtitle: 'Kolluk evrakındaki usul eksikliklerini denetle',
+        apCost: 1,
+        budgetCost: 0,
+        reqLead: null,
+        unlocksEv: 'ev_tutanak',
+        badge: 'USUL HUKUKU',
+        desc: 'Olay gecesi maktulün telefonundan alınan WhatsApp yazışmasının hangi hakim kararıyla elde edildiğini UYAP eklerinden incele.'
+      },
+      {
+        id: 'inv_hts',
+        title: 'HTS & Baz İstasyonu Kayıtları Talebi',
+        subtitle: 'Kerem Demir’in saat 23:15 - 23:55 sinyal rotası',
+        apCost: 1,
+        budgetCost: 5000,
+        reqLead: null,
+        unlocksEv: 'ev_hts',
+        badge: 'TEKNİK ANALİZ',
+        desc: 'BTK üzerinden müvekkil Kerem Demir’in olay gecesine ait baz istasyonu hareket dökümünü ve harita analizini çıkarttır.'
+      },
+      {
+        id: 'inv_fis',
+        title: 'Akaryakıt İstasyonu Fişi & Kamera Analizi',
+        subtitle: 'Kerem’in 23:39’daki TEM Kuzey Shell kaydını temin et',
+        apCost: 1,
+        budgetCost: 8000,
+        reqLead: 'lead_atm',
+        reqHint: 'Önce Cezaevi Görüşmesinde Kerem Demir’in güvenini kazanarak olay gecesi nereye gittiğini öğrenmelisin.',
+        unlocksEv: 'ev_fis',
+        badge: 'KESİN ALİBİ',
+        desc: 'İstasyonun kamera kayıtları silinmeden noter tespitiyle POS fişini ve ön saha görüntüsünü dosyaya kazandır.'
+      },
+      {
+        id: 'inv_bilisim',
+        title: 'Özel Adli Bilişim Raporu',
+        subtitle: 'Şirket CCTV sunucusu ve maktulün ofis bilgisayarı logları',
+        apCost: 2,
+        budgetCost: 18000,
+        reqLead: null,
+        unlocksEv: 'ev_bilisim',
+        badge: 'KRİTİK RAPOR',
+        desc: 'Kameraların neden o saatte kayıt yapmadığını ve maktulün bilgisayarında cinayet anında hangi işlemlerin yapıldığını ortaya çıkar.'
+      },
+      {
+        id: 'inv_adlitip',
+        title: 'Bağımsız Adli Tıp Mütalaası',
+        subtitle: 'Darbe açısı, DNA konumları ve mikro lif incelemesi',
+        apCost: 2,
+        budgetCost: 15000,
+        reqLead: null,
+        unlocksEv: 'ev_adlitip',
+        badge: 'BİLİRKİŞİ',
+        desc: 'Resmi otopsi raporundaki çelişkileri inceletmek için kıdemli bir Adli Tıp profesöründen bilimsel mütalaa al.'
+      },
+      {
+        id: 'inv_ik_arsiv',
+        title: 'Liman Lobi Kamera & İK Arşiv Analizi',
+        subtitle: 'Selin Karahan’ın kişisel profili ve olay akşamı görüntüsü',
+        apCost: 1,
+        budgetCost: 6000,
+        reqLead: 'lead_scarf',
+        reqHint: 'Önce Cezaevi Görüşmesinde Kerem Demir’in güvenini kazanarak ofiste gördüğü kritik detayı öğrenmelisin.',
+        unlocksEv: 'ev_ik_arsiv',
+        badge: 'TANIK PROFİLİ',
+        desc: 'İş ortağı Selin Karahan’ın o akşam ofis lobisindeki görüntülerini ve İK dosyasındaki baskın el bilgisini araştır.'
+      }
+    ];
+
+    const KEREM_DIALOGUES = [
+      {
+        mood: 'gergin',
+        kerem: 'Av. Kaan... İki haftadır şu cam bölmenin arkasındayım. Herkes bana katil gibi bakıyor. Haluk Bey’le liman ofisinde tartıştığım doğru ama onu ben öldürmedim! Bana gerçekten inanıyor musunuz?',
+        choices: [
+          {
+            label: '“Sana inanıyorum Kerem. Dosyadaki açıkları bulup gerçeği çıkaracağız, ama benden tek bir detayı bile saklama.”',
+            tag: 'Empati (+15 Güven)',
+            trustDelta: 15,
+            reply: 'Teşekkür ederim Av. Kaan... İlk kez biri beni yargılamadan dinliyor. Ne biliyorsam anlatacağım.'
+          },
+          {
+            label: '“Benim inancım değil, mahkemenin kanaati önemli. Duyguları bırakıp saat saat ne yaptığını söyle.”',
+            tag: 'Mesafeli (+5 Güven)',
+            trustDelta: 5,
+            reply: 'Haklısınız... Soğukkanlı olmalıyım. Ama kendimi çok çaresiz hissediyorum.'
+          },
+          {
+            label: '“İddianame çok ağır. Eğer bir anlık öfkeyle vurduysan şimdi söyle ki indirim isteyelim.”',
+            tag: 'Şüpheci (-12 Güven)',
+            trustDelta: -12,
+            reply: 'Siz de mi bana inanmıyorsunuz?! Kimseyi öldürmedim diyorum, neden kimse dinlemiyor!'
+          }
+        ]
+      },
+      {
+        mood: 'ofkeli',
+        kerem: 'Olay günü ona gönderdiğim “Bunun hesabını soracağım” mesajını delil yapmışlar. O mesaj ölüm tehdidi değildi! Haluk Bey’in sahte gümrük beyannamelerine benim imzamı taklit ettiğini öğrenmiştim.',
+        choices: [
+          {
+            label: '“Gümrük usulsüzlüğü çok ciddi bir motivasyon. O gece ofise kaçta girdin, bardak nasıl kırıldı?”',
+            tag: 'Analitik (+12 Güven)',
+            trustDelta: 12,
+            reply: 'Saat 23:20’de girdim. Bağırıştık, beni itince kapı yanındaki viski bardağı kırıldı, avucum kesildi. Saat 23:28’de sinirle çıkıp gittim.'
+          },
+          {
+            label: '“Bu mesajı savcılık hakim kararı olmadan almış olabilir. Usul itirazıyla onu dosyadan attıracağız.”',
+            tag: 'Hukuki Güvence (+10 Güven)',
+            trustDelta: 10,
+            reply: 'Gerçekten mi? O mesaj yüzünden herkes beni planlı katil sanıyordu. İçim biraz rahatladı.'
+          },
+          {
+            label: '“Keşke öyle bir mesaj atmasaydın, mahkemede bunu açıklamamız neredeyse imkansız.”',
+            tag: 'Eleştirel (-8 Güven)',
+            trustDelta: -8,
+            reply: 'İsmimle kaçakçılık yapıyorlardı Av. Kaan! Ne yazsaydım?'
+          }
+        ]
+      },
+      {
+        mood: 'normal',
+        kerem: 'Saat 23:28’de liman ofisinden çıktıktan sonra nereye gittiğimi soruyorlar. Polisler bana hiç inanmadı... Ama o gece elim kanarken durduğum bir yer ve koridorda gördüğüm biri var.',
+        choices: [
+          {
+            label: '“Sakin ol ve hafızanı zorla Kerem. O akşam ofisten çıktıktan sonra nerede durdun ve koridorda kimi gördün?”',
+            tag: 'Güven Veren (+15 Güven)',
+            trustDelta: 15,
+            reply: 'Size güveniyorum Av. Kaan... Her şeyi açıkça söyleyeceğim.'
+          },
+          {
+            label: '“Eğer kamera veya kredi kartı kaydı olan bir yerse bizi doğrudan beraate götürür. Hemen paylaş.”',
+            tag: 'Stratejik (+10 Güven)',
+            trustDelta: 10,
+            reply: 'Evet, kredi kartı kullandım! Ve koridorda gördüğüm kişi yalan söylüyor...'
+          }
+        ]
+      }
+    ];
+
+    const CROSS_EXAMS = {
+      riza: {
+        witnessId: 'riza',
+        name: 'Rıza Kaya',
+        role: 'Tanık — Liman Güvenlik Görevlisi',
+        intro: 'Yeminli tanık Rıza Kaya kürsüde. İddianamenin saat 23:45 kurgusu onun ifadesine dayanıyor. Çelişkili ifadeyi bul ve delil sun!',
+        statements: [
+          {
+            mood: 'normal',
+            text: '14 Ekim gecesi 22:00’de liman ofisinde gece vardiyasını devraldım. Bina genelde o saatlerde tamamen boş olur.',
+            press: 'Av. Kaan: "Binada başka kimsenin olmadığından emin misiniz?"\nRıza Kaya: "Yani... İş ortağı Selin Hanım’ın 22:00 gibi çıktığını duydum ama turnike ekranına pek bakmadım."',
+            isTarget: false
+          },
+          {
+            mood: 'normal',
+            text: 'Saat 23:20 civarında sanık Kerem Demir’in sinirli bir şekilde üst kata, Haluk Bey’in makam odasına çıktığını gördüm.',
+            press: 'Av. Kaan: "Kerem Bey yukarı çıkarken elinde herhangi bir cisim var mıydı?"\nRıza Kaya: "Hayır, sadece birkaç gümrük dosyası vardı. Çok gergindi."',
+            isTarget: false
+          },
+          {
+            mood: 'gergin',
+            text: 'Saat 23:40’ta yukarıdan büyük bir kırılma sesi geldi. Beş dakika sonra, tam 23:45’te Kerem Demir’i bina kapısından koşarak çıkarken gözlerimle gördüm!',
+            press: 'Av. Kaan: "Saat 23:45 olduğundan kesinlikle emin misiniz? Karanlıkta yüzünü net gördünüz mü?"\nRıza Kaya (terleyerek): "Şey... Telefonuma bakıyordum, kafamı kaldırınca hızlıca çıkan koyu paltolu birini gördüm. Saat 23:45’ti, Kerem Bey’den başka kim olabilir ki!"',
+            isTarget: true,
+            validEvidence: ['ev_hts', 'ev_fis'],
+            successTitle: 'ALİBİ ÇELİŞKİSİ!',
+            successText: 'Rıza Kaya’nın 23:45 iddiası teknik verilerle tamamen çöktü! Kerem Demir o saatte olay yerinden 8 kilometre uzaktaydı. Tanık, karanlıkta gördüğü kişinin yüzünü aslında seçemediğini itiraf etti!'
+          },
+          {
+            mood: 'gergin',
+            text: 'Sonra yukarı çıkıp baktığımda Haluk Bey’i yerde hareketsiz buldum ve hemen 112 ile polisi aradım.',
+            press: 'Av. Kaan: "Güvenlik kameraları neden kayıt yapmamış?"\nRıza Kaya: "Bilmiyorum efendim, sistem arızalandı sandım. Yönetici şifresi bende yok."',
+            isTarget: false
+          }
+        ]
+      },
+      hakan: {
+        witnessId: 'hakan',
+        name: 'Dr. Hakan Yılmaz',
+        role: 'Bilirkişi — Adli Tıp Uzmanı',
+        intro: 'Savcılık bilirkişisi Dr. Hakan Yılmaz kürsüde. Olay yerindeki kan ve cinayet aleti hakkındaki beyanlarını incele.',
+        statements: [
+          {
+            mood: 'normal',
+            text: 'Maktul Haluk Demirci, başının sol arka-yan kısmına ağır ve sert bir cisimle tek seferde vurulması sonucu beyin kanamasından hayatını kaybetmiştir.',
+            press: 'Av. Kaan: "Sol arka-yan kısım dediniz. Maktul o sırada faille yüz yüze miydi, yoksa arkası mı dönüktü?"\nDr. Yılmaz: "Eğim açısına bakılırsa... Maktulün masasında otururken arkadan veya yandan darbe almış olması muhtemel."',
+            isTarget: false
+          },
+          {
+            mood: 'emin',
+            text: 'Olay yerinde sanık Kerem Demir’e ait taze kan lekeleri tespit ettik. Bu durum sanığın cinayet anında fiziksel arbedeye girdiğini açıkça kanıtlamaktadır.',
+            press: 'Av. Kaan: "Doktor, bu kan lekeleri tam olarak nerede bulundu? Cinayet aleti olan kristal ödülde mi, yoksa başka bir yerde mi?"\nDr. Yılmaz (duraksar): "Rapor özetinde olay yeri bütünü esas alındı... Kırık bardak üzerinde yoğun kan vardı."',
+            isTarget: true,
+            validEvidence: ['ev_adlitip'],
+            successTitle: 'BİLİMSEL ÇELİŞKİ!',
+            successText: 'Bağımsız Adli Tıp Mütalaası salonu buz kesti! Kerem’in kanı yalnızca kapı yakınındaki kırık bardakta; cinayet aleti kristal ödülde Kerem’e ait TEK BİR DNA İZİ YOK! Üstelik darbe arkadan ve SOLAK bir fail tarafından vurulmuş — Kerem ise sağlak! Maktulün kol düğmesinde kırmızı ipek lifi bulundu!'
+          },
+          {
+            mood: 'normal',
+            text: 'Ağır kristal ödülün maktulün kafasındaki yara profiliyle uyumlu olması dikkate alındığında, failin sanık Kerem Demir olduğu kanaatindeyiz.',
+            press: 'Av. Kaan: "Sayın uzman, darbenin sağlak mı yoksa solak bir kişi tarafından vurulduğunu analiz ettiniz mi?"\nDr. Yılmaz: "Standart incelemede baskın el yönü ayrıca hesaplanmadı efendim."',
+            isTarget: true,
+            validEvidence: ['ev_adlitip'],
+            successTitle: 'BİLİMSEL ÇELİŞKİ!',
+            successText: 'Bağımsız Adli Tıp Mütalaası savcılık tezini yerle bir etti! Ölümcül darbe arkadan ve SOLAK bir failin açısıyla vurulmuş; Kerem sağlaktır ve kristal ödülde DNA’sı yoktur. Ayrıca maktulün kol düğmesinde kırmızı ipek lifi tespit edilmiştir!'
+          },
+          {
+            mood: 'normal',
+            text: 'Maktulün ölüm saati 23:30 ile 23:50 aralığı olarak belirlenmiştir.',
+            press: 'Av. Kaan: "Yani 23:35 ile 23:45 arasında gerçekleşmiş olması da tıbben tamamen mümkün, değil mi?"\nDr. Yılmaz: "Evet, kesinlikle o aralıktadır."',
+            isTarget: false
+          }
+        ]
+      },
+      selinA: {
+        witnessId: 'selin',
+        name: 'Selin Karahan',
+        role: 'Katılan Tanık — Maktulün İş Ortağı',
+        intro: 'Maktulün iş ortağı Selin Karahan kürsüde. Soğukkanlı görünüyor. Önce olay gecesi ofiste olmadığı yalanını çürüt!',
+        statements: [
+          {
+            mood: 'emin',
+            text: 'Haluk Bey’le 8 yıldır ortağız. Kerem Demir son günlerde gümrük belgeleri yüzünden Haluk Bey’e sürekli öfkeleniyordu.',
+            press: 'Av. Kaan: "Gümrük belgelerindeki usulsüzlükten sizin de haberiniz var mıydı?"\nSelin Karahan (soğukkanlı): "Ne usulsüzlüğü? Kerem Bey’in kendi paranoyasıydı."',
+            isTarget: false
+          },
+          {
+            mood: 'emin',
+            text: 'Ben 14 Ekim akşamı saat 22:00’de şirketten ayrılıp evime geçtim. Zaten güvenlik kameralarına müdahale etme yetkim yok; gece ofiste kesinlikle bulunmadım.',
+            press: 'Av. Kaan: "Sayın Karahan, yemin altındasınız. Güvenlik sistemi yönetici şifrenizin o gece kullanılmadığından emin misiniz?"\nSelin Karahan (gözlerini kaçırarak): "Kesinlikle! Benim teknik işlerle alakam olmaz, gece 22:00’den sonra binada değildim!"',
+            isTarget: true,
+            validEvidence: ['ev_bilisim'],
+            successTitle: 'DİJİTAL İZ YAKALANDI!',
+            successText: 'Özel Adli Bilişim Raporu salonda bomba etkisi yarattı! Kameralar saat 23:18’de bizzat Selin Karahan’ın yönetici hesabı (SKARAHAN_ADM) ile kapatılmış ve saat 23:36’da Haluk Demirci’nin bilgisayarından Kıbrıs’a 400.000 Euro transfer edilmiştir!'
+          },
+          {
+            mood: 'ofkeli',
+            text: 'Haluk Bey’in finansal hiçbir düşmanı yoktu. Şirket hesaplarımız tertemizdir.',
+            press: 'Av. Kaan: "Kıbrıs merkezli paravan şirketlere yapılan transferler hakkında ne diyeceksiniz?"\nSelin Karahan (gerilerek): "İftira! Bu soruya itiraz ediyorum Sayın Başkan!"',
+            isTarget: false
+          }
+        ]
+      },
+      selinB: {
+        witnessId: 'selin',
+        name: 'Selin Karahan',
+        role: 'Katılan Tanık — İş Ortağı (Köşeye Sıkıştı!)',
+        intro: 'Selin panik halinde savunmaya geçti! Şimdi son darbeyi vurup cinayeti bizzat işlediğini fiziksel delille kanıtla!',
+        statements: [
+          {
+            mood: 'gergin',
+            text: 'Tamam, belki şifremi birileri çalmıştır! Ofiste herkes masamdaki notları görebiliyordu. 400.000 Euro transferini ben yapmadım!',
+            press: 'Av. Kaan: "Haluk Bey bu transferi fark ettiği an, saat 23:36’da odasında kiminle tartışıyordu?"\nSelin Karahan (sesi titreyerek): "Bilmiyorum! Ben evdeydim diyorum size!"',
+            isTarget: false
+          },
+          {
+            mood: 'ofkeli',
+            text: 'Hem saçmalamayın Av. Kaan! Ben Haluk Bey gibi yapılı bir adamı yüz yüze arbedede yenip kafasına vuramam. Zaten o gece ofiste olduğuma dair tek bir fiziksel delil bile yok!',
+            press: 'Av. Kaan: "Kimse yüz yüze bir arbededen bahsetmedi Selin Hanım... Ya arkadan vurulduysa? Ve maktulün kol düğmesinde ne bıraktınız?"\nSelin Karahan (rengi solar): "Ne... ne kol düğmesi?! Benim hiçbir şeyle alakam yok!"',
+            isTarget: true,
+            validEvidence: ['ev_adlitip', 'ev_ik_arsiv'],
+            successTitle: 'GERÇEK FAİL İFŞA EDİLDİ!',
+            successText: 'MAHKEME SALONU AYAĞA KALKTI! Ölümcül darbe masasında oturan Haluk Bey’e ARKADAN ve SOLAK bir failce vurulmuştu — Selin Karahan SOLAK! Ve maktulün kol düğmesindeki kırmızı ipek lif, Selin’in o akşam lobi kamerasında taktığı kırmızı ipek eşarpla birebir örtüşüyor! Selin kürsüde çökerek itiraf ediyor!'
+          }
+        ]
+      }
+    };
+
+    /* =========================================================================
+       5. STATE MANAGEMENT, AUTO-SAVE & TYPEWRITER ENGINE
+       ========================================================================= */
+    function getUnlockedEndings() {
+      try {
+        const raw = localStorage.getItem(ENDINGS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) { return []; }
+    }
+
+    function recordUnlockedEnding(endingId) {
+      try {
+        const list = getUnlockedEndings();
+        if (!list.includes(endingId)) {
+          list.push(endingId);
+          localStorage.setItem(ENDINGS_STORAGE_KEY, JSON.stringify(list));
+        }
+      } catch (e) {}
+    }
+
+    function createInitialState() {
+      return {
+        phase: 'title', // 'title' | 'prep' | 'trial' | 'verdict'
+        prepTab: 'kerem', // 'kerem' | 'uyap' | 'field' | 'laws' | 'pier'
+        muted: false,
+        ap: 8,
+        maxAp: 8,
+        budget: 60000,
+        trust: 50,
+        evidence: ['ev_iddianame'],
+        laws: [],
+        leads: [],
+        keremStep: 0,
+        keremDone: false,
+        keremLastReply: null,
+        keremExtraDone: false,
+        uyapInspected: [],
+        investigated: [],
+        pierInspected: [],
+        trial: {
+          stage: 0,
+          kanaat: 25,
+          credibility: 5,
+          whatsappExcluded: false,
+          defenseStrategy: null,
+          contradictionsCaught: 0,
+          legalObjectionsSuccess: 0,
+          rizaBroken: false,
+          hakanBroken: false,
+          selinExposedPartA: false,
+          selinExposedPartB: false,
+          closingChoice: null,
+          activeExam: null,
+          statementIdx: 0,
+          pressedMap: {},
+          speaker: 'hakim',
+          speakerName: 'Mahkeme Başkanı',
+          speakerRole: 'İstanbul 14. Ağır Ceza Mahkemesi',
+          speakerMood: 'normal',
+          speakerMoodLabel: 'Ciddi',
+          dialogueText: '',
+          subStep: 'action'
+        }
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return createInitialState();
+        const parsed = JSON.parse(raw);
+        return { ...createInitialState(), ...parsed, trial: { ...createInitialState().trial, ...(parsed.trial || {}) } };
+      } catch (e) {
+        return createInitialState();
+      }
+    }
+
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(window.gameState)); } catch (e) {}
+    }
+
+    window.gameState = loadState();
+
+    /* Typewriter Controller */
+    const Typewriter = (() => {
+      let timer = null;
+      let fullText = '';
+      let currentTargetId = null;
+
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+        const portrait = document.getElementById('vn-active-portrait');
+        if (portrait) portrait.classList.remove('portrait-speaking');
+      }
+
+      function finishNow() {
+        if (!timer || !currentTargetId) return;
+        const el = document.getElementById(currentTargetId);
+        if (el) el.textContent = fullText;
+        stop();
+      }
+
+      function run(elementId, text) {
+        stop();
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        fullText = text;
+        currentTargetId = elementId;
+        el.textContent = '';
+
+        const portrait = document.getElementById('vn-active-portrait');
+        if (portrait) portrait.classList.add('portrait-speaking');
+
+        let idx = 0;
+        timer = setInterval(() => {
+          idx += 2;
+          if (idx >= fullText.length) {
+            el.textContent = fullText;
+            stop();
+          } else {
+            el.textContent = fullText.slice(0, idx);
+            SoundEngine.playTypeTick();
+          }
+        }, 18);
+      }
+
+      return { run, stop, finishNow };
+    })();
+
+    /* =========================================================================
+       6. UI HELPERS: TOAST, FLASH, DRAMATIC SPLASH + EVIDENCE CARD, MODALS
+       ========================================================================= */
+    function showToast(msg, type = 'gold') {
+      const container = document.getElementById('toast-container');
+      const colors = {
+        gold: 'border-amber-500/70 bg-stone-950/95 text-amber-200',
+        green: 'border-emerald-500/70 bg-stone-950/95 text-emerald-200',
+        red: 'border-red-500/70 bg-stone-950/95 text-red-200'
+      };
+      const el = document.createElement('div');
+      el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-2xl text-xs sm:text-sm font-medium animate-fade-in ${colors[type] || colors.gold}`;
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => el.remove(), 300);
+      }, 3400);
+    }
+
+    function triggerDramaticStamp(title, subtitle, color = 'crimson', soundType = 'objection', callback = null, evId = null) {
+      const overlay = document.getElementById('dramatic-overlay');
+      const content = document.getElementById('dramatic-content');
+      const flash = document.getElementById('flash-overlay');
+      const appEl = document.getElementById('app');
+
+      if (soundType === 'objection') SoundEngine.playObjection();
+      else if (soundType === 'contradiction') SoundEngine.playContradiction();
+      else if (soundType === 'gavel') SoundEngine.playGavel(true);
+      else if (soundType === 'error') SoundEngine.playError();
+
+      // Screen shake + camera flash
+      appEl.classList.add('animate-shake');
+      setTimeout(() => appEl.classList.remove('animate-shake'), 450);
+      flash.classList.remove('hidden');
+      flash.classList.add('animate-flash');
+      setTimeout(() => {
+        flash.classList.add('hidden');
+        flash.classList.remove('animate-flash');
+      }, 480);
+
+      const theme = color === 'gold'
+        ? 'text-amber-400 border-amber-400 shadow-amber-500/30'
+        : color === 'green'
+        ? 'text-emerald-400 border-emerald-400 shadow-emerald-500/30'
+        : 'text-red-500 border-red-500 shadow-red-600/40';
+
+      const evCardHtml = evId && EVIDENCE_DB[evId]
+        ? `
+          <div class="mt-5 mx-auto max-w-sm mahogany-card rounded-2xl p-3 text-left animate-fade-in">
+            ${getEvidenceVisualSVG(evId)}
+            <div class="mt-2 font-serif-display font-bold text-amber-300 text-sm">${EVIDENCE_DB[evId].title}</div>
+            <div class="text-xs text-stone-300 mt-0.5">${EVIDENCE_DB[evId].short}</div>
+          </div>`
+        : '';
+
+      content.innerHTML = `
+        <div class="inline-block border-4 ${theme} px-7 py-3.5 rounded-xl bg-black/85 shadow-2xl animate-stamp">
+          <div class="font-serif-display text-2xl sm:text-5xl font-extrabold tracking-widest uppercase">${title}</div>
+        </div>
+        ${subtitle ? `<p class="mt-3 text-sm sm:text-lg text-stone-100 font-medium tracking-wide drop-shadow">${subtitle}</p>` : ''}
+        ${evCardHtml}
+      `;
+
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flex');
+
+      setTimeout(() => {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+        if (callback) callback();
+      }, evId ? 2100 : 1450);
+    }
+
+    function openModal(htmlContent) {
+      const root = document.getElementById('modal-root');
+      const box = document.getElementById('modal-box');
+      box.innerHTML = htmlContent;
+      root.classList.remove('hidden');
+      root.classList.add('flex');
+    }
+
+    function closeModal() {
+      SoundEngine.playClick();
+      const root = document.getElementById('modal-root');
+      root.classList.add('hidden');
+      root.classList.remove('flex');
+    }
+
+    document.getElementById('modal-root').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-root') closeModal();
+    });
+
+    function openDossierModal() {
+      SoundEngine.playPaper();
+      const s = window.gameState;
+      const evHtml = s.evidence.map(id => {
+        const ev = EVIDENCE_DB[id];
+        return `
+          <div class="parchment-card rounded-xl p-4 grid sm:grid-cols-3 gap-3 items-center">
+            <div class="sm:col-span-1">${getEvidenceVisualSVG(id)}</div>
+            <div class="sm:col-span-2">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <h4 class="font-serif-display font-bold text-base text-stone-900">${ev.title}</h4>
+                <span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-red-900/15 text-red-900 border border-red-900/30">${ev.tag}</span>
+              </div>
+              <p class="font-legal text-xs text-stone-700 leading-relaxed">${ev.detail}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      const lawHtml = s.laws.length === 0
+        ? `<p class="text-sm text-stone-400 italic">Henüz TCK/CMK Kanun Çantasına madde eklenmedi.</p>`
+        : s.laws.map(id => {
+          const l = LAWS_DB[id];
+          return `
+            <div class="rounded-xl p-3.5 bg-stone-900/90 border border-amber-500/30">
+              <div class="text-xs font-bold text-amber-400 tracking-wide">${l.code} — ${l.title}</div>
+              <p class="text-xs text-stone-300 mt-1 leading-relaxed">${l.summary}</p>
+            </div>
+          `;
+        }).join('');
+
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-5 sm:p-6">
+          <div class="flex items-start justify-between gap-4 border-b border-amber-500/20 pb-4 mb-5">
+            <div>
+              <div class="text-xs uppercase tracking-widest text-amber-400 font-semibold">İstanbul 14. Ağır Ceza Mahkemesi • Müdafi: Av. Kaan</div>
+              <h3 class="font-serif-display text-2xl font-bold text-stone-100 mt-0.5">Dava Dosyası: 2026/418 E.</h3>
+            </div>
+            <button onclick="closeModal()" class="btn-noir px-3 py-1.5 rounded-lg text-sm">Kapat ✕</button>
+          </div>
+          <div class="mb-6">
+            <h4 class="text-xs uppercase tracking-widest text-amber-400/90 font-bold mb-3">Toplanan Deliller & Görsel Kayıtlar (${s.evidence.length}/7)</h4>
+            <div class="grid gap-3">${evHtml}</div>
+          </div>
+          <div>
+            <h4 class="text-xs uppercase tracking-widest text-amber-400/90 font-bold mb-3">TCK / CMK Kanun Çantası (${s.laws.length}/5)</h4>
+            <div class="grid gap-2.5">${lawHtml}</div>
+          </div>
+        </div>
+      `);
+    }
+
+    function openEndingsTrackerModal() {
+      SoundEngine.playPaper();
+      const unlocked = getUnlockedEndings();
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-6 max-w-lg mx-auto">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-4">
+            <div>
+              <div class="text-xs uppercase tracking-widest text-amber-400 font-semibold">Av. Kaan — Kariyer Arşivi</div>
+              <h3 class="font-serif-display text-xl font-bold text-stone-100">5 Gerekçeli Karar Takipçisi (${unlocked.length}/5)</h3>
+            </div>
+            <button onclick="closeModal()" class="btn-noir px-3 py-1 rounded-lg text-xs">Kapat ✕</button>
+          </div>
+          <div class="grid gap-2.5">
+            ${ALL_ENDINGS_META.map(item => {
+              const ok = unlocked.includes(item.id);
+              return `
+                <div class="p-3.5 rounded-xl border flex items-center justify-between ${ok ? 'bg-emerald-950/35 border-emerald-500/40 text-emerald-200' : 'bg-stone-900/70 border-stone-700 text-stone-400'}">
+                  <span class="font-semibold text-sm">${ok ? '✓' : '🔒'} ${item.label}</span>
+                  <span class="text-[11px] uppercase tracking-wider">${ok ? 'Açıldı' : 'Kilitli'}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `);
+    }
+
+    function openResetConfirm() {
+      SoundEngine.playClick();
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-6 max-w-md mx-auto text-center">
+          <div class="text-red-400 font-serif-display text-xl font-bold mb-2">Dosyayı Sıfırla</div>
+          <p class="text-sm text-stone-300 mb-6">Mevcut soruşturma ilerlemeniz ve duruşma kaydınız silinecek (açılan sonlar arşivde korunur). Yeni dava başlatmak istiyor musunuz?</p>
+          <div class="flex justify-center gap-3">
+            <button onclick="closeModal()" class="btn-noir px-4 py-2.5 rounded-xl text-sm">Vazgeç</button>
+            <button onclick="confirmReset()" class="btn-crimson px-5 py-2.5 rounded-xl text-sm">Evet, Sıfırla</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function confirmReset() {
+      Typewriter.stop();
+      localStorage.removeItem(STORAGE_KEY);
+      window.gameState = createInitialState();
+      closeModal();
+      SoundEngine.playGavel(false);
+      render();
+    }
+
+    function toggleMute() {
+      window.gameState.muted = !window.gameState.muted;
+      saveState();
+      if (!window.gameState.muted) SoundEngine.playClick();
+      render();
+    }
+
+    function goToTitle() {
+      Typewriter.stop();
+      SoundEngine.playClick();
+      window.gameState.phase = 'title';
+      saveState();
+      render();
+    }
+
+    /* =========================================================================
+       7. PHASE 1 LOGIC: PREP & INVESTIGATION
+       ========================================================================= */
+    function setPrepTab(tab) {
+      Typewriter.stop();
+      SoundEngine.playPaper();
+      window.gameState.prepTab = tab;
+      saveState();
+      render();
+    }
+
+    function chooseKeremOption(choiceIdx) {
+      const s = window.gameState;
+      const node = KEREM_DIALOGUES[s.keremStep];
+      const choice = node.choices[choiceIdx];
+      SoundEngine.playClick();
+
+      s.trust = Math.max(0, Math.min(100, s.trust + choice.trustDelta));
+      s.keremLastReply = {
+        tag: choice.tag,
+        delta: choice.trustDelta,
+        reply: choice.reply
+      };
+      s.keremStep += 1;
+
+      if (s.keremStep >= KEREM_DIALOGUES.length) {
+        s.keremDone = true;
+        if (s.trust >= 65) unlockKeremLeads();
+      }
+      saveState();
+      render();
+    }
+
+    function unlockKeremLeads() {
+      const s = window.gameState;
+      let added = false;
+      if (!s.leads.includes('lead_atm')) { s.leads.push('lead_atm'); added = true; }
+      if (!s.leads.includes('lead_scarf')) { s.leads.push('lead_scarf'); added = true; }
+      if (added) {
+        SoundEngine.playContradiction();
+        showToast('Kerem Demir 2 kritik ipucu paylaştı! Araştırma sekmesine bak.', 'green');
+      }
+    }
+
+    function doKeremExtraTrust() {
+      const s = window.gameState;
+      if (s.ap < 1) {
+        SoundEngine.playError();
+        showToast('Ek görüşme için yeterli Eylem Puanı (AP) yok!', 'red');
+        return;
+      }
+      s.ap -= 1;
+      s.trust = Math.max(s.trust, 72);
+      s.keremExtraDone = true;
+      unlockKeremLeads();
+      saveState();
+      render();
+    }
+
+    function inspectUyapClause(clauseId, leadId, noteText) {
+      const s = window.gameState;
+      SoundEngine.playPaper();
+      if (!s.uyapInspected.includes(clauseId)) {
+        s.uyapInspected.push(clauseId);
+        if (leadId && !s.leads.includes(leadId)) s.leads.push(leadId);
+        showToast('Şüpheli madde Av. Kaan’ın notlarına işlendi!', 'gold');
+        saveState();
+        render();
+      }
+      openModal(`
+        <div class="parchment-card rounded-2xl p-6 max-w-xl mx-auto">
+          <div class="flex items-center justify-between mb-3">
+            <span class="stamp text-xs text-red-800">AV. KAAN — NOT</span>
+            <button onclick="closeModal()" class="text-stone-600 hover:text-stone-900 font-bold text-sm">Kapat ✕</button>
+          </div>
+          <p class="font-legal text-sm sm:text-base text-stone-800 leading-relaxed">${noteText}</p>
+        </div>
+      `);
+    }
+
+    function inspectPierSpot(spotId, title, desc) {
+      const s = window.gameState;
+      SoundEngine.playPaper();
+      if (!s.pierInspected.includes(spotId)) {
+        s.pierInspected.push(spotId);
+        saveState();
+        render();
+      }
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-6 max-w-lg mx-auto">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-3">
+            <span class="text-amber-400 font-serif-display font-bold text-lg">🔍 ${title}</span>
+            <button onclick="closeModal()" class="btn-noir px-2.5 py-1 rounded-lg text-xs">Kapat ✕</button>
+          </div>
+          <p class="text-sm text-stone-200 leading-relaxed">${desc}</p>
+        </div>
+      `);
+    }
+
+    function runInvestigation(invId) {
+      const s = window.gameState;
+      const inv = INVESTIGATIONS_DB.find(i => i.id === invId);
+      if (!inv || s.investigated.includes(invId)) return;
+
+      if (inv.reqLead && !s.leads.includes(inv.reqLead)) {
+        SoundEngine.playError();
+        showToast(inv.reqHint || 'Bu araştırma için önce ilgili ipucunu bulmalısın.', 'red');
+        return;
+      }
+      if (s.ap < inv.apCost) {
+        SoundEngine.playError();
+        showToast(`Yetersiz Eylem Puanı! (${inv.apCost} AP gerekli)`, 'red');
+        return;
+      }
+      if (s.budget < inv.budgetCost) {
+        SoundEngine.playError();
+        showToast(`Yetersiz Büro Bütçesi! (${inv.budgetCost.toLocaleString('tr-TR')} TL gerekli)`, 'red');
+        return;
+      }
+
+      s.ap -= inv.apCost;
+      s.budget -= inv.budgetCost;
+      s.investigated.push(invId);
+      if (!s.evidence.includes(inv.unlocksEv)) s.evidence.push(inv.unlocksEv);
+
+      SoundEngine.playContradiction();
+      saveState();
+      render();
+
+      const ev = EVIDENCE_DB[inv.unlocksEv];
+      openModal(`
+        <div class="parchment-card rounded-2xl p-6 max-w-xl mx-auto">
+          <div class="flex items-center justify-between border-b border-stone-300 pb-3 mb-4">
+            <div>
+              <span class="stamp text-xs text-red-800">YENİ DELİL</span>
+              <h3 class="font-serif-display text-xl font-bold text-stone-900 mt-2">${ev.title}</h3>
+            </div>
+          </div>
+          <div class="mb-4">${getEvidenceVisualSVG(ev.id)}</div>
+          <p class="font-legal text-sm text-stone-800 leading-relaxed mb-5">${ev.detail}</p>
+          <div class="flex justify-end">
+            <button onclick="closeModal()" class="btn-gold px-5 py-2.5 rounded-xl text-sm">Dava Dosyasına Ekle</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function equipLaw(lawId) {
+      const s = window.gameState;
+      const law = LAWS_DB[lawId];
+      if (!law || s.laws.includes(lawId)) return;
+      if (s.ap < law.apCost) {
+        SoundEngine.playError();
+        showToast(`Bu maddeyi çalışmak için ${law.apCost} AP gerekli!`, 'red');
+        return;
+      }
+      s.ap -= law.apCost;
+      s.laws.push(lawId);
+      SoundEngine.playPaper();
+      showToast(`${law.code} savunma çantasına eklendi.`, 'green');
+      saveState();
+      render();
+    }
+
+    function requestStartTrial() {
+      SoundEngine.playClick();
+      const s = window.gameState;
+      if (s.ap > 0) {
+        openModal(`
+          <div class="mahogany-card rounded-2xl p-6 max-w-md mx-auto text-center">
+            <div class="text-amber-400 font-serif-display text-xl font-bold mb-2">Duruşmaya Çıkmaya Hazır mısınız?</div>
+            <p class="text-sm text-stone-300 mb-5">Av. Kaan, hâlâ <strong class="text-amber-300">${s.ap} Eylem Puanınız</strong> var. 14. Ağır Ceza salonuna girdikten sonra büroya geri dönemezsiniz.</p>
+            <div class="flex justify-center gap-3">
+              <button onclick="closeModal()" class="btn-noir px-4 py-2.5 rounded-xl text-sm">Hazırlığa Devam</button>
+              <button onclick="beginTrial()" class="btn-crimson px-5 py-2.5 rounded-xl text-sm">Salona Gir</button>
+            </div>
+          </div>
+        `);
+      } else {
+        beginTrial();
+      }
+    }
+
+    /* =========================================================================
+       8. PHASE 2 LOGIC: 14. AĞIR CEZA DURUŞMASI
+       ========================================================================= */
+    function beginTrial() {
+      closeModal();
+      Typewriter.stop();
+      const s = window.gameState;
+      s.phase = 'trial';
+      s.trial.stage = 0;
+      s.trial.kanaat = 25;
+      s.trial.credibility = 5;
+      setupTrialStage(0);
+      saveState();
+      triggerDramaticStamp('DURUŞMA BAŞLIYOR', 'İstanbul 14. Ağır Ceza Mahkemesi — 2026/418 E.', 'gold', 'gavel', () => render());
+    }
+
+    function adjustKanaat(delta) {
+      const t = window.gameState.trial;
+      t.kanaat = Math.max(0, Math.min(100, t.kanaat + delta));
+    }
+
+    function penalizeCredibility(amount = 1) {
+      const t = window.gameState.trial;
+      t.credibility = Math.max(0, t.credibility - amount);
+      if (t.credibility <= 0) {
+        saveState();
+        triggerDramaticStamp('USUL İHLALİ!', 'Mahkeme Başkanı savunma heyetine ihtar vererek oturumu kapattı!', 'crimson', 'gavel', () => {
+          window.gameState.phase = 'verdict';
+          saveState();
+          render();
+        });
+        return true;
+      }
+      return false;
+    }
+
+    function setupTrialStage(stageIdx) {
+      const t = window.gameState.trial;
+      t.stage = stageIdx;
+      t.subStep = 'action';
+      t.activeExam = null;
+      t.statementIdx = 0;
+
+      if (stageIdx === 0) {
+        t.speaker = 'savci';
+        t.speakerName = 'Cumhuriyet Savcısı';
+        t.speakerRole = 'İddia Makamı';
+        t.speakerMood = 'emin';
+        t.speakerMoodLabel = 'Kendinden Emin';
+        t.dialogueText = 'Sayın Başkan, iddianameyi okuduk. Sanık Kerem Demir’in maktul Haluk Demirci’ye olay günü gönderdiği “Bunun hesabını soracağım” şeklindeki WhatsApp ekran görüntüsünü kesin delil olarak sunuyoruz. Kasten öldürme kastı açıktır!';
+      } else if (stageIdx === 1) {
+        t.speaker = 'hakim';
+        t.speakerName = 'Mahkeme Başkanı';
+        t.speakerRole = '14. Ağır Ceza Heyeti';
+        t.speakerMood = 'normal';
+        t.speakerMoodLabel = 'Ciddi';
+        t.dialogueText = 'Sanık Kerem Demir kürsüye gelsin. Av. Kaan, müvekkilinizin sorgusundan önce savunma hattını nasıl kuracağınıza dair stratejinizi belirleyebilirsiniz.';
+      } else if (stageIdx === 2) {
+        t.activeExam = 'riza';
+        t.subStep = 'exam';
+        t.speaker = 'riza';
+        t.speakerName = CROSS_EXAMS.riza.name;
+        t.speakerRole = CROSS_EXAMS.riza.role;
+        t.speakerMood = CROSS_EXAMS.riza.statements[0].mood;
+        t.speakerMoodLabel = 'Gergin';
+        t.dialogueText = CROSS_EXAMS.riza.statements[0].text;
+      } else if (stageIdx === 3) {
+        t.activeExam = 'hakan';
+        t.subStep = 'exam';
+        t.speaker = 'hakan';
+        t.speakerName = CROSS_EXAMS.hakan.name;
+        t.speakerRole = CROSS_EXAMS.hakan.role;
+        t.speakerMood = CROSS_EXAMS.hakan.statements[0].mood;
+        t.speakerMoodLabel = 'Resmi';
+        t.dialogueText = CROSS_EXAMS.hakan.statements[0].text;
+      } else if (stageIdx === 4) {
+        t.activeExam = 'selinA';
+        t.subStep = 'exam';
+        t.speaker = 'selin';
+        t.speakerName = CROSS_EXAMS.selinA.name;
+        t.speakerRole = CROSS_EXAMS.selinA.role;
+        t.speakerMood = CROSS_EXAMS.selinA.statements[0].mood;
+        t.speakerMoodLabel = 'Soğukkanlı';
+        t.dialogueText = CROSS_EXAMS.selinA.statements[0].text;
+      } else if (stageIdx === 5) {
+        t.speaker = 'savci';
+        t.speakerName = 'Cumhuriyet Savcısı';
+        t.speakerRole = 'Esas Hakkında Mütalaa';
+        if (t.selinExposedPartB) {
+          t.speakerMood = 'sok';
+          t.speakerMoodLabel = 'Şaşkın';
+          t.dialogueText = 'Sayın Başkan... Av. Kaan’ın sunduğu adli bilişim ve adli tıp verileri karşısında maddi gerçeğin değiştiğini görüyoruz. Takdir Sayın Heyetindir.';
+        } else if (t.kanaat >= 60) {
+          t.speakerMood = 'gergin';
+          t.speakerMoodLabel = 'Gergin';
+          t.dialogueText = 'Sayın Başkan, savunma makamı bazı delillerde şüphe oluşturmaya çalışsa da maktul ile sanık arasındaki husumet sabittir. Takdiri heyetinize bırakıyoruz.';
+        } else {
+          t.speakerMood = 'ofkeli';
+          t.speakerMoodLabel = 'Kararlı';
+          t.dialogueText = 'Sayın Başkan, sanık Kerem Demir’in maktul Haluk Demirci’yi kasten öldürdüğü sabittir. TCK m. 81 uyarınca MÜEBBET HAPİS cezası ile cezalandırılmasını mütalaa ediyoruz!';
+        }
+      }
+      saveState();
+    }
+
+    function handleStage0Objection(mode) {
+      const s = window.gameState;
+      const t = s.trial;
+
+      if (mode === 'valid') {
+        t.whatsappExcluded = true;
+        t.legalObjectionsSuccess += 1;
+        adjustKanaat(15);
+        t.subStep = 'after';
+        t.speaker = 'hakim';
+        t.speakerName = 'Mahkeme Başkanı';
+        t.speakerRole = 'Ara Karar';
+        t.speakerMood = 'emin';
+        t.speakerMoodLabel = 'Etkilenmiş';
+        t.dialogueText = 'Av. Kaan haklıdır! Maktulün telefonundan hakim kararı (CMK m. 134) olmaksızın alınan WhatsApp ekran görüntüsü hukuka aykırı delil niteliğindedir. CMK m. 206/2-a gereğince DOSYADAN ÇIKARILMASINA karar verildi! (+%15 Heyet Kanaati)';
+        saveState();
+        triggerDramaticStamp('İTİRAZ EDİYORUM!', 'CMK m. 206/2-a — Hukuka Aykırı Delil Reddedildi', 'green', 'objection', () => render(), 'ev_tutanak');
+      } else if (mode === 'weak') {
+        adjustKanaat(-5);
+        if (penalizeCredibility(1)) return;
+        t.subStep = 'after';
+        t.speaker = 'savci';
+        t.speakerName = 'Cumhuriyet Savcısı';
+        t.speakerRole = 'İddia Makamı';
+        t.speakerMood = 'emin';
+        t.speakerMoodLabel = 'Küçümseyici';
+        t.dialogueText = 'Sayın Başkan, Av. Kaan somut bir usulsüzlük tutanağı veya CMK maddesi göstermeden soyut itirazda bulunuyor! İtirazın reddini talep ediyorum. (-1 İtibar, -%5 Kanaat)';
+        saveState();
+        triggerDramaticStamp('İTİRAZ REDDEDİLDİ', 'Somut belge veya CMK 206 maddesi sunulmadı', 'crimson', 'error', () => render());
+      } else {
+        adjustKanaat(-10);
+        t.subStep = 'after';
+        t.speaker = 'hakim';
+        t.speakerName = 'Mahkeme Başkanı';
+        t.speakerRole = '14. Ağır Ceza Heyeti';
+        t.speakerMood = 'normal';
+        t.speakerMoodLabel = 'Ciddi';
+        t.dialogueText = 'Savunma makamı (Av. Kaan) WhatsApp deliline itiraz etmedi. Tehdit içerikli mesaj dosyada geçerli delil olarak bırakıldı. (-%10 Heyet Kanaati)';
+        SoundEngine.playGavel(false);
+        saveState();
+        render();
+      }
+    }
+
+    function handleDefenseStrategy(strategy) {
+      const t = window.gameState.trial;
+      t.defenseStrategy = strategy;
+      t.subStep = 'after';
+
+      if (strategy === 'honest') {
+        adjustKanaat(10);
+        t.speaker = 'kerem';
+        t.speakerName = 'Kerem Demir';
+        t.speakerRole = 'Sanık';
+        t.speakerMood = 'emin';
+        t.speakerMoodLabel = 'Kararlı';
+        t.dialogueText = 'Sayın Başkan, gizleyecek bir şeyim yok. 23:20’de liman ofisindeydim, sahte gümrük belgeleri yüzünden tartıştık. Beni itince kırılan bardak elimi kesti. 23:28’de çıktım. Onu ben öldürmedim! (+%10 Kanaat)';
+        SoundEngine.playGavel(false);
+      } else if (strategy === 'deny') {
+        adjustKanaat(-15);
+        if (penalizeCredibility(1)) return;
+        t.speaker = 'savci';
+        t.speakerName = 'Cumhuriyet Savcısı';
+        t.speakerRole = 'İddia Makamı';
+        t.speakerMood = 'ofkeli';
+        t.speakerMoodLabel = 'Zafer Kazanmış';
+        t.dialogueText = 'İtiraz ediyorum! Sanık ofise hiç gitmediğini söylüyor ama olay yerindeki kırık bardakta kendi DNA’sı var! Bu bariz bir yalandır Sayın Başkan! (-1 İtibar, -%15 Kanaat)';
+        saveState();
+        triggerDramaticStamp('SAVCI İTİRAZI!', 'Tam inkar stratejisi DNA bulgusuyla çelişti!', 'crimson', 'error', () => render());
+        return;
+      } else {
+        adjustKanaat(-5);
+        t.speaker = 'kerem';
+        t.speakerName = 'Kerem Demir';
+        t.speakerRole = 'Sanık';
+        t.speakerMood = 'gergin';
+        t.speakerMoodLabel = 'Üzgün';
+        t.dialogueText = 'Haluk Bey beni ağır şekilde tehdit etti, üzerime yürüdü... Ama ben onu öldürmedim Sayın Başkan. (Haksız tahrik vurgusu beraat algısını zayıflattı ancak indirim kapısını araladı. -%5 Kanaat)';
+        SoundEngine.playClick();
+      }
+      saveState();
+      render();
+    }
+
+    function navStatement(delta) {
+      const t = window.gameState.trial;
+      const exam = CROSS_EXAMS[t.activeExam];
+      if (!exam) return;
+      SoundEngine.playClick();
+      const len = exam.statements.length;
+      t.statementIdx = (t.statementIdx + delta + len) % len;
+      const st = exam.statements[t.statementIdx];
+      t.dialogueText = st.text;
+      t.speakerMood = st.mood || 'normal';
+      saveState();
+      render();
+    }
+
+    function pressWitness() {
+      const t = window.gameState.trial;
+      const exam = CROSS_EXAMS[t.activeExam];
+      if (!exam) return;
+      const st = exam.statements[t.statementIdx];
+      t.pressedMap[`${t.activeExam}_${t.statementIdx}`] = true;
+      SoundEngine.playPaper();
+
+      const hasCmk201 = window.gameState.laws.includes('law_cmk201');
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-6 max-w-xl mx-auto">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-4">
+            <div class="text-amber-400 font-serif-display text-lg font-bold">Av. Kaan — Çapraz Sorgu ${hasCmk201 ? '(CMK m. 201)' : ''}</div>
+            <button onclick="closeModal()" class="btn-noir px-3 py-1 rounded-lg text-xs">Kapat ✕</button>
+          </div>
+          <p class="text-sm sm:text-base text-stone-200 whitespace-pre-line leading-relaxed mb-4">${st.press}</p>
+          ${st.isTarget
+            ? `<div class="p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-xs text-amber-200">💡 İpucu: Tanığın bu ifadesinde ciddi bir çelişki var! <strong>İTİRAZ EDİYORUM! (Delil Sun)</strong> butonuna basıp doğru delili göster.</div>`
+            : `<div class="p-3 rounded-xl bg-stone-800/80 border border-stone-700 text-xs text-stone-400">Bu ifadede doğrudan bir çelişki görünmüyor. Diğer ifadelere geçip tanığın açığını ara.</div>`
+          }
+        </div>
+      `);
+      saveState();
+      render();
+    }
+
+    function openPresentEvidenceModal() {
+      SoundEngine.playPaper();
+      const s = window.gameState;
+      const items = s.evidence.map(id => {
+        const ev = EVIDENCE_DB[id];
+        return `
+          <button onclick="submitEvidenceInExam('${id}')" class="w-full text-left parchment-card rounded-xl p-3.5 hover:ring-2 hover:ring-amber-500 transition flex items-center gap-3">
+            <div class="w-24 shrink-0 hidden sm:block">${getEvidenceVisualSVG(id)}</div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-serif-display font-bold text-stone-900 text-sm sm:text-base">${ev.title}</span>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-red-900/15 text-red-900">${ev.tag}</span>
+              </div>
+              <p class="text-xs text-stone-700 mt-1">${ev.short}</p>
+            </div>
+          </button>
+        `;
+      }).join('');
+
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-5 sm:p-6">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-4">
+            <div>
+              <h3 class="font-serif-display text-xl font-bold text-amber-300">İTİRAZ EDİYORUM! — Delil Seç</h3>
+              <p class="text-xs text-stone-400">Mevcut tanık ifadesindeki çelişkiyi kanıtlayan delili sunun.</p>
+            </div>
+            <button onclick="closeModal()" class="btn-noir px-3 py-1.5 rounded-lg text-sm">İptal</button>
+          </div>
+          <div class="grid gap-3">${items}</div>
+        </div>
+      `);
+    }
+
+    function openPresentLawModal() {
+      SoundEngine.playPaper();
+      const s = window.gameState;
+      if (s.laws.length === 0) {
+        showToast('Çantada ekli kanun maddesi yok! Delil sunabilir veya sorgulayabilirsin.', 'red');
+        return;
+      }
+      const items = s.laws.map(id => {
+        const l = LAWS_DB[id];
+        return `
+          <button onclick="submitLawInExam('${id}')" class="w-full text-left rounded-xl p-4 bg-stone-900/90 border border-amber-500/30 hover:border-amber-400 transition">
+            <div class="font-bold text-amber-300 text-sm">${l.code} — ${l.title}</div>
+            <p class="text-xs text-stone-300 mt-1">${l.summary}</p>
+          </button>
+        `;
+      }).join('');
+
+      openModal(`
+        <div class="mahogany-card rounded-2xl p-5 sm:p-6">
+          <div class="flex items-center justify-between border-b border-amber-500/20 pb-3 mb-4">
+            <div>
+              <h3 class="font-serif-display text-xl font-bold text-amber-300">Kanun Maddesiyle İtiraz</h3>
+              <p class="text-xs text-stone-400">Usul veya çapraz sorgu hakkınızı kullanmak için madde seçin.</p>
+            </div>
+            <button onclick="closeModal()" class="btn-noir px-3 py-1.5 rounded-lg text-sm">İptal</button>
+          </div>
+          <div class="grid gap-2.5">${items}</div>
+        </div>
+      `);
+    }
+
+    function submitLawInExam(lawId) {
+      closeModal();
+      const t = window.gameState.trial;
+      if (lawId === 'law_cmk201') {
+        t.legalObjectionsSuccess += 1;
+        adjustKanaat(4);
+        SoundEngine.playObjection();
+        showToast('CMK m. 201 ile tanık üzerinde usul baskısı kuruldu! (+%4 Kanaat)', 'green');
+        saveState();
+        pressWitness();
+      } else if (lawId === 'law_cmk223') {
+        SoundEngine.playClick();
+        showToast('CMK m. 223/2-e (Şüpheden Sanık Yararlanır) kapanış savunmasında en güçlü etkisini gösterir.', 'gold');
+      } else {
+        adjustKanaat(-3);
+        if (penalizeCredibility(1)) return;
+        triggerDramaticStamp('SAVCI İTİRAZI!', 'Bu kanun maddesi mevcut tanık ifadesiyle doğrudan ilgili değil! (-1 İtibar)', 'crimson', 'error', () => render());
+      }
+    }
+
+    function submitEvidenceInExam(evId) {
+      closeModal();
+      const t = window.gameState.trial;
+      const exam = CROSS_EXAMS[t.activeExam];
+      const st = exam.statements[t.statementIdx];
+
+      if (st.isTarget && st.validEvidence.includes(evId)) {
+        t.contradictionsCaught += 1;
+        adjustKanaat(20);
+
+        if (t.activeExam === 'riza') t.rizaBroken = true;
+        if (t.activeExam === 'hakan') t.hakanBroken = true;
+        if (t.activeExam === 'selinA') t.selinExposedPartA = true;
+        if (t.activeExam === 'selinB') t.selinExposedPartB = true;
+
+        t.subStep = 'after';
+        t.speaker = 'avukat';
+        t.speakerName = 'Av. Kaan';
+        t.speakerRole = 'Sanık Müdafii';
+        t.speakerMood = 'emin';
+        t.speakerMoodLabel = 'Zafer';
+        t.dialogueText = `${st.successText} (+%20 Heyet Kanaati)`;
+
+        saveState();
+        triggerDramaticStamp(st.successTitle, 'Av. Kaan Çelişkiyi Yakaladı!', 'gold', 'contradiction', () => render(), evId);
+      } else {
+        adjustKanaat(-5);
+        if (penalizeCredibility(1)) return;
+        saveState();
+        triggerDramaticStamp('SAVCI İTİRAZI!', 'Sunulan delil bu ifadeyle çelişmiyor! (-1 İtibar, -%5 Kanaat)', 'crimson', 'error', () => render());
+      }
+    }
+
+    function skipCurrentExam() {
+      const t = window.gameState.trial;
+      SoundEngine.playGavel(false);
+      adjustKanaat(-5);
+      t.subStep = 'after';
+      t.speaker = 'hakim';
+      t.speakerName = 'Mahkeme Başkanı';
+      t.speakerRole = '14. Ağır Ceza Heyeti';
+      t.speakerMood = 'normal';
+      t.speakerMoodLabel = 'Ciddi';
+      t.dialogueText = 'Savunma makamı tanığa başka soru yöneltmedi. Tanık ifadesi mevcut haliyle tutanağa geçirildi. (-%5 Heyet Kanaati)';
+      saveState();
+      render();
+    }
+
+    function advanceTrialStage() {
+      SoundEngine.playClick();
+      const t = window.gameState.trial;
+      if (t.stage === 4 && t.activeExam === 'selinA' && t.selinExposedPartA) {
+        t.activeExam = 'selinB';
+        t.subStep = 'exam';
+        t.statementIdx = 0;
+        t.speaker = 'selin';
+        t.speakerName = CROSS_EXAMS.selinB.name;
+        t.speakerRole = CROSS_EXAMS.selinB.role;
+        t.speakerMood = 'sok';
+        t.speakerMoodLabel = 'Panik';
+        t.dialogueText = CROSS_EXAMS.selinB.statements[0].text;
+        saveState();
+        render();
+        return;
+      }
+      if (t.stage < 5) {
+        setupTrialStage(t.stage + 1);
+        render();
+      }
+    }
+
+    function chooseClosingArgument(choice) {
+      const s = window.gameState;
+      const t = s.trial;
+      t.closingChoice = choice;
+
+      if (choice === 'beraat_selin' && t.selinExposedPartB) adjustKanaat(10);
+      else if (choice === 'beraat_suphe' && s.laws.includes('law_cmk223')) adjustKanaat(8);
+      else if (choice === 'haksiz_tahrik' && s.laws.includes('law_tck29')) adjustKanaat(5);
+
+      s.phase = 'verdict';
+      saveState();
+      triggerDramaticStamp('KARAR AÇIKLANIYOR', 'İstanbul 14. Ağır Ceza Mahkemesi Hükmünü Veriyor...', 'gold', 'gavel', () => {
+        const ending = computeEnding();
+        SoundEngine.playVerdict(ending.positive);
+        render();
+      });
+    }
+
+    /* =========================================================================
+       9. PHASE 3 LOGIC: 5 DISTINCT ENDINGS
+       ========================================================================= */
+    function computeEnding() {
+      const t = window.gameState.trial;
+
+      if (t.credibility <= 0) {
+        return {
+          id: 'baro',
+          positive: false,
+          mood: 'ofkeli',
+          stamp: 'USULDEN İHTAR',
+          stampColor: 'text-red-800',
+          title: 'BARO SORUŞTURMASI & DURUŞMANIN ERTELENMESİ',
+          rank: 'Usul İhlali',
+          verdictLaw: 'CMK m. 203 & Avukatlık Kanunu m. 34',
+          summary: 'Duruşma boyunca dayanaksız itirazlar ve çelişkisiz delil sunumları nedeniyle savunma itibarı sıfırlandı. Mahkeme Başkanı Av. Kaan’ı ihtar ederek duruşmayı erteledi ve İstanbul Barosu’na bildirimde bulunulmasına karar verdi. Kerem Demir’in tutukluluk hali devam ediyor.'
+        };
+      }
+
+      if (t.selinExposedPartB && t.kanaat >= 75 && t.closingChoice === 'beraat_selin') {
+        return {
+          id: 'legend',
+          positive: true,
+          mood: 'rahat',
+          stamp: 'TAM BERAAT',
+          stampColor: 'text-emerald-800',
+          title: 'TAM BERAAT & GERÇEK FAİLİN TUTUKLANMASI',
+          rank: 'Ağır Ceza Efsanesi',
+          verdictLaw: 'CMK m. 223/2-b (Suçun Sanık Tarafından İşlenmediğinin Sabit Olması)',
+          summary: 'Sanık Kerem Demir’in üzerine atılı kasten öldürme suçunu İŞLEMEDİĞİ sabit olduğundan BERAATİNE ve derhal TAHLİYESİNE; Av. Kaan’ın duruşmada ortaya koyduğu adli bilişim ve adli tıp delilleri ışığında gerçek fail olduğu anlaşılan Selin Karahan hakkında kasten öldürme ve nitelikli dolandırıcılık suçlarından derhal tutuklama istemiyle suç duyurusunda bulunulmasına oybirliğiyle karar verildi!'
+        };
+      }
+
+      if (t.kanaat >= 60 && t.closingChoice !== 'haksiz_tahrik') {
+        return {
+          id: 'acquittal',
+          positive: true,
+          mood: 'rahat',
+          stamp: 'BERAAT',
+          stampColor: 'text-emerald-800',
+          title: 'BERAAT (ŞÜPHEDEN SANIK YARARLANIR)',
+          rank: 'Usta Müdafi',
+          verdictLaw: 'CMK m. 223/2-e (Yüklenen Suçun Sabit Olmaması)',
+          summary: 'Av. Kaan’ın ortaya koyduğu teknik ve bilimsel çelişkiler karşısında, sanık Kerem Demir’in mahkumiyetine yeter her türlü şüpheden uzak, kesin ve inandırıcı delil elde edilemediğinden CMK m. 223/2-e gereğince BERAATİNE ve tahliyesine karar verildi. Kerem özgürlüğüne kavuştu; ancak Haluk Demirci’nin gerçek katili hâlâ gölgelerde...'
+        };
+      }
+
+      if ((t.kanaat >= 35 && t.kanaat < 60) || t.closingChoice === 'haksiz_tahrik') {
+        return {
+          id: 'reduced',
+          positive: false,
+          mood: 'gergin',
+          stamp: 'İNDİRİMLİ CEZA',
+          stampColor: 'text-amber-800',
+          title: '14 YIL HAPİS CEZASI (HAKSIZ TAHRİK İNDİRİMİ)',
+          rank: 'Deneyimli Avukat',
+          verdictLaw: 'TCK m. 81 & TCK m. 29 (Haksız Tahrik)',
+          summary: 'Mahkeme heyeti sanığın suçsuzluğuna tam kanaat getiremese de maktulün haksız saldırısı ve baskısı altında hareket edildiği gerekçesiyle TCK m. 29 Haksız Tahrik hükümlerini uyguladı. Müebbet hapis cezası 14 yıl hapse indirildi. Kerem Demir müebbetten kurtuldu ama gerçek fail ortaya çıkarılamadı.'
+        };
+      }
+
+      return {
+        id: 'guilty',
+        positive: false,
+        mood: 'sok',
+        stamp: 'MAHKUMİYET',
+        stampColor: 'text-red-900',
+        title: 'MÜEBBET HAPİS CEZASI (MAHKUMİYET)',
+        rank: 'Zorlu Duruşma',
+        verdictLaw: 'TCK m. 81/1 (Kasten Öldürme)',
+        summary: 'Savcılığın sunduğu deliller çürütülemedi ve heyet nezdinde makul şüphe oluşturulamadı. Sanık Kerem Demir’in kasten öldürme suçundan MÜEBBET HAPİS cezası ile cezalandırılmasına karar verildi. İstinaf yolu açık olmak üzere dosya kapandı.'
+      };
+    }
+
+    function calculateFinalScore(ending) {
+      const s = window.gameState;
+      const t = s.trial;
+      let score = s.evidence.length * 100 + t.contradictionsCaught * 250 + t.legalObjectionsSuccess * 150 + Math.round(s.trust * 2) + t.credibility * 80 + t.kanaat * 5;
+      if (ending.id === 'legend') score += 500;
+      else if (ending.id === 'acquittal') score += 250;
+      return score;
+    }
+
+    /* =========================================================================
+       10. VISUAL NOVEL STAGE COMPONENT & 3D SPATIAL DOCK COMPONENT
+       ========================================================================= */
+    function renderVisualStage({ sceneId, charId, mood, speakerName, speakerRole, moodLabel, dialogueText, dialogueId, hintText = '' }) {
+      return `
+        <div class="vn-stage mb-5">
+          <!-- Layered SVG Background -->
+          <div class="relative h-56 sm:h-64 w-full">
+            ${getSceneBackgroundSVG(sceneId)}
+            <div class="absolute inset-0 bg-gradient-to-t from-[#0b0d13] via-transparent to-black/35"></div>
+
+            <!-- Active Character Portrait -->
+            <div id="vn-active-portrait" class="absolute bottom-0 left-3 sm:left-8 portrait-enter pointer-events-none">
+              ${getCharacterPortraitSVG(charId, mood, 184)}
+            </div>
+
+            <!-- Speaker Plate Right -->
+            <div class="absolute bottom-3 right-3 sm:right-6 left-44 sm:left-56 flex flex-col items-end text-right pointer-events-none">
+              <span class="text-[10px] sm:text-xs font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-black/65 text-amber-300 border border-amber-500/40 backdrop-blur-sm mb-1">
+                ${moodLabel}
+              </span>
+              <div class="font-serif-display text-lg sm:text-2xl font-extrabold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                ${speakerName}
+              </div>
+              <div class="text-[11px] sm:text-xs text-stone-200/90 drop-shadow">${speakerRole}</div>
+            </div>
+          </div>
+
+          <!-- Typewriter Dialogue Box -->
+          <div onclick="Typewriter.finishNow()" class="p-4 sm:p-5 bg-[#100d10]/95 border-t border-amber-500/30 cursor-pointer" title="Metni hızla tamamlamak için tıklayın">
+            ${hintText ? `<div class="text-xs text-amber-300/90 mb-2 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-1.5">🎯 ${hintText}</div>` : ''}
+            <p class="font-legal text-sm sm:text-base text-stone-100 leading-relaxed min-h-[3.5rem]">
+              “<span id="${dialogueId}">${dialogueText}</span>”
+            </p>
+            <div class="text-[10px] text-stone-500 text-right mt-1">Metni atlamak için kutuya tıklayın</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderSpatialDock() {
+      const s = window.gameState;
+      const unlockedCount = getUnlockedEndings().length;
+
+      if (s.phase === 'title') {
+        const hasSave = s.ap < 8 || s.evidence.length > 1 || s.keremStep > 0;
+        return `
+          <nav class="spatial-dock-stage" aria-label="3D Ana Menü Çubuğu">
+            <div class="spatial-dock-bar">
+              <button onmouseenter="Scene3D.setFocus('dossier')" onmouseleave="Scene3D.setFocus('default')" onclick="startNewOrContinue()" class="dock-item active">
+                <span class="text-xl sm:text-2xl">📁</span>
+                <span class="text-[10px] sm:text-[11px] font-bold mt-1 whitespace-nowrap">${hasSave ? 'Devam Et' : 'Dava Başlat'}</span>
+              </button>
+              <button onmouseenter="Scene3D.setFocus('scales')" onmouseleave="Scene3D.setFocus('default')" onclick="openEndingsTrackerModal()" class="dock-item">
+                <span class="text-xl sm:text-2xl">⚖️</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-1 whitespace-nowrap">5 Son (${unlockedCount}/5)</span>
+              </button>
+              <button onmouseenter="Scene3D.setFocus('gavel')" onmouseleave="Scene3D.setFocus('default')" onclick="openResetConfirm()" class="dock-item">
+                <span class="text-xl sm:text-2xl">🔨</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-1 whitespace-nowrap">Yeni Dosya</span>
+              </button>
+              <div class="dock-divider"></div>
+              <button onclick="toggleMute()" class="dock-item">
+                <span class="text-xl sm:text-2xl">${s.muted ? '🔇' : '🔊'}</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-1 whitespace-nowrap">${s.muted ? 'Sessiz' : 'Ses Açık'}</span>
+              </button>
+            </div>
+          </nav>
+        `;
+      }
+
+      if (s.phase === 'prep') {
+        return `
+          <nav class="spatial-dock-stage" aria-label="3D Soruşturma Menü Çubuğu">
+            <div class="spatial-dock-bar">
+              <button onclick="setPrepTab('kerem')" class="dock-item ${s.prepTab === 'kerem' ? 'active' : ''}">
+                <span class="text-lg sm:text-xl">🔒</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Cezaevi</span>
+              </button>
+              <button onclick="setPrepTab('uyap')" class="dock-item ${s.prepTab === 'uyap' ? 'active' : ''}">
+                <span class="text-lg sm:text-xl">📜</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">UYAP</span>
+              </button>
+              <button onclick="setPrepTab('field')" class="dock-item ${s.prepTab === 'field' ? 'active' : ''}">
+                <span class="text-lg sm:text-xl">🔍</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Bilirkişi</span>
+              </button>
+              <button onclick="setPrepTab('laws')" class="dock-item ${s.prepTab === 'laws' ? 'active' : ''}">
+                <span class="text-lg sm:text-xl">⚖️</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">TCK/CMK</span>
+              </button>
+              <button onclick="setPrepTab('pier')" class="dock-item ${s.prepTab === 'pier' ? 'active' : ''}">
+                <span class="text-lg sm:text-xl">⚓</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Olay Yeri</span>
+              </button>
+              <div class="dock-divider"></div>
+              <button onclick="openDossierModal()" class="dock-item">
+                <span class="text-lg sm:text-xl">📁</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Dosya (${s.evidence.length})</span>
+              </button>
+              <button onclick="requestStartTrial()" class="dock-item dock-crimson">
+                <span class="text-lg sm:text-xl">🏛️</span>
+                <span class="text-[10px] sm:text-[11px] font-bold mt-0.5 whitespace-nowrap">Duruşma</span>
+              </button>
+            </div>
+          </nav>
+        `;
+      }
+
+      if (s.phase === 'trial') {
+        const isExam = s.trial.subStep === 'exam';
+        return `
+          <nav class="spatial-dock-stage" aria-label="3D Duruşma Menü Çubuğu">
+            <div class="spatial-dock-bar">
+              <button onclick="openDossierModal()" class="dock-item">
+                <span class="text-lg sm:text-xl">📁</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Dava Dosyası</span>
+              </button>
+              ${isExam ? `
+                <button onclick="pressWitness()" class="dock-item">
+                  <span class="text-lg sm:text-xl">🗣️</span>
+                  <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Sorgula</span>
+                </button>
+                <button onclick="openPresentEvidenceModal()" class="dock-item dock-crimson">
+                  <span class="text-lg sm:text-xl">✋</span>
+                  <span class="text-[10px] sm:text-[11px] font-bold mt-0.5 whitespace-nowrap">İTİRAZ ET!</span>
+                </button>
+                <button onclick="openPresentLawModal()" class="dock-item active">
+                  <span class="text-lg sm:text-xl">⚖️</span>
+                  <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Kanun Sun</span>
+                </button>
+              ` : ''}
+              <div class="dock-divider"></div>
+              <button onclick="toggleMute()" class="dock-item">
+                <span class="text-lg sm:text-xl">${s.muted ? '🔇' : '🔊'}</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Ses</span>
+              </button>
+              <button onclick="goToTitle()" class="dock-item">
+                <span class="text-lg sm:text-xl">🏛️</span>
+                <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Ana Menü</span>
+              </button>
+            </div>
+          </nav>
+        `;
+      }
+
+      // Verdict Phase Dock
+      return `
+        <nav class="spatial-dock-stage" aria-label="3D Karar Menü Çubuğu">
+          <div class="spatial-dock-bar">
+            <button onclick="confirmReset()" class="dock-item active">
+              <span class="text-lg sm:text-xl">↺</span>
+              <span class="text-[10px] sm:text-[11px] font-bold mt-0.5 whitespace-nowrap">Yeni Dava</span>
+            </button>
+            <button onclick="openDossierModal()" class="dock-item">
+              <span class="text-lg sm:text-xl">📁</span>
+              <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">Dava Dosyası</span>
+            </button>
+            <button onclick="openEndingsTrackerModal()" class="dock-item">
+              <span class="text-lg sm:text-xl">🏆</span>
+              <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">5 Son (${unlockedCount}/5)</span>
+            </button>
+            <button onclick="goToTitle()" class="dock-item">
+              <span class="text-lg sm:text-xl">🏛️</span>
+              <span class="text-[10px] sm:text-[11px] font-semibold mt-0.5 whitespace-nowrap">3D Menü</span>
+            </button>
+          </div>
+        </nav>
+      `;
+    }
+
+    /* =========================================================================
+       11. MASTER RENDERING ENGINE
+       ========================================================================= */
+    function render() {
+      Typewriter.stop();
+      const s = window.gameState;
+      const app = document.getElementById('app');
+
+      if (s.phase === 'title') {
+        app.innerHTML = renderTitleScreen() + renderSpatialDock();
+        setTimeout(() => Scene3D.mount(), 20);
+      } else {
+        Scene3D.dispose();
+        if (s.phase === 'prep') {
+          app.innerHTML = renderTopHUD() + renderPrepPhase() + renderSpatialDock();
+          triggerPrepTypewriter();
+        } else if (s.phase === 'trial') {
+          app.innerHTML = renderTopHUD() + renderTrialPhase() + renderSpatialDock();
+          Typewriter.run('trial-dialogue-text', s.trial.dialogueText);
+        } else {
+          app.innerHTML = renderTopHUD() + renderVerdictPhase() + renderSpatialDock();
+        }
+      }
+    }
+
+    function triggerPrepTypewriter() {
+      const s = window.gameState;
+      if (s.prepTab === 'kerem') {
+        let text = '';
+        if (!s.keremDone) {
+          text = KEREM_DIALOGUES[s.keremStep].kerem;
+        } else if (s.trust >= 65) {
+          text = 'Av. Kaan, size her şeyi anlatacağım... 23:28’de ofisten çıkıp arabama bindim. Saat 23:39’da TEM Kuzey Shell istasyonundan yakıt aldım! Ayrıca çıkarken merdivende iş ortağı Selin Karahan’ı parlak kırmızı ipek eşarbıyla gördüm!';
+        } else {
+          text = 'Av. Kaan, hâlâ kendimi çok baskı altında hissediyorum... Bana biraz daha zaman ayırıp güvenimi tazelerseniz olay gecesindeki kritik detayları hatırlamaya çalışacağım.';
+        }
+        Typewriter.run('prep-dialogue-text', text);
+      } else if (s.prepTab === 'pier') {
+        Typewriter.run('prep-dialogue-text', '14 Ekim gecesi saat 23:40... Yağmurlu liman iskelesindeki Demirci Lojistik ofisinde Haluk Demirci ölü bulundu. Aşağıdaki 3 olay yeri noktasını inceleyerek savunmanı güçlendir.');
+      } else if (s.prepTab === 'field') {
+        Typewriter.run('prep-dialogue-text', 'Büromuzda 60.000 TL bütçe ve sınırlı Eylem Puanımız var. HTS kayıtları, Adli Bilişim ve Bağımsız Adli Tıp raporları duruşmada savcının tezini yerle bir edecek.');
+      }
+    }
+
+    function renderTitleScreen() {
+      const s = window.gameState;
+      const hasSave = s.ap < 8 || s.evidence.length > 1 || s.keremStep > 0;
+      const unlockedCount = getUnlockedEndings().length;
+
+      return `
+        <div class="relative flex-1 min-h-screen flex flex-col justify-between overflow-hidden pb-28">
+          <!-- Real-Time Three.js 3D Law Office / Courtroom Bench Background -->
+          <div id="three-bg-container" class="fixed inset-0 z-0"></div>
+          <div class="fixed inset-0 z-0 bg-gradient-to-b from-black/70 via-black/35 to-black/85 pointer-events-none"></div>
+
+          <!-- Top Prestige Header -->
+          <div class="relative z-10 max-w-6xl w-full mx-auto px-4 sm:px-8 pt-6 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="px-2.5 py-1 rounded-md bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs font-bold tracking-widest uppercase">
+                T.C. İstanbul 14. Ağır Ceza
+              </span>
+              <span class="hidden sm:inline text-xs text-stone-300/80">Esas No: 2026/418 • Sanık Müdafii: Av. Kaan</span>
+            </div>
+            <span class="stamp text-[10px] sm:text-xs text-red-500/90 bg-black/50">3D HUKUK SİMÜLASYONU</span>
+          </div>
+
+          <!-- Center Floating Title Glass Panel -->
+          <div class="relative z-10 max-w-3xl w-full mx-auto px-4 my-auto text-center">
+            <div class="inline-block px-4 py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-300 text-xs font-semibold tracking-[0.22em] uppercase mb-3 backdrop-blur-md">
+              Ağır Ceza Dosyası — Liman Gecesi
+            </div>
+            <h1 class="font-serif-display text-5xl sm:text-7xl font-extrabold text-stone-100 tracking-tight drop-shadow-[0_8px_28px_rgba(0,0,0,0.9)]">
+              MÜDAFİ
+            </h1>
+            <p class="mt-3 text-sm sm:text-base text-stone-200/90 max-w-xl mx-auto leading-relaxed drop-shadow">
+              <strong>Av. Kaan</strong> olarak <strong>Kerem Demir</strong>’in müdafiliğini üstlenin. Büro soruşturmasında delil toplayın, 14. Ağır Ceza salonunda çapraz sorguya çıkıp gerçek faili ortaya çıkarın.
+            </p>
+
+            <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <button onmouseenter="Scene3D.setFocus('dossier')" onmouseleave="Scene3D.setFocus('default')" onclick="startNewOrContinue()" class="btn-gold pulse-gold px-8 py-3.5 rounded-xl text-sm sm:text-base">
+                ${hasSave ? 'Savunmaya Devam Et' : 'Savunmayı Üstlen (Başla)'}
+              </button>
+              <button onmouseenter="Scene3D.setFocus('scales')" onmouseleave="Scene3D.setFocus('default')" onclick="openEndingsTrackerModal()" class="btn-noir backdrop-blur-md px-5 py-3.5 rounded-xl text-sm">
+                🏆 5 Son Takipçisi (${unlockedCount}/5)
+              </button>
+            </div>
+
+            <div class="mt-5 text-[11px] text-amber-200/70 tracking-wide">
+              ✨ Fareyi hareket ettirerek 3D mahkeme kürsüsünü inceleyin veya alttaki 3D menü çubuğunu kullanın
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function startNewOrContinue() {
+      SoundEngine.playGavel(false);
+      window.gameState.phase = 'prep';
+      saveState();
+      render();
+    }
+
+    function renderTopHUD() {
+      const s = window.gameState;
+      const phaseLabels = {
+        prep: 'AŞAMA 1: BÜRO & SORUŞTURMA',
+        trial: `AŞAMA 2: 14. AĞIR CEZA DURUŞMASI (${s.trial.stage + 1}/6)`,
+        verdict: 'AŞAMA 3: HÜKÜM & GEREKÇELİ KARAR'
+      };
+      return `
+        <header class="sticky top-0 z-30 bg-[#0d0c11]/95 backdrop-blur-md border-b border-amber-500/25 px-3 sm:px-6 py-2.5">
+          <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-3">
+              <button onclick="goToTitle()" class="w-9 h-9 rounded-lg bg-amber-500/15 border border-amber-500/45 flex items-center justify-center text-amber-400 font-serif-display font-bold text-lg hover:bg-amber-500/25 transition" title="3D Ana Menü">K</button>
+              <div>
+                <div class="font-serif-display font-bold text-sm sm:text-base text-stone-100 leading-tight">
+                  MÜDAFİ <span class="text-amber-400 font-normal text-xs ml-1">Av. Kaan • 2026/418 E.</span>
+                </div>
+                <div class="text-[11px] uppercase tracking-wider text-amber-300/80 font-semibold">${phaseLabels[s.phase] || ''}</div>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              ${s.phase === 'prep' ? `
+                <div class="px-2.5 py-1.5 rounded-lg bg-stone-900 border border-amber-500/30 flex items-center gap-1.5">
+                  <span class="text-amber-400">⚡</span>
+                  <strong class="text-amber-200">${s.ap}/${s.maxAp} AP</strong>
+                </div>
+                <div class="px-2.5 py-1.5 rounded-lg bg-stone-900 border border-emerald-500/30 flex items-center gap-1.5">
+                  <span class="text-emerald-400">₺</span>
+                  <strong class="text-emerald-200">${s.budget.toLocaleString('tr-TR')} TL</strong>
+                </div>
+                <div class="px-2.5 py-1.5 rounded-lg bg-stone-900 border border-sky-500/30 flex items-center gap-1.5">
+                  <span class="text-sky-400">🤝</span>
+                  <strong class="text-sky-200">%${s.trust}</strong>
+                </div>
+              ` : ''}
+              <button onclick="toggleMute()" class="btn-noir px-2.5 py-1.5 rounded-lg" title="Sesi Aç/Kapat">${s.muted ? '🔇' : '🔊'}</button>
+              <button onclick="openResetConfirm()" class="btn-noir px-2.5 py-1.5 rounded-lg text-red-300" title="Sıfırla">↺</button>
+            </div>
+          </div>
+        </header>
+      `;
+    }
+
+    /* =========================================================================
+       PHASE 1 RENDER: PREP & INVESTIGATION (WITH VISUAL NOVEL STAGES)
+       ========================================================================= */
+    function renderPrepPhase() {
+      const s = window.gameState;
+      let tabBody = '';
+      if (s.prepTab === 'kerem') tabBody = renderKeremTab();
+      else if (s.prepTab === 'uyap') tabBody = renderUyapTab();
+      else if (s.prepTab === 'field') tabBody = renderFieldTab();
+      else if (s.prepTab === 'laws') tabBody = renderLawsTab();
+      else tabBody = renderPierTab();
+
+      return `
+        <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-6 pb-32 animate-fade-in">
+          ${tabBody}
+        </main>
+      `;
+    }
+
+    function renderKeremTab() {
+      const s = window.gameState;
+      const trustColor = s.trust >= 65 ? 'bg-emerald-500' : s.trust >= 40 ? 'bg-amber-500' : 'bg-red-500';
+      const currentMood = !s.keremDone ? KEREM_DIALOGUES[s.keremStep].mood : (s.trust >= 65 ? 'rahat' : 'gergin');
+      const moodLabel = !s.keremDone ? `Görüşme ${s.keremStep + 1}/3` : (s.trust >= 65 ? 'Tam Güven' : 'Çekingen');
+
+      const stageHtml = renderVisualStage({
+        sceneId: 'prison',
+        charId: 'kerem',
+        mood: currentMood,
+        speakerName: 'Kerem Demir (32)',
+        speakerRole: 'Tutuklu Sanık • Metris Cezaevi Görüş Odası',
+        moodLabel,
+        dialogueText: '',
+        dialogueId: 'prep-dialogue-text'
+      });
+
+      let controls = '';
+      if (!s.keremDone) {
+        const node = KEREM_DIALOGUES[s.keremStep];
+        controls = `
+          ${s.keremLastReply ? `
+            <div class="mb-4 p-3.5 rounded-xl bg-stone-950/75 border border-amber-500/25 text-xs sm:text-sm text-stone-300">
+              <span class="text-amber-400 font-semibold">Önceki Tepki (${s.keremLastReply.delta >= 0 ? '+' : ''}${s.keremLastReply.delta}% Güven):</span>
+              “${s.keremLastReply.reply}”
+            </div>
+          ` : ''}
+          <div class="grid gap-2.5">
+            ${node.choices.map((c, idx) => `
+              <button onclick="chooseKeremOption(${idx})" class="btn-noir p-4 rounded-xl text-left flex flex-col sm:flex-row sm:items-center justify-between gap-2 group">
+                <span class="text-sm text-stone-100 group-hover:text-amber-200">${c.label}</span>
+                <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 self-start sm:self-center shrink-0">${c.tag}</span>
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } else if (s.trust >= 65) {
+        controls = `
+          <div class="grid sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-4 rounded-xl bg-emerald-950/35 border border-emerald-500/40 text-emerald-200">
+              🔓 <strong>İpucu Açıldı:</strong> 23:39 TEM Kuzey Shell Akaryakıt Fişi & Kamera Analizi (Bilirkişi sekmesinde!)
+            </div>
+            <div class="p-4 rounded-xl bg-emerald-950/35 border border-emerald-500/40 text-emerald-200">
+              🔓 <strong>İpucu Açıldı:</strong> Liman Lobi Kamera & İK Arşiv Analizi — Selin Karahan’ın Kırmızı Eşarbı!
+            </div>
+          </div>
+        `;
+      } else {
+        controls = `
+          <div class="p-4 rounded-xl bg-red-950/30 border border-red-500/40 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p class="text-xs sm:text-sm text-stone-300">Kerem’in kritik detayları paylaşması için en az <strong>%65 Güven</strong> gerekiyor.</p>
+            <button onclick="doKeremExtraTrust()" class="btn-gold px-5 py-2.5 rounded-xl text-xs sm:text-sm shrink-0">
+              Ek Görüşme Yap (1 AP)
+            </button>
+          </div>
+        `;
+      }
+
+      return `
+        ${stageHtml}
+        <div class="mahogany-card rounded-2xl p-5">
+          <div class="flex items-center justify-between text-xs mb-2">
+            <span class="uppercase tracking-wider text-stone-400 font-semibold">Müvekkil Güven Göstergesi (Av. Kaan ↔ Kerem Demir)</span>
+            <span class="font-bold text-amber-300">%${s.trust} / Hedef %65</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-stone-900 overflow-hidden mb-5">
+            <div class="h-full ${trustColor} transition-all duration-300" style="width:${s.trust}%"></div>
+          </div>
+          ${controls}
+        </div>
+      `;
+    }
+
+    function renderUyapTab() {
+      const s = window.gameState;
+      const isInsp = (id) => s.uyapInspected.includes(id) ? 'inspected' : '';
+
+      return `
+        <div class="parchment-card rounded-2xl p-5 sm:p-8 max-w-4xl mx-auto">
+          <div class="flex flex-wrap items-start justify-between gap-4 border-b-2 border-stone-800/20 pb-4 mb-5">
+            <div>
+              <div class="font-legal text-xs uppercase tracking-widest text-stone-600">T.C. İstanbul Cumhuriyet Başsavcılığı</div>
+              <h2 class="font-serif-display text-2xl sm:text-3xl font-extrabold text-stone-900 mt-1">İDDİANAME (2026/418 E.)</h2>
+              <div class="text-xs text-stone-600 mt-1">Sanık: Kerem Demir • Müdafi: Av. Kaan • Sevk: TCK m. 81/1</div>
+            </div>
+            <span class="stamp text-xs text-red-800">UYAP ONAYLI</span>
+          </div>
+
+          <div class="mb-4 p-3 rounded-lg bg-amber-900/10 border border-amber-900/25 text-xs text-stone-800">
+            🔎 <strong>Av. Kaan’a Not:</strong> Metindeki kesikli çizgili <em>3 şüpheli satıra tıklayarak</em> usul hatalarını ve adli açıkları tespit edin (${s.uyapInspected.length}/3).
+          </div>
+
+          <div class="font-legal text-xs sm:text-sm text-stone-800 space-y-4 leading-relaxed">
+            <p>
+              <strong>1. OLAYIN ÖZETİ:</strong> 14 Ekim 2026 gecesi saat 23:40 sıralarında, Demirci Lojistik A.Ş. Yönetim Kurulu Başkanı maktul <strong>Haluk Demirci</strong>, liman ofisindeki makam odasında başından ağır darbe almış halde ölü bulunmuştur. Liman bekçisi Rıza Kaya, 23:40’ta kırılma sesi duyduğunu ve 23:45’te sanık Kerem Demir’in binadan koşarak çıktığını beyan etmiştir.
+            </p>
+            <p>
+              <strong>2. İDDİA MAKAMININ DELİLLERİ:</strong> Olay gecesi kolluk görevlilerince maktulün masada açık duran cep telefonundan
+              <span onclick="inspectUyapClause('u_warrant','lead_warrant','USUL İHLALİ TESPİTİ: Telefon incelemesi için CMK m. 134 uyarınca hakim kararı alınmamış! Bilirkişi sekmesinden Arama Tutanağı İncelemesi yaparak ve CMK m. 206/2-a maddesini çantana ekleyerek bu delili duruşmada reddettir!')" class="suspicious-clause ${isInsp('u_warrant')}">
+                hakim kararı beklenmeksizin alınan WhatsApp ekran görüntüsünde
+              </span>
+              sanığın maktule “Bunun hesabını soracağım” yazdığı görülmüştür.
+            </p>
+            <p>
+              <strong>3. OLAY YERİ VE OTOPSİ ÖZETİ:</strong> Maktulün ölümüne ağır kristal ödülün başına indirilmesi sebep olmuştur.
+              <span onclick="inspectUyapClause('u_blood','lead_blood','ADLİ ÇELİŞKİ: İddianame sanığın kanının tam olarak nerede bulunduğunu gizlemiş! Kan sadece kırık viski bardağında olabilir. Bilirkişi sekmesinden Bağımsız Adli Tıp Mütalaası talep et.')" class="suspicious-clause ${isInsp('u_blood')}">
+                Olay yerinde sanık Kerem Demir’e ait kan lekeleri tespit edilmiş olup, cinayet aleti üzerindeki DNA ayrımı ayrıca yapılmamıştır.
+              </span>
+            </p>
+            <p>
+              <strong>4. GÜVENLİK KAMERALARI:</strong> Olay katındaki CCTV kameralarının
+              <span onclick="inspectUyapClause('u_cctv','lead_cctv','DİJİTAL İZ ŞÜPHESİ: Kameraların tam cinayet aralığında (23:18-23:55) kendiliğinden bozulması tesadüf olamaz! Bilirkişi sekmesinden Özel Adli Bilişim Raporu talep et.')" class="suspicious-clause ${isInsp('u_cctv')}">
+                saat 23:18 ile 23:55 arasında teknik arıza nedeniyle kayıt yapmadığı
+              </span>
+              tutanaklara geçmiştir.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderFieldTab() {
+      const s = window.gameState;
+      const officeStage = renderVisualStage({
+        sceneId: 'office',
+        charId: 'avukat',
+        mood: 'emin',
+        speakerName: 'Av. Kaan',
+        speakerRole: 'Kaan Hukuk Bürosu • Soruşturma & Bilirkişi Masası',
+        moodLabel: `${s.ap} AP • ${s.budget.toLocaleString('tr-TR')} TL`,
+        dialogueText: '',
+        dialogueId: 'prep-dialogue-text'
+      });
+
+      return `
+        ${officeStage}
+        <div class="grid md:grid-cols-2 gap-4">
+          ${INVESTIGATIONS_DB.map(inv => {
+            const done = s.investigated.includes(inv.id);
+            const locked = inv.reqLead && !s.leads.includes(inv.reqLead);
+            const canAfford = s.ap >= inv.apCost && s.budget >= inv.budgetCost;
+
+            return `
+              <div class="mahogany-card rounded-2xl p-5 flex flex-col justify-between ${done ? 'border-emerald-500/45' : locked ? 'opacity-75' : ''}">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">${inv.badge}</span>
+                    ${done
+                      ? `<span class="text-xs font-bold text-emerald-400">✓ Rapor Dosyada</span>`
+                      : locked
+                      ? `<span class="text-xs font-bold text-red-400">🔒 İpucu Gerekli</span>`
+                      : `<span class="text-xs text-stone-300">⚡ ${inv.apCost} AP • ₺ ${inv.budgetCost.toLocaleString('tr-TR')} TL</span>`
+                    }
+                  </div>
+                  <h3 class="font-serif-display text-lg font-bold text-stone-100">${inv.title}</h3>
+                  <div class="text-xs text-amber-200/80 mb-2">${inv.subtitle}</div>
+                  <p class="text-xs sm:text-sm text-stone-300 leading-relaxed mb-4">
+                    ${locked ? `<span class="text-red-300">${inv.reqHint}</span>` : inv.desc}
+                  </p>
+                </div>
+                ${done ? `
+                  <button onclick="openDossierModal()" class="btn-noir w-full py-2.5 rounded-xl text-xs font-semibold text-emerald-300 border-emerald-500/40">
+                    Görsel Raporu Dosyada İncele
+                  </button>
+                ` : `
+                  <button onclick="runInvestigation('${inv.id}')" class="${locked || !canAfford ? 'btn-noir opacity-70' : 'btn-gold'} w-full py-2.5 rounded-xl text-sm">
+                    ${locked ? 'Önce İpucunu Keşfet' : `Raporu Çıkart (${inv.apCost} AP / ${inv.budgetCost === 0 ? 'Ücretsiz' : inv.budgetCost.toLocaleString('tr-TR') + ' TL'})`}
+                  </button>
+                `}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderLawsTab() {
+      const s = window.gameState;
+      return `
+        <div class="mahogany-card rounded-2xl p-5 mb-5 flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <div class="text-xs uppercase tracking-widest text-amber-400 font-semibold">Av. Kaan — Mevzuat Hazırlığı</div>
+            <h2 class="font-serif-display text-2xl font-bold text-stone-100">TCK / CMK Kanun Çantası</h2>
+          </div>
+          <span class="text-xs px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 font-semibold">
+            Hazır Maddeler: ${s.laws.length} / 5
+          </span>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          ${Object.values(LAWS_DB).map(law => {
+            const equipped = s.laws.includes(law.id);
+            return `
+              <div class="mahogany-card rounded-2xl p-5 flex flex-col justify-between ${equipped ? 'border-emerald-500/45' : ''}">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="font-serif-display font-bold text-amber-400 text-base">${law.code}</span>
+                    <span class="text-xs px-2 py-0.5 rounded ${law.apCost === 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}">
+                      ${law.apCost === 0 ? 'Ücretsiz' : `${law.apCost} AP`}
+                    </span>
+                  </div>
+                  <h3 class="font-bold text-stone-100 text-sm sm:text-base mb-2">${law.title}</h3>
+                  <p class="text-xs sm:text-sm text-stone-300 leading-relaxed mb-3">${law.summary}</p>
+                  <div class="p-2.5 rounded-lg bg-stone-950/70 border border-stone-800 text-xs text-amber-200/80 mb-4">
+                    ⚖️ <strong>Duruşma Kullanımı:</strong> ${law.usage}
+                  </div>
+                </div>
+                <button onclick="equipLaw('${law.id}')" ${equipped ? 'disabled' : ''} class="${equipped ? 'btn-noir text-emerald-400 border-emerald-500/40 cursor-default' : 'btn-gold'} w-full py-2.5 rounded-xl text-sm">
+                  ${equipped ? '✓ Savunma Çantasında Hazır' : 'Kanun Çantasına Ekle'}
+                </button>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    function renderPierTab() {
+      const s = window.gameState;
+      const pierStage = renderVisualStage({
+        sceneId: 'pier',
+        charId: 'avukat',
+        mood: 'normal',
+        speakerName: 'Av. Kaan — Olay Yeri Keşfi',
+        speakerRole: 'Demirci Lojistik Liman İskelesi • 14 Ekim Gece Kurgusu',
+        moodLabel: `Keşif ${s.pierInspected.length}/3`,
+        dialogueText: '',
+        dialogueId: 'prep-dialogue-text'
+      });
+
+      const spots = [
+        {
+          id: 'p_gate',
+          icon: '🔦',
+          title: 'İskele Giriş Kapısı & Projektör',
+          desc: 'Liman bekçisi Rıza Kaya’nın nöbet kulübesi ana kapıdan 25 metre uzakta ve projektörler doğrudan gözüne vuruyor. Yağmurlu gecede saat 23:45’te koyu paltolu birinin yüzünü net seçmesi neredeyse imkansız!'
+        },
+        {
+          id: 'p_office',
+          icon: '🏢',
+          title: 'Makam Odası & Kırık Bardak',
+          desc: 'Kırık viski bardağı kapı eşiğine çok yakın; maktulün çalışma masası ise odanın diğer ucunda. Kerem’in elini kapıda kesip çıkmasıyla, maktulün masasında arkadan vurulması tamamen farklı iki an!'
+        },
+        {
+          id: 'p_cam',
+          icon: '📹',
+          title: 'CCTV Sunucu Odası',
+          desc: 'Liman ofisinin 2. kat kameraları 23:18-23:55 arasında kapanmış ama zemin kattaki giriş lobisi kamerası kayıt almaya devam etmiş. Bu kritik farkı Bilirkişi raporlarıyla değerlendirebilirsin!'
+        }
+      ];
+
+      return `
+        ${pierStage}
+        <div class="grid md:grid-cols-3 gap-4">
+          ${spots.map(sp => {
+            const seen = s.pierInspected.includes(sp.id);
+            return `
+              <button onclick="inspectPierSpot('${sp.id}', '${sp.title}', '${sp.desc.replace(/'/g, "\\'")}')" class="mahogany-card rounded-2xl p-5 text-left hover:border-amber-400 transition ${seen ? 'border-emerald-500/45' : ''}">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-2xl">${sp.icon}</span>
+                  <span class="text-[11px] font-bold ${seen ? 'text-emerald-400' : 'text-amber-300'}">${seen ? '✓ İncelendi' : 'İncele →'}</span>
+                </div>
+                <h3 class="font-serif-display font-bold text-base text-stone-100">${sp.title}</h3>
+                <p class="text-xs text-stone-400 mt-1">Olay yeri keşif notunu açmak için tıklayın.</p>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
+
+    /* =========================================================================
+       PHASE 2 RENDER: 14. AĞIR CEZA DURUŞMASI
+       ========================================================================= */
+    function renderTrialPhase() {
+      const s = window.gameState;
+      const t = s.trial;
+      const stageNames = ['1. Usul', '2. Sanık', '3. Rıza', '4. Dr. Yılmaz', '5. Selin', '6. Karar'];
+      const kanaatColor = t.kanaat >= 65 ? 'bg-emerald-500' : t.kanaat >= 35 ? 'bg-amber-500' : 'bg-red-600';
+      const gavels = Array.from({ length: 5 }, (_, i) =>
+        `<span class="${i < t.credibility ? 'text-amber-400' : 'text-stone-700'} text-base sm:text-lg">⚖️</span>`
+      ).join('');
+
+      const hintText = (t.subStep === 'exam' && t.activeExam) ? CROSS_EXAMS[t.activeExam].intro : '';
+
+      const stageHtml = renderVisualStage({
+        sceneId: 'courtroom',
+        charId: t.speaker,
+        mood: t.speakerMood,
+        speakerName: t.speakerName,
+        speakerRole: t.speakerRole,
+        moodLabel: t.speakerMoodLabel,
+        dialogueText: t.dialogueText,
+        dialogueId: 'trial-dialogue-text',
+        hintText
+      });
+
+      let actionPanel = '';
+      if (t.stage === 0) {
+        if (t.subStep === 'action') {
+          const hasTutanak = s.evidence.includes('ev_tutanak');
+          const hasCmk206 = s.laws.includes('law_cmk206');
+          actionPanel = `
+            <div class="grid gap-3">
+              ${hasTutanak || hasCmk206 ? `
+                <button onclick="handleStage0Objection('valid')" class="btn-crimson p-4 rounded-xl text-left flex items-center justify-between gap-3">
+                  <div>
+                    <div class="font-bold text-sm sm:text-base">✋ İTİRAZ EDİYORUM! (Hukuka Aykırı Delil)</div>
+                    <div class="text-xs text-red-100/85 mt-0.5">Dayanak: ${hasTutanak ? 'Usulsüz Arama Tutanağı' : ''} ${hasTutanak && hasCmk206 ? '&' : ''} ${hasCmk206 ? 'CMK m. 206/2-a' : ''}</div>
+                  </div>
+                  <span class="text-xs font-bold px-2.5 py-1 rounded bg-black/30">GÜÇLÜ</span>
+                </button>
+              ` : `
+                <button onclick="handleStage0Objection('weak')" class="btn-noir p-4 rounded-xl text-left border-red-500/40">
+                  <div class="font-bold text-sm text-red-300">✋ Soyut İtirazda Bulun (Dayanak Belge/Madde Yok)</div>
+                  <div class="text-xs text-stone-400 mt-0.5">Arama tutanağı veya CMK m. 206/2-a dosyada olmadığı için riskli.</div>
+                </button>
+              `}
+              <button onclick="handleStage0Objection('pass')" class="btn-noir p-3.5 rounded-xl text-left text-sm text-stone-300">
+                İtiraz etmeden geç (WhatsApp delili dosyada kalsın)
+              </button>
+            </div>
+          `;
+        } else {
+          actionPanel = `<button onclick="advanceTrialStage()" class="btn-gold w-full py-3.5 rounded-xl text-sm">Sonraki Aşamaya Geç: Sanık Sorgusu →</button>`;
+        }
+      } else if (t.stage === 1) {
+        if (t.subStep === 'action') {
+          actionPanel = `
+            <div class="grid gap-3">
+              <button onclick="handleDefenseStrategy('honest')" class="btn-gold p-4 rounded-xl text-left">
+                <div class="font-bold text-sm sm:text-base">1. Dürüst & Alibi Odaklı Savunma</div>
+                <div class="text-xs text-stone-900/80 mt-0.5">“Olay yerindeydim, tartıştık, bardak elimi kesti ama 23:28’de çıktım. Ben öldürmedim.”</div>
+              </button>
+              <button onclick="handleDefenseStrategy('deny')" class="btn-noir p-4 rounded-xl text-left">
+                <div class="font-bold text-sm text-stone-100">2. Tam İnkar Savunması</div>
+                <div class="text-xs text-stone-400 mt-0.5">“O gece şirkete hiç gitmedim.” (Olay yerindeki kan bulgusu nedeniyle riskli!)</div>
+              </button>
+              <button onclick="handleDefenseStrategy('provocation')" class="btn-noir p-4 rounded-xl text-left">
+                <div class="font-bold text-sm text-stone-100">3. Haksız Tahrik Vurgulu Savunma</div>
+                <div class="text-xs text-stone-400 mt-0.5">“Haluk Bey beni tehdit edip üzerime yürüdü, ağır tahrik altındaydım.”</div>
+              </button>
+            </div>
+          `;
+        } else {
+          actionPanel = `<button onclick="advanceTrialStage()" class="btn-gold w-full py-3.5 rounded-xl text-sm">Tanık Dinlenmesine Geç: Liman Bekçisi Rıza Kaya →</button>`;
+        }
+      } else if (t.stage >= 2 && t.stage <= 4) {
+        if (t.subStep === 'exam' && t.activeExam) {
+          const total = CROSS_EXAMS[t.activeExam].statements.length;
+          actionPanel = `
+            <div class="space-y-4">
+              <div class="flex items-center justify-between gap-2 bg-stone-950/80 p-2.5 rounded-xl border border-amber-500/20">
+                <button onclick="navStatement(-1)" class="btn-noir px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold">← Önceki İfade</button>
+                <div class="text-xs sm:text-sm font-bold text-amber-300">İfade ${t.statementIdx + 1} / ${total}</div>
+                <button onclick="navStatement(1)" class="btn-noir px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold">Sonraki İfade →</button>
+              </div>
+              <div class="grid sm:grid-cols-3 gap-2.5">
+                <button onclick="pressWitness()" class="btn-noir py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2">
+                  <span>🗣️</span> Sorgula / Baskı Yap
+                </button>
+                <button onclick="openPresentEvidenceModal()" class="btn-crimson py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                  <span>✋</span> İTİRAZ EDİYORUM! (Delil)
+                </button>
+                <button onclick="openPresentLawModal()" class="btn-gold py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
+                  <span>⚖️</span> Kanunla İtiraz
+                </button>
+              </div>
+              <div class="text-right">
+                <button onclick="skipCurrentExam()" class="text-xs text-stone-400 hover:text-stone-200 underline">
+                  Sorguyu Tamamla / Devam Et
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          const nextLabel = (t.stage === 4 && t.activeExam === 'selinA' && t.selinExposedPartA)
+            ? 'Selin Karahan’ı Köşeye Sıkıştır (2. Bölüm) →'
+            : t.stage === 4
+            ? 'Esas Hakkında Son Savunmaya Geç →'
+            : 'Sonraki Tanığa Geç →';
+          actionPanel = `<button onclick="advanceTrialStage()" class="btn-gold w-full py-3.5 rounded-xl text-sm">${nextLabel}</button>`;
+        }
+      } else if (t.stage === 5) {
+        actionPanel = `
+          <div class="space-y-3">
+            <div class="text-xs uppercase tracking-widest text-amber-400 font-bold mb-1">Av. Kaan — Esas Hakkında Son Savunmanızı Seçin:</div>
+            <button onclick="chooseClosingArgument('beraat_selin')" class="${t.selinExposedPartB ? 'btn-gold pulse-gold' : 'btn-noir'} w-full p-4 rounded-xl text-left">
+              <div class="font-bold text-sm sm:text-base">1. Tam Beraat & Selin Karahan Hakkında Suç Duyurusu (CMK m. 223/2-b)</div>
+              <div class="text-xs ${t.selinExposedPartB ? 'text-stone-900/80' : 'text-stone-400'} mt-0.5">
+                ${t.selinExposedPartB ? '✨ Gerçek faili ifşa ettiniz! En yüksek zafer yolu.' : 'Gerçek fail tam ifşa edilmediyse heyet bu talebi iddialı bulabilir.'}
+              </div>
+            </button>
+            <button onclick="chooseClosingArgument('beraat_suphe')" class="btn-noir w-full p-4 rounded-xl text-left hover:border-emerald-400">
+              <div class="font-bold text-sm sm:text-base text-emerald-200">2. Şüpheden Sanık Yararlanır İlkesiyle Beraat (CMK m. 223/2-e)</div>
+              <div class="text-xs text-stone-400 mt-0.5">Kesin ve şüpheden uzak delil bulunmadığını vurgulayarak güvenli beraat talep et.</div>
+            </button>
+            <button onclick="chooseClosingArgument('haksiz_tahrik')" class="btn-noir w-full p-4 rounded-xl text-left hover:border-amber-400">
+              <div class="font-bold text-sm sm:text-base text-amber-200">3. Haksız Tahrik İndirimi Talebi (TCK m. 29)</div>
+              <div class="text-xs text-stone-400 mt-0.5">Heyet kanaati düşükse müebbet hapsi önleyip 14 yıl indirimli ceza talep et.</div>
+            </button>
+          </div>
+        `;
+      }
+
+      return `
+        <main class="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 pb-32">
+          <!-- Courtroom Meters -->
+          <div class="mahogany-card rounded-2xl p-4 mb-4">
+            <div class="grid sm:grid-cols-2 gap-4 items-center mb-3">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="uppercase tracking-wider text-stone-400 font-semibold">Heyet Kanaati (Beraat Eğilimi)</span>
+                  <span class="font-bold text-amber-300">%${t.kanaat}</span>
+                </div>
+                <div class="h-3 rounded-full bg-stone-900 border border-stone-700 overflow-hidden">
+                  <div class="h-full ${kanaatColor} transition-all duration-500" style="width:${t.kanaat}%"></div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between sm:justify-end gap-3">
+                <span class="text-xs uppercase tracking-wider text-stone-400 font-semibold">Savunma İtibarı:</span>
+                <div class="flex items-center gap-1">${gavels}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-2 border-t border-amber-500/15">
+              ${stageNames.map((name, idx) => `
+                <div class="text-[10px] sm:text-[11px] px-2 py-1 rounded text-center truncate ${
+                  idx === t.stage ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 font-bold'
+                  : idx < t.stage ? 'bg-emerald-950/40 text-emerald-300/80' : 'bg-stone-900/60 text-stone-500'
+                }">${name}</div>
+              `).join('')}
+            </div>
+          </div>
+
+          ${stageHtml}
+
+          <div class="mahogany-card rounded-2xl p-5">
+            ${actionPanel}
+          </div>
+        </main>
+      `;
+    }
+
+    /* =========================================================================
+       PHASE 3 RENDER: HÜKÜM & GEREKÇELİ KARAR
+       ========================================================================= */
+    function renderVerdictPhase() {
+      const s = window.gameState;
+      const t = s.trial;
+      const ending = computeEnding();
+      recordUnlockedEnding(ending.id);
+      const unlockedEndings = getUnlockedEndings();
+      const score = calculateFinalScore(ending);
+
+      return `
+        <main class="flex-1 max-w-4xl w-full mx-auto p-3 sm:p-8 pb-32">
+          <!-- Verdict Visual Stage Header -->
+          <div class="vn-stage mb-5">
+            <div class="relative h-48 sm:h-56 w-full">
+              ${getSceneBackgroundSVG('courtroom')}
+              <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30"></div>
+              <div class="absolute bottom-0 left-4 sm:left-10">${getCharacterPortraitSVG('avukat', ending.mood, 160)}</div>
+              <div class="absolute bottom-0 right-4 sm:right-10">${getCharacterPortraitSVG('hakim', ending.positive ? 'emin' : 'normal', 160)}</div>
+              <div class="absolute top-4 left-1/2 -translate-x-1/2">
+                <span class="stamp text-xs sm:text-base ${ending.positive ? 'text-emerald-400' : 'text-red-400'} bg-black/75 animate-stamp">${ending.stamp}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="parchment-card rounded-3xl p-6 sm:p-10 relative overflow-hidden">
+            <div class="text-center border-b-2 border-stone-800/20 pb-5 mb-6">
+              <div class="font-legal text-xs uppercase tracking-[0.22em] text-stone-600">T.C. İSTANBUL 14. AĞIR CEZA MAHKEMESİ</div>
+              <h2 class="font-serif-display text-2xl sm:text-4xl font-extrabold text-stone-900 mt-1">GEREKÇELİ KARAR</h2>
+              <div class="text-xs text-stone-600 mt-1">Esas No: 2026/418 • Karar No: 2026/1092 • Sanık: Kerem Demir • Müdafi: Av. Kaan</div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
+              <div>
+                <div class="text-xs font-bold uppercase tracking-wider text-stone-500">Hüküm Başlığı</div>
+                <h3 class="font-serif-display text-xl sm:text-2xl font-bold text-stone-900">${ending.title}</h3>
+                <div class="text-xs font-semibold text-stone-600 mt-1">Hukuki Dayanak: ${ending.verdictLaw}</div>
+              </div>
+              <span class="stamp text-sm ${ending.stampColor}">${ending.stamp}</span>
+            </div>
+
+            <p class="font-legal text-sm sm:text-base text-stone-800 leading-relaxed mb-7 bg-stone-900/5 p-5 rounded-2xl border border-stone-800/15">
+              ${ending.summary}
+            </p>
+
+            <!-- Performance Breakdown -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-7">
+              <div class="p-3.5 rounded-xl bg-stone-900 text-stone-100 text-center">
+                <div class="text-[11px] text-amber-400 uppercase tracking-wider">Müdafi Ünvanı</div>
+                <div class="font-serif-display font-bold text-base mt-1">${ending.rank}</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-stone-900 text-stone-100 text-center">
+                <div class="text-[11px] text-stone-400 uppercase tracking-wider">Toplam Puan</div>
+                <div class="font-serif-display font-bold text-lg text-amber-300 mt-1">${score.toLocaleString('tr-TR')}</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-stone-900 text-stone-100 text-center">
+                <div class="text-[11px] text-stone-400 uppercase tracking-wider">Heyet Kanaati</div>
+                <div class="font-bold text-lg text-emerald-300 mt-1">%${t.kanaat}</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-stone-900/90 text-stone-100 text-center">
+                <div class="text-[11px] text-stone-400">Toplanan Delil</div>
+                <div class="font-bold text-base mt-0.5">${s.evidence.length} / 7</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-stone-900/90 text-stone-100 text-center">
+                <div class="text-[11px] text-stone-400">Yakalanan Çelişki</div>
+                <div class="font-bold text-base mt-0.5">${t.contradictionsCaught} / 4</div>
+              </div>
+              <div class="p-3.5 rounded-xl bg-stone-900/90 text-stone-100 text-center">
+                <div class="text-[11px] text-stone-400">Müvekkil Güveni</div>
+                <div class="font-bold text-base mt-0.5">%${s.trust}</div>
+              </div>
+            </div>
+
+            <!-- 5 Endings Tracker -->
+            <div class="mb-7 p-4 rounded-2xl bg-stone-900/10 border border-stone-800/20">
+              <div class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-stone-700 mb-2.5">
+                <span>Açılan Gerekçeli Karar Sonları</span>
+                <span>${unlockedEndings.length} / ${ALL_ENDINGS_META.length}</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                ${ALL_ENDINGS_META.map(item => {
+                  const isUnlocked = unlockedEndings.includes(item.id);
+                  const isCurrent = item.id === ending.id;
+                  return `
+                    <span class="text-xs px-3 py-1 rounded-full border font-semibold ${
+                      isCurrent ? 'bg-amber-600 text-white border-amber-700'
+                      : isUnlocked ? 'bg-emerald-800/15 text-emerald-900 border-emerald-800/35'
+                      : 'bg-stone-800/10 text-stone-500 border-stone-800/15'
+                    }">
+                      ${isUnlocked ? '✓' : '🔒'} ${item.label}
+                    </span>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+
+            <!-- Signature Block -->
+            <div class="flex items-center justify-between border-t border-stone-800/20 pt-4 text-xs text-stone-700 font-legal">
+              <div>
+                <div class="font-bold">Sanık Müdafii</div>
+                <div class="font-serif-display italic text-base text-stone-900 mt-0.5">Av. Kaan</div>
+              </div>
+              <div class="text-right">
+                <div class="font-bold">Mahkeme Başkanı</div>
+                <div class="italic text-stone-600 mt-0.5">14. Ağır Ceza Heyeti</div>
+              </div>
+            </div>
+          </div>
+        </main>
+      `;
+    }
+
+    // Boot Application
+    window.onload = function () {
+      render();
+    };
+  </script>
+</body>
+</html>
