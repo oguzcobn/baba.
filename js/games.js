@@ -164,6 +164,7 @@ const App = (() => {
     { id: 'surus', name: ['PARK. — Konyaaltı', 'PARK. — Konyaaltı'], tags: [['Park', 'Parking'], ['Simülasyon', 'Simulation']], best: () => T('6 bölüm · C32 AMG', '6 levels · C32 AMG') },
     { id: 'pelagos', name: ['PELAGOS. — Suya Giriş Fizik Laboratuvarı', 'PELAGOS. — Water Entry Physics Lab'], tags: [['Fizik', 'Physics'], ['Akışkan', 'Fluid'], ['WebGL2', 'WebGL2']], best: () => T('6 araç · balina, yunus, köpekbalığı', '6 boats · whale, dolphins, shark') },
     { id: 'serpentia', name: ['SERPENTIA. — 3D Yılan & Doğa', 'SERPENTIA. — 3D Snake & Nature'], tags: [['Simülasyon', 'Simulation'], ['Doğa', 'Nature'], ['3D', '3D']], best: () => T('10 tür · 4 doğa', '10 species · 4 habitats') },
+    { id: 'akvaryum', name: ['AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'], tags: [['Simülasyon', 'Simulation'], ['Biyomekanik', 'Biomechanics'], ['Huzur', 'Relaxing']], best: () => { try { const d = JSON.parse(localStorage.getItem('baba-akvaryum-v2') || 'null'); return d && d.fish ? T(`${d.fish.length} balık`, `${d.fish.length} fish`) : T('14 tür', '14 species'); } catch (_) { return T('14 tür', '14 species'); } } },
     { id: 'dune', name: ['DUNE. — Çöl Off-Road Sürüşü', 'DUNE. — Desert Off-Road Driving'], tags: [['Sürüş', 'Driving'], ['Açık dünya', 'Open world'], ['2.5D', '2.5D']], best: () => T('Garaj · 4×4 fizik', 'Garage · 4×4 physics') },
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
@@ -255,6 +256,7 @@ const App = (() => {
     'operasyon-hatti': 'img/library/operasyon-hatti-1280.webp',
     'pelagos': 'img/library/pelagos-1280.webp',
     'serpentia': 'img/library/serpentia-1280.webp',
+    'akvaryum': 'img/library/akvaryum-1280.webp',
     'dune': 'img/library/dune-1280.webp',
     'yelken': 'img/library/yelken-1280.webp',
     'yayla-savunmasi': 'img/library/yayla-savunmasi-1280.webp',
@@ -544,6 +546,16 @@ const App = (() => {
       tag: T('BABA. SERPENTIA. · Doğa simülasyonu · 3D', 'BABA. SERPENTIA. · Nature sim · 3D'),
       lead: T('Kral kobradan anakondaya 10 yılan türü: gerçekçi sürünme biçimleri, avlanma, güneşlenme ve savunma; çayır, çöl, orman ve teraryumda.', 'Ten snake species from king cobra to anaconda: realistic locomotion, hunting, basking and defence across meadow, desert, jungle and terrarium.'),
       tip: T('WASD/oklarla sürün, Shift hızlandırır, E ile saldır ve ye. Otonom AI modunda yılan kendi yaşar. Belgesel ve Makro kameralarını dene, P duraklatır.', 'Slither with WASD/arrows, Shift to speed up, E to strike and eat. In Autonomous AI mode the snake lives on its own. Try Documentary and Macro cameras, P pauses.')
+    });
+  }
+
+  function akvaryumGame() {
+    openEmbeddedGame({
+      title: T('AKVARYUM. — Suluboya Balık Biyomekaniği', 'AQUARIUM. — Watercolour Fish Biomechanics'),
+      url: 'games/akvaryum/index.html?v=1',
+      tag: T('BABA. AKVARYUM. · Biyomekanik · 3D perspektif tank', 'BABA. AQUARIUM. · Biomechanics · 3D perspective tank'),
+      lead: T('14 gerçek tatlı su balığı, gerçek yüzme fiziğiyle: gövdede yürüyen dalga, Lighthill itmesi, Reynolds sayısına bağlı sürüklenme, hızlan–süzül döngüsü, göğüs yüzgeciyle kürek ve Couzin sürü modeli. Besle, büyüt; lepistes canlı doğurur, koridoras T pozisyonu alır, beta köpük yuva kurar.', '14 real freshwater fish with real swimming physics: travelling body wave, Lighthill thrust, Reynolds-dependent drag, burst-and-coast, pectoral rowing and the Couzin schooling model. Feed them, raise them; guppies give birth, corydoras take the T-position, bettas build bubble nests.'),
+      tip: T('Suya dokun: yem yüzeye düşer, pullar bir süre yüzüp batar. Balığa dokun: kuyruk vuruş frekansı, Strouhal ve Reynolds sayısı canlı görünür; “Bilim katmanı” sürü bölgelerini çizer. Işık düğmesi gece moduna geçer. Üreme süreleri oyunda hızlandırılmıştır.', 'Tap the water to drop food. Tap a fish to see live tail-beat frequency, Strouhal and Reynolds numbers; the science layer draws the schooling zones. The light button toggles night. Breeding times are accelerated.')
     });
   }
 
@@ -960,6 +972,7 @@ const App = (() => {
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
     else if (r === 'subterra') openEmbeddedGame({title:T('SUBTERRA. — Dev Solucan Saldırısı','SUBTERRA. — Giant Worm Attack'),url:'games/subterra/index.html?v=4',tag:T('BABA. SUBTERRA. · 2.5D aksiyon','BABA. SUBTERRA. · 2.5D action'),lead:T('Yerin altından fırla, kasabaları ve şehri yerle bir et: insanlar, inekler, arabalar, tanklar ve helikopterler menüde.','Burst from underground and wreck towns and cities: people, cows, cars, tanks and helicopters are on the menu.'),tip:T('Fareyi gezdir: solucan imlece doğru kazar. Sol tık basılı hızlanır; hızla yukarı çıkınca havaya fırlarsın, havadaki her av kombo verir. Binaları alttan hızla çarparak yık. Derinde can dolar. Dokunmatikte parmağını sürükle, HIZ düğmesine bas.','Move the mouse: the worm digs toward the cursor. Hold left click to speed up; rush upward to leap into the air, every catch in the air builds a combo. Smash buildings from below. Health regenerates deep underground. On touch, drag and press HIZ.')});
     else if (r === 'serpentia') serpentiaGame();
+    else if (r === 'akvaryum') akvaryumGame();
     else if (r === 'dune') duneGame();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();

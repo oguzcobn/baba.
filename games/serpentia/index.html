@@ -648,6 +648,7 @@
       jawTarget: 0,
       jawCurrent: 0,
       jawRoll: 0, // Pterygoid walk çene sallanması
+      gapeBoost: 0, fangErect: 0,
       hoodSpread: 0,
       simTime: 0,
       fps: 60,
@@ -1144,183 +1145,298 @@
     }
 
     // =========================================================================
-    // 5. YAŞAYAN AV CANLILARI SİSTEMİ (Fare, Kurbağa, Kertenkele, Kuş)
+    // 5. YAŞAYAN AV CANLILARI — iskeletli prosedürel modeller + biyomekanik yürüyüş
+    //    Fare (Apodemus): tırıs ↔ sıçrama (bound) yürüyüş geçişi, donma, arka ayak üstünde kalkma, tımar
+    //    Kurbağa (Pelophylax): çömelme → itiş → havada bacak toplama → ön ayakla iniş, gırtlak pompası
+    //    Kertenkele (Lacerta): yayık bacaklar, çapraz tırıs + gövdede yanal S dalgası, şınav gösterisi
+    //    Bıldırcın (Coturnix): baş sabitleme (head-bob), yerden yem gagalama, kaçışta ani havalanma
     // =========================================================================
     const preyGroup = new THREE.Group();
     scene.add(preyGroup);
     const preyList = [];
 
-    function createPreyMesh(type) {
-      const g = new THREE.Group();
-      const parts = { legs: [], tail: null, body: null, head: null };
-
-      if (type === 'mouse') {
-        const furMat = new THREE.MeshStandardMaterial({ color: 0x7b6a58, roughness: 0.88 });
-        const earMat = new THREE.MeshStandardMaterial({ color: 0xd49a96, roughness: 0.75 });
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x090909, roughness: 0.1 });
-
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.042, 12, 10), furMat);
-        body.scale.set(0.85, 0.76, 1.38);
-        body.position.y = 0.036;
-        body.castShadow = true;
-        g.add(body);
-        parts.body = body;
-
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.028, 10, 8), furMat);
-        head.scale.set(0.85, 0.78, 1.30);
-        head.position.set(0, 0.040, 0.064);
-        head.castShadow = true;
-        g.add(head);
-        parts.head = head;
-
-        [-1, 1].forEach(s => {
-          const ear = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 8), earMat);
-          ear.scale.set(0.35, 1.0, 0.9);
-          ear.position.set(s * 0.019, 0.062, 0.054);
-          g.add(ear);
-          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.0045, 6, 6), eyeMat);
-          eye.position.set(s * 0.015, 0.046, 0.082);
-          g.add(eye);
-        });
-
-        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.005, 6, 6), earMat);
-        nose.position.set(0, 0.038, 0.100);
-        g.add(nose);
-
-        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.0045, 0.095, 6), earMat);
-        tail.rotation.x = Math.PI * 0.44;
-        tail.position.set(0, 0.022, -0.092);
-        g.add(tail);
-        parts.tail = tail;
-
-        [[-0.022, 0.032], [0.022, 0.032], [-0.024, -0.028], [0.024, -0.028]].forEach(([lx, lz]) => {
-          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.004, 0.026, 6), earMat);
-          leg.position.set(lx, 0.014, lz);
-          g.add(leg);
-          parts.legs.push(leg);
-        });
-      } else if (type === 'frog') {
-        const frogMat = new THREE.MeshStandardMaterial({ color: 0x428c32, roughness: 0.26, metalness: 0.05 });
-        const bellyMat = new THREE.MeshStandardMaterial({ color: 0xc2d98c, roughness: 0.35 });
-        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xe6a822, roughness: 0.12 });
-
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.040, 12, 10), frogMat);
-        body.scale.set(1.05, 0.72, 1.22);
-        body.position.set(0, 0.034, 0);
-        body.castShadow = true;
-        g.add(body);
-        parts.body = body;
-
-        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.034, 10, 8), bellyMat);
-        belly.scale.set(0.95, 0.45, 1.05);
-        belly.position.set(0, 0.020, 0.005);
-        g.add(belly);
-
-        [-1, 1].forEach(s => {
-          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 8), eyeMat);
-          eye.position.set(s * 0.020, 0.056, 0.030);
-          g.add(eye);
-          const leg = new THREE.Mesh(new THREE.SphereGeometry(0.018, 8, 8), frogMat);
-          leg.scale.set(0.6, 0.85, 1.45);
-          leg.position.set(s * 0.036, 0.022, -0.020);
-          g.add(leg);
-          parts.legs.push(leg);
-        });
-      } else if (type === 'lizard') {
-        const lizMat = new THREE.MeshStandardMaterial({ color: 0x6b7c3e, roughness: 0.46 });
-        const body = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.019, 0.11, 8), lizMat);
-        body.rotation.x = Math.PI * 0.5;
-        body.position.y = 0.022;
-        body.castShadow = true;
-        g.add(body);
-        parts.body = body;
-
-        const head = new THREE.Mesh(new THREE.ConeGeometry(0.016, 0.042, 8), lizMat);
-        head.rotation.x = Math.PI * 0.5;
-        head.position.set(0, 0.024, 0.072);
-        g.add(head);
-        parts.head = head;
-
-        const tail = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.14, 7), lizMat);
-        tail.rotation.x = -Math.PI * 0.5;
-        tail.position.set(0, 0.018, -0.12);
-        g.add(tail);
-        parts.tail = tail;
-
-        [[-0.024, 0.032], [0.024, 0.032], [-0.024, -0.030], [0.024, -0.030]].forEach(([lx, lz]) => {
-          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.003, 0.028, 6), lizMat);
-          leg.position.set(lx, 0.014, lz);
-          leg.rotation.z = lx > 0 ? -0.45 : 0.45;
-          g.add(leg);
-          parts.legs.push(leg);
-        });
-      } else {
-        // Bıldırcın / Küçük Kuş
-        const featherMat = new THREE.MeshStandardMaterial({ color: 0x7a624a, roughness: 0.85 });
-        const beakMat = new THREE.MeshStandardMaterial({ color: 0xd99b26, roughness: 0.4 });
-        const body = new THREE.Mesh(new THREE.SphereGeometry(0.044, 12, 10), featherMat);
-        body.scale.set(0.88, 0.85, 1.25);
-        body.position.y = 0.056;
-        body.castShadow = true;
-        g.add(body);
-        parts.body = body;
-
-        const head = new THREE.Mesh(new THREE.SphereGeometry(0.024, 10, 8), featherMat);
-        head.position.set(0, 0.088, 0.048);
-        g.add(head);
-        parts.head = head;
-
-        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.007, 0.022, 6), beakMat);
-        beak.rotation.x = Math.PI * 0.5;
-        beak.position.set(0, 0.085, 0.075);
-        g.add(beak);
-
-        [-0.015, 0.015].forEach(lx => {
-          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.036, 5), beakMat);
-          leg.position.set(lx, 0.018, 0);
-          g.add(leg);
-          parts.legs.push(leg);
-        });
+    const _preyTex = {};
+    function preyCanvasTex(key, draw, size = 256, rep = 1) {
+      if (_preyTex[key]) return _preyTex[key];
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const g = c.getContext('2d'); draw(g, size);
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep, rep);
+      t.anisotropy = 4; _preyTex[key] = t; return t;
+    }
+    // Kıl dokusu: kısa yönlü kıl darbeleri (agouti: koyu uç + açık bant)
+    const furTex = (key, base, tones) => preyCanvasTex(key, (g, n) => {
+      g.fillStyle = base; g.fillRect(0, 0, n, n);
+      for (let i = 0; i < 5200; i++) {
+        const x = Math.random() * n, y = Math.random() * n, l = 3 + Math.random() * 6, a = Math.PI * 0.5 + (Math.random() - 0.5) * 0.5;
+        g.strokeStyle = tones[(Math.random() * tones.length) | 0]; g.globalAlpha = 0.25 + Math.random() * 0.45; g.lineWidth = 0.6 + Math.random() * 0.8;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
       }
-      return { mesh: g, parts };
+      g.globalAlpha = 1;
+    }, 256, 3);
+    // Pul / deri dokusu: Voronoi benzeri hücreler + benekler
+    const scaleTex = (key, base, edge, spots, cell = 9) => preyCanvasTex(key, (g, n) => {
+      g.fillStyle = base; g.fillRect(0, 0, n, n);
+      for (let y = 0; y < n; y += cell * 0.8) for (let x = 0; x < n; x += cell) {
+        const ox = (Math.floor(y / (cell * 0.8)) % 2) * cell * 0.5;
+        g.strokeStyle = edge; g.globalAlpha = 0.35; g.lineWidth = 1;
+        g.beginPath(); g.ellipse(x + ox, y, cell * 0.48, cell * 0.38, 0, 0, Math.PI * 2); g.stroke();
+      }
+      g.globalAlpha = 1;
+      if (spots) for (let i = 0; i < 46; i++) { g.fillStyle = spots; g.globalAlpha = 0.5 + Math.random() * 0.4; const r = 4 + Math.random() * 10; g.beginPath(); g.ellipse(Math.random() * n, Math.random() * n, r, r * (0.6 + Math.random() * 0.5), Math.random() * 3, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = 1;
+    }, 256, 2);
+    // Tüy dokusu: pul dizilimli tüy uçları + enine çizgiler (bıldırcın deseni)
+    const featherTex = (key, base, dark, light) => preyCanvasTex(key, (g, n) => {
+      g.fillStyle = base; g.fillRect(0, 0, n, n);
+      const w = 18, h = 14;
+      for (let y = -h; y < n + h; y += h * 0.7) for (let x = -w; x < n + w; x += w) {
+        const ox = (Math.round(y / (h * 0.7)) % 2) * w * 0.5;
+        g.fillStyle = Math.random() < 0.5 ? dark : base; g.globalAlpha = 0.55;
+        g.beginPath(); g.ellipse(x + ox, y, w * 0.55, h * 0.75, 0, 0, Math.PI); g.fill();
+        g.strokeStyle = light; g.globalAlpha = 0.6; g.lineWidth = 1.4;
+        g.beginPath(); g.ellipse(x + ox, y, w * 0.5, h * 0.7, 0, 0.1, Math.PI - 0.1); g.stroke();
+        g.strokeStyle = dark; g.globalAlpha = 0.45; g.lineWidth = 1.2;
+        g.beginPath(); g.moveTo(x + ox - w * 0.3, y + h * 0.25); g.lineTo(x + ox + w * 0.3, y + h * 0.25); g.stroke();
+      }
+      g.globalAlpha = 1;
+    }, 256, 2);
+
+    /* Elipsoidi tepe noktası fonksiyonuyla biçimlendir + bölgesel köşe rengi boya */
+    function sculpt(rx, ry, rz, ws, hs, shapeFn, colorFn) {
+      const geo = new THREE.SphereGeometry(1, ws, hs);
+      const p = geo.attributes.position, cols = new Float32Array(p.count * 3), col = new THREE.Color();
+      for (let i = 0; i < p.count; i++) {
+        let x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+        const r = shapeFn ? shapeFn(x, y, z) : [x, y, z];
+        p.setXYZ(i, r[0] * rx, r[1] * ry, r[2] * rz);
+        if (colorFn) { colorFn(x, y, z, col); cols[i * 3] = col.r; cols[i * 3 + 1] = col.g; cols[i * 3 + 2] = col.b; }
+        else { cols[i * 3] = cols[i * 3 + 1] = cols[i * 3 + 2] = 1; }
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      geo.computeVertexNormals();
+      return geo;
+    }
+    const smooth01 = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    function mixC(out, a, b, t) { out.r = a.r + (b.r - a.r) * t; out.g = a.g + (b.g - a.g) * t; out.b = a.b + (b.b - a.b) * t; return out; }
+    /* Sivrilen uzuv parçası: üst ucu eklemde (orijin), -y yönünde uzanır */
+    function limbPart(len, r0, r1, mat, seg = 7) {
+      const g = new THREE.Group();
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(r1, r0, len, seg), mat);
+      m.position.y = -len / 2; m.castShadow = true; g.add(m);
+      const j = new THREE.Mesh(new THREE.SphereGeometry(r0 * 1.02, seg, 5), mat); g.add(j);
+      const end = new THREE.Group(); end.position.y = -len; g.add(end);
+      g.userData.end = end;
+      return g;
+    }
+    /* Parmaklar: ince sivri silindirler yelpazesi (ayak tabanında) */
+    function toes(parent, n, len, r, spread, mat, back = false) {
+      for (let k = 0; k < n; k++) {
+        const t = n === 1 ? 0 : k / (n - 1) - 0.5;
+        const toe = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.45, r, len, 5), mat);
+        toe.rotation.x = Math.PI / 2; toe.position.set(t * spread, 0, len / 2);
+        const piv = new THREE.Group(); piv.rotation.y = t * 0.9; piv.add(toe); parent.add(piv);
+      }
+      if (back) { const h = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.4, r, len * 0.6, 5), mat); h.rotation.x = -Math.PI / 2; h.position.z = -len * 0.3; parent.add(h); }
+    }
+    /* Segment zinciri (kuyruk / omurga): her halka bir öncekine bağlı, bükülme birikir */
+    function chain(parent, n, segLen, r0, r1, mat, dir = -1) {
+      const segs = []; let cur = parent;
+      for (let k = 0; k < n; k++) {
+        const t0 = k / n, t1 = (k + 1) / n, ra = r0 + (r1 - r0) * t0, rb = r0 + (r1 - r0) * t1;
+        const piv = new THREE.Group(); if (k > 0) piv.position.z = dir * segLen;
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(rb, ra, segLen * 1.08, 6), mat);
+        m.rotation.x = dir * Math.PI / 2; m.position.z = dir * segLen / 2; m.castShadow = k < n / 2;
+        piv.add(m); cur.add(piv); segs.push(piv); cur = piv;
+      }
+      return segs;
     }
 
-    const PREY_LABELS = { mouse: 'Tarla Faresi', frog: 'Kurbağa', lizard: 'Kertenkele', bird: 'Bıldırcın' };
+    const plainMat = (m, color) => { const c = m.clone(); c.vertexColors = false; c.color = new THREE.Color(color); c.needsUpdate = true; return c; };
+    function createPreyMesh(type) {
+      const g = new THREE.Group();
+      const rig = { type, legs: [], tail: [], spine: [], wings: [], body: null, head: null, ears: [], throat: null, root: new THREE.Group() };
+      g.add(rig.root);
+      if (type === 'mouse') {
+        // Tarla faresi: gövde ~9 cm, kuyruk ~8 cm; sırtı agouti kahve, karnı keskin sınırla beyaz
+        const dorsal = new THREE.Color(0x8a6848), dorsalDark = new THREE.Color(0x5e4430), ventral = new THREE.Color(0xeee8dc);
+        const fur = furTex('mouseFur', '#7d5d40', ['#3e2c1e', '#a8835c', '#c9a77c', '#5a412c']);
+        const furMat = new THREE.MeshStandardMaterial({ map: fur, bumpMap: fur, bumpScale: 0.0006, vertexColors: true, roughness: 0.92 });
+        const skin = new THREE.MeshStandardMaterial({ color: 0xe7a9a2, roughness: 0.6 });
+        const paint = (x, y, z, c) => { const belly = smooth01(-0.05, -0.32, y); mixC(c, dorsalDark, dorsal, smooth01(0.95, 0.45, Math.abs(x) + (1 - y) * 0.1)); mixC(c, c, ventral, belly); };
+        // Armut biçimli gövde: kalça geniş, omuz dar
+        const bodyGeo = sculpt(0.021, 0.019, 0.044, 26, 18, (x, y, z) => { const hip = 1 + 0.18 * smooth01(0.2, -0.6, z); const sh = 1 - 0.16 * smooth01(0.3, 0.95, z); return [x * hip * sh, y * (y < 0 ? 0.86 : 1) * hip * sh, z]; }, paint);
+        const body = new THREE.Mesh(bodyGeo, furMat); body.castShadow = true; body.position.y = 0.024;
+        rig.root.add(body); rig.body = body;
+        // Baş: uzun, sivrilen burun; büyük gözler, ince yuvarlak kulaklar, bıyıklar
+        const headPiv = new THREE.Group(); headPiv.position.set(0, 0.03, 0.036); rig.root.add(headPiv); rig.head = headPiv;
+        const headGeo = sculpt(0.0135, 0.0125, 0.022, 22, 16, (x, y, z) => { const sn = z > 0 ? 1 - 0.62 * Math.pow(z, 1.6) : 1; return [x * sn, (y - (z > 0 ? z * z * 0.25 : 0)) * sn, z]; }, paint);
+        const head = new THREE.Mesh(headGeo, furMat); head.position.z = 0.016; head.castShadow = true; headPiv.add(head);
+        const eyeMat = new THREE.MeshPhysicalMaterial({ color: 0x050405, roughness: 0.05, clearcoat: 1, clearcoatRoughness: 0.05 });
+        const earMat = new THREE.MeshStandardMaterial({ color: 0xc79a8c, roughness: 0.7, side: THREE.DoubleSide, transparent: true, opacity: 0.94 });
+        const earIn = new THREE.MeshStandardMaterial({ color: 0xe9aaa4, roughness: 0.55, side: THREE.DoubleSide });
+        [-1, 1].forEach(sd => {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.0042, 12, 10), eyeMat); eye.scale.set(0.8, 1, 1); eye.position.set(sd * 0.0102, 0.0048, 0.024); headPiv.add(eye);
+          const ear = new THREE.Group(); ear.position.set(sd * 0.0085, 0.0105, 0.009); ear.rotation.set(-0.25, sd * 0.55, sd * 0.35); headPiv.add(ear);
+          const eo = new THREE.Mesh(new THREE.CircleGeometry(0.0085, 18), earMat); eo.position.y = 0.0065; ear.add(eo);
+          const ei = new THREE.Mesh(new THREE.CircleGeometry(0.0062, 16), earIn); ei.position.set(0, 0.0062, 0.0004); ear.add(ei);
+          rig.ears.push(ear);
+        });
+        const nose = new THREE.Mesh(new THREE.SphereGeometry(0.0026, 8, 6), skin); nose.position.set(0, 0.0008, 0.0385); headPiv.add(nose); rig.nose = nose;
+        const wPts = [];
+        [-1, 1].forEach(sd => { for (let k = 0; k < 6; k++) { const a = (k - 2.5) * 0.14; wPts.push(sd * 0.004, 0, 0.034, sd * (0.004 + Math.cos(a) * 0.026), Math.sin(a) * 0.012 - 0.002, 0.034 - 0.006 + Math.sin(a) * 0.004); } });
+        const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(wPts, 3));
+        headPiv.add(new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0xf2eee6, transparent: true, opacity: 0.55 })));
+        const mouseLimb = plainMat(furMat, 0x7a5a3e);
+        // Bacaklar: ön (kısa, 4 parmak), arka (uzun ayak, 5 parmak)
+        [[-1, 1], [1, 1], [-1, -1], [1, -1]].forEach(([sd, fr]) => {
+          const hip = new THREE.Group(); hip.position.set(sd * 0.0125, 0.02, fr > 0 ? 0.026 : -0.022); rig.root.add(hip);
+          const up = limbPart(fr > 0 ? 0.011 : 0.014, fr > 0 ? 0.0042 : 0.0058, 0.0026, mouseLimb); hip.add(up);
+          const lo = limbPart(fr > 0 ? 0.009 : 0.011, 0.0024, 0.0018, skin); up.userData.end.add(lo);
+          const foot = new THREE.Group(); lo.userData.end.add(foot);
+          toes(foot, fr > 0 ? 4 : 5, fr > 0 ? 0.004 : 0.0055, 0.0009, 0.004, skin);
+          if (fr < 0) { const sole = new THREE.Mesh(new THREE.BoxGeometry(0.0042, 0.0016, 0.011), skin); sole.position.set(0, 0, -0.001); foot.add(sole); }
+          rig.legs.push({ hip, knee: up.userData.end, foot, side: sd, front: fr > 0 });
+        });
+        const tailRoot = new THREE.Group(); tailRoot.position.set(0, 0.018, -0.042); tailRoot.rotation.x = -0.32; rig.root.add(tailRoot);
+        const tailMat = new THREE.MeshStandardMaterial({ map: scaleTex('mouseTail', '#c99a8e', '#8d6458', null, 6), color: 0xd8aea4, roughness: 0.62 });
+        rig.tail = chain(tailRoot, 14, 0.0058, 0.0032, 0.0009, tailMat);
+        rig.radius = 0.024; rig.bodyLen = 0.09;
+      } else if (type === 'frog') {
+        // Ova kurbağası: yassı geniş gövde, altın göz ve yatay göz bebeği, perdeli arka ayaklar
+        const top = new THREE.Color(0x5f8a3c), spotC = new THREE.Color(0x2f4a22), belly = new THREE.Color(0xe7e2bd), stripe = new THREE.Color(0xb7c46a);
+        const skinTex = scaleTex('frogSkin', '#6a9441', '#476b2c', '#2b4320', 7);
+        const mat = new THREE.MeshPhysicalMaterial({ map: skinTex, vertexColors: true, roughness: 0.32, clearcoat: 0.55, clearcoatRoughness: 0.35 });
+        const frogLimb = plainMat(mat, 0x5a8238);
+        const paint = (x, y, z, c) => { mixC(c, top, belly, smooth01(-0.05, -0.45, y)); if (y > 0.2 && Math.abs(x) < 0.12) mixC(c, c, stripe, 0.6); };
+        const bodyGeo = sculpt(0.026, 0.017, 0.036, 26, 18, (x, y, z) => { const snout = z > 0.3 ? 1 - (z - 0.3) * 0.55 : 1; const rear = z < -0.2 ? 1 + (-z - 0.2) * 0.1 : 1; return [x * snout * rear, (y < 0 ? y * 0.6 : y) * (z > 0.4 ? 0.85 : 1), z]; }, paint);
+        const body = new THREE.Mesh(bodyGeo, mat); body.position.y = 0.018; body.rotation.x = -0.28; body.castShadow = true; rig.root.add(body); rig.body = body;
+        const headPiv = new THREE.Group(); headPiv.position.set(0, 0.022, 0.024); rig.root.add(headPiv); rig.head = headPiv;
+        const eyeBall = new THREE.MeshPhysicalMaterial({ color: 0xc99a2e, roughness: 0.08, clearcoat: 1 });
+        const pupil = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1 });
+        [-1, 1].forEach(sd => {
+          const lid = new THREE.Mesh(new THREE.SphereGeometry(0.0062, 12, 10), frogLimb); lid.position.set(sd * 0.012, 0.006, 0.004); lid.scale.set(1, 0.85, 1); headPiv.add(lid);
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.0052, 14, 12), eyeBall); eye.position.set(sd * 0.0125, 0.0072, 0.0048); headPiv.add(eye);
+          const pp = new THREE.Mesh(new THREE.SphereGeometry(0.0034, 10, 8), pupil); pp.scale.set(0.5, 0.38, 1.1); pp.position.set(sd * 0.0168, 0.0074, 0.0062); headPiv.add(pp);
+          const tym = new THREE.Mesh(new THREE.CircleGeometry(0.0042, 14), new THREE.MeshStandardMaterial({ color: 0x55703a, roughness: 0.4 })); tym.position.set(sd * 0.0215, 0.002, -0.004); tym.rotation.y = sd * Math.PI / 2; headPiv.add(tym);
+        });
+        const throat = new THREE.Mesh(sculpt(0.011, 0.005, 0.009, 14, 10), new THREE.MeshStandardMaterial({ color: 0xd9d6ae, roughness: 0.5 })); throat.position.set(0, 0.011, 0.02); rig.root.add(throat); rig.throat = throat;
+        // Arka bacak: uyluk → baldır → uzun ayak bileği → perdeli ayak (dinlenmede Z biçiminde katlı)
+        [-1, 1].forEach(sd => {
+          const hip = new THREE.Group(); hip.position.set(sd * 0.017, 0.016, -0.024); rig.root.add(hip);
+          const thigh = limbPart(0.024, 0.0068, 0.0045, frogLimb); hip.add(thigh);
+          const shank = limbPart(0.023, 0.0042, 0.0028, frogLimb); thigh.userData.end.add(shank);
+          const ankle = limbPart(0.014, 0.0026, 0.0018, frogLimb); shank.userData.end.add(ankle);
+          const foot = new THREE.Group(); ankle.userData.end.add(foot);
+          const web = new THREE.Shape(); web.moveTo(0, 0); for (let k = 0; k < 5; k++) { const a = -0.6 + k * 0.3; web.lineTo(Math.sin(a) * 0.018, Math.cos(a) * 0.018); web.lineTo(Math.sin(a + 0.15) * 0.011, Math.cos(a + 0.15) * 0.011); }
+          const wm = new THREE.Mesh(new THREE.ShapeGeometry(web), new THREE.MeshStandardMaterial({ color: 0x6f8f45, roughness: 0.4, side: THREE.DoubleSide, transparent: true, opacity: 0.92 })); wm.rotation.x = -Math.PI / 2; foot.add(wm);
+          rig.legs.push({ hip, knee: thigh.userData.end, ankle: shank.userData.end, foot, side: sd, front: false, frog: true });
+        });
+        [-1, 1].forEach(sd => {
+          const sh = new THREE.Group(); sh.position.set(sd * 0.015, 0.016, 0.018); rig.root.add(sh);
+          const up = limbPart(0.011, 0.0035, 0.0025, frogLimb); sh.add(up);
+          const lo = limbPart(0.010, 0.0024, 0.0017, frogLimb); up.userData.end.add(lo);
+          const hand = new THREE.Group(); lo.userData.end.add(hand); toes(hand, 4, 0.006, 0.001, 0.006, frogLimb);
+          rig.legs.push({ hip: sh, knee: up.userData.end, foot: hand, side: sd, front: true, frog: true });
+        });
+        rig.radius = 0.024; rig.bodyLen = 0.075;
+      } else if (type === 'lizard') {
+        // Duvar/çayır kertenkelesi: 6 omurlu bükülebilir gövde, yayık (sprawling) bacaklar, uzun kuyruk
+        const lizTex = scaleTex('lizSkin', '#7b7f45', '#4a4d27', '#3a3a1f', 5);
+        const mat = new THREE.MeshStandardMaterial({ map: lizTex, vertexColors: true, roughness: 0.5 });
+        const back = new THREE.Color(0x77803f), side = new THREE.Color(0x5d5b33), belly = new THREE.Color(0xd8d1a4);
+        const paint = (x, y, z, c) => { mixC(c, back, side, smooth01(0.3, 0.9, Math.abs(x))); mixC(c, c, belly, smooth01(0, -0.6, y)); };
+        const spineRoot = new THREE.Group(); spineRoot.position.set(0, 0.012, 0.03); rig.root.add(spineRoot);
+        let cur = spineRoot; const segL = 0.013;
+        for (let k = 0; k < 6; k++) {
+          const piv = new THREE.Group(); if (k > 0) piv.position.z = -segL; cur.add(piv);
+          const w = 0.0085 * (1 - Math.abs(k - 2.2) * 0.08);
+          const m = new THREE.Mesh(sculpt(w, w * 0.68, segL * 0.95, 14, 10, null, paint), mat); m.position.z = -segL / 2; m.castShadow = true; piv.add(m);
+          rig.spine.push(piv); cur = piv;
+        }
+        rig.body = spineRoot;
+        const headPiv = new THREE.Group(); spineRoot.add(headPiv); rig.head = headPiv;
+        const head = new THREE.Mesh(sculpt(0.0085, 0.0058, 0.017, 16, 12, (x, y, z) => { const t = z > 0 ? 1 - z * 0.55 : 1; return [x * t, y * t * (y > 0 ? 0.9 : 0.7), z]; }, paint), mat); head.position.z = 0.012; head.castShadow = true; headPiv.add(head);
+        const eyeMat = new THREE.MeshPhysicalMaterial({ color: 0x3a2a12, roughness: 0.05, clearcoat: 1 });
+        [-1, 1].forEach(sd => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.0022, 10, 8), eyeMat); e.position.set(sd * 0.0052, 0.0022, 0.016); headPiv.add(e); });
+        const lizLimb = plainMat(mat, 0x666b3a);
+        // Bacaklar: üst kol yatay dışa, ön kol aşağı (yayık duruş)
+        [[0, 1], [4, -1]].forEach(([si, fr]) => {
+          [-1, 1].forEach(sd => {
+            const hip = new THREE.Group(); hip.position.set(sd * 0.007, -0.002, -0.004); rig.spine[si].add(hip);
+            hip.rotation.z = sd * 1.25;
+            const up = limbPart(0.011, 0.0026, 0.0019, lizLimb); hip.add(up);
+            const lo = limbPart(0.010, 0.0018, 0.0012, lizLimb); up.userData.end.add(lo); lo.rotation.z = -sd * 1.35;
+            const foot = new THREE.Group(); lo.userData.end.add(foot); foot.rotation.z = sd * 0.1; toes(foot, 5, 0.006, 0.0006, 0.006, lizLimb);
+            rig.legs.push({ hip, knee: up.userData.end, lower: lo, foot, side: sd, front: fr > 0, liz: true });
+          });
+        });
+        rig.tail = chain(rig.spine[5], 16, 0.0075, 0.0058, 0.0007, lizLimb);
+        rig.tail[0].position.z = -segL;
+        rig.radius = 0.012; rig.bodyLen = 0.08;
+      } else {
+        // Bıldırcın: yuvarlak gövde, enine çizgili tüy deseni, göz üstü açık şerit, katlanmış kanatlar
+        const tex = featherTex('quailF', '#8a6b4a', '#4e3a26', '#d9c39a');
+        const breast = new THREE.Color(0xc79f73), backC = new THREE.Color(0x7d6145), throatC = new THREE.Color(0xe8dcc2);
+        const mat = new THREE.MeshStandardMaterial({ map: tex, vertexColors: true, roughness: 0.9 });
+        const paint = (x, y, z, c) => { mixC(c, backC, breast, smooth01(0.1, -0.4, y) * smooth01(-0.3, 0.6, z)); };
+        const bodyGeo = sculpt(0.034, 0.033, 0.046, 26, 20, (x, y, z) => [x, y * (z < -0.3 ? 0.9 : 1), z], paint);
+        const body = new THREE.Mesh(bodyGeo, mat); body.position.y = 0.05; body.rotation.x = -0.12; body.castShadow = true; rig.root.add(body); rig.body = body;
+        const headPiv = new THREE.Group(); headPiv.position.set(0, 0.07, 0.034); rig.root.add(headPiv); rig.head = headPiv;
+        const hPaint = (x, y, z, c) => { mixC(c, backC, throatC, smooth01(0.0, -0.5, y)); if (y > 0.2 && y < 0.42) mixC(c, c, new THREE.Color(0xeee3c8), 0.85); if (y > 0.55) mixC(c, c, new THREE.Color(0x3b2a1a), 0.7); };
+        const headM = new THREE.Mesh(sculpt(0.0135, 0.0145, 0.0165, 18, 14, null, hPaint), mat); headM.position.set(0, 0.008, 0.01); headM.castShadow = true; headPiv.add(headM);
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.0042, 0.0115, 8), new THREE.MeshStandardMaterial({ color: 0x5b4a3a, roughness: 0.4 })); beak.rotation.x = Math.PI / 2; beak.position.set(0, 0.0055, 0.03); headPiv.add(beak);
+        const eyeMat = new THREE.MeshPhysicalMaterial({ color: 0x1a0f08, roughness: 0.05, clearcoat: 1 });
+        [-1, 1].forEach(sd => { const e = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 10, 8), eyeMat); e.position.set(sd * 0.0108, 0.0105, 0.017); headPiv.add(e); });
+        const neck = new THREE.Mesh(sculpt(0.013, 0.016, 0.014, 14, 10, null, paint), mat); neck.position.set(0, 0.062, 0.03); rig.root.add(neck);
+        // Kanat: kol kemiği pivotu + kat kat birincil tüyler
+        [-1, 1].forEach(sd => {
+          const sh = new THREE.Group(); sh.position.set(sd * 0.026, 0.06, 0.012); rig.root.add(sh);
+          const wing = new THREE.Group(); sh.add(wing);
+          const cov = new THREE.Mesh(sculpt(0.006, 0.018, 0.032, 14, 10, null, paint), mat); cov.position.set(0, -0.004, -0.014); wing.add(cov);
+          const fm = new THREE.MeshStandardMaterial({ map: tex, color: 0x9a7a58, roughness: 0.9, side: THREE.DoubleSide });
+          for (let k = 0; k < 6; k++) { const pf = new THREE.Mesh(new THREE.PlaneGeometry(0.009, 0.042), fm); pf.position.set(0, -0.008 + k * 0.0012, -0.03 - k * 0.0035); pf.rotation.set(Math.PI / 2 - 0.15, 0, (k - 2.5) * 0.06); pf.rotation.y = Math.PI / 2; wing.add(pf); }
+          rig.wings.push({ sh, wing, side: sd });
+        });
+        const tail = new THREE.Group(); tail.position.set(0, 0.05, -0.044); rig.root.add(tail);
+        for (let k = 0; k < 5; k++) { const tf = new THREE.Mesh(new THREE.PlaneGeometry(0.008, 0.026), new THREE.MeshStandardMaterial({ map: tex, color: 0x806246, side: THREE.DoubleSide })); tf.rotation.x = -Math.PI / 2 - 0.4; tf.position.set((k - 2) * 0.004, 0, -0.01); tf.rotation.z = (k - 2) * 0.15; tail.add(tf); }
+        rig.tail = [tail];
+        const legMat = new THREE.MeshStandardMaterial({ color: 0xc9a27a, roughness: 0.55 });
+        [-1, 1].forEach(sd => {
+          const hip = new THREE.Group(); hip.position.set(sd * 0.011, 0.034, -0.002); rig.root.add(hip);
+          const tars = limbPart(0.03, 0.0021, 0.0017, legMat); hip.add(tars);
+          const foot = new THREE.Group(); tars.userData.end.add(foot); toes(foot, 3, 0.014, 0.0011, 0.012, legMat, true);
+          rig.legs.push({ hip, knee: tars.userData.end, foot, side: sd, front: false, bird: true });
+        });
+        rig.radius = 0.034; rig.bodyLen = 0.11;
+      }
+      g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+      return { mesh: g, parts: rig };
+    }
+
+    const PREY_LABELS = { mouse: 'Tarla Faresi', frog: 'Ova Kurbağası', lizard: 'Çayır Kertenkelesi', bird: 'Bıldırcın' };
+    // Gerçek hız aralıkları (m/s): rutin yürüyüş ve kaçış koşusu
+    const PREY_SPEED = { mouse: [0.16, 1.4], frog: [0.0, 1.6], lizard: [0.2, 1.5], bird: [0.18, 1.6] };
 
     function spawnPrey(nearSnake = false) {
       const types = ['mouse', 'mouse', 'frog', 'lizard', 'bird'];
       const type = types[Math.floor(Math.random() * types.length)];
       const { mesh, parts } = createPreyMesh(type);
-
       let px, pz;
       if (nearSnake && physics && physics.pos[0]) {
-        const ang = physics.heading + (Math.random() - 0.5) * 1.1;
-        const dist = 0.85 + Math.random() * 0.85;
-        px = physics.pos[0].x + Math.cos(ang) * dist;
-        pz = physics.pos[0].z + Math.sin(ang) * dist;
+        const ang = physics.heading + (Math.random() - 0.5) * 1.1, dist = 0.9 + Math.random() * 0.9;
+        px = physics.pos[0].x + Math.cos(ang) * dist; pz = physics.pos[0].z + Math.sin(ang) * dist;
       } else {
-        const ang = Math.random() * Math.PI * 2;
-        const dist = 1.4 + Math.random() * 3.8;
-        px = Math.cos(ang) * dist;
-        pz = Math.sin(ang) * dist;
+        const ang = Math.random() * Math.PI * 2, dist = 1.4 + Math.random() * 3.8;
+        px = Math.cos(ang) * dist; pz = Math.sin(ang) * dist;
       }
       const py = getTerrainHeight(px, pz);
       mesh.position.set(px, py, pz);
       preyGroup.add(mesh);
-
       const prey = {
-        id: Math.random().toString(36).slice(2),
-        type,
-        label: PREY_LABELS[type],
-        mesh,
-        parts,
-        pos: new THREE.Vector3(px, py, pz),
-        vel: new THREE.Vector3(),
-        heading: Math.random() * Math.PI * 2,
-        walkPhase: Math.random() * 10,
-        hopTimer: 0.8 + Math.random() * 1.5,
-        hopVy: 0,
-        state: 'ROAM', // ROAM | FLEE | CAPTURED | SWALLOWING | EATEN
+        id: Math.random().toString(36).slice(2), type, label: PREY_LABELS[type], mesh, parts,
+        pos: new THREE.Vector3(px, py, pz), vel: new THREE.Vector3(), heading: Math.random() * Math.PI * 2,
+        speed: 0, gait: 0, hopTimer: 0.8 + Math.random() * 1.5, hopVy: 0, air: false, crouch: 0,
+        state: 'ROAM', act: 'walk', actT: 1 + Math.random() * 3, alert: 0, flight: 0, struggle: 0, limp: 0, roll: 0, venom: 0,
         bolusSize: type === 'bird' ? 0.056 : (type === 'mouse' ? 0.048 : (type === 'frog' ? 0.044 : 0.036)),
         wanderTimer: 1 + Math.random() * 3
       };
@@ -1329,109 +1445,219 @@
     }
 
     function initPreyPopulation() {
-      while (preyList.length > 0) {
-        const p = preyList.pop();
-        preyGroup.remove(p.mesh);
-      }
+      while (preyList.length > 0) { const p = preyList.pop(); preyGroup.remove(p.mesh); }
       for (let i = 0; i < 8; i++) spawnPrey(i < 2);
+    }
+
+    /* İskelet animasyonu: yürüyüş fazı, hız ve duruma göre uzuv açıları */
+    function animatePreyRig(pr, dt) {
+      const R = pr.parts, t = state.simTime, sp = pr.speed, ph = pr.gait;
+      const limp = pr.limp, str = pr.struggle;
+      const kick = str > 0 ? Math.sin(t * 38 + pr.id.length) * str : 0;
+      if (pr.type === 'mouse') {
+        // Hız < 0.55 m/s: tırıs (çapraz çiftler); üstünde: sıçrama (ön çift / arka çift birlikte, omurga esner)
+        const bound = sp > 0.55 ? 1 : 0;
+        const off = bound ? [0, 0.12, 0.5, 0.62] : [0, 0.5, 0.5, 0];
+        const A = Math.min(0.95, 0.25 + sp * 0.7);
+        R.legs.forEach((L, k) => {
+          const th = (ph + off[k]) * Math.PI * 2, s = Math.sin(th), c = Math.cos(th);
+          let hip = sp > 0.02 ? -s * A : 0, knee = sp > 0.02 ? Math.max(0, c) * (L.front ? -0.9 : 1.1) * A : 0;
+          if (pr.act === 'rear' && !L.front) { hip = 0.6; knee = 0.4; }
+          if (pr.act === 'rear' && L.front) { hip = -0.9; knee = -1.2; }
+          if (pr.act === 'groom' && L.front) { hip = -1.3 + Math.sin(t * 14 + k) * 0.25; knee = -1.5; }
+          hip = hip * (1 - limp) + (L.front ? -0.9 : 1.0) * limp + kick * (k % 2 ? 1 : -1) * 0.8;
+          knee = knee * (1 - limp) + (L.front ? 0.6 : -0.4) * limp;
+          L.hip.rotation.x = hip; L.knee.rotation.x = knee; L.foot.rotation.x = -(hip + knee) * (1 - limp);
+        });
+        const flex = bound ? Math.sin(ph * Math.PI * 2) * 0.12 * Math.min(1, sp) : 0;
+        R.body.scale.set(1, 1 + Math.sin(t * 9) * 0.02, 1 + flex);
+        const rearT = pr.act === 'rear' ? 1 : 0;
+        R.root.rotation.x = (-0.75 * rearT) * (1 - limp);
+        R.root.position.y = (bound ? Math.abs(Math.sin(ph * Math.PI * 2)) * 0.012 * Math.min(1, sp) : 0) + rearT * 0.012;
+        const sniff = pr.act === 'sniff' || pr.state === 'ALERT';
+        R.head.rotation.x = (sniff ? -0.25 + Math.sin(t * 2.3) * 0.15 : 0.1) * (1 - limp) + limp * 0.35;
+        R.head.rotation.y = (pr.state === 'ALERT' ? Math.sin(t * 1.7) * 0.5 : Math.sin(t * 0.9) * 0.15) * (1 - limp);
+        if (R.nose) R.nose.scale.setScalar(1 + (sniff ? Math.max(0, Math.sin(t * 60)) * 0.25 : 0));
+        R.ears.forEach((e, k) => { e.rotation.x = -0.25 - (pr.state === 'ALERT' ? 0.35 : 0) - limp * 0.4; });
+        R.tail.forEach((sg, k) => {
+          const w = sp > 0.02 ? Math.sin(ph * Math.PI * 2 - k * 0.5) * 0.12 : Math.sin(t * 1.3 - k * 0.4) * 0.05;
+          sg.rotation.y = w * (1 - limp) + kick * 0.15; sg.rotation.x = (k === 0 ? 0 : (k < 4 ? 0.07 : 0.015) + (bound ? -0.03 : 0)) * (1 - limp) + limp * 0.04;
+        });
+      } else if (pr.type === 'frog') {
+        // Faz: 0 oturma (Z katlı), havada bacaklar uzar sonra toplanır, inişte ön ayaklar karşılar
+        const ext = pr.air ? Math.max(0, 1 - pr.airT / 0.12) : 0, tuck = pr.air ? smooth01(0.08, 0.3, pr.airT) : 0, cr = pr.crouch;
+        R.legs.forEach(L => {
+          if (!L.front) {
+            const sitHip = 1.1 + cr * 0.25, sitKnee = -2.45, sitAnk = 2.2;
+            let a = sitHip + (-0.2 - sitHip) * ext, b = sitKnee + (-0.15 - sitKnee) * ext, c = sitAnk + (0.1 - sitAnk) * ext;
+            if (tuck > 0) { a += (sitHip - a) * tuck * 0.7; b += (sitKnee - b) * tuck * 0.7; c += (sitAnk - c) * tuck * 0.7; }
+            a += kick * 0.9 * L.side; b += Math.abs(kick) * 0.5;
+            a = a * (1 - limp) + 0.2 * limp; b = b * (1 - limp) - 0.4 * limp; c = c * (1 - limp) + 0.2 * limp;
+            L.hip.rotation.set(a, L.side * 0.75, 0); L.knee.rotation.x = b; L.ankle.rotation.x = c; L.foot.rotation.x = 0.3;
+          } else {
+            const land = pr.air ? -0.7 * tuck : 0;
+            L.hip.rotation.set(-0.35 + land + kick * 0.6, L.side * 0.35, 0); L.knee.rotation.x = 0.7 - land; L.foot.rotation.x = -0.3;
+          }
+        });
+        R.root.rotation.x = pr.air ? (-0.35 + tuck * 0.5) : 0;
+        if (R.throat) { const pump = (pr.state === 'ROAM' && !pr.air) ? Math.max(0, Math.sin(t * 7.5)) : 0; R.throat.scale.set(1 + pump * 0.18, 1 + pump * 0.9, 1 + pump * 0.15); }
+        R.body.scale.y = 1 + Math.sin(t * 3) * 0.02 - cr * 0.12;
+      } else if (pr.type === 'lizard') {
+        // Yanal omurga dalgası, çapraz çift bacaklar faz uyumlu (Farley & Ko 1997)
+        const A = Math.min(0.42, 0.12 + sp * 0.3), moving = sp > 0.03 ? 1 : 0;
+        R.spine.forEach((sg, k) => { sg.rotation.y = moving * A * Math.sin(ph * Math.PI * 2 - k * 0.55) * 0.45 * (1 - limp) + kick * 0.25; });
+        R.tail.forEach((sg, k) => { sg.rotation.y = (moving ? A * 0.55 * Math.sin(ph * Math.PI * 2 - 3.3 - k * 0.42) : Math.sin(t * 0.8 - k * 0.3) * 0.03) * (1 - limp * 0.6) + kick * 0.2; });
+        R.legs.forEach((L, k) => {
+          const diag = (L.front ? 0 : 0.5) + (L.side > 0 ? 0.5 : 0), th = (ph + diag) * Math.PI * 2;
+          const pushUp = pr.act === 'pushup' && L.front ? Math.max(0, Math.sin(t * 9)) * 0.6 : 0;
+          L.hip.rotation.y = moving * Math.sin(th) * 0.8 * L.side * (1 - limp) + kick * 0.7;
+          L.hip.rotation.z = L.side * (1.25 - Math.max(0, Math.cos(th)) * 0.35 * moving - pushUp) * (1 - limp) + L.side * 0.4 * limp;
+        });
+        R.root.position.y = pr.act === 'pushup' ? Math.max(0, Math.sin(t * 9)) * 0.004 : 0;
+        R.head.rotation.y = -R.spine[0].rotation.y * 0.8 + (pr.state === 'ALERT' ? Math.sin(t * 2) * 0.3 : 0);
+      } else {
+        // Bıldırcın: adım başına baş "tutma–itme" (head-bob), gagalama, kanat çırpma
+        const flying = pr.flight > 0, A = Math.min(0.8, 0.3 + sp * 0.5);
+        R.legs.forEach((L, k) => {
+          const th = (ph + k * 0.5) * Math.PI * 2;
+          const hip = flying ? -0.9 : (sp > 0.02 ? Math.sin(th) * A : 0) + kick * 0.6;
+          L.hip.rotation.x = hip * (1 - limp) + limp * 0.9; L.knee.rotation.x = (flying ? 1.2 : Math.max(0, -Math.cos(th)) * 0.6) * (1 - limp);
+        });
+        const cyc = ph % 1, hold = cyc < 0.6 ? 0 : (cyc - 0.6) / 0.4;
+        const bob = sp > 0.02 && !flying ? (-0.012 + hold * 0.012) : 0;
+        const peck = pr.act === 'peck' ? Math.max(0, Math.sin(t * 11)) : 0;
+        R.head.position.z = 0.034 + bob;
+        R.head.position.y = 0.07 - peck * 0.04 - limp * 0.035;
+        R.head.rotation.x = peck * 1.1 + limp * 0.9;
+        R.wings.forEach(W => {
+          if (flying) { const f = Math.sin(t * 2 * Math.PI * 14); W.sh.rotation.z = -W.side * (0.4 + f * 1.1); W.sh.rotation.y = W.side * 0.2; }
+          else { const flap = str > 0 ? Math.sin(t * 40) * str * 0.8 : 0; W.sh.rotation.z = -W.side * (0.02 + Math.abs(flap)) - W.side * limp * 0.5; W.sh.rotation.y = 0; }
+        });
+        R.root.rotation.x = flying ? -0.25 : 0;
+      }
+      // Yan yatma (ölü/bayıltılmış av yere yan düşer)
+      R.root.rotation.z = pr.roll;
+    }
+
+    function preySnakeThreat(pr) {
+      const head = physics.pos[0], d = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
+      const v = Math.hypot(physics.engine.vx[0] || 0, physics.engine.vz[0] || 0);
+      return { d, v };
     }
 
     function updatePrey(dt) {
       const head = physics.pos[0];
-      let minDist = 99;
-      let nearest = null;
-
+      let minDist = 99, nearest = null;
       for (let i = preyList.length - 1; i >= 0; i--) {
         const pr = preyList[i];
-        if (pr.state === 'EATEN') {
-          preyGroup.remove(pr.mesh);
-          preyList.splice(i, 1);
-          continue;
-        }
+        if (pr.state === 'EATEN') { preyGroup.remove(pr.mesh); preyList.splice(i, 1); continue; }
         if (pr.state === 'CAPTURED' || pr.state === 'SWALLOWING') {
-          continue;
+          pr.struggle *= Math.exp(-dt / (pr.state === 'CAPTURED' ? 1.6 : 0.4));
+          if (pr.state === 'SWALLOWING') pr.limp = Math.min(1, pr.limp + dt * 2);
+          pr.gait += dt * 2; animatePreyRig(pr, dt); continue;
         }
-
-        const dx = pr.pos.x - head.x;
-        const dz = pr.pos.z - head.z;
-        const dist = Math.hypot(dx, dz);
-        if (dist < minDist) {
-          minDist = dist;
-          nearest = pr;
-        }
-
-        // Yılan çok yaklaşırsa av panikleyip kaçmaya çalışır (ama yılan ondan hızlıdır!)
-        let speed = pr.type === 'lizard' ? 0.42 : (pr.type === 'mouse' ? 0.36 : 0.24);
-        if (dist < 1.15) {
-          pr.state = 'FLEE';
-          const fleeAng = Math.atan2(dz, dx);
-          pr.heading += Math.sin(fleeAng - pr.heading) * Math.min(1, dt * 6.0);
-          speed *= 1.45;
-        } else {
-          pr.state = 'ROAM';
-          pr.wanderTimer -= dt;
-          if (pr.wanderTimer <= 0) {
-            pr.wanderTimer = 1.5 + Math.random() * 2.5;
-            pr.heading += (Math.random() - 0.5) * 1.8;
-          }
-          // Arena içinde tut
-          if (Math.hypot(pr.pos.x, pr.pos.z) > 5.2) {
-            const toCenter = Math.atan2(-pr.pos.z, -pr.pos.x);
-            pr.heading += Math.sin(toCenter - pr.heading) * dt * 3.0;
-          }
-        }
-
-        // Kurbağa & Kuş zıplama fiziği; Fare & Kertenkele koşma animasyonu
+        const th = preySnakeThreat(pr);
+        if (pr.state !== 'DEAD' && pr.state !== 'ENVENOM' && th.d < minDist) { minDist = th.d; nearest = pr; }
         const groundY = getTerrainHeight(pr.pos.x, pr.pos.z);
-        if (pr.type === 'frog' || pr.type === 'bird') {
-          pr.hopTimer -= dt * (pr.state === 'FLEE' ? 2.4 : 1.0);
-          if (pr.pos.y <= groundY + 0.002 && pr.hopTimer <= 0) {
-            pr.hopVy = pr.type === 'frog' ? 1.55 : 1.15;
-            pr.hopTimer = 0.7 + Math.random() * 1.2;
-          }
-          if (pr.pos.y > groundY + 0.002 || pr.hopVy > 0) {
-            pr.pos.x += Math.cos(pr.heading) * speed * 1.8 * dt;
-            pr.pos.z += Math.sin(pr.heading) * speed * 1.8 * dt;
-            pr.hopVy -= 9.81 * dt;
-            pr.pos.y += pr.hopVy * dt;
-            if (pr.pos.y < groundY) { pr.pos.y = groundY; pr.hopVy = 0; }
+        const [vWalk, vRun] = PREY_SPEED[pr.type];
+        let target = 0;
+
+        if (pr.state === 'DEAD') {
+          pr.speed = 0; pr.limp = Math.min(1, pr.limp + dt * 1.5); pr.roll += ((pr.type === 'bird' ? 1.3 : 1.45) - pr.roll) * Math.min(1, dt * 3);
+          pr.pos.y = groundY; animatePreyRig(pr, dt); pr.mesh.position.copy(pr.pos); continue;
+        }
+        if (pr.state === 'ENVENOM') {
+          // Zehir etkisi: koşu hızı üstel düşer, rota sendeler, ~3–5 s içinde yere yığılır
+          pr.venom += dt;
+          const k = Math.exp(-pr.venom / 1.4);
+          target = vRun * 0.85 * k;
+          pr.heading += Math.sin(state.simTime * 3.1 + pr.venom * 2) * dt * (1.5 + pr.venom);
+          pr.roll = Math.sin(state.simTime * 6) * 0.15 * (1 - k) + (1 - k) * 0.25;
+          if (pr.venom > 3.6) { pr.state = 'DEAD'; showToast(`${pr.label} zehrin etkisiyle yığıldı — yılan koku izini takip ediyor`); }
+        } else {
+          // Algılama: yakın mesafe her zaman; orta mesafede ancak yılan hareket ediyorsa (pusu avcılığı işe yarar)
+          const seen = th.d < 0.18 || (th.d < 1.35 && th.v > 0.12) || (pr.state === 'FLEE' && th.d < 1.8);
+          if (seen) {
+            if (pr.state === 'ROAM') { pr.state = 'ALERT'; pr.alert = pr.type === 'mouse' ? 0.6 + Math.random() * 0.8 : 0.35; }
+            if (pr.state === 'ALERT' && th.v <= 0.12) pr.alert = Math.max(pr.alert, 0.3);
+            pr.alert -= dt;
+            if (pr.state === 'ALERT' && pr.alert <= 0 && th.v > 0.12 || pr.state === 'ALERT' && th.d < 0.15) {
+              pr.state = 'FLEE';
+              if (pr.type === 'bird' && th.d < 0.9 && pr.flight <= 0) { pr.flight = 1.4 + Math.random() * 0.8; pr.hopVy = 1.9; pr.air = true; showToast('Bıldırcın kanat çırparak havalandı!'); }
+            }
+          } else if (pr.state !== 'ROAM') { pr.state = 'ROAM'; pr.act = 'sniff'; pr.actT = 1.5; }
+
+          if (pr.state === 'FLEE') {
+            const away = Math.atan2(pr.pos.z - head.z, pr.pos.x - head.x);
+            pr.zig = (pr.zig || 0) - dt; if (pr.zig <= 0) { pr.zig = 0.35 + Math.random() * 0.5; pr.zigA = (Math.random() - 0.5) * 1.2; }
+            let d = (away + pr.zigA) - pr.heading; d = Math.atan2(Math.sin(d), Math.cos(d));
+            pr.heading += d * Math.min(1, dt * 8);
+            target = vRun * (pr.type === 'frog' ? 0 : 1);
+          } else if (pr.state === 'ALERT') {
+            target = 0; pr.act = pr.type === 'mouse' ? 'rear' : pr.type === 'lizard' ? 'pushup' : 'freeze';
           } else {
+            pr.actT -= dt;
+            if (pr.actT <= 0) {
+              const acts = pr.type === 'mouse' ? ['walk', 'walk', 'sniff', 'rear', 'groom'] : pr.type === 'lizard' ? ['walk', 'walk', 'bask', 'pushup'] : pr.type === 'bird' ? ['walk', 'peck', 'peck', 'walk'] : ['sit', 'sit', 'hop'];
+              pr.act = acts[(Math.random() * acts.length) | 0]; pr.actT = 1.2 + Math.random() * 3;
+              if (pr.act === 'walk') pr.heading += (Math.random() - 0.5) * 1.6;
+            }
+            target = pr.act === 'walk' ? vWalk : 0;
+            if (Math.hypot(pr.pos.x, pr.pos.z) > 5.0) { const toC = Math.atan2(-pr.pos.z, -pr.pos.x); let d = toC - pr.heading; d = Math.atan2(Math.sin(d), Math.cos(d)); pr.heading += d * dt * 2.5; }
+          }
+        }
+        if (Math.hypot(pr.pos.x, pr.pos.z) > 5.6) { const toC = Math.atan2(-pr.pos.z, -pr.pos.x); pr.heading = toC; }
+
+        // Hareket: kurbağa sıçrayarak (balistik), kuş kaçışta uçarak, diğerleri koşarak
+        if (pr.type === 'frog') {
+          pr.hopTimer -= dt * (pr.state === 'FLEE' ? 3 : 1);
+          const wantsHop = pr.state === 'FLEE' || (pr.state === 'ROAM' && pr.act === 'hop') || (pr.state === 'ENVENOM' && pr.venom < 1.5);
+          if (!pr.air) {
+            pr.crouch = Math.max(0, pr.crouch - dt * 3);
+            if (wantsHop && pr.hopTimer <= 0) {
+              pr.crouch = Math.min(1, pr.crouch + dt * 14);
+              if (pr.crouch >= 0.95) {
+                // Kalkış: ~40° açıyla v0; menzil yaklaşık 10–15 gövde boyu (kaçışta)
+                const v0 = pr.state === 'FLEE' ? 1.9 : 1.0, a = 0.7;
+                pr.vel.set(Math.cos(pr.heading) * v0 * Math.cos(a), v0 * Math.sin(a), Math.sin(pr.heading) * v0 * Math.cos(a));
+                pr.air = true; pr.airT = 0; pr.hopTimer = pr.state === 'FLEE' ? 0.25 : 1.4 + Math.random() * 2; pr.crouch = 0; pr.act = 'sit';
+              }
+            }
             pr.pos.y = groundY;
           }
+          if (pr.air) {
+            pr.airT += dt; pr.vel.y -= 9.81 * dt;
+            pr.pos.addScaledVector(pr.vel, dt);
+            if (pr.pos.y <= groundY && pr.vel.y < 0) { pr.pos.y = groundY; pr.air = false; pr.vel.set(0, 0, 0); pr.crouch = 0.5; }
+          }
+          pr.speed = pr.air ? 1 : 0; pr.gait += dt;
+        } else if (pr.type === 'bird' && pr.flight > 0) {
+          pr.flight -= dt;
+          pr.hopVy += (pr.flight > 0.5 ? 0.5 : -6) * dt;
+          pr.pos.x += Math.cos(pr.heading) * 2.4 * dt; pr.pos.z += Math.sin(pr.heading) * 2.4 * dt;
+          pr.pos.y = Math.max(groundY, pr.pos.y + pr.hopVy * dt);
+          if (pr.flight <= 0 || (pr.pos.y <= groundY + 0.001 && pr.hopVy < 0)) { pr.flight = 0; pr.air = false; pr.pos.y = groundY; pr.state = 'ROAM'; pr.act = 'peck'; pr.actT = 2; }
+          pr.speed = 2.4; pr.gait += dt * 3;
         } else {
-          pr.pos.x += Math.cos(pr.heading) * speed * dt;
-          pr.pos.z += Math.sin(pr.heading) * speed * dt;
-          pr.pos.y = getTerrainHeight(pr.pos.x, pr.pos.z);
+          // Birinci dereceden hız tepkisi: ivmelenme sınırlı (fare ~10 m/s²)
+          pr.speed += (target - pr.speed) * Math.min(1, dt * (target > pr.speed ? 6 : 9));
+          pr.pos.x += Math.cos(pr.heading) * pr.speed * dt; pr.pos.z += Math.sin(pr.heading) * pr.speed * dt;
+          pr.pos.y = groundY;
+          // Adım frekansı: f ≈ v / adım boyu; adım boyu hızla büyür (Heglund & Taylor 1988)
+          const stride = pr.parts.bodyLen * (pr.type === 'lizard' ? 0.9 : 0.8) * (1 + pr.speed * 1.2);
+          pr.gait += (pr.speed / Math.max(0.01, stride)) * dt;
         }
-
-        // Uzuv ve nefes alma animasyonu
-        pr.walkPhase += dt * (pr.state === 'FLEE' ? 22 : 11);
-        pr.parts.legs.forEach((leg, idx) => {
-          leg.rotation.x = Math.sin(pr.walkPhase + idx * Math.PI * 0.5) * 0.55;
-        });
-        if (pr.parts.tail) {
-          pr.parts.tail.rotation.z = Math.sin(pr.walkPhase * 0.7) * 0.25;
-        }
-        if (pr.parts.body) {
-          const breath = 1.0 + Math.sin(state.simTime * 5.5 + i) * 0.03;
-          pr.parts.body.scale.y = (pr.type === 'frog' ? 0.72 : (pr.type === 'bird' ? 0.85 : 0.76)) * breath;
-        }
-
+        for (const o of habitatObstacles || []) { const dx = pr.pos.x - o.x, dz = pr.pos.z - o.z, dd = Math.hypot(dx, dz); if (dd < o.r + 0.04) { pr.pos.x = o.x + dx / dd * (o.r + 0.04); pr.pos.z = o.z + dz / dd * (o.r + 0.04); pr.heading += 0.4; } }
+        animatePreyRig(pr, dt);
         pr.mesh.position.copy(pr.pos);
         pr.mesh.rotation.set(0, Math.atan2(Math.cos(pr.heading), Math.sin(pr.heading)), 0);
       }
-
       state.nearestPreyDist = minDist;
-
-      // Eğer yılan doğrudan bir avın ağzına çok yaklaşırsa (<0.22m) otomatik yakalama başlat!
-      if (state.feeding.phase === 'NONE' && nearest && minDist < 0.24) {
-        triggerStrike(nearest);
-      }
-
-      // Popülasyonu canlı tut
-      if (preyList.length < 7 && Math.random() < dt * 0.35) {
-        spawnPrey(false);
-      }
+      // Yılan vuruş menzilindeyse (gövde boyunun ~1/3'ü, en fazla ~0.5 m) otomatik vuruş hazırlığı
+      const sp = SPECIES_DB[state.speciesId];
+      const strikeRange = Math.min(0.5, sp.length * 0.22) + sp.headShape.len * 0.6;
+      if (state.feeding.phase === 'NONE' && nearest && minDist < strikeRange) triggerStrike(nearest);
+      if (preyList.length < 7 && Math.random() < dt * 0.35) spawnPrey(false);
     }
 
     function triggerStrike(explicitTarget = null) {
@@ -1439,7 +1665,7 @@
       const head = physics.pos[0];
       let target = explicitTarget;
       if (!target) {
-        let bestD = 1.65;
+        let bestD = 2.4;
         for (const pr of preyList) {
           if (pr.state === 'EATEN' || pr.state === 'CAPTURED' || pr.state === 'SWALLOWING') continue;
           const d = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
@@ -1451,11 +1677,14 @@
         showToast('Yakında av yok — bir ava yaklaşın veya "+ Yeni Av Ekle" basın');
         return;
       }
-      state.feeding.phase = 'STRIKE';
+      const spT = SPECIES_DB[state.speciesId];
+      const rangeT = Math.min(0.5, spT.length * 0.22) + spT.headShape.len * 0.6;
+      const dT = Math.hypot(target.pos.x - head.x, target.pos.z - head.z);
+      state.feeding.phase = dT < rangeT ? 'COIL' : 'APPROACH';
       state.feeding.target = target;
       state.feeding.timer = 0;
       state.feeding.progress = 0;
-      showToast(`Saldırı başladı! Hedef: ${target.label}`);
+      showToast(dT < rangeT ? `Vuruş duruşu: boyun S kıvrımında — hedef ${target.label}` : `Sinsice yaklaşıyor: ${target.label}`);
     }
 
     // =========================================================================
@@ -2023,7 +2252,7 @@ class BiomechSnakeEngine {
     // Wave propagates posteriorly at the exact rate the body glides forward -> S-bends stay anchored on ground, zero back-and-forth stutter!
     const headSpd = Math.hypot(this.vx[0], this.vz[0]);
     const waveNumber = (Math.PI * 2 * sp.cpgWaves) / Math.max(0.4, sp.length);
-    if (this.gait === 'coiling' || this.gait === 'head_lift') {
+    if (this.gait === 'coiling' || this.gait === 'head_lift' || this.gait === 'strike_coil') {
       this.cpgPhase += dt * sp.cpgFreq * Math.PI * 2 * 0.45 * tempFactor;
     } else if (this.driveEffort > 0.02) {
       const minRhythm = sp.cpgFreq * 0.45 * this.driveEffort;
@@ -2037,7 +2266,11 @@ class BiomechSnakeEngine {
       const u = i / (this.N - 1);
       let cTarget = 0;
 
-      if (this.gait === 'coiling') {
+      if (this.gait === 'strike_coil') {
+        // Vuruş öncesi S-kıvrımı: boynun ön ~%18'i iki zıt yay (enerji depolayan "yay"), gövde sabit çapa
+        const un = u / 0.2;
+        cTarget = u < 0.2 ? maxBendRad * 0.85 * Math.sin(un * Math.PI * 2) * (1 - un * 0.3) + this.steerWave[i] * 0.6 : (this.curvatures[i] * 0.97);
+      } else if (this.gait === 'coiling') {
         // Pure muscular coiling: monotonic positive curvature bends snake into a natural coil via self-collision!
         const coilCurv = maxBendRad * (0.48 + 0.35 * (1.0 - u));
         cTarget = coilCurv;
@@ -2513,100 +2746,171 @@ class BiomechSnakeEngine {
         const head = this.pos[0];
         const fd = state.feeding;
 
-        // Gerçekçi Kas-Temelli Saldırı (Baş yapay çekilmez; fiziksel temas doğrulanmazsa ıska!)
+        // =================================================================
+        // AVLANMA DİZİSİ (literatüre dayalı):
+        //  APPROACH (sinsice yaklaşma, düşük hız) → COIL (boyun S kıvrımı, nişan, 0.3–0.6 s)
+        //  → STRIKE (boyun düzleşir, baş ~2–3 m/s'ye ivmelenir; ağız temasla eşzamanlı ~150° açılır;
+        //    engereklerde zehir dişleri dikilir — Penning vd. 2016; Kardong & Bels 1998)
+        //  → isabet: piton/boa SUBDUE (sarma, avın direnci sönümlenir) · kobra/mamba ısırıp tutma
+        //    · engerek/taipan ısır-bırak (RELEASE) → av zehirle sendeleyip yığılır → TRAIL (dil ile iz sürme;
+        //    Chiszar vd. 1983 "strike-induced chemosensory searching")
+        //  → ALIGN (avın başını bulup ağıza hizalama) → SWALLOW (baş önden, pterygoid yürütme)
+        // =================================================================
         if (fd.phase !== 'NONE' && fd.target) {
           fd.timer += dt;
           const pr = fd.target;
+          const hs = sp.headShape;
           const headFwdX = this.engine.px[0] - this.engine.px[2];
           const headFwdZ = this.engine.pz[0] - this.engine.pz[2];
           const hfLen = Math.hypot(headFwdX, headFwdZ) || 1;
           const hfx = headFwdX / hfLen, hfz = headFwdZ / hfLen;
+          const mouthX = this.engine.px[0] + hfx * hs.len * 0.55, mouthZ = this.engine.pz[0] + hfz * hs.len * 0.55;
+          const dMouth = Math.hypot(pr.pos.x - mouthX, pr.pos.z - mouthZ);
+          const dHead = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
+          const aim = Math.atan2(pr.pos.z - head.z, pr.pos.x - head.x);
+          const viper = sp.id === 'gaboon_viper' || sp.id === 'sidewinder';
+          const releaser = viper || sp.id === 'inland_taipan' || sp.id === 'black_mamba';
+          const strikeRange = Math.min(0.5, sp.length * 0.22) + hs.len * 0.6;
+          state.fangErect += ((fd.phase === 'COIL' || fd.phase === 'STRIKE' ? 1 : 0) - state.fangErect) * Math.min(1, dt * 14);
 
-          if (fd.phase === 'STRIKE') {
-            state.jawCurrent = Math.min(1.0, state.jawCurrent + dt * 10.0);
-            this.engine.targetHeading = Math.atan2(pr.pos.z - head.z, pr.pos.x - head.x);
-            this.engine.driveEffort = 1.0;
-            this.engine.sprintEffort = 1.0;
-            if (fd.timer < 0.22) {
-              for (let k = 1; k < Math.min(14, this.engine.N - 1); k++) {
+          if (fd.phase === 'APPROACH') {
+            this.engine.targetHeading = aim;
+            this.engine.driveEffort = 0.45; this.engine.sprintEffort = 0;
+            state.activeGait = sp.huntStyle === 'constrict' ? 'rectilinear' : 'lateral_undulation';
+            state.tongueTimer = Math.min(state.tongueTimer, 0.5);
+            if (dHead < strikeRange) { fd.phase = 'COIL'; fd.timer = 0; }
+            else if (fd.timer > 14 || pr.state === 'EATEN') { fd.phase = 'NONE'; fd.target = null; }
+          } else if (fd.phase === 'COIL') {
+            // Vuruş öncesi duruş: boyun S kıvrımına toplanır, baş hedefe kilitlenir, gövde çapa olur
+            this.engine.targetHeading = aim;
+            this.engine.driveEffort = 0.0; this.engine.sprintEffort = 0;
+            state.activeGait = 'strike_coil';
+            state.jawCurrent += (0.0 - state.jawCurrent) * Math.min(1, dt * 10);
+            const coilT = sp.huntStyle === 'constrict' ? 0.55 : 0.38;
+            if (fd.timer > coilT) {
+              fd.phase = 'STRIKE'; fd.timer = 0; fd.hit = false; fd.reachable = dHead < strikeRange * 1.1;
+              fd.strikeDir = [Math.cos(aim), Math.sin(aim)];
+              // Av vuruş anında kaçınma sıçraması yapabilir (kemirgenlerde ~%20–30, refleks ~70 ms)
+              if ((pr.type === 'mouse' || pr.type === 'frog') && pr.state !== 'DEAD' && pr.state !== 'ENVENOM' && Math.random() < 0.25) fd.dodge = 0.07;
+              else fd.dodge = 0;
+            }
+          } else if (fd.phase === 'STRIKE') {
+            // Baş ve ön boyun düğümlerine kas itkisi: tepe hız ~2.4–3 m/s, ön boyun ağırlıklı
+            const vS = viper ? 2.9 : sp.huntStyle === 'constrict' ? 2.4 : 2.2;
+            const K = Math.min(10, this.engine.N - 2);
+            if (fd.timer < 0.09) {
+              for (let k = 0; k < K; k++) {
+                const w = Math.pow(1 - k / K, 1.6);
+                const along = this.engine.vx[k] * fd.strikeDir[0] + this.engine.vz[k] * fd.strikeDir[1];
+                const want = vS * w;
+                if (along < want) { this.engine.vx[k] += (want - along) * fd.strikeDir[0]; this.engine.vz[k] += (want - along) * fd.strikeDir[1]; }
+                this.engine.vy[k] += (k < 3 ? 0.25 : 0) * w;
                 this.engine.targetCurv[k] = 0;
               }
             }
-            const distToPrey = Math.hypot(pr.pos.x - head.x, pr.pos.z - head.z);
-            if (distToPrey < sp.headShape.len * 1.25 + 0.09) {
-              pr.state = 'CAPTURED';
-              fd.phase = 'SUBDUE';
-              fd.timer = 0;
-              showToast(sp.huntStyle === 'constrict' ? `${sp.name} avı fiziksel olarak sarıp boğuyor...` : `${sp.name} ısırdı ve zehir enjekte etti...`);
-            } else if (fd.timer > 0.70) {
-              fd.phase = 'NONE';
-              fd.target = null;
-              state.jawCurrent = 0.05;
-              showToast('Saldırı ıskaladı — av kaçtı!');
+            state.activeGait = 'lateral_undulation'; this.engine.driveEffort = 0.0;
+            // Ağız açılışı temas anına zamanlanır (en geniş açıklık vuruşun ~%80'inde)
+            state.jawCurrent = Math.min(1.0, fd.timer / 0.075);
+            state.gapeBoost = Math.min(1, fd.timer / 0.07);
+            if (fd.dodge > 0) {
+              fd.dodge -= dt; if (fd.dodge <= 0) fd.dodge = -1;
+              if (fd.dodge <= 0 && pr.type === 'mouse') { const a = aim + (Math.random() < 0.5 ? 1 : -1) * 1.3; pr.pos.x += Math.cos(a) * 0.16; pr.pos.z += Math.sin(a) * 0.16; pr.state = 'FLEE'; pr.speed = 1.2; pr.root && 0; }
+              if (fd.dodge <= 0 && pr.type === 'frog' && !pr.air) { pr.heading = aim + 1.2; pr.vel.set(Math.cos(pr.heading) * 1.3, 1.4, Math.sin(pr.heading) * 1.3); pr.air = true; pr.airT = 0; pr.state = 'FLEE'; }
             }
+            if (!fd.hit && (dMouth < hs.len * 0.45 + pr.parts.radius + 0.02 || (fd.timer >= 0.075 && fd.reachable && fd.dodge === 0))) {
+              fd.hit = true;
+              pr.struggle = 1;
+              if (releaser && pr.state !== 'DEAD') {
+                fd.phase = 'RELEASE'; fd.timer = 0;
+                pr.state = 'ENVENOM'; pr.venom = 0; pr.heading = aim + (Math.random() - 0.5) * 0.8; pr.speed = PREY_SPEED[pr.type][1]; pr.air = false;
+                showToast(`${sp.name} ısırıp bıraktı — zehir enjekte edildi, av kaçıyor...`);
+              } else if (pr.state === 'DEAD') {
+                fd.phase = 'ALIGN'; fd.timer = 0; pr.state = 'CAPTURED';
+              } else {
+                pr.state = 'CAPTURED'; pr.air = false; pr.flight = 0;
+                fd.phase = 'SUBDUE'; fd.timer = 0;
+                showToast(sp.huntStyle === 'constrict' ? `${sp.name} avı yakaladı, gövde halkalarıyla sarıyor...` : `${sp.name} ısırıp tutuyor; zehir etki ediyor...`);
+              }
+            } else if (fd.timer > 0.32) {
+              fd.phase = 'RECOVER'; fd.timer = 0;
+              showToast('Vuruş ıskaladı — av son anda sıçradı!');
+            }
+          } else if (fd.phase === 'RECOVER') {
+            state.jawCurrent += (0.02 - state.jawCurrent) * Math.min(1, dt * 8); state.gapeBoost *= 0.8;
+            this.engine.driveEffort = 0.1;
+            if (fd.timer > 0.8) { fd.phase = 'NONE'; fd.target = null; }
+          } else if (fd.phase === 'RELEASE') {
+            // Ağız kapanır, baş geri çekilir; kısa bekleme sonrası koku izi takibi
+            state.jawCurrent += (0.0 - state.jawCurrent) * Math.min(1, dt * 9); state.gapeBoost *= 0.85;
+            this.engine.driveEffort = 0.0;
+            if (fd.timer > 1.4) { fd.phase = 'TRAIL'; fd.timer = 0; }
+          } else if (fd.phase === 'TRAIL') {
+            // Vuruş sonrası artan dil çıkarma sıklığı ile iz sürme
+            this.engine.targetHeading = aim + Math.sin(state.simTime * 1.7) * 0.25;
+            this.engine.driveEffort = pr.state === 'DEAD' ? 0.4 : 0.3; this.engine.sprintEffort = 0;
+            state.activeGait = 'lateral_undulation';
+            if (state.tonguePhase <= 0) { state.tonguePhase = 1; }
+            if (pr.state === 'DEAD' && dHead < hs.len * 1.3 + pr.parts.bodyLen * 0.6) { fd.phase = 'ALIGN'; fd.timer = 0; pr.state = 'CAPTURED'; showToast(`${sp.name} avı buldu; başını arayıp hizalıyor...`); }
+            else if (fd.timer > 25) { fd.phase = 'NONE'; fd.target = null; }
           } else if (fd.phase === 'SUBDUE') {
-            const holdX = this.engine.px[0] + hfx * sp.headShape.len * 0.55;
-            const holdZ = this.engine.pz[0] + hfz * sp.headShape.len * 0.55;
-            const holdY = Math.max(getTerrainHeight(holdX, holdZ) + 0.025, this.engine.py[0] - 0.01);
+            const holdX = this.engine.px[0] + hfx * hs.len * 0.55;
+            const holdZ = this.engine.pz[0] + hfz * hs.len * 0.55;
+            const holdY = Math.max(getTerrainHeight(holdX, holdZ) + pr.parts.radius * 0.6, this.engine.py[0] - 0.01);
             pr.pos.set(holdX, holdY, holdZ);
             pr.mesh.position.copy(pr.pos);
-            const struggle = Math.max(0, 1.0 - fd.timer / 1.2);
-            pr.mesh.rotation.z = Math.sin(state.simTime * 32.0) * 0.42 * struggle;
-            state.jawCurrent += (0.55 - state.jawCurrent) * Math.min(1, dt * 6.0);
+            pr.mesh.rotation.y = Math.atan2(hfx, hfz) + Math.PI * 0.5;
+            // Direnç: sarma basıncıyla (piton) ya da zehirle (kobra) üstel söner
+            const dur = sp.huntStyle === 'constrict' ? 3.2 : 2.4;
+            pr.struggle = Math.max(pr.struggle, 0) * Math.exp(-dt / (dur * 0.45));
+            pr.mesh.rotation.z = Math.sin(state.simTime * 31.0) * 0.28 * pr.struggle;
+            state.jawCurrent += ((sp.huntStyle === 'constrict' ? 0.32 : 0.3 + Math.max(0, Math.sin(state.simTime * 9)) * 0.12) - state.jawCurrent) * Math.min(1, dt * 7.0);
+            state.gapeBoost *= 0.9;
             state.activeGait = sp.huntStyle === 'constrict' ? 'coiling' : 'lateral_undulation';
-            this.engine.driveEffort = sp.huntStyle === 'constrict' ? 0.55 : 0.10;
-
-            if (fd.timer > 1.35) {
-              fd.phase = 'SWALLOW';
-              fd.timer = 0;
-              fd.bolusAdded = false;
-              pr.state = 'SWALLOWING';
-              showToast('Hacim koruyan pterygoid çene yürütme ile yutuluyor...');
-            }
+            this.engine.driveEffort = sp.huntStyle === 'constrict' ? 0.55 : 0.0;
+            if (fd.timer > dur) { fd.phase = 'ALIGN'; fd.timer = 0; pr.limp = 1; pr.struggle = 0; showToast('Av hareketsiz; yılan başını bulup ağzına hizalıyor...'); }
+          } else if (fd.phase === 'ALIGN') {
+            // Baş önden yutma: avın burnu ağız eksenine döner (bacaklar geriye yatar, sürtünme azalır)
+            pr.limp = 1; pr.roll *= 0.9; pr.struggle = 0;
+            const k = Math.min(1, fd.timer / 0.9);
+            const tx = this.engine.px[0] + hfx * hs.len * (0.95 - 0.25 * k), tz = this.engine.pz[0] + hfz * hs.len * (0.95 - 0.25 * k);
+            pr.pos.x += (tx - pr.pos.x) * Math.min(1, dt * 5); pr.pos.z += (tz - pr.pos.z) * Math.min(1, dt * 5);
+            pr.pos.y = Math.max(getTerrainHeight(pr.pos.x, pr.pos.z), this.engine.py[0] - hs.height * 0.2);
+            pr.mesh.position.copy(pr.pos);
+            const faceSnake = Math.atan2(-hfx, -hfz);
+            let dy = faceSnake - pr.mesh.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+            pr.mesh.rotation.set(0, pr.mesh.rotation.y + dy * Math.min(1, dt * 4), pr.roll);
+            state.jawCurrent += (0.85 - state.jawCurrent) * Math.min(1, dt * 4);
+            this.engine.driveEffort = 0;
+            if (fd.timer > 1.0) { fd.phase = 'SWALLOW'; fd.timer = 0; fd.bolusAdded = false; pr.state = 'SWALLOWING'; showToast('Hacim koruyan pterygoid çene yürütme ile baş önden yutuluyor...'); }
           } else if (fd.phase === 'SWALLOW') {
-            const dur = 4.6;
+            const dur = 4.6 * (pr.bolusSize / 0.045);
             const prog = Math.min(1.0, fd.timer / dur);
             fd.progress = prog;
             this.engine.driveEffort = 0.04;
-
-            // Gerçekçi sol-sağ alternatif pterygoid çene yürütme (5 ritmik yutkunma hamlesi)
-            const cycles = 5.0;
-            const cycPos = prog * cycles;
-            const cycIdx = Math.floor(cycPos);
-            const cycFrac = cycPos - cycIdx;
-            // Her hamlede önce ileri kavrama, sonra avı içeri çekme (stepped smooth easing)
+            const cycles = 6.0, cycPos = prog * cycles, cycIdx = Math.floor(cycPos), cycFrac = cycPos - cycIdx;
             const smoothStep = cycFrac * cycFrac * (3.0 - 2.0 * cycFrac);
             const steppedProg = Math.min(1.0, (cycIdx + smoothStep) / cycles);
-
             const walkWave = Math.sin(prog * cycles * Math.PI * 2.0);
             state.jawWalkPhase = prog * cycles * Math.PI * 2.0;
-
-            // Av ağız içindeyken çene genişçe ayrılır; sonunda doğal çene oturtma esnemesi!
+            state.gapeBoost = Math.max(0, 0.55 - prog * 0.6);
             if (prog < 0.82) {
               const pNorm = prog / 0.82;
               state.jawCurrent = (0.95 - pNorm * 0.35) + Math.abs(walkWave) * 0.18;
               state.jawRoll = walkWave * 0.20 * (1.0 - pNorm * 0.4);
             } else {
-              // Yutma sonrası doğal çene esnetme / yerine oturtma (yawn)
               const yNorm = (prog - 0.82) / 0.18;
               state.jawCurrent = Math.sin(yNorm * Math.PI) * 0.65;
               state.jawRoll = 0;
             }
-
-            // Avın orijinal hacmi korunarak baş-ilk ağızdan boğaza doğru kademeli çekilmesi
             const swallowFrac = Math.min(1.0, steppedProg / 0.82);
-            const mouthDepth = sp.headShape.len * (0.78 - swallowFrac * 1.45);
+            const mouthDepth = hs.len * (0.78 - swallowFrac * 1.45);
             const headPosY = this.engine.py[0];
-            pr.mesh.position.set(
-              this.engine.px[0] + hfx * mouthDepth,
-              headPosY - sp.headShape.height * (0.12 - swallowFrac * 0.08),
-              this.engine.pz[0] + hfz * mouthDepth
-            );
-            pr.mesh.lookAt(this.engine.px[0] - hfx, headPosY, this.engine.pz[0] - hfz);
-            // Tamamen boğaza girince (ağız gerisine geçince) görünürlük kapanır; asla yapay küçültülmez!
+            pr.mesh.position.set(this.engine.px[0] + hfx * mouthDepth, headPosY - hs.height * (0.12 - swallowFrac * 0.08), this.engine.pz[0] + hfz * mouthDepth);
+            // Avın burnu boğaza bakar (baş önden yutma)
+            pr.mesh.rotation.set(0, Math.atan2(-hfx, -hfz), pr.roll * (1 - swallowFrac));
+            // Ağız kenarı avın üzerinde ilerledikçe görünür kısım azalır; ön kısım ağız içinde gizlenir
+            pr.parts.root.position.z = 0;
             if (swallowFrac > 0.78) pr.mesh.visible = false;
-
-            // Av boğaza girdiği anda (swallowFrac > 0.22) gırtlak & boyun gerçek zamanlı genişler!
             if (swallowFrac > 0.22 && !fd.bolusAdded) {
               fd.bolusAdded = true;
               const preyMass = pr.type === 'bird' ? 0.16 : (pr.type === 'mouse' ? 0.09 : 0.07);
@@ -2614,25 +2918,18 @@ class BiomechSnakeEngine {
               this.engine.boluses.push(bObj);
               fd.activeBolus = bObj;
             }
-            if (fd.activeBolus && swallowFrac <= 1.0) {
-              fd.activeBolus.u = 0.015 + swallowFrac * 0.075;
-            }
-
+            if (fd.activeBolus && swallowFrac <= 1.0) fd.activeBolus.u = 0.015 + swallowFrac * 0.075;
             if (prog >= 1.0) {
               pr.state = 'EATEN';
-              fd.phase = 'NONE';
-              fd.target = null;
-              fd.bolusAdded = false;
-              fd.activeBolus = null;
-              state.jawRoll = 0;
-              state.jawCurrent = 0.04;
-              state.jawWalkPhase = 0;
+              fd.phase = 'NONE'; fd.target = null; fd.bolusAdded = false; fd.activeBolus = null;
+              state.jawRoll = 0; state.jawCurrent = 0.04; state.jawWalkPhase = 0; state.gapeBoost = 0;
               state.preyEaten++;
               document.getElementById('prey-count-badge').textContent = `Av: ${state.preyEaten}`;
               showToast(`${pr.label} yutuldu! Gövdedeki şişkinlik mideye ilerliyor.`);
               spawnPrey(false);
             }
           }
+          if (fd.phase === 'NONE') { state.gapeBoost = 0; }
           return;
         }
 
@@ -2706,6 +3003,7 @@ class BiomechSnakeEngine {
     }
 
     const physics = new SnakePhysics();
+    if (/debug/.test(location.search)) window.__serp = { state, preyList, physics, camera, spawnPrey, triggerStrike: (...a) => triggerStrike(...a) };
 
     // =========================================================================
     // 7. SÜREKLİ ANATOMİK GÖVDE & 10 TÜR İÇİN ÖZEL GLSL PUL/DERİ SHADER'I
@@ -2995,6 +3293,7 @@ class BiomechSnakeEngine {
     });
 
     let upperJawGroup = null;
+    const fangMeshes = [];
     let lowerJawGroup = null;
     let leftMandible = null;
     let rightMandible = null;
@@ -3037,6 +3336,7 @@ class BiomechSnakeEngine {
 
     function buildSpeciesHeadAndRattle(speciesId) {
       while (headGroup.children.length > 0) headGroup.remove(headGroup.children[0]);
+      fangMeshes.length = 0;
       while (rattleGroup.children.length > 0) rattleGroup.remove(rattleGroup.children[0]);
 
       const sp = SPECIES_DB[speciesId];
@@ -3094,9 +3394,12 @@ class BiomechSnakeEngine {
       const toothGeo = new THREE.ConeGeometry(sp.fangSize * 0.11, sp.fangSize * 0.48, 6);
       [-1, 1].forEach(side => {
         const fang = new THREE.Mesh(fangGeo, fangMat);
-        fang.position.set(side * hs.width * 0.22, -sp.fangSize * 0.28, hs.len * 0.56);
+        fang.geometry.translate(0, -sp.fangSize * 0.5, 0);
+        fang.position.set(side * hs.width * 0.22, 0, hs.len * 0.56);
         fang.rotation.x = Math.PI + 0.22;
+        fang.userData.viper = speciesId === 'gaboon_viper' || speciesId === 'sidewinder';
         upperJawGroup.add(fang);
+        fangMeshes.push(fang);
         for (let k = 0; k < 3; k++) {
           const tooth = new THREE.Mesh(toothGeo, fangMat);
           tooth.position.set(side * hs.width * (0.28 + k * 0.02), -sp.fangSize * 0.14, hs.len * (0.40 - k * 0.12));
@@ -3279,6 +3582,7 @@ class BiomechSnakeEngine {
     const _quat = new THREE.Quaternion();
     const _dummy = new THREE.Object3D();
 
+    const _tmpCenter = new THREE.Vector3();
     function updateSnakeGeometry() {
       const sp = SPECIES_DB[state.speciesId];
       const curve = new THREE.CatmullRomCurve3(physics.activePos || physics.pos.slice(0, NUM_NODES), false, 'centripetal', 0.5);
@@ -3341,8 +3645,8 @@ class BiomechSnakeEngine {
         const musc = physics.muscleAct[n0] * (1 - frac) + physics.muscleAct[n1] * frac;
 
         let hoodW = 1.0, hoodH = 1.0;
-        if (sp.hasHood && u > 0.015 && u < 0.19) {
-          const hBell = Math.sin(((u - 0.015) / 0.175) * Math.PI);
+        if (sp.hasHood && u > 0.035 && u < 0.19) {
+          const hBell = Math.sin(((u - 0.035) / 0.155) * Math.PI);
           hoodW = 1.0 + state.hoodSpread * 1.45 * hBell;
           hoodH = 1.0 - state.hoodSpread * 0.34 * hBell;
         }
@@ -3353,9 +3657,21 @@ class BiomechSnakeEngine {
           hoodH += throatStretch * 0.85;
         }
 
-        const rx = baseR * hoodW / Math.sqrt(sp.lateralCompression);
-        const ry = baseR * hoodH * Math.sqrt(sp.lateralCompression);
-        const center = _splinePts[i];
+        let rx = baseR * hoodW / Math.sqrt(sp.lateralCompression);
+        let ry = baseR * hoodH * Math.sqrt(sp.lateralCompression);
+        // Boyun–kafa kaynaşması: tüpün ön ucu kafatasının arka kesitine birebir oturur
+        // (genişlik = kafatası yarı-genişliği, yükseklik = kafatası yarı-yüksekliği), sonra gövdeye yumuşakça açılır.
+        let neckLift = 0;
+        const UN = 0.075;
+        if (u < UN) {
+          const hsN = sp.headShape;
+          const sN = u / UN, k = sN * sN * (3 - 2 * sN);
+          const nRx = hsN.width * 0.47, nRy = hsN.height * 0.40;
+          rx = nRx + (rx - nRx) * k;
+          ry = nRy + (ry - nRy) * k;
+          neckLift = hsN.height * 0.12 * (1 - k);
+        }
+        const center = _tmpCenter.copy(_splinePts[i]).addScaledVector(_normals[i], neckLift);
         const N = _normals[i];
         const B = _binormals[i];
 
@@ -3391,13 +3707,19 @@ class BiomechSnakeEngine {
       const mHead = new THREE.Matrix4().lookAt(_splinePts[0].clone().add(headFwd), _splinePts[0], _normals[0]);
       headGroup.position.copy(_splinePts[0]);
       headGroup.quaternion.setFromRotationMatrix(mHead);
+      // Kafatasının arka yarısı boyun tüpüne gömülür: ayrık "takma kafa" görünümü olmaz
+      headGroup.translateZ(-sp.headShape.len * 0.16);
+      headGroup.translateY(sp.headShape.height * 0.02);
       if (Math.abs(state.jawRoll) > 0.002) {
         headGroup.rotateZ(state.jawRoll);
         headGroup.rotateY(state.jawRoll * 0.45);
       }
 
       if (lowerJawGroup) {
-        lowerJawGroup.rotation.x = state.jawCurrent * 1.12;
+        lowerJawGroup.rotation.x = state.jawCurrent * (1.12 + 0.75 * state.gapeBoost);
+        if (upperJawGroup) upperJawGroup.rotation.x = -0.42 * state.gapeBoost * state.jawCurrent;
+        // Engerek zehir dişleri: dinlenmede damağa katlı, vuruşta maksilla dönerek ~90° dikilir
+        for (const fg of fangMeshes) fg.rotation.x = fg.userData.viper ? Math.PI + 0.22 - (1 - state.fangErect) * 1.35 : Math.PI + 0.22;
         const spread = state.feeding.phase === 'SWALLOW' ? (0.28 + state.jawCurrent * 0.35) : (state.jawCurrent * 0.12);
         const wPhase = state.jawWalkPhase || 0;
         const walkShift = state.feeding.phase === 'SWALLOW' ? 0.016 : 0.0;
@@ -3908,6 +4230,7 @@ class BiomechSnakeEngine {
 
     const GAIT_LABELS = {
       lateral_undulation: 'Yanal Dalgalanma',
+      strike_coil: 'Vuruş Duruşu (S)',
       sidewinding: 'Yan Kayma',
       concertina: 'Akordeon',
       rectilinear: 'Doğrusal Sürünme',
@@ -3917,7 +4240,13 @@ class BiomechSnakeEngine {
       head_lift: 'Baş Kaldırma'
     };
     const FEED_LABELS = {
+      APPROACH: 'SİNSİCE YAKLAŞIYOR',
+      COIL: 'VURUŞ DURUŞU',
       STRIKE: 'SALDIRI!',
+      RECOVER: 'ISKA',
+      RELEASE: 'ISIRDI · BIRAKTI',
+      TRAIL: 'İZ SÜRÜYOR',
+      ALIGN: 'BAŞI HİZALIYOR',
       SUBDUE: 'SARIYOR / ZEHİR',
       SWALLOW: 'YUTUYOR...'
     };
