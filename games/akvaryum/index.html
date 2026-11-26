@@ -1,0 +1,1457 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#e8e2d2">
+<title>AKVARYUM. — Suluboya Balık Biyomekaniği</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f5efe1;--ink:#3c4541;--soft:#6c7370;--line:rgba(80,70,50,.14);--acc:#3f8a86}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;overflow:hidden;background:#e8e2d2;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;font-family:Nunito,system-ui,sans-serif;color:var(--ink)}
+canvas#c{display:block;position:fixed;inset:0;width:100%;height:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,label:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+#top{position:fixed;left:0;right:0;top:0;padding:calc(10px + env(safe-area-inset-top)) 14px 0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}
+.ttl{background:rgba(245,239,225,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:16px;padding:6px 14px 7px;box-shadow:0 3px 14px rgba(40,60,60,.12);pointer-events:auto}
+.ttl b{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-weight:600;font-size:22px;display:block;line-height:1.05}
+.ttl span{font-size:12.5px;color:var(--soft)}
+.ib{width:44px;height:44px;border-radius:50%;border:none;background:rgba(245,239,225,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 3px 14px rgba(40,60,60,.12);display:inline-flex;align-items:center;justify-content:center;margin-left:8px;pointer-events:auto}
+.ib svg{width:21px;height:21px}
+#add{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));border:none;border-radius:999px;padding:13px 24px;background:var(--paper);box-shadow:0 6px 22px rgba(30,60,60,.22);font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px;transition:opacity .4s}
+#add i{font-style:normal;font-size:20px;line-height:1;color:var(--acc)}
+#toast{position:fixed;left:50%;top:calc(76px + env(safe-area-inset-top));transform:translate(-50%,-8px);background:var(--paper);border-radius:14px;padding:10px 16px;font-size:15px;box-shadow:0 6px 22px rgba(30,60,60,.2);opacity:0;transition:opacity .6s,transform .6s;pointer-events:none;max-width:min(90vw,440px);text-align:center;line-height:1.35}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:80vh;background:var(--paper);border-radius:24px 24px 0 0;box-shadow:0 -10px 40px rgba(30,50,50,.25);transform:translateY(105%);transition:transform .5s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);max-width:760px;margin:0 auto}
+.sheet.on{transform:none}
+.sh-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 6px}
+.sh-head h2{margin:0;font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:28px;font-style:italic}
+.x{border:none;background:rgba(60,70,65,.07);width:44px;height:44px;border-radius:50%;font-size:22px;line-height:1}
+.note{padding:0 18px 10px;color:var(--soft);font-size:14px}
+#grid{overflow-y:auto;padding:4px 14px 18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:12px;touch-action:pan-y}
+.sp{background:rgba(255,255,255,.55);border:1px solid var(--line);border-radius:18px;padding:8px 10px 10px;display:flex;flex-direction:column}
+.sp canvas{width:100%;height:84px;display:block}
+.sp h3{margin:2px 0 0;font-family:"Cormorant Garamond",Georgia,serif;font-size:21px;font-weight:600;line-height:1.1}
+.sp .sci{font-style:italic;font-size:12.5px;color:var(--soft)}
+.sp .chips{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 8px}
+.sp .chip{font-size:12px;padding:2px 9px;border-radius:999px;background:rgba(63,138,134,.12);color:#2f6b68;font-weight:600}
+.sp .chip.live{background:rgba(217,120,141,.14);color:#a24b60}
+.sp .chip.g{background:rgba(120,110,80,.1);color:#615a40}
+.sp .row{display:flex;gap:6px;margin-top:auto}
+.sp .row button{flex:1;border:none;border-radius:12px;padding:10px 0;background:rgba(63,138,134,.14);font-weight:700;font-size:14px;min-height:44px}
+.sp .row button.f{background:rgba(217,120,141,.16)}
+.sp .row button:disabled{opacity:.4}
+#card{max-height:62vh}
+#card .body{overflow-y:auto;padding:0 18px 18px;touch-action:pan-y}
+.hero{display:flex;gap:12px;align-items:center}
+#pv{width:132px;height:92px;flex:none;background:radial-gradient(ellipse at center,rgba(150,200,195,.35),rgba(150,200,195,0) 70%);border-radius:16px}
+#nm{font:600 26px "Cormorant Garamond",Georgia,serif;font-style:italic;border:none;background:transparent;border-bottom:1px dashed rgba(60,70,65,.25);width:100%;padding:2px 0;color:var(--ink)}
+.meta{font-size:14px;color:var(--soft);margin-top:3px}
+.bar{margin:12px 0 0}
+.bar label{display:flex;justify-content:space-between;font-size:13.5px;color:var(--soft);margin-bottom:4px}
+.bar div{height:9px;border-radius:9px;background:rgba(60,70,65,.09);overflow:hidden}
+.bar div i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,#8cc4b6,#3f8a86);transition:width .6s}
+.bar.g div i{background:linear-gradient(90deg,#f1c98e,#e08a5f)}
+#status{margin:12px 0 0;font-size:15px;padding:9px 12px;background:rgba(63,138,134,.09);border-radius:12px}
+.sci-box{margin:12px 0 0;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:rgba(255,255,255,.45)}
+.sci-box h4{margin:0 0 6px;font-size:13px;color:var(--soft);font-weight:700}
+.sci-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 10px}
+.sci-grid div{font-size:12.5px;color:var(--soft);line-height:1.25}
+.sci-grid b{display:block;font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+#gait{font-size:14px;margin:8px 0 0}
+.lab{display:flex;align-items:center;gap:8px;font-size:14px;margin-top:8px;min-height:44px}
+.lab input{width:20px;height:20px;accent-color:var(--acc)}
+#fact{font-size:15px;line-height:1.55;margin:12px 0 4px}
+#from{font-size:13px;color:var(--soft)}
+#rm{margin-top:10px;border:none;background:none;color:var(--soft);font-size:14px;text-decoration:underline;padding:10px 0;min-height:44px}
+#start{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:radial-gradient(ellipse at center,rgba(244,238,224,.82),rgba(232,226,210,.94));transition:opacity 1.6s;cursor:pointer;padding:24px}
+#start h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:500;font-style:italic;font-size:clamp(44px,12vw,76px);margin:0;color:#35504d;line-height:1.05}
+#start p{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:clamp(18px,4.8vw,23px);margin:8px 0 10px;color:#5c6562}
+#start small{display:block;max-width:440px;font-size:14px;color:#6c7370;line-height:1.5;margin:0 0 34px}
+#go{font-size:15px;color:#5c6562;animation:br 4s ease-in-out infinite}
+@keyframes br{0%,100%{opacity:.35}50%{opacity:.8}}
+@media (prefers-reduced-motion:reduce){#go{animation:none}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="top">
+  <div class="ttl"><b>Akvaryum</b><span id="cnt">—</span></div>
+  <div><button class="ib" id="lamp" aria-label="Işığı aç/kapat"></button><button class="ib" id="snd" aria-label="Sesi aç/kapat"></button></div>
+</div>
+<button id="add"><i>+</i> Balık ekle</button>
+<div id="toast" role="status"></div>
+
+<div class="sheet" id="cat" aria-label="Balık kataloğu">
+  <div class="sh-head"><h2>Balık kataloğu</h2><button class="x" data-close aria-label="Kapat">×</button></div>
+  <div class="note" id="catNote">Gençler gelir; besledikçe büyür, yetişkin olunca eşlerini bulurlar.</div>
+  <div id="grid"></div>
+</div>
+
+<div class="sheet" id="card" aria-label="Balık kartı">
+  <div class="sh-head" style="padding-bottom:10px"><span></span><button class="x" data-close aria-label="Kapat">×</button></div>
+  <div class="body">
+    <div class="hero"><canvas id="pv" width="264" height="184"></canvas>
+      <div style="flex:1"><input id="nm" maxlength="16" aria-label="Balığın adı"><div class="meta" id="meta"></div></div></div>
+    <div class="bar"><label><span>Tokluk</span><span id="fullT"></span></label><div><i id="fullB"></i></div></div>
+    <div class="bar g"><label><span>Büyüme</span><span id="grT"></span></label><div><i id="grB"></i></div></div>
+    <div id="status"></div>
+    <div class="sci-box">
+      <h4>Canlı biyomekanik</h4>
+      <div class="sci-grid">
+        <div>Hız<b id="sU">—</b></div><div>Kuyruk vuruşu<b id="sF">—</b></div><div>Göğüs yüzgeci<b id="sFp">—</b></div>
+        <div>Strouhal<b id="sSt">—</b></div><div>Reynolds<b id="sRe">—</b></div><div>Adım / boy<b id="sStr">—</b></div>
+      </div>
+      <p id="gait"></p>
+      <label class="lab"><input type="checkbox" id="labT"> Bilim katmanı: sürü bölgelerini ve hız vektörünü göster</label>
+    </div>
+    <p id="fact"></p>
+    <div id="from"></div>
+    <button id="rm">Akvaryumdan çıkar</button>
+  </div>
+</div>
+
+<div id="start">
+  <h1>Suluboya Akvaryum</h1>
+  <p>acele yok, kaybetmek yok</p>
+  <small>Balıklar gerçek yüzme fiziğiyle hareket eder: kuyruk dalgası, Lighthill itmesi, Reynolds sayısına bağlı sürüklenme ve sürü davranışı. Üreme süreleri oyunda hızlandırılmıştır.</small>
+  <div id="go">boyalar karışıyor…</div>
+</div>
+
+<script src="physics.js"></script>
+<script src="species.js"></script>
+<script>
+{
+'use strict';
+const FP = window.FishPhysics, SP = window.FishSpecies.SP, ORDER = window.FishSpecies.ORDER;
+const TAU = Math.PI * 2;
+const cvs = document.getElementById('c'), ctx = cvs.getContext('2d');
+let W = 0, H = 0, DPR = 1, PX = 8, WT = 0, ST = 0, Wc = 50, Hc = 60, Dc = 30;
+const F_CAM = 80, ELEV = 0.12;
+let xc = 25, yc = 30;
+
+/* ---------------- helpers ---------------- */
+let seed = 1;
+const srand = s => { seed = s >>> 0; };
+const sr = () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const R = Math.random;
+const rand = (a, b, r = R) => a + (b - a) * r();
+const pick = (a, r = R) => a[r() * a.length | 0];
+const gauss = (r = R) => (r() + r() + r() - 1.5) * .9;
+const gn = () => { let u = 0, v = 0; while (!u) u = R(); while (!v) v = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); };
+const lerp = (a, b, t) => a + (b - a) * t;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const smooth = t => t * t * (3 - 2 * t);
+const hex = h => { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; };
+const rgba = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+const dark = (h, k = .45) => mix(typeof h === 'string' ? hex(h) : h, [25, 30, 35], k);
+const light = (h, k = .5) => mix(typeof h === 'string' ? hex(h) : h, [255, 252, 240], k);
+const toHex = c => '#' + c.map(v => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')).join('');
+const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= TAU; while (d < -Math.PI) d += TAU; return d; };
+/* 3B vektörler */
+const v3 = (x = 0, y = 0, z = 0) => ({x, y, z});
+const add = (a, b) => v3(a.x + b.x, a.y + b.y, a.z + b.z);
+const sub = (a, b) => v3(a.x - b.x, a.y - b.y, a.z - b.z);
+const mul = (a, k) => v3(a.x * k, a.y * k, a.z * k);
+const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+const cross = (a, b) => v3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+const len = a => Math.hypot(a.x, a.y, a.z);
+const norm = a => { const l = len(a) || 1; return v3(a.x / l, a.y / l, a.z / l); };
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+
+/* ---------------- kamera / izdüşüm (zayıf perspektif + hafif yükseklik) ----------------
+   s(z) = F/(F+z);  X = (x_c + (x−x_c)·s)·PX;  Y = WT + (y_c + (y−y_c)·s − z·E·s)·PX */
+const sc = z => F_CAM / (F_CAM + z);
+function proj(x, y, z){ const s = sc(z); return [(xc + (x - xc) * s) * PX, WT + (yc + (y - yc) * s - z * ELEV * s) * PX]; }
+const projP = p => proj(p.x, p.y, p.z);
+function unprojX(sx, z){ return xc + (sx / PX - xc) / sc(z); }
+
+/* ---------------- suluboya ---------------- */
+function deform(pts, depth, v, r){
+  for (let d = 0; d < depth; d++){
+    const out = [];
+    for (let i = 0; i < pts.length; i++){
+      const a = pts[i], b = pts[(i + 1) % pts.length], l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      out.push(a, [(a[0] + b[0]) / 2 + gauss(r) * l * v, (a[1] + b[1]) / 2 + gauss(r) * l * v]);
+    }
+    pts = out;
+  }
+  return pts;
+}
+function polyPts(cx, cy, rx, ry, n, r){ const p = [], rot = r() * TAU; for (let i = 0; i < n; i++){ const a = i / n * TAU + rot, k = .85 + r() * .3; p.push([cx + Math.cos(a) * rx * k, cy + Math.sin(a) * ry * k]); } return p; }
+function fillPoly(c, pts){ c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fill(); }
+function wash(c, cx, cy, rx, ry, color, o = {}){
+  const r = o.r || R, layers = o.layers || 16, spread = o.spread || .4;
+  const base = deform(polyPts(cx, cy, rx, ry, 10, r), 2, spread * .6, r);
+  c.fillStyle = color; c.globalAlpha = o.alpha || .05;
+  for (let i = 0; i < layers; i++) fillPoly(c, deform(base, 3, spread * .5, r));
+  c.globalAlpha = 1;
+}
+function polyPath(c, pts){ c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); }
+
+/* ---------------- renkler ---------------- */
+function mkCol(k, sex, r = R){
+  const m = sex === 'm';
+  const fromBase = (b, o = {}) => { const c = hex(b); return Object.assign({base:b, back:toHex(dark(c, .3)), belly:toHex(light(c, .45)), fin:b, tail:b}, o); };
+  switch (k){
+    case 'lepistes':
+      if (!m) return {base:'#b7b4a3', back:'#8a8674', belly:'#ece8d8', fin:'#cfc7b0', tail:'#c9bfa3'};
+      { const p = ['#f0843a','#e2486b','#3f9ee0','#f2c53d','#8e6bd6','#3fb08c','#ef6f9a'], a = pick(p, r); let b = pick(p, r); if (b === a) b = '#f4f0e4';
+        return {base:'#c3cbc6', back:'#8b9893', belly:'#eef0ea', fin:a, tail:a, acc:b}; }
+    case 'neon': return {base:'#c3ced2', back:'#5f727a', belly:'#eef1ec', fin:'#dfe8ea', tail:'#e2eaec', acc:'#2fb5e6', red:'#de4637'};
+    case 'plati': { const v = pick(['#f2702e','#e5473a','#f2b33d','#f4efe3','#f08a3c'], r); return fromBase(v, {mickey:r() < .4}); }
+    case 'molly': { const v = pick(['#2b2a30','#2b2a30','#f1eee6','#e5b04a','dal'], r);
+      if (v === 'dal') return {base:'#f1eee6', back:'#c9c4b8', belly:'#f7f4ec', fin:'#e7e2d6', tail:'#e7e2d6', dal:true};
+      return v === '#2b2a30' ? {base:'#2e2d33', back:'#1d1c21', belly:'#4a4850', fin:'#33323a', tail:'#33323a', gold:true} : fromBase(v); }
+    case 'kilic': return {base:'#e9592e', back:'#b8401f', belly:'#f6b08a', fin:'#ec6a3c', tail:'#ec6a3c', acc:'#9c2f1a', sword:'#f2c53d'};
+    case 'beta': { const v = pick(['#c8233a','#2b5ec4','#7c3fa9','#f0d9de','#2aa5a6','#e8792e'], r); return fromBase(v, {acc:'#8fd6ff', back:toHex(dark(hex(v), .4))}); }
+    case 'melek': return r() < .3 ? {base:'#ecd28a', back:'#c9a85a', belly:'#f6ecc8', fin:'#efdca3', tail:'#efdca3', bar:'#9a7a3a'} : {base:'#dcdfda', back:'#a3aaa5', belly:'#f3f3ee', fin:'#e4e6e0', tail:'#e4e6e0', bar:'#2e2e31'};
+    case 'diskus': { const v = pick([['#e0553a','#3fb3c6'],['#3aa6b8','#e2733e'],['#f0b03c','#d24a3a']], r); return fromBase(v[0], {acc:v[1]}); }
+    case 'danyo': return {base:'#e7dcb2', back:'#a39a73', belly:'#f4efd9', fin:'#e9e3c9', tail:'#e2dcc0', acc:'#2c4d9a'};
+    case 'koridoras': return {base:'#cbc3b1', back:'#8c8576', belly:'#efe9dc', fin:'#d8d1c2', tail:'#d8d1c2', acc:'#4b4842'};
+    case 'japon': { const v = r(); if (v < .45) return fromBase('#f08722'); if (v < .75) return {base:'#f4f1ea', back:'#d8d2c4', belly:'#fbf9f3', fin:'#f3ece0', tail:'#f3ece0', acc:'#e5532c', patch:true}; return fromBase('#ecbd3a'); }
+    case 'gurami': return r() < .7 ? {base:'#d84a30', back:'#a9351f', belly:'#e98a6a', fin:'#d86a4a', tail:'#d0644a', acc:'#3d82d4'} : {base:'#4b8fda', back:'#2f63a8', belly:'#a7cdf0', fin:'#6aa3e0', tail:'#6aa3e0', acc:'#cfe8ff'};
+    case 'rasbora': return {base:'#e6a084', back:'#c27a5c', belly:'#f6dccd', fin:'#efb59c', tail:'#eeb196', acc:'#2b2a2e'};
+    case 'ramirezi': return {base:'#e8c34c', back:'#7f93ad', belly:'#e7884f', fin:'#e9a65f', tail:'#d99a5a', acc:'#4fb2e8', bar:'#2a2a2e'};
+  }
+  return fromBase('#cccccc');
+}
+function geom(f){
+  const sp = SP[f.sp], m = f.sex === 'm' && sp.male ? sp.male : {};
+  return {h:sp.h, ped:sp.ped, tail:m.tail || sp.tail, dorsal:m.dorsal || sp.dorsal, anal:m.anal || sp.anal, feel:sp.feel || 0, barbels:!!sp.barbels, scale:m.scale || 1, finArea:m.finArea || sp.finArea || 1.3};
+}
+
+/* ---------------- balık boyama (yan görünüş, dinlenme pozu) ---------------- */
+function bodyPath(g, L, h2, ped, belly){
+  const hb = h2 * belly;
+  g.beginPath();
+  g.moveTo(.5 * L, h2 * .08);
+  g.bezierCurveTo(.49 * L, -h2 * .85, .22 * L, -h2 * 1.14, -.04 * L, -h2 * 1.0);
+  g.bezierCurveTo(-.2 * L, -h2 * .86, -.27 * L, -ped, -.345 * L, -ped);
+  g.lineTo(-.345 * L, ped);
+  g.bezierCurveTo(-.27 * L, ped, -.2 * L, hb * .86, -.04 * L, hb * 1.0);
+  g.bezierCurveTo(.22 * L, hb * 1.12, .47 * L, h2 * .72, .5 * L, h2 * .08);
+  g.closePath();
+}
+function fin(g, d, L, h2, dir, col){
+  if (!d || d.h <= 0) return;
+  const x0 = (d.x + d.w / 2) * L, x1 = (d.x - d.w / 2) * L, fh = d.h * L, yb = dir * h2 * .6, ax = x1 - (d.sweep || 0) * L, ay = dir * (h2 + fh);
+  const c1 = [x0 - (x0 - ax) * .15, dir * (h2 + fh * .85)], c2 = [lerp(ax, x1, .6), dir * (h2 + fh * .25)];
+  g.beginPath(); g.moveTo(x0, yb); g.quadraticCurveTo(c1[0], c1[1], ax, ay); g.quadraticCurveTo(c2[0], c2[1], x1, yb); g.closePath();
+  const c = hex(col);
+  g.fillStyle = rgba(c, d.a || .58); g.fill();
+  g.strokeStyle = rgba(dark(c), .28); g.lineWidth = Math.max(.5, L * .01); g.stroke();
+  g.strokeStyle = rgba(dark(c), .16);
+  for (let k = 1; k < 6; k++){
+    const t = k / 6, bx = lerp(x0, x1, t);
+    const ex = t < .5 ? lerp(c1[0], ax, t * 2) : lerp(ax, c2[0], (t - .5) * 2), ey = t < .5 ? lerp(c1[1], ay, t * 2) : lerp(ay, c2[1], (t - .5) * 2);
+    g.beginPath(); g.moveTo(bx, yb); g.lineTo(lerp(bx, ex, .92), lerp(yb, ey, .92)); g.stroke();
+  }
+}
+function band(g, x0, x1, y0, y1, th0, th1, col, a){
+  g.fillStyle = rgba(hex(col), a); g.beginPath();
+  g.moveTo(x0, y0 - th0 / 2); g.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 - (th0 + th1) / 4 - 1, x1, y1 - th1 / 2);
+  g.lineTo(x1, y1 + th1 / 2); g.quadraticCurveTo((x0 + x1) / 2, (y0 + y1) / 2 + (th0 + th1) / 4 + 1, x0, y0 + th0 / 2); g.closePath(); g.fill();
+}
+function softDot(g, x, y, r, col, a){
+  const c = hex(col), gr = g.createRadialGradient(x, y, 0, x, y, Math.max(.1, r));
+  gr.addColorStop(0, rgba(c, a)); gr.addColorStop(.65, rgba(c, a * .85)); gr.addColorStop(1, rgba(c, 0));
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, Math.max(.1, r), 0, TAU); g.fill();
+}
+const PAT = {
+  lepistes(g, L, h2, c, f){
+    if (f.sex === 'm'){ for (let i = 0; i < 4; i++) softDot(g, rand(-.3, .05, sr) * L, rand(-.6, .6, sr) * h2, rand(.12, .22, sr) * L * .5, i % 2 ? c.acc : c.tail, .75); }
+    else softDot(g, -.02 * L, h2 * .45, h2 * .45, '#3d3a33', .4);
+  },
+  neon(g, L, h2, c, f){
+    g.fillStyle = rgba(hex(c.red), .92); g.beginPath(); g.moveTo(.12 * L, h2 * .02); g.quadraticCurveTo(-.1 * L, -h2 * .02, -.4 * L, h2 * .02); g.lineTo(-.4 * L, h2 * 1.6); g.lineTo(.12 * L, h2 * 1.6); g.closePath(); g.fill();
+    const dim = f._night ? .35 : 1, gr = g.createLinearGradient(.32 * L, 0, -.32 * L, 0);
+    gr.addColorStop(0, rgba(mix([89,225,242],[120,140,150],1 - dim), .95)); gr.addColorStop(1, rgba(mix([45,127,214],[100,115,130],1 - dim), .95));
+    g.fillStyle = gr; g.beginPath(); g.moveTo(.34 * L, -h2 * .32); g.quadraticCurveTo(0, -h2 * .55, -.34 * L, -h2 * .22); g.lineTo(-.34 * L, -h2 * .02); g.quadraticCurveTo(0, -h2 * .1, .34 * L, -h2 * .02); g.closePath(); g.fill();
+  },
+  plati(g, L, h2, c){ if (c.mickey){ softDot(g, -.3 * L, 0, h2 * .4, '#1f1d22', .85); softDot(g, -.26 * L, -h2 * .45, h2 * .22, '#1f1d22', .8); softDot(g, -.26 * L, h2 * .45, h2 * .22, '#1f1d22', .8); } },
+  molly(g, L, h2, c){
+    if (c.dal) for (let i = 0; i < 16; i++) softDot(g, rand(-.34, .4, sr) * L, rand(-1, 1, sr) * h2, rand(.03, .07, sr) * L, '#232227', .85);
+    if (c.gold) for (let i = 0; i < 9; i++) softDot(g, rand(-.3, .3, sr) * L, rand(-.6, .6, sr) * h2, rand(.03, .06, sr) * L, '#7b7a86', .35);
+  },
+  kilic(g, L, h2, c){ band(g, .38 * L, -.36 * L, 0, 0, h2 * .22, h2 * .12, c.acc, .7); },
+  beta(g, L, h2, c){ for (let i = 0; i < 6; i++) softDot(g, rand(-.25, .25, sr) * L, rand(-.6, .5, sr) * h2, rand(.06, .12, sr) * L, c.acc, .2); },
+  melek(g, L, h2, c){
+    for (const [x, w] of [[.36, .07], [.06, .09], [-.24, .07]]){ g.fillStyle = rgba(hex(c.bar), .72); g.beginPath(); g.moveTo((x + w / 2) * L, -h2 * 2); g.quadraticCurveTo((x + w * .3) * L, 0, (x + w / 2 - .02) * L, h2 * 2); g.lineTo((x - w / 2 - .02) * L, h2 * 2); g.quadraticCurveTo((x - w * .3) * L, 0, (x - w / 2) * L, -h2 * 2); g.closePath(); g.fill(); }
+  },
+  diskus(g, L, h2, c){
+    g.strokeStyle = rgba(hex(c.acc), .7); g.lineWidth = L * .02;
+    for (let x = -.3; x < .42; x += .055){ g.beginPath(); for (let y = -1.1; y <= 1.1; y += .1){ const px = (x + Math.sin(y * 5 + x * 20) * .012) * L, py = y * h2; y < -1.05 ? g.moveTo(px, py) : g.lineTo(px, py); } g.stroke(); }
+    g.fillStyle = 'rgba(60,40,35,.55)'; g.fillRect(.33 * L, -h2 * 1.2, .05 * L, h2 * 2.4);
+  },
+  danyo(g, L, h2, c){ for (const y of [-.55, -.18, .2, .56]) band(g, .3 * L, -.4 * L, y * h2, y * h2 * .6, h2 * .2, h2 * .14, c.acc, .78); },
+  koridoras(g, L, h2, c){ for (let i = 0; i < 26; i++) softDot(g, rand(-.34, .38, sr) * L, rand(-.9, .5, sr) * h2, rand(.02, .045, sr) * L, c.acc, .65); softDot(g, .08 * L, -h2 * .85, h2 * .35, c.acc, .45); },
+  japon(g, L, h2, c){ if (c.patch) for (let i = 0; i < 3; i++) softDot(g, rand(-.25, .35, sr) * L, rand(-.7, .3, sr) * h2, rand(.15, .25, sr) * L, c.acc, .9); },
+  gurami(g, L, h2, c){ g.strokeStyle = rgba(hex(c.acc), .75); g.lineWidth = L * .045; for (let i = 0; i < 8; i++){ const x = (.32 - i * .085) * L; g.beginPath(); g.moveTo(x + L * .04, -h2 * 1.2); g.lineTo(x - L * .06, h2 * 1.2); g.stroke(); } },
+  rasbora(g, L, h2, c){ g.fillStyle = rgba(hex(c.acc), .85); g.beginPath(); g.moveTo(.04 * L, -h2 * .55); g.quadraticCurveTo(-.15 * L, -h2 * .1, -.36 * L, -h2 * .05); g.lineTo(-.36 * L, h2 * .2); g.quadraticCurveTo(-.15 * L, h2 * .35, .06 * L, h2 * .55); g.closePath(); g.fill(); },
+  ramirezi(g, L, h2, c){
+    const gr = g.createLinearGradient(.4 * L, 0, -.35 * L, 0); gr.addColorStop(0, 'rgba(232,195,76,0)'); gr.addColorStop(.55, 'rgba(150,140,190,.35)'); gr.addColorStop(1, 'rgba(110,130,190,.55)');
+    g.fillStyle = gr; g.fillRect(-.4 * L, -h2 * 1.2, .9 * L, h2 * 2.4);
+    for (let i = 0; i < 22; i++) softDot(g, rand(-.3, .3, sr) * L, rand(-.8, .6, sr) * h2, rand(.015, .03, sr) * L, c.acc, .9);
+    g.fillStyle = rgba(hex(c.bar), .8); g.fillRect(.33 * L, -h2 * 1.2, .05 * L, h2 * 2.4);
+    softDot(g, .02 * L, -h2 * .15, h2 * .18, c.bar, .8);
+  },
+};
+function drawBody(g, f, L, belly){
+  const G = geom(f), c = f.col, h2 = L * G.h / 2, ped = L * G.ped / 2;
+  srand(f.seed);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  fin(g, G.dorsal, L, h2, -1, c.fin);
+  fin(g, G.anal, L, h2 * belly, 1, c.fin);
+  if (G.feel){
+    g.strokeStyle = rgba(hex(c.fin), .85); g.lineWidth = Math.max(.7, L * .016);
+    for (let k = 0; k < 2; k++){ g.beginPath(); g.moveTo(.16 * L, h2 * belly * .78); g.quadraticCurveTo((.06 + k * .04) * L, h2 * belly + G.feel * L * .5, (-.1 + k * .05) * L, h2 * belly * .5 + G.feel * L); g.stroke(); }
+  }
+  bodyPath(g, L, h2, ped, belly);
+  const gr = g.createLinearGradient(0, -h2, 0, h2 * belly);
+  gr.addColorStop(0, c.back); gr.addColorStop(.48, c.base); gr.addColorStop(1, c.belly);
+  g.fillStyle = gr; g.fill();
+  g.save(); bodyPath(g, L, h2, ped, belly); g.clip();
+  (PAT[f.sp] || (() => {}))(g, L, h2, c, f);
+  for (let i = 0; i < 8; i++){ g.fillStyle = i % 2 ? rgba(hex(c.back), .08) : 'rgba(255,255,255,.07)'; g.beginPath(); g.ellipse(rand(-.3, .4, sr) * L, rand(-1, 1, sr) * h2, rand(.06, .16, sr) * L, rand(.3, .6, sr) * h2, rand(0, 3, sr), 0, TAU); g.fill(); }
+  const hl = g.createLinearGradient(0, -h2, 0, h2 * .1);
+  hl.addColorStop(0, 'rgba(255,255,255,0)'); hl.addColorStop(.45, 'rgba(255,255,255,.26)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = hl; g.fillRect(-L, -h2 * .85, L * 1.6, h2 * .8);
+  g.strokeStyle = rgba(dark(c.back, .3), .35); g.lineWidth = Math.max(.5, L * .012);
+  g.beginPath(); g.arc(.47 * L, 0, Math.min(.17 * L, h2 * 1.1), 2.45, 3.85); g.stroke();
+  g.restore();
+  bodyPath(g, L, h2, ped, belly);
+  g.strokeStyle = rgba(dark(c.back, .45), .42); g.lineWidth = Math.max(.6, L * .013); g.stroke();
+  const ex = .37 * L, ey = -h2 * .22 - (G.h > .5 ? h2 * .1 : 0), er = Math.max(1.1, L * .047);
+  g.fillStyle = f.sp === 'ramirezi' ? '#d9473a' : '#f1ecdf'; g.beginPath(); g.arc(ex, ey, er, 0, TAU); g.fill();
+  g.fillStyle = '#1d1b1b'; g.beginPath(); g.arc(ex + er * .1, ey, er * .62, 0, TAU); g.fill();
+  g.fillStyle = 'rgba(255,255,255,.85)'; g.beginPath(); g.arc(ex + er * .32, ey - er * .3, er * .22, 0, TAU); g.fill();
+  if (G.barbels){ g.strokeStyle = rgba(dark(c.base, .3), .6); g.lineWidth = Math.max(.5, L * .01); for (const k of [0, 1]){ g.beginPath(); g.moveTo(.47 * L, h2 * .35); g.quadraticCurveTo(.52 * L, h2 * (.6 + k * .2), (.48 + k * .03) * L, h2 * (.85 + k * .1)); g.stroke(); } }
+}
+/* Kuyruk yüzgeci dinlenme pozunda; bükülmeyi şerit deformasyonu verir */
+function drawTailRest(g, f, L){
+  const G = geom(f), t = G.tail, c = f.col, ped = L * G.ped / 2, len = t.len * L, s = t.spread * L, col = hex(c.tail);
+  g.save(); g.translate(-.335 * L, 0);
+  for (const rot of (t.type === 'double' ? [-.22, .22] : [0])){
+    g.save(); g.rotate(rot); g.beginPath();
+    if (t.type === 'fork'){ g.moveTo(0, -ped); g.quadraticCurveTo(-len * .45, -s * .45, -len, -s); g.quadraticCurveTo(-len * .55, -s * .1, -len * .48, 0); g.quadraticCurveTo(-len * .55, s * .1, -len, s); g.quadraticCurveTo(-len * .45, s * .45, 0, ped); }
+    else if (t.type === 'round'){ g.moveTo(0, -ped); g.quadraticCurveTo(-len * .3, -s, -len * .8, -s * .8); g.quadraticCurveTo(-len * 1.15, 0, -len * .8, s * .8); g.quadraticCurveTo(-len * .3, s, 0, ped); }
+    else if (t.type === 'veil'){ g.moveTo(0, -ped); g.bezierCurveTo(-len * .3, -s * 1.1, -len * .8, -s, -len, -s * .45); g.quadraticCurveTo(-len * 1.12, -s * .2, -len * 1.02, s * .05); g.quadraticCurveTo(-len * 1.12, s * .25, -len, s * .5); g.bezierCurveTo(-len * .8, s, -len * .3, s * 1.1, 0, ped); }
+    else { g.moveTo(0, -ped); g.quadraticCurveTo(-len * .5, -s * .6, -len, -s); g.quadraticCurveTo(-len * 1.12, 0, -len, s); g.quadraticCurveTo(-len * .5, s * .6, 0, ped); }
+    g.closePath();
+    g.fillStyle = rgba(col, t.a || .66); g.fill();
+    g.strokeStyle = rgba(dark(col), .25); g.lineWidth = Math.max(.5, L * .01); g.stroke();
+    if (f.tsp){ g.save(); g.clip(); for (const p of f.tsp) softDot(g, -p[0] * len, p[1] * s, p[2] * len, c.acc || c.tail, .8); g.restore(); }
+    if (t.type === 'veil' && c.acc){ g.strokeStyle = rgba(hex(c.acc), .35); g.lineWidth = L * .025; g.stroke(); }
+    g.strokeStyle = rgba(dark(col), .15); g.lineWidth = Math.max(.4, L * .008);
+    for (let k = -3; k <= 3; k++){ g.beginPath(); g.moveTo(0, k * ped * .25); g.lineTo(-len * .92, k / 3 * s * .85); g.stroke(); }
+    g.restore();
+  }
+  if (t.type === 'sword'){
+    g.lineCap = 'round'; g.strokeStyle = rgba(hex(c.sword || '#f2c53d'), .95); g.lineWidth = Math.max(1.4, L * .045);
+    g.beginPath(); g.moveTo(-len * .2, s * .5); g.quadraticCurveTo(-len * .9, s * .8, -len * 1.9, s * .75); g.stroke();
+    g.strokeStyle = 'rgba(30,28,32,.75)'; g.lineWidth = Math.max(.6, L * .014);
+    g.beginPath(); g.moveTo(-len * .2, s * .5 + L * .02); g.quadraticCurveTo(-len * .9, s * .8 + L * .02, -len * 1.9, s * .75 + L * .01); g.stroke();
+  }
+  g.restore();
+}
+const tailExt = G => G.tail.len * (G.tail.type === 'sword' ? 1.95 : 1.15);
+/* Çizim birimi L ile toplam boy (TL) ilişkisi: TL = (0.835 + kuyruk) · L */
+const tlFactor = G => .835 + G.tail.len;
+
+/* Sprite: balığın tamamı (kuyruk dahil) ön camdaki ölçekte; derinlik renk kademeleriyle */
+const WATER_TINT = [70, 128, 128];
+function buildSprite(f, Lpx, belly, tint){
+  const G = geom(f), h2 = Lpx * G.h / 2;
+  const top = Math.max(G.dorsal.h * Lpx, G.tail.spread * Lpx - h2, 0) + h2 + 3;
+  const bot = Math.max(G.anal.h * Lpx, G.feel * Lpx, G.tail.spread * Lpx * 1.1 - h2) + h2 * belly + 3;
+  const left = (.335 + tailExt(G)) * Lpx + 3, right = .53 * Lpx + 2, w = left + right, h = top + bot, d = Math.min(DPR, 2);
+  const c = document.createElement('canvas'); c.width = Math.max(2, Math.ceil(w * d)); c.height = Math.max(2, Math.ceil(h * d));
+  const g = c.getContext('2d'); g.scale(d, d); g.translate(left, top);
+  drawTailRest(g, f, Lpx); drawBody(g, f, Lpx, belly);
+  if (tint > .01){ g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = rgba(WATER_TINT, tint); g.fillRect(0, 0, c.width, c.height); }
+  return {c, left, top, w, h, d, Lpx, nose:left + .5 * Lpx, TLpx:tlFactor(G) * Lpx};
+}
+function previewInto(canvas, f, fit = .8){
+  const g = canvas.getContext('2d'), cw = canvas.width, ch = canvas.height;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cw, ch);
+  const G = geom(f), totalW = .87 + tailExt(G), totalH = G.h + Math.max(G.dorsal.h, .02) + Math.max(G.anal.h, G.feel) + .05;
+  const L = Math.min(cw * fit / totalW, ch * .9 / totalH), sv = DPR; DPR = 1;
+  const spr = buildSprite(f, L, f.preg > 0 ? 1 + .32 * (1 - f.preg / f.pregT) : 1, 0); DPR = sv;
+  g.drawImage(spr.c, (cw - spr.w) / 2 + (tailExt(G) - .2) * L * .25, (ch - spr.h) / 2 + (spr.top - spr.h / 2) * .3, spr.w, spr.h);
+}
+
+/* ---------------- dünya ---------------- */
+let fish = [], food = [], eggs = [], hearts = [], sparks = [], bubbles = [], puffs = [], ripples = [];
+let plants = [], rocks = [], wood = null, layoutSeed = (R() * 1e9) | 0, nextId = 1, time = 0, lampOn = true, lampMix = 1, labOn = false;
+const CAP = 40, GEST = 70, HATCH = 45, LARVA = 14;
+const NAMES = ['Pamuk','Boncuk','Fıstık','Minik','Mavi','Zeytin','Limon','Bulut','Çakıl','Lokum','Tarçın','Nane','Yaprak','İnci','Mercan','Kiraz','Badem','Simit','Duman','Şeker','Gofret','Nohut','Kumru','Damla','Yakamoz','Poyraz','Rüzgar','Ceviz','Fındık','Pırıl','Papatya','Menekşe','Gelincik','Sardunya','Çilek','Mandalina','Kayısı','Pekmez','Lavanta','Bal','Köpük','Dalga','Mehtap','Yıldız','Ay','Güneş','Kum','Pullu','Kaju','Susam','Biber','Kestane','Mısır','Pofuduk','Tombik','Cimcime','Benekli','Su','Nilüfer','Elma','Armut','Ayva','Erik','Vişne','Böğürtlen','Kekik','Fesleğen','Reyhan','Zencefil','Karamel','Krep','Puding','Muhallebi','Leblebi','Melisa','Pelin','Sedef','Lacivert','Turkuaz'];
+function newName(){ const used = new Set(fish.map(f => f.name)); const free = NAMES.filter(n => !used.has(n)); if (free.length) return pick(free); let i = 2; while (used.has('Minik ' + i)) i++; return 'Minik ' + i; }
+const BANDS = {top:[.02,.25], upper:[.05,.5], mid:[.15,.8], low:[.5,.95], bottom:[.94,1]};
+const EGGWORD = {plant:'bitkilere', leaf:'bir yaprağa', rock:'bir taşa', glass:'cama', nest:'köpük yuvaya', sand:'kumun üstüne'};
+
+function fishTL(f){ return SP[f.sp].TL * geom(f).scale * (.3 + .7 * f.growth); }
+function updateMorph(f){
+  const TL = fishTL(f);
+  if (!f.M || Math.abs(TL - f.TL) / TL > .02){ f.TL = TL; const sp = SP[f.sp]; f.M = FP.morphology(sp, TL, {finFactor:geom(f).finArea}); }
+}
+function makeFish(sp, sex, o = {}){
+  const f = Object.assign({id:nextId++, sp, sex, name:newName(), growth:.3, full:.6, col:o.col || mkCol(sp, sex), seed:(R() * 1e9) | 0,
+    preg:0, pregT:GEST, cool:20, state:'free', partner:0, air:rand(20, 160)}, o);
+  if (sp === 'lepistes' && sex === 'm' && !f.tsp){ f.tsp = []; for (let i = 0; i < 6; i++) f.tsp.push([rand(.3, .9), rand(-.7, .7), rand(.06, .12)]); }
+  const [b0, b1] = BANDS[SP[sp].band];
+  if (!f.p) f.p = v3(rand(.15, .85) * Wc, lerp(b0, b1, R()) * Hc, rand(.2, .8) * Dc);
+  const a = R() * TAU;
+  f.e = norm(v3(Math.cos(a), 0, Math.sin(a) * .5));
+  f.wd = v3(f.e.x, 0, f.e.z); f.U = 0; f.vs = v3(); f.omega = 0; f.omegaP = 0; f.phase = R() * TAU; f.phaseP = R() * TAU; f.amp = 0;
+  f.kTL = 0; f.psi = Math.atan2(f.e.z, f.e.x); f.coast = false; f.uMod = 1; f.task = null; f.pose = null; f.roll = 0; f.hover = 0; f.key = ''; f.sprs = [];
+  f.U = SP[sp].Uc * fishTL(f) / 100 * .5;
+  updateMorph(f);
+  return f;
+}
+
+/* Akış alanı: filtre çıkışının oluşturduğu yavaş hücresel dolaşım (ıraksamasız akım fonksiyonu)
+   ψ = U0·(W/π)·sin(πx/W)·sin(πy/H) → u = ∂ψ/∂y, v = −∂ψ/∂x */
+const U0 = .9;
+function flow(x, y){
+  const sx = Math.sin(Math.PI * x / Wc), cx = Math.cos(Math.PI * x / Wc), sy = Math.sin(Math.PI * y / Hc), cy = Math.cos(Math.PI * y / Hc);
+  return [U0 * (Wc / Hc) * sx * cy * .6, -U0 * cx * sy * .6];
+}
+
+function layout(){
+  srand(layoutSeed);
+  plants = [];
+  const greens = ['#5f9a58','#6fa65f','#4f8a56','#7fae63','#5b9468'];
+  const clumps = [[rand(.03, .14, sr), rand(.75, .95, sr)], [rand(.86, .97, sr), rand(.7, .95, sr)], [rand(.4, .6, sr), rand(.88, .97, sr)], [rand(.1, .3, sr), rand(.15, .3, sr)]];
+  clumps.forEach(([cx, cz], ci) => {
+    const n = 6 + (sr() * 5 | 0), front = ci === 3;
+    for (let i = 0; i < n; i++) plants.push({type:'v', x:cx * Wc + rand(-2.5, 2.5, sr), z:cz * Dc + rand(-2, 2, sr), h:Hc * rand(front ? .12 : .45, front ? .25 : .92, sr), w:rand(.35, .6, sr), ph:sr() * TAU, col:hex(pick(greens, sr)), lean:rand(-.12, .12, sr)});
+  });
+  [[rand(.2, .32, sr), rand(.45, .6, sr)], [rand(.66, .8, sr), rand(.35, .55, sr)]].forEach(([cx, cz]) => {
+    const n = 6 + (sr() * 3 | 0);
+    for (let i = 0; i < n; i++) plants.push({type:'a', x:cx * Wc + rand(-.6, .6, sr), z:cz * Dc + rand(-1, 1, sr), ang:-Math.PI / 2 + rand(-1.05, 1.05, sr), len:rand(6, 11, sr), wid:rand(1.3, 2, sr), ph:sr() * TAU, col:hex(pick(greens, sr))});
+  });
+  rocks = [];
+  for (let i = 0; i < 5; i++){ const r = rand(2.2, 4.5, sr); rocks.push({x:rand(.08, .92, sr) * Wc, z:rand(.2, .9, sr) * Dc, r, sq:rand(.55, .8, sr), seed:(sr() * 1e9) | 0}); }
+  wood = {x:rand(.55, .8, sr) * Wc, z:rand(.6, .85, sr) * Dc, lean:rand(.5, .9, sr), seed:(sr() * 1e9) | 0};
+}
+function renderRock(r){
+  const s = r.r * PX * 1.2, c = document.createElement('canvas'), d = Math.min(DPR, 2);
+  c.width = c.height = Math.ceil(s * 2.6 * d); const g = c.getContext('2d'); g.scale(d, d);
+  srand(r.seed); const cx = s * 1.3, cy = s * 1.3;
+  wash(g, cx + s * .25, cy + s * .35, s * 1.05, s * .45, '#40514c', {layers:8, alpha:.05, r:sr});
+  wash(g, cx, cy - s * r.sq * .1, s, s * r.sq, pick(['#b9b3a4','#c4baa6','#aeb3a9'], sr), {layers:18, alpha:.12, r:sr, spread:.22});
+  wash(g, cx + s * .25, cy + s * .1, s * .65, s * .45, '#6d7671', {layers:8, alpha:.06, r:sr});
+  wash(g, cx - s * .3, cy - s * r.sq * .55, s * .45, s * .25, '#ffffff', {layers:8, alpha:.06, r:sr});
+  r.spr = {c, w:s * 2.6, base:s * 1.3};
+}
+function renderWood(){
+  const s = PX, c = document.createElement('canvas'), d = Math.min(DPR, 2), Wd = 30 * s, Hd = 24 * s;
+  c.width = Math.ceil(Wd * d); c.height = Math.ceil(Hd * d); const g = c.getContext('2d'); g.scale(d, d);
+  srand(wood.seed);
+  const bx = Wd * .3, by = Hd - 1.5 * s;
+  // kütük: yatık ana gövde + yukarı kıvrılan dallar; her biri sivrilen dolgu şekil
+  const limb = (x0, y0, ang, L, w0, bend, depth) => {
+    const pts = [], n = 10;
+    for (let i = 0; i <= n; i++){ const t = i / n, a = ang + bend * t * t; pts.push([x0 + Math.cos(ang) * L * t + Math.cos(a) * 0 , y0 + Math.sin(ang) * L * t + bend * L * t * t * .35]); }
+    const Lp = [], Rp = [];
+    for (let i = 0; i <= n; i++){
+      const t = i / n, p = pts[i], q = pts[Math.min(n, i + 1)], r = pts[Math.max(0, i - 1)], dx = q[0] - r[0], dy = q[1] - r[1], l = Math.hypot(dx, dy) || 1;
+      const w = w0 * (1 - t * .82) * (1 + Math.sin(t * 9 + depth) * .08);
+      Lp.push([p[0] - dy / l * w, p[1] + dx / l * w]); Rp.push([p[0] + dy / l * w, p[1] - dx / l * w]);
+    }
+    const poly = Lp.concat(Rp.reverse());
+    g.fillStyle = 'rgba(122,92,64,.92)'; polyPath(g, poly); g.fill();
+    g.save(); polyPath(g, poly); g.clip();
+    const gr = g.createLinearGradient(0, y0 - w0 * 2, 0, y0 + w0 * 2); gr.addColorStop(0, 'rgba(190,160,120,.35)'); gr.addColorStop(1, 'rgba(50,35,25,.35)');
+    g.fillStyle = gr; g.fillRect(0, 0, Wd, Hd);
+    g.strokeStyle = 'rgba(60,42,30,.35)'; g.lineWidth = .6;
+    for (let k = 0; k < 7; k++){ g.beginPath(); const off = rand(-.7, .7, sr) * w0; for (let i = 0; i <= n; i++){ const p = pts[i]; const x = p[0], y = p[1] + off * (1 - i / n * .8); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.stroke(); }
+    g.restore();
+    g.strokeStyle = 'rgba(55,40,28,.45)'; g.lineWidth = .8; polyPath(g, poly); g.stroke();
+    return pts;
+  };
+  const main = limb(bx - 8 * s, by, -.32, 22 * s, 1.6 * s, -.9, 0);
+  limb(main[4][0], main[4][1], -1.25, 9 * s, .75 * s, .6, 1);
+  limb(main[7][0], main[7][1], -.85, 7 * s, .55 * s, -.8, 2);
+  limb(bx - 4 * s, by - .5 * s, -2.6, 6 * s, .7 * s, .5, 3);
+  wood.spr = {c, w:Wd, h:Hd, bx, by};
+}
+
+/* ---------------- arka plan (perspektif tank) ---------------- */
+let BG = null, PAPER = null;
+function renderBG(){
+  const c = document.createElement('canvas'); c.width = Math.ceil(W); c.height = Math.ceil(H);
+  const g = c.getContext('2d');
+  srand(layoutSeed + 7);
+  g.fillStyle = '#f2ecdc'; g.fillRect(0, 0, W, H);
+  g.globalCompositeOperation = 'multiply';
+  wash(g, W / 2, WT * .3, W * .7, WT * .9, '#e9e2cf', {layers:8, alpha:.08, r:sr});
+  const bl = proj(0, 0, Dc), br = proj(Wc, 0, Dc), bfl = proj(0, Hc, Dc), bfr = proj(Wc, Hc, Dc);
+  const fl = proj(0, 0, 0), fr = proj(Wc, 0, 0), ffl = proj(0, Hc, 0), ffr = proj(Wc, Hc, 0);
+  // su gövdesi
+  const M = Math.max(W, H);
+  for (let i = 0; i < 10; i++){
+    const t = i / 9, y = lerp(WT + 10, ST, t), col = toHex(mix(hex('#d2ece3'), hex('#86bbb2'), t));
+    for (let k = 0; k < 3; k++) wash(g, rand(-.1, 1.1, sr) * W, y + rand(-30, 30, sr), M * rand(.35, .6, sr), (ST - WT) * rand(.12, .22, sr), col, {layers:10, alpha:.026, r:sr, spread:.35});
+  }
+  // arka cam: daha koyu ve sakin
+  g.save(); polyPath(g, [bl, br, bfr, bfl]); g.clip();
+  for (let i = 0; i < 8; i++) wash(g, rand(bl[0], br[0], sr), rand(bl[1], bfl[1], sr), (br[0] - bl[0]) * rand(.3, .5, sr), (bfl[1] - bl[1]) * rand(.15, .3, sr), '#6fa9a0', {layers:8, alpha:.022, r:sr});
+  for (let i = 0; i < 14; i++){ const x = rand(bl[0], br[0], sr), hh = (bfl[1] - bl[1]) * rand(.25, .75, sr); wash(g, x, bfl[1] - hh * .5, rand(10, 28, sr), hh * .5, '#6aa595', {layers:7, alpha:.024, r:sr, spread:.45}); }
+  g.restore();
+  // yan camlar (yamuk): açık ton ve cam kenarı
+  for (const side of [[fl, bl, bfl, ffl], [fr, br, bfr, ffr]]){ g.fillStyle = 'rgba(120,170,165,.10)'; polyPath(g, side); g.fill(); }
+  // zemin (perspektif kum)
+  g.globalCompositeOperation = 'source-over'; g.fillStyle = 'rgba(226,210,172,.9)'; polyPath(g, [bfl, bfr, ffr, ffl]); g.fill();
+  g.fillStyle = 'rgba(205,184,140,.92)'; g.fillRect(0, ST, W, H - ST); g.globalCompositeOperation = 'multiply';
+  g.save(); polyPath(g, [bfl, bfr, ffr, ffl]); g.clip();
+  for (let i = 0; i < 18; i++){ const z = rand(0, Dc, sr), x = rand(0, Wc, sr), [px, py] = proj(x, Hc, z), s = sc(z); wash(g, px, py, rand(6, 16, sr) * PX * s, rand(1.2, 3, sr) * PX * s, pick(['#e4cf9f','#d9c08f','#efdfba'], sr), {layers:7, alpha:.07, r:sr}); }
+  for (let i = 0; i < W * 2.2; i++){
+    const z = Math.pow(sr(), .8) * Dc, [px, py] = proj(sr() * Wc, Hc, z), s = sc(z), r = rand(.06, .24, sr) * PX * s;
+    g.fillStyle = `rgba(${130 + sr() * 70 | 0},${110 + sr() * 50 | 0},${80 + sr() * 40 | 0},${rand(.15, .45, sr)})`;
+    g.beginPath(); g.ellipse(px, py, r, r * .6, 0, 0, TAU); g.fill();
+  }
+  g.restore();
+  // ön camdan görünen kum kesiti
+  for (let i = 0; i < 12; i++) wash(g, rand(0, W, sr), rand(ST, H, sr), rand(60, 160, sr), rand(8, 22, sr), pick(['#c9ad7c','#b99b6b','#dcc597'], sr), {layers:7, alpha:.08, r:sr});
+  for (let i = 0; i < W * 1.4; i++){ g.fillStyle = `rgba(${110 + sr() * 60 | 0},${90 + sr() * 40 | 0},${60 + sr() * 30 | 0},${rand(.2, .5, sr)})`; const r = rand(.6, 2.2, sr); g.beginPath(); g.ellipse(rand(0, W, sr), rand(ST + 3, H, sr), r, r * .7, 0, 0, TAU); g.fill(); }
+  g.globalCompositeOperation = 'source-over';
+  // cam kenarları ve çerçeve
+  g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.2;
+  for (const [a, b] of [[fl, bl], [fr, br], [ffl, bfl], [ffr, bfr], [bl, bfl], [br, bfr]]){ g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
+  g.fillStyle = 'rgba(40,45,42,.55)'; g.fillRect(0, WT - 5, W, 4); g.fillRect(0, ST - 1, W, 3);
+  return c;
+}
+function renderPaper(){
+  const c = document.createElement('canvas'); c.width = Math.ceil(W); c.height = Math.ceil(H);
+  const g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 22; i++) wash(g, rand(0, W), rand(0, H), rand(60, 200), rand(60, 200), '#efe4cc', {layers:6, alpha:.05, spread:.5});
+  for (let i = 0; i < W * H / 55; i++){ g.fillStyle = `rgba(${110 + R() * 40 | 0},${95 + R() * 30 | 0},70,${rand(.02, .08)})`; g.fillRect(R() * W, R() * H, rand(.5, 1.5), rand(.5, 1.5)); }
+  const vg = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .35, W / 2, H / 2, Math.hypot(W, H) * .62);
+  vg.addColorStop(0, 'rgba(255,255,255,0)'); vg.addColorStop(1, 'rgba(110,100,80,.26)');
+  g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  return c;
+}
+
+/* ---------------- bitkiler (3B, akışla salınım) ---------------- */
+function vPoint(p, t){
+  const [u] = flow(p.x, Hc - t * p.h);
+  const sway = Math.sin(time * .8 + p.ph + t * 2.2) * t * t * 1.6 + p.lean * t * p.h * .3 + u * t * t * 1.5;
+  return v3(p.x + sway, Hc + .3 - t * p.h, p.z);
+}
+function drawVallis(p){
+  const n = 9, s = sc(p.z), Lp = [], Rp = [];
+  for (let i = 0; i <= n; i++){ const t = i / n, q = vPoint(p, t), [x, y] = projP(q), w = p.w * PX * s * (1 - t * .75); Lp.push([x - w, y]); Rp.push([x + w, y]); }
+  ctx.fillStyle = rgba(p.col, .84); ctx.beginPath(); ctx.moveTo(Lp[0][0], Lp[0][1]);
+  for (let i = 1; i <= n; i++) ctx.lineTo(Lp[i][0], Lp[i][1]);
+  for (let i = n; i >= 0; i--) ctx.lineTo(Rp[i][0], Rp[i][1]);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = rgba(dark(p.col, .35), .3); ctx.lineWidth = .8; ctx.beginPath();
+  for (let i = 0; i <= n; i++){ const [x, y] = projP(vPoint(p, i / n)); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke();
+}
+function leafPoint(p, t){ const a = p.ang + Math.sin(time * .6 + p.ph) * .05; return v3(p.x + Math.cos(a) * p.len * t, Hc + .2 + Math.sin(a) * p.len * t, p.z); }
+function drawAmazon(p){
+  const a = p.ang + Math.sin(time * .6 + p.ph) * .05, s = sc(p.z), [bx, by] = proj(p.x, Hc + .2, p.z), L = p.len * PX * s, wd = p.wid * PX * s;
+  ctx.save(); ctx.translate(bx, by); ctx.rotate(a);
+  ctx.strokeStyle = rgba(dark(p.col, .2), .7); ctx.lineWidth = 1.5 * s; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(L * .3, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L * .25, 0); ctx.quadraticCurveTo(L * .6, -wd, L, 0); ctx.quadraticCurveTo(L * .6, wd, L * .25, 0);
+  const gr = ctx.createLinearGradient(L * .25, 0, L, 0); gr.addColorStop(0, rgba(dark(p.col, .15), .88)); gr.addColorStop(1, rgba(light(p.col, .15), .86));
+  ctx.fillStyle = gr; ctx.fill();
+  ctx.strokeStyle = rgba(dark(p.col, .4), .3); ctx.lineWidth = .8; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L * .25, 0); ctx.lineTo(L * .95, 0);
+  for (let k = 1; k < 5; k++){ const x = L * (.3 + k * .14); ctx.moveTo(x, 0); ctx.lineTo(x + L * .08, -wd * .45); ctx.moveTo(x, 0); ctx.lineTo(x + L * .08, wd * .45); }
+  ctx.stroke(); ctx.restore();
+}
+
+/* ---------------- ses ---------------- */
+let AC = null, master = null, revIn = null, muted = false;
+const SC = [261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.26, 783.99, 880];
+function impulse(sec, decay){ const n = AC.sampleRate * sec | 0, b = AC.createBuffer(2, n, AC.sampleRate); for (let ch = 0; ch < 2; ch++){ const d = b.getChannelData(ch); for (let i = 0; i < n; i++) d[i] = (R() * 2 - 1) * Math.pow(1 - i / n, decay); } return b; }
+function initAudio(){
+  if (AC) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  master = AC.createGain(); master.gain.value = muted ? 0 : .5;
+  const comp = AC.createDynamicsCompressor(); master.connect(comp); comp.connect(AC.destination);
+  const rev = AC.createConvolver(); rev.buffer = impulse(3, 2.8); const wet = AC.createGain(); wet.gain.value = .5; revIn = AC.createGain(); revIn.connect(rev); rev.connect(wet); wet.connect(master);
+  const n = AC.sampleRate * 4, nb = AC.createBuffer(1, n, AC.sampleRate), d = nb.getChannelData(0);
+  let last = 0; for (let i = 0; i < n; i++){ last = (last + .02 * (R() * 2 - 1)) / 1.02; d[i] = last * 3; }
+  const ns = AC.createBufferSource(); ns.buffer = nb; ns.loop = true;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 380;
+  const ng = AC.createGain(); ng.gain.value = .14; ns.connect(lp); lp.connect(ng); ng.connect(master); ns.start();
+  const dl = AC.createBiquadFilter(); dl.type = 'lowpass'; dl.frequency.value = 500;
+  const dg = AC.createGain(); dg.gain.value = 0; dg.gain.linearRampToValueAtTime(.018, AC.currentTime + 6);
+  [130.81, 196, 261.63 * 1.003].forEach(fq => { const o = AC.createOscillator(); o.frequency.value = fq; o.connect(dl); o.start(); });
+  dl.connect(dg); dg.connect(master); dg.connect(revIn);
+}
+function tone(freq, {type = 'sine', vol = .12, attack = .006, decay = 2, when = 0, send = .6} = {}){
+  if (!AC || muted) return;
+  const t = AC.currentTime + when, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + attack); g.gain.exponentialRampToValueAtTime(.0001, t + decay);
+  o.connect(g); g.connect(master); const s = AC.createGain(); s.gain.value = send; g.connect(s); s.connect(revIn);
+  o.start(t); o.stop(t + decay + .1);
+}
+function chime(fq, vol = .1, when = 0){ tone(fq, {vol, decay:2.4, when}); tone(fq * 2, {vol:vol * .2, decay:1.1, when}); }
+function blub(vol = .05, f0 = 300){
+  if (!AC || muted) return;
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 2.6, t + .06);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + .09);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + .12);
+}
+const arp = () => [0, 2, 4, 7].forEach((k, j) => chime(SC[Math.min(SC.length - 1, k + 1)], .08, j * .14));
+
+/* ---------------- bildirimler ---------------- */
+const toastEl = document.getElementById('toast'); let toastQ = [], toastBusy = false;
+function toast(msg){ if (toastQ.length < 4) toastQ.push(msg); if (!toastBusy) nextToast(); }
+function nextToast(){
+  const m = toastQ.shift(); if (!m){ toastBusy = false; return; }
+  toastBusy = true; toastEl.textContent = m; toastEl.classList.add('on');
+  setTimeout(() => { toastEl.classList.remove('on'); setTimeout(nextToast, 700); }, 3600);
+}
+
+/* =====================================================================
+   DAVRANIŞ + FİZİK
+   ===================================================================== */
+const stage = f => f.growth < .3 ? 'Yavru' : f.growth < .75 ? 'Genç' : 'Yetişkin';
+const adult = f => f.growth >= .75;
+const byId = id => fish.find(f => f.id === id);
+const nightK = () => 1 - lampMix;
+function bandRange(f){ const b = BANDS[SP[f.sp].band]; return [lerp(1.5, Hc, b[0]), lerp(1.5, Hc - .4, b[1])]; }
+const mouth = f => add(f.p, mul(f.e, f.TL * .4));
+
+/* Duvar/yüzey/zemin itmesi: ileri bakışlı (U·0.6 s) üstel itici alan */
+function wallVec(f){
+  const r = Math.max(2.5, f.TL * 1.3 + f.U * 100 * .6), q = add(f.p, mul(f.e, f.U * 100 * .5)), out = v3();
+  const push = (dd, nx, ny, nz, k = 1) => { if (dd < r){ const w = Math.pow(1 - Math.max(0, dd) / r, 2) * k; out.x += nx * w; out.y += ny * w; out.z += nz * w; } };
+  push(q.x, 1, 0, 0); push(Wc - q.x, -1, 0, 0); push(q.z, 0, 0, 1); push(Dc - q.z, 0, 0, -1);
+  push(q.y - .3, 0, 1, 0, (f.task && f.task.surface) || f.foodSurf ? 0 : 1);
+  const floorOK = SP[f.sp].mode === 'benthic' || (f.task && f.task.floor) || f.foodFloor;
+  push(Hc - q.y - f.TL * .25, 0, -1, 0, floorOK ? .15 : 1);
+  for (const rk of rocks){ const dx = q.x - rk.x, dz = q.z - rk.z, dy = q.y - (Hc - rk.r * .5); const dd = Math.hypot(dx, dy, dz) - rk.r * 1.1; if (dd < r * .8){ const l = Math.hypot(dx, dy, dz) || 1, w = Math.pow(1 - Math.max(0, dd) / (r * .8), 2); out.x += dx / l * w; out.y += dy / l * w; out.z += dz / l * w; } }
+  return out;
+}
+/* Couzin vd. (2002) üç bölge modeli; arkada 60°'lik kör açı */
+function schoolVec(f){
+  const TL = f.TL, rr = TL * 1.0, ro = TL * 3, ra = TL * 8, cosBlind = Math.cos(Math.PI * 150 / 180);
+  let dr = v3(), dO = v3(), dA = v3(), nr = 0, no = 0, na = 0;
+  for (const o of fish){
+    if (o === f) continue;
+    const rij = sub(o.p, f.p), d = len(rij); if (d < 1e-4) continue;
+    const rh = mul(rij, 1 / d), sizeR = (TL + o.TL) * .45;
+    if (d < Math.max(rr, sizeR) && (o.sp === f.sp || d < sizeR)){ dr = sub(dr, rh); nr++; continue; }
+    if (o.sp !== f.sp || !SP[f.sp].school || o.growth < .3 !== f.growth < .3) continue;
+    if (dot(rh, f.e) < cosBlind) continue;
+    if (d < ro){ dO = add(dO, o.e); no++; } else if (d < ra){ dA = add(dA, rh); na++; }
+  }
+  if (nr) return {v:norm(dr), w:2.2, n:nr};
+  if (no || na){ const v = norm(add(no ? norm(dO) : v3(), na ? norm(dA) : v3())); return {v, w:1.3, n:no + na}; }
+  return {v:v3(), w:0, n:0};
+}
+function nearestFood(f){
+  const sp = SP[f.sp]; let best = null, bd = Math.min(28, f.TL * 14);
+  for (const fd of food){
+    if (fd.eaten || fd.state === 'eggfall') continue;
+    if (sp.mode === 'benthic' && fd.y < Hc - 4) continue;
+    if (sp.band === 'top' && fd.y > Hc * .6 && fd.state !== 'float') continue;
+    const d = dist(fd, f.p) * (fd.state === 'floor' && sp.mode !== 'benthic' && sp.band !== 'low' ? 1.6 : 1);
+    if (d < bd){ bd = d; best = fd; }
+  }
+  return best;
+}
+/* Hedefe git: yön + varışta yavaşlama */
+function seek(f, target, speedBL, stopR = 0){
+  const to = sub(target, f.p), d = len(to);
+  const slow = clamp((d - stopR) / Math.max(1, f.TL * 1.5), 0, 1);
+  return {d:d > 1e-3 ? mul(to, 1 / d) : f.e, U:speedBL * f.TL / 100 * Math.max(.08, slow), dist:d};
+}
+
+function think(f, dt){
+  const sp = SP[f.sp], [y0, y1] = bandRange(f), night = nightK(), TLm = f.TL / 100;
+  let act = sp.nocturnal ? lerp(1, 1.25, night) : lerp(1, .38, night);
+  // ilişkili rastgele yürüyüş (persistent random walk)
+  const sig = .7 * Math.sqrt(dt);
+  f.wd = norm(v3(f.wd.x + gn() * sig, f.wd.y * .97 + gn() * sig * .35, f.wd.z + gn() * sig * .8));
+  const midY = night > .5 && !sp.nocturnal ? lerp(y0, y1, .8) : (y0 + y1) / 2;
+  f.wd.y += clamp((midY - f.p.y) / Math.max(4, (y1 - y0)), -1, 1) * .9 * dt;
+  f.uMod += (-(f.uMod - 1) * .25 + gn() * .35) * dt; f.uMod = clamp(f.uMod, .5, 1.6);
+  let goal = null, goalW = 0, U = sp.Uc * TLm * f.uMod * act, pose = null, bc = sp.bc;
+  // labriform: yerinde durma (istasyon tutma) dönemleri
+  if (sp.mode === 'lab' || sp.mode === 'benthic'){ f.hover -= dt; if (f.hover < -rand(6, 14)) f.hover = rand(2, 6); if (f.hover > 0) U *= .12; }
+  if (f.growth < .3){ U *= .8; }
+  // hava solunumu (Poisson süreci)
+  if (sp.air && !f.task){ f.air -= dt * (f.ate > 0 ? 2.2 : 1); if (f.air <= 0){ f.task = {type:'air', t:0, surface:true}; f.air = -Math.log(1 - R()) * 3600 / sp.air; } }
+  if (f.ate > 0) f.ate -= dt;
+  const fd = (!f.task || f.task.type === 'air') && f.full < .95 ? nearestFood(f) : null;
+  f.foodSurf = !!(fd && fd.y < 2.5); f.foodFloor = !!(fd && fd.y > Hc - 2.5);
+  if (fd && (!f.task || f.task.type !== 'air')){
+    const m = mouth(f), dd = dist(m, fd), lunge = dd < f.TL * 1.4;
+    goal = norm(sub(fd, m)); goalW = 4;
+    U = (lunge ? Math.min(sp.Ub * .55, 4) : Math.min(sp.Ub * .4, sp.Uc * 1.8 + .6)) * TLm; bc = bc && !lunge;
+    if (dd < Math.max(.5, f.TL * .3)) eat(f, fd);
+  } else if (f.task){
+    const r = runTask(f, dt); if (r){ goal = r.d; goalW = r.w || 5; U = r.U; pose = r.pose || null; bc = false; }
+  } else if (f.growth < .3){
+    const v = plants.filter(p => p.type === 'v'); if (v.length){ const p = v[f.id % v.length]; const tgt = v3(p.x + Math.sin(time * .2 + f.id) * 2, Hc - p.h * (.3 + .2 * Math.sin(f.id)), p.z); const s = seek(f, tgt, .8); goal = s.d; goalW = 1.2; }
+  } else if (sp.mode === 'benthic'){
+    // dipte yem arama: zemine yakın kal, ara sıra dinlen
+    goal = norm(v3(f.wd.x, (Hc - f.TL * .2 - f.p.y) * .6, f.wd.z)); goalW = 1.5;
+    f.rest = (f.rest || 0) - dt; if (f.rest < -rand(8, 20)) f.rest = rand(3, 9); if (f.rest > 0) U = 0;
+  } else if (f.sp === 'ramirezi' || f.sp === 'japon'){
+    f.sift = (f.sift || 0) - dt;
+    if (f.sift < -rand(10, 20)) f.sift = rand(1.5, 3);
+    if (f.sift > 0){ goal = norm(v3(f.e.x, 1.2, f.e.z)); goalW = 2.5; U = .2 * TLm; if (f.p.y > Hc - f.TL * .7 && R() < dt * 3) puff(add(mouth(f), v3(0, .3, 0))); }
+  }
+  // birleşik yön
+  const sc2 = schoolVec(f), wv = wallVec(f);
+  let d = mul(f.wd, f.task || goal ? .3 : 1);
+  d = add(d, mul(sc2.v, sc2.w * (goal && goalW > 3 ? .3 : 1)));
+  if (goal) d = add(d, mul(goal, goalW));
+  d = add(d, mul(wv, 4));
+  f.dGoal = norm(d); f.Ut = Math.max(0, U); f.bcOn = bc; f.pose = pose; f.scN = sc2.n;
+}
+
+function eat(f, fd){
+  fd.eaten = true; fd.suck = {f, t:0};
+  f.full = Math.min(1, f.full + .2); f.ate = 60;
+  if (f.growth < 1){ const g0 = f.growth; f.growth = Math.min(1, f.growth + (f.growth < .3 ? .07 : .045)); if (g0 < .75 && f.growth >= .75) toast(`${f.name} artık yetişkin bir ${SP[f.sp].ad.toLocaleLowerCase('tr')}`); else if (g0 < .3 && f.growth >= .3) toast(`${f.name} büyüyor, artık genç`); }
+  blub(.025, rand(500, 700));
+}
+
+/* Görev koreografileri (kur, üreme, hava alma, yuva) */
+function runTask(f, dt){
+  const t = f.task, sp = SP[f.sp], TLm = f.TL / 100; t.t += dt;
+  const P = t.partner ? byId(t.partner) : null;
+  switch (t.type){
+    case 'air': {
+      const tgt = v3(f.p.x + f.e.x * 2, .2, f.p.z), s = seek(f, tgt, sp.mode === 'benthic' ? 4.5 : 1.6);
+      if (f.p.y < f.TL * .35 + .4 && !t.gulp){ t.gulp = true; ripples.push({x:f.p.x, z:f.p.z, t:0, r:f.TL * .8}); blub(.02, 420); if (sp.mode !== 'benthic'){ f.task = null; return null; } }
+      if (t.gulp){ const dn = seek(f, v3(f.p.x + f.e.x * 3, Hc - .5, f.p.z), 3); if (f.p.y > Hc - f.TL * .6 || t.t > 8){ f.task = null; } return {d:dn.d, U:dn.U, w:6}; }
+      if (t.t > 10){ f.task = null; return null; }
+      return {d:s.d, U:Math.max(s.U, 1.2 * TLm), w:6};
+    }
+    case 'court': {
+      if (!P || P.task !== P.task || !P.task){ endTask(f); return null; }
+      t.left -= dt;
+      if (f.sex === 'f'){ if (t.left <= 0) afterCourt(f, P); return {d:f.wd, U:sp.Uc * .5 * TLm, w:.6}; }
+      // erkek: dişinin önünde yan durur, sigmoid gösteri patlamaları
+      const front = add(P.p, add(mul(P.e, P.TL * .55 + 2), mul(v3(-P.e.z, 0, P.e.x), Math.sin(time * .7 + f.id) * 1.2)));
+      const s = seek(f, front, 2.2, .3);
+      t.sig = (t.sig || 0) - dt; if (t.sig < -rand(1.5, 3)) t.sig = rand(1, 1.6);
+      if (R() < dt * 1.3) hearts.push({p:add(f.p, v3(0, -f.TL * .5, 0)), life:1, s:rand(.5, .8), ph:R() * TAU});
+      const showSide = s.dist < 3 ? norm(v3(-P.e.z, 0, P.e.x)) : s.d;
+      return {d:s.dist < 3 ? mul(showSide, -1) : s.d, U:s.U, w:6, pose:sp.spawn === 'live' && t.sig > 0 && s.dist < 3.5 ? 'sigmoid' : null};
+    }
+    case 'chase': {
+      if (!P){ endTask(f); return null; }
+      if (f.sex === 'f'){ t.left -= dt; if (t.left <= 0) afterChase(f, P); const s = t.to ? seek(f, t.to, 2.2, 1) : {d:f.wd, U:sp.Uc * 1.3 * TLm}; if (t.to && s.dist < 2) t.to = null; if (!t.to && R() < dt * .5) t.to = v3(rand(.15, .85) * Wc, Hc - rand(1, 6), rand(.2, .8) * Dc); return {d:s.d, U:Math.max(s.U, sp.Uc * TLm), w:3}; }
+      const s = seek(f, sub(P.p, mul(P.e, P.TL * .7)), sp.Ub * .45, .2);
+      return {d:s.d, U:Math.max(s.U, P.U * 1.05), w:6};
+    }
+    case 'tpos': {
+      if (!P){ endTask(f); return null; }
+      t.left -= dt;
+      if (f.sex === 'm'){ const s = seek(f, v3(f.p.x, Hc - f.TL * .2, f.p.z), .8); return {d:s.d, U:s.U * .3, w:4}; }
+      const n = v3(-P.e.z, 0, P.e.x), spot = add(P.p, mul(n, P.TL * .45)), s = seek(f, spot, 1.4, .1);
+      if (t.left <= 0){ f.task = {type:'carry', t:0, n:2 + (R() * 3 | 0), cycle:t.cycle, partner:P.id, floor:false, spot:{kind:'glass', x:rand(.12, .88) * Wc, y:Hc * rand(.55, .85), z:R() < .5 ? .25 : Dc - .25}}; P.task = {type:'wait', t:0, partner:f.id, floor:true}; return null; }
+      return {d:s.dist < 1.2 ? mul(n, -1) : s.d, U:s.U, w:6};
+    }
+    case 'wait': { const s = seek(f, v3(f.p.x, Hc - f.TL * .2, f.p.z), .5); if (t.t > 60){ endTask(f); } return {d:s.d, U:0, w:2}; }
+    case 'carry': {
+      const s = seek(f, v3(t.spot.x, t.spot.y, t.spot.z + (t.spot.z < 1 ? f.TL * .3 : -f.TL * .3)), 1.5, .2);
+      if (s.dist < f.TL * .5){
+        addEggs(f, t.spot, t.n);
+        const M2 = byId(t.partner);
+        if (t.cycle < 3 && M2){ f.task = {type:'tpos', t:0, left:4, partner:M2.id, cycle:t.cycle + 1, floor:true}; M2.task = {type:'tpos', t:0, left:4, partner:f.id, cycle:t.cycle + 1, floor:true}; }
+        else { endTask(f); if (M2) endTask(M2); f.cool = 110; }
+      }
+      return {d:s.d, U:s.U, w:6};
+    }
+    case 'build': {
+      // erkek: yüzeyde köpük yuva (salyalı kabarcıklar)
+      const nest = t.nest, s = seek(f, v3(nest.x + Math.sin(time * 1.3) * 1.2, f.TL * .4, nest.z), 1.2, .3);
+      if (s.dist < 2 && R() < dt * 4){ nest.foam = Math.min(70, nest.foam + 1); bubbles.push({x:f.p.x + f.e.x * f.TL * .4, y:f.p.y, z:f.p.z, r:.12, nest:true}); }
+      if (t.t > 9 && P){ f.task = {type:'embrace', t:0, partner:P.id, nest, round:1, surface:true}; P.task = {type:'embraceF', t:0, partner:f.id, nest, surface:true}; }
+      return {d:s.d, U:s.U, w:6};
+    }
+    case 'embraceF': { if (!P){ endTask(f); return null; } const s = seek(f, v3(t.nest.x, f.TL * .9 + 1, t.nest.z), 1, .2); if (t.t > 40) endTask(f); return {d:s.d, U:s.U, w:5}; }
+    case 'embrace': {
+      if (!P){ endTask(f); return null; }
+      const s = seek(f, add(P.p, mul(P.e, -.3)), 1.4, .2);
+      if (s.dist < f.TL * .7){ t.hold = (t.hold || 0) + dt; }
+      if (t.hold > 3){
+        // yumurtalar dişiden bırakılır, yavaşça batar; erkek ağzıyla toplar
+        const n = 3 + (R() * 4 | 0); t.falling = [];
+        for (let i = 0; i < n; i++){ const e = {x:P.p.x + rand(-.5, .5), y:P.p.y + .5, z:P.p.z + rand(-.5, .5), vy:.7 + R() * .3}; t.falling.push(e); }
+        f.task = {type:'collect', t:0, partner:P.id, nest:t.nest, round:t.round, falling:t.falling, surface:true};
+      }
+      return {d:s.d, U:s.U, w:7, pose:s.dist < f.TL * .8 ? 'embrace' : null};
+    }
+    case 'collect': {
+      const left = t.falling.filter(e => !e.got);
+      if (!left.length){
+        if (t.round < 2 && P){ f.task = {type:'embrace', t:0, partner:P.id, nest:t.nest, round:t.round + 1, surface:true}; return null; }
+        if (P) { endTask(P); P.cool = 110; }
+        f.task = {type:'guard', t:0, egg:t.nest.egg, surface:true}; return null;
+      }
+      const e = left[0], s = seek(f, v3(e.x, e.y, e.z), 2.4, 0);
+      if (dist(mouth(f), e) < Math.max(.5, f.TL * .3)){ e.got = true; t.nest.egg.n += 1; blub(.015, 600); }
+      return {d:s.d, U:Math.max(s.U, .5 * TLm), w:7};
+    }
+    case 'clean': {
+      if (!P){ endTask(f); return null; }
+      const sitePos = spotPos(t.spot), off = f.sex === 'f' ? 1 : -1, tgt = add(sitePos, v3(off * f.TL * .6, -f.TL * .2 - Math.max(0, Math.sin(time * 3 + f.id)) * f.TL * .4, 0));
+      const s = seek(f, tgt, 1, .1);
+      if (t.t > 6 && f.sex === 'f'){ f.task = {type:'lay', t:0, partner:P.id, spot:t.spot, laid:0, n:6 + (R() * 6 | 0), egg:null}; P.task = {type:'follow', t:0, partner:f.id, spot:t.spot}; }
+      return {d:s.dist < 1.5 ? norm(sub(sitePos, f.p)) : s.d, U:s.U, w:6};
+    }
+    case 'lay': {
+      if (!t.egg){ t.egg = addEggs(f, t.spot, 0); }
+      const k = t.laid / t.n, sitePos = spotPos(t.spot), along = v3((k - .5) * 2.4, 0, 0), tgt = add(sitePos, add(along, v3(0, -f.TL * .25, 0)));
+      const s = seek(f, tgt, .6, .05);
+      t.next = (t.next || 0) - dt;
+      if (s.dist < f.TL * .6 && t.next <= 0){ t.egg.n += 1; t.laid++; t.next = .45; t.egg.row = true; }
+      if (t.laid >= t.n){ const egg = t.egg; f.task = {type:'guard', t:0, egg}; const M2 = byId(t.partner); if (M2) M2.task = {type:'guard', t:0, egg}; }
+      return {d:s.d, U:s.U, w:6};
+    }
+    case 'follow': { if (!P || !P.task){ endTask(f); return null; } const s = seek(f, sub(P.p, mul(P.e, P.TL * .8)), .8, .2); return {d:s.d, U:s.U, w:5}; }
+    case 'guard': {
+      if (!t.egg || !eggs.includes(t.egg)){ endTask(f); f.cool = 90; return null; }
+      const ep = eggPosOf(t.egg), orbit = v3(Math.cos(time * .25 + f.id) * f.TL * 1.2, -f.TL * .5 - (t.egg.kind === 'nest' ? -f.TL : 0), Math.sin(time * .25 + f.id) * f.TL * .6);
+      const s = seek(f, add(ep, orbit), .5, .3); f.fan = s.dist < f.TL * 1.5;
+      return {d:s.dist < f.TL ? norm(sub(ep, f.p)) : s.d, U:s.U, w:4};
+    }
+    case 'scatter': {
+      if (!P){ endTask(f); return null; }
+      t.left -= dt;
+      if (f.sex === 'f'){
+        if (!t.to || dist(f.p, t.to) < 2) t.to = v3(rand(.12, .88) * Wc, Hc * rand(.6, .9), rand(.2, .8) * Dc);
+        const s = seek(f, t.to, 2.6, .5);
+        t.drop = (t.drop || 0) - dt; if (t.drop <= 0){ t.drop = .5; scatterEgg(f); }
+        if (t.left <= 0){ endTask(f); endTask(P); f.cool = 110; P.cool = 70; }
+        return {d:s.d, U:Math.max(s.U, 1.6 * TLm), w:5};
+      }
+      const side = v3(-P.e.z, 0, P.e.x), s = seek(f, add(P.p, mul(side, P.TL * .55)), 3, .1);
+      return {d:s.dist < 1 ? P.e : s.d, U:Math.max(s.U, P.U), w:6};
+    }
+    case 'inverted': {
+      if (!P){ endTask(f); return null; }
+      const lp = spotPos(t.spot), off = f.sex === 'f' ? .6 : -.6, tgt = add(lp, v3(off, f.TL * .35, 0)), s = seek(f, tgt, 1, .05);
+      if (s.dist < f.TL * .5){ t.hold = (t.hold || 0) + dt; f.roll = Math.min(1, f.roll + dt * 2); }
+      if (f.sex === 'f' && t.hold > 3.5){ addEggs(f, t.spot, 5 + (R() * 5 | 0)); endTask(f); endTask(P); f.cool = 110; P.cool = 70; }
+      return {d:s.dist < 1 ? v3(f.sex === 'f' ? 1 : -1, 0, 0) : s.d, U:s.U, w:6};
+    }
+  }
+  return null;
+}
+function endTask(f){ f.task = null; f.state = 'free'; f.partner = 0; f.fan = false; f.roll = 0; }
+function spotPos(s){
+  if (!s) return v3(Wc / 2, Hc / 2, Dc / 2);
+  if (s.kind === 'leaf'){ const p = plants[s.pi]; if (p) return leafPoint(p, s.u); }
+  if (s.kind === 'plant'){ const p = plants[s.pi]; if (p) return vPoint(p, s.u); }
+  return v3(s.x, s.y, s.z);
+}
+function eggPosOf(e){ return e.kind === 'nest' ? v3(e.x, .25, e.z) : spotPos(e); }
+function chooseSpot(f){
+  const kind = SP[f.sp].egg;
+  if (kind === 'leaf'){ const as = plants.filter(p => p.type === 'a'); const p = pick(as); return {kind, pi:plants.indexOf(p), u:rand(.55, .78)}; }
+  if (kind === 'plant'){ const vs = plants.filter(p => p.type === 'v' && p.h > Hc * .3); const p = pick(vs); return {kind, pi:plants.indexOf(p), u:rand(.3, .6)}; }
+  if (kind === 'rock'){ const r = pick(rocks); return {kind, x:r.x + rand(-.3, .3) * r.r, y:Hc - r.r * r.sq * 1.25, z:r.z}; }
+  if (kind === 'glass') return {kind, x:rand(.12, .88) * Wc, y:Hc * rand(.55, .85), z:R() < .5 ? .25 : Dc - .25};
+  if (kind === 'nest') return {kind, x:clamp(f.p.x, 4, Wc - 4), y:.25, z:clamp(f.p.z, 3, Dc - 3)};
+  return {kind:'sand', x:rand(.15, .85) * Wc, y:Hc - .1, z:rand(.2, .8) * Dc};
+}
+function addEggs(f, spot, n){
+  let e = eggs.find(x => x.sp === f.sp && x.kind === spot.kind && x.pi === spot.pi && Math.hypot((x.x || 0) - (spot.x || 0), (x.y || 0) - (spot.y || 0), (x.z || 0) - (spot.z || 0)) < 3 && x.t > HATCH * .5);
+  if (!e){ e = Object.assign({sp:f.sp, n:0, t:HATCH, tT:HATCH, larva:0, seed:(R() * 1e9) | 0, mom:{col:f.col, sex:'f'}, dad:f.dad || null, foam:0}, spot); eggs.push(e); toast(`${f.name} yumurtalarını ${EGGWORD[spot.kind]} bıraktı`); chime(SC[6], .06); chime(SC[8], .05, .2); }
+  e.n += n; return e;
+}
+function scatterEgg(f){
+  const kind = SP[f.sp].egg;
+  food.push({x:f.p.x, y:f.p.y + .4, z:f.p.z, vx:0, vz:0, state:'eggfall', vt:2.6, ph:R() * TAU, life:30, sp:f.sp, mom:f.col, dad:f.dad, kind});
+}
+
+/* Kur başlatma: türüne göre koreografi */
+function breedTick(){
+  if (fish.length >= CAP - 2) return;
+  for (const fe of fish){
+    if (fe.sex !== 'f' || !adult(fe) || fe.task || fe.preg > 0 || fe.cool > 0 || fe.full < .4) continue;
+    if (R() > .3) continue;
+    const ma = fish.find(m => m.sp === fe.sp && m.sex === 'm' && adult(m) && !m.task && m.cool <= 0 && m.full > .4);
+    if (!ma) continue;
+    const sp = SP[fe.sp]; fe.dad = {sex:'m', col:ma.col, tsp:ma.tsp};
+    if (sp.spawn === 'live'){ fe.task = {type:'court', t:0, left:10, partner:ma.id}; ma.task = {type:'court', t:0, left:10, partner:fe.id}; toast(`${ma.name}, ${fe.name} için kur gösterisi yapıyor`); }
+    else if (sp.spawn === 'tpos'){ fe.task = {type:'chase', t:0, left:6, partner:ma.id, next:'tpos'}; ma.task = {type:'chase', t:0, left:6, partner:fe.id}; toast(`${ma.name} ile ${fe.name} kovalamaca oynuyor`); }
+    else if (sp.spawn === 'nest'){ const spot = chooseSpot(ma), egg = Object.assign({sp:fe.sp, n:0, t:HATCH, tT:HATCH, larva:0, seed:(R() * 1e9) | 0, mom:{col:fe.col, sex:'f'}, dad:{col:ma.col, sex:'m'}, foam:0}, spot); egg.egg = egg; eggs.push(egg); ma.task = {type:'build', t:0, partner:fe.id, nest:egg, surface:true}; fe.cool = 0; toast(`${ma.name} yüzeyde köpük yuva yapıyor`); }
+    else if (sp.spawn === 'leaf' || sp.spawn === 'rock'){ const spot = chooseSpot(fe); fe.task = {type:'clean', t:0, partner:ma.id, spot}; ma.task = {type:'clean', t:0, partner:fe.id, spot}; toast(`${fe.name} ile ${ma.name} ${spot.kind === 'leaf' ? 'bir yaprağı' : 'bir taşı'} temizliyor`); }
+    else if (sp.spawn === 'scatter'){ fe.task = {type:'scatter', t:0, left:9, partner:ma.id}; ma.task = {type:'scatter', t:0, left:9, partner:fe.id}; toast(`${fe.name} ile ${ma.name} yan yana yumurta saçıyor`); }
+    else if (sp.spawn === 'inverted'){ const spot = chooseSpot(fe); fe.task = {type:'inverted', t:0, partner:ma.id, spot}; ma.task = {type:'inverted', t:0, partner:fe.id, spot}; toast(`${fe.name} ile ${ma.name} bir yaprağın altında ters dönüyor`); }
+    else if (sp.spawn === 'chase'){ fe.task = {type:'chase', t:0, left:7, partner:ma.id, next:'plant'}; ma.task = {type:'chase', t:0, left:7, partner:fe.id}; toast(`${ma.name}, ${fe.name} peşinde bitkilere yüzüyor`); }
+    tone(SC[5], {vol:.05, decay:1.5}); tone(SC[7], {vol:.04, decay:1.5, when:.18});
+    return;
+  }
+}
+function afterCourt(fe, ma){
+  endTask(fe); if (ma){ endTask(ma); ma.cool = 70; }
+  fe.preg = GEST; fe.pregT = GEST; fe.key = ''; toast(`${fe.name} yavru bekliyor`);
+}
+function afterChase(fe, ma){
+  if (fe.task.next === 'tpos' && ma){ fe.task = {type:'tpos', t:0, left:5, partner:ma.id, cycle:1, floor:true}; ma.task = {type:'tpos', t:0, left:5, partner:fe.id, cycle:1, floor:true}; toast(`${fe.name} ile ${ma.name} T pozisyonunda`); return; }
+  const spot = chooseSpot(fe); addEggs(fe, spot, 6 + (R() * 6 | 0)); endTask(fe); if (ma){ endTask(ma); ma.cool = 70; } fe.cool = 110;
+}
+function inheritCol(mom, dad){ if (R() < .12) return null; return Object.assign({}, R() < .5 || !dad ? mom.col : dad.col); }
+function spawnFry(sp, pos, n, mom, dad){
+  const room = CAP - fish.length; n = Math.min(n, room);
+  for (let i = 0; i < n; i++){
+    const sex = R() < .5 ? 'm' : 'f';
+    let col;
+    if (sp === 'lepistes') col = sex === 'm' ? (dad && dad.col && dad.col.acc ? Object.assign({}, dad.col) : mkCol(sp, 'm')) : mkCol(sp, 'f');
+    else col = (mom && inheritCol(mom, dad)) || mkCol(sp, sex);
+    const f = makeFish(sp, sex, {col, growth:0, full:.5, cool:120, p:v3(clamp(pos.x + rand(-1, 1), 1, Wc - 1), clamp(pos.y + rand(-.5, .5), 1, Hc - 1), clamp(pos.z + rand(-1, 1), 1, Dc - 1))});
+    if (sp === 'lepistes' && sex === 'm' && dad && dad.tsp) f.tsp = dad.tsp.map(p => p.slice());
+    if (SP[sp].egg === 'rock' && sp === 'diskus') f.cling = 30;
+    fish.push(f);
+    const [x, y] = projP(f.p); sparks.push({x, y, vx:rand(-20, 20), vy:rand(-25, 5), life:1});
+  }
+  return n;
+}
+
+/* Fizik adımı: yönelim (sınırlı dönüş hızı), ileri hız (Lighthill/EBT), yan kayma sönümü, akış, kaldırma */
+function physics(f, dt){
+  const sp = SP[f.sp], M = f.M, TLm = f.TL / 100;
+  // yönelim: Rodrigues dönüşü, en fazla Ω·dt
+  let d = f.dGoal || f.e;
+  if (Math.abs(d.y) > .7) d = norm(v3(d.x, Math.sign(d.y) * .7, d.z));
+  const c = clamp(dot(f.e, d), -1, 1), ang = Math.acos(c);
+  const Om = Math.min(12, (sp.mode === 'bcf' ? 1.1 : 2.6) + f.U / Math.max(.15 * TLm, .002));
+  if (ang > 1e-4){
+    let ax = cross(f.e, d); if (len(ax) < 1e-6) ax = v3(0, 1, 0); ax = norm(ax);
+    const th = Math.min(ang, Om * dt), ct = Math.cos(th), st = Math.sin(th);
+    const k = ax, e = f.e;
+    f.e = norm(add(add(mul(e, ct), mul(cross(k, e), st)), mul(k, dot(k, e) * (1 - ct))));
+  }
+  const pmax = sp.h > .44 ? .42 : f.task && f.task.type === 'air' ? .8 : .7;
+  if (Math.abs(f.e.y) > pmax){ const hz = Math.hypot(f.e.x, f.e.z) || 1e-3, k = Math.sqrt(1 - pmax * pmax) / hz; f.e = norm(v3(f.e.x * k, Math.sign(f.e.y) * pmax, f.e.z * k)); }
+  // dönüş hızı → gövde eğriliği (κ·TL)
+  const psi = Math.atan2(f.e.z, f.e.x), dpsi = angDiff(psi, f.psi) / Math.max(dt, 1e-4); f.psi = psi;
+  const kT = clamp(dpsi * TLm / Math.max(f.U, .35 * TLm), -1.2, 1.2) * (sp.mode === 'bcf' ? 1 : .3);
+  f.kTL += (kT - f.kTL) * Math.min(1, dt * 8);
+  // ileri hız: hızlan–süzül histerezisi
+  let target = f.Ut;
+  if (f.bcOn && target > .2 * TLm){
+    if (f.U > target * 1.3) f.coast = true; else if (f.U < target * .72) f.coast = false;
+  } else f.coast = false;
+  if (f.coast){ const D = FP.drag(f.U, M, false); f.U = Math.max(0, f.U - D / M.mEff * dt); f.omega = 0; f.omegaP = 0; f.active = false; }
+  else FP.stepSurge(f, M, f.bcOn ? target * 1.35 : target, dt, sp.mode, f.bcOn ? .2 : .45);
+  // yan kayma: önceki hız vektörünün yanal kısmı τ≈0.12 s ile söner
+  const vPrev = f.vel || mul(f.e, f.U);
+  const along = dot(vPrev, f.e), side = sub(vPrev, mul(f.e, along));
+  f.vs = mul(side, Math.exp(-dt / .12));
+  let vel = add(mul(f.e, f.U), f.vs);
+  // dip türü: hafif negatif yüzerlik, durunca dibe çöker
+  if (sp.density && sp.density > 1 && f.U < .3 * TLm) vel.y += .6 / 100;
+  f.vel = vel;
+  const [fu, fv] = flow(f.p.x, f.p.y), drift = .45;
+  f.p = add(f.p, mul(vel, dt * 100));
+  f.p.x += fu * drift * dt; f.p.y += fv * drift * dt;
+  // sınırlar
+  const m = f.TL * .35;
+  f.p.x = clamp(f.p.x, m, Wc - m); f.p.z = clamp(f.p.z, m * .6, Dc - m * .6);
+  f.p.y = clamp(f.p.y, f.TL * .15, Hc - f.TL * SP[f.sp].h * .35);
+  // görsel faz: gerçek frekans 9 Hz üstünde ekranda örneklenemez, çizim fazı 9 Hz'de kırpılır
+  const fVis = Math.min(f.omega / TAU, 9);
+  f.phase += TAU * fVis * dt;
+  const ampT = f.omega > 1 ? clamp(.45 + f.omega / (TAU * 4), .45, 1) : 0;
+  f.amp += (ampT - f.amp) * Math.min(1, dt * (ampT > f.amp ? 14 : 9));
+  const fp = f.fan ? 3.5 : f.omegaP / TAU;
+  f.phaseP += TAU * Math.min(fp, 6) * dt + (sp.mode !== 'bcf' ? .8 * dt : 0);
+  f.ampP = f.fan ? 1 : clamp(f.omegaP / (TAU * 2.5), .15, 1);
+}
+
+function updateFish(f, dt, steps = 1, h = dt){
+  f.full = Math.max(0, f.full - dt / 170);
+  f.cool = Math.max(0, f.cool - dt);
+  if (f.full > .5 && f.growth < 1) f.growth = Math.min(1, f.growth + dt * .0016);
+  if (f.cling > 0) f.cling -= dt;
+  updateMorph(f);
+  think(f, dt);
+  if (f.cling > 0){ const par = fish.find(o => o.sp === f.sp && adult(o) && o.task && o.task.type === 'guard'); if (par){ const tgt = add(par.p, v3(Math.sin(f.id) * par.TL * .3, Math.cos(f.id * 1.7) * par.TL * .25, -par.TL * .15)); const s = seek(f, tgt, 1.5, .05); f.dGoal = s.d; f.Ut = s.U; } }
+  for (let s = 0; s < steps; s++) physics(f, h);
+  if (f.preg > 0){
+    f.preg -= dt;
+    if (Math.abs(Math.round((1 - f.preg / f.pregT) * 20) - (f.bk || 0)) >= 1){ f.bk = Math.round((1 - f.preg / f.pregT) * 20); f.key = ''; }
+    if (f.preg <= 0){
+      f.preg = 0; f.cool = 90; f.key = '';
+      const n = spawnFry(f.sp, add(f.p, mul(f.e, -f.TL * .2)), 3 + (R() * 4 | 0), f, f.dad);
+      toast(n ? `${f.name} ${n} yavru doğurdu` : `Akvaryum dolu, ${f.name} dinleniyor`);
+      if (n) arp();
+    }
+  }
+  if (f.startle > 0) f.startle -= dt;
+}
+
+/* C-start kaçış tepkisi (Mauthner): ışık aniden yandığında bazı balıklar irkilir */
+function startle(f){
+  const s = R() < .5 ? 1 : -1, n = v3(-f.e.z, 0, f.e.x);
+  f.startle = .14; f.cdir = s;
+  f.e = norm(add(mul(f.e, .1), mul(n, s)));
+  f.U = Math.max(f.U, SP[f.sp].Ub * .8 * f.TL / 100);
+  f.coast = true;
+}
+
+/* ---------------- yem, kabarcık, yumurta güncellemesi ---------------- */
+const VT_FLAKE = Math.abs(FP.terminalVelocity(.0015, 1030)) * 100, VT_PELLET = Math.abs(FP.terminalVelocity(.0012, 1250)) * 100, VT_BUB = FP.bubbleVelocity(.003) * 100;
+function updateWorld(dt){
+  for (const fd of food){
+    const [fu, fv] = flow(fd.x, fd.y);
+    if (fd.suck){ const m = mouth(fd.suck.f); fd.x = lerp(fd.x, m.x, .35); fd.y = lerp(fd.y, m.y, .35); fd.z = lerp(fd.z, m.z, .35); fd.suck.t += dt; if (fd.suck.t > .12) fd.life = 0; continue; }
+    if (fd.state === 'float'){ fd.t -= dt; fd.x += fu * dt; fd.y = .15; if (fd.t <= 0) fd.state = 'sink'; }
+    else if (fd.state === 'sink' || fd.state === 'eggfall'){
+      fd.ph += dt * TAU * .8;
+      const vt = fd.state === 'eggfall' ? fd.vt : fd.kind === 'pellet' ? VT_PELLET : VT_FLAKE;
+      const flutter = fd.kind === 'pellet' ? 0 : .5;
+      fd.y += (vt + fv * .8) * dt; fd.x += (fu + Math.cos(fd.ph) * flutter * vt) * dt; fd.z += Math.sin(fd.ph * .7) * flutter * .4 * dt;
+      if (fd.state === 'eggfall'){
+        for (const p of plants){ if (p.type !== 'v') continue; const t = (Hc - fd.y) / p.h; if (t > 0 && t < 1){ const q = vPoint(p, t); if (Math.hypot(q.x - fd.x, q.z - fd.z) < .8){ stickEgg(fd, {kind:'plant', pi:plants.indexOf(p), u:t}); break; } } }
+        if (fd.life > 0 && fd.y >= Hc - .1) stickEgg(fd, {kind:'sand', x:fd.x, y:Hc - .1, z:fd.z});
+      } else if (fd.y >= Hc - .1){ fd.y = Hc - .1; fd.state = 'floor'; }
+    } else if (fd.state === 'floor') fd.life -= dt;
+  }
+  food = food.filter(f => f.life > 0);
+  for (let i = eggs.length - 1; i >= 0; i--){
+    const e = eggs[i];
+    if (e.kind === 'nest' && e.n === 0 && e.foam > 0){ e.foam = Math.max(0, e.foam - dt * .02); }
+    if (e.n <= 0 && e.kind !== 'nest'){ eggs.splice(i, 1); continue; }
+    if (e.kind === 'nest' && e.n === 0){ e.idle = (e.idle || 0) + dt; if (e.idle > 90){ eggs.splice(i, 1); } continue; }
+    e.t -= dt;
+    if (e.t <= 0 && !e.larva){ e.larva = LARVA; toast(`${SP[e.sp].ad} yumurtaları açıldı; larvalar besin keselerini tüketiyor`); }
+    if (e.larva > 0){ e.larva -= dt; if (e.larva <= 0){ eggs.splice(i, 1); const n = spawnFry(e.sp, eggPosOf(e), Math.min(e.n, 10), Object.assign({sp:e.sp}, e.mom), e.dad ? Object.assign({sp:e.sp}, e.dad) : null); toast(n ? `${n} ${SP[e.sp].ad} yavrusu serbestçe yüzmeye başladı` : 'Akvaryum dolu; yumurtalar sessizce kayboldu'); if (n) arp(); } }
+  }
+  for (const b of bubbles){
+    if (b.nest){ b.y -= 12 * dt; if (b.y < .3) b.dead = true; continue; }
+    b.y -= VT_BUB * dt; b.ph += dt * TAU * 5; b.x += Math.cos(b.ph) * .9 * dt * 5; b.z += Math.sin(b.ph * .8) * .5 * dt;
+    if (b.y < .25){ b.dead = true; ripples.push({x:b.x, z:b.z, t:0, r:.9}); }
+  }
+  bubbles = bubbles.filter(b => !b.dead);
+  bubClock -= dt; if (bubClock < 0){ bubClock = rand(.08, .3); bubbles.push({x:Wc * .9 + rand(-.2, .2), y:Hc - .4, z:Dc * .7, r:rand(.1, .22), ph:R() * TAU}); if (R() < .2) blub(.006, rand(260, 420)); }
+  for (const r of ripples) r.t += dt * .9; ripples = ripples.filter(r => r.t < 1);
+  for (const h of hearts){ h.p.y -= 1.4 * dt; h.life -= dt * .45; } hearts = hearts.filter(h => h.life > 0);
+  for (const s of sparks){ s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= .96; s.vy *= .96; s.life -= dt * .7; } sparks = sparks.filter(s => s.life > 0);
+  for (const p of puffs){ p.p.y -= .6 * dt; p.p.x += p.vx * dt; p.life -= dt * .5; } puffs = puffs.filter(p => p.life > 0);
+}
+function stickEgg(fd, spot){
+  fd.life = 0;
+  const e = eggs.find(x => x.sp === fd.sp && x.t > HATCH * .55 && x.kind === spot.kind && (spot.kind === 'plant' ? x.pi === spot.pi : Math.hypot(x.x - spot.x, x.z - spot.z) < 16));
+  if (e){ e.n++; return; }
+  eggs.push(Object.assign({sp:fd.sp, n:1, t:HATCH, tT:HATCH, larva:0, seed:(R() * 1e9) | 0, mom:{col:fd.mom, sex:'f'}, dad:fd.dad || null}, spot));
+}
+function puff(p){ for (let i = 0; i < 3; i++) puffs.push({p:v3(p.x + rand(-.3, .3), p.y, p.z), vx:rand(-.6, .6), life:1, r:rand(.1, .25)}); }
+
+let breedClock = 0, saveClock = 0, bubClock = 0, cardClock = 0;
+function update(dt){
+  time += dt;
+  const lm0 = lampMix;
+  lampMix += ((lampOn ? 1 : 0) - lampMix) * Math.min(1, dt * 1.2);
+  if (lm0 < .3 && lampMix >= .3) for (const f of fish) if (R() < .35 && f.growth > .3) startle(f);
+  const steps = Math.ceil(dt / (1 / 90)), h = dt / steps;
+  for (const f of fish.slice()) updateFish(f, dt, steps, h);
+  updateWorld(dt);
+  breedClock -= dt; if (breedClock < 0){ breedClock = 1.5; breedTick(); }
+  saveClock -= dt; if (saveClock < 0){ saveClock = 5; save(); }
+  if (cardFish && (cardClock -= dt) < 0){ cardClock = .3; refreshCard(); }
+}
+
+/* =====================================================================
+   ÇİZİM
+   ===================================================================== */
+/* Gövde orta hattının yanal yer değiştirmesi (cm): yürüyen dalga + dönüş eğriliği + pozlar */
+function lateral(f, u){
+  const sp = SP[f.sp], TL = f.TL, uc = .42;
+  const env = FP.envelope(clamp(u, 0, 1.15), sp.env === 'ang' ? 'ang' : 'car') * (sp.A / .1);
+  const lam = sp.lam || 1;
+  let h = TL * env * f.amp * Math.sin(TAU * (u / lam) - f.phase);
+  const ub = Math.min(u, 1) - uc;
+  h += .5 * f.kTL * TL * ub * ub;
+  if (f.pose === 'sigmoid') h += TL * (.07 * Math.sin(TAU * (u * 1.05) + .4) + .008 * Math.sin(time * TAU * 7 + u * 4));
+  if (f.pose === 'embrace') h += .5 * 3.4 * TL * (u - .45) * (u - .45) * (f.id % 2 ? 1 : -1);
+  if (f.startle > 0){ const k = f.startle > .07 ? (0.14 - f.startle) / .07 : f.startle / .07; h += .5 * 3.2 * k * f.cdir * TL * (u - uc) * (u - uc); }
+  if (f.sp === 'beta' && f.sex === 'm' || f.pose) h += 0;
+  return h;
+}
+function fishSprite(f){
+  const G = geom(f), bucket = clamp(Math.round(f.p.z / Dc * 3), 0, 3), belly = f.preg > 0 ? 1 + .32 * (1 - f.preg / f.pregT) : 1;
+  const Lpx = f.TL * PX / tlFactor(G), night = f.sp === 'neon' && lampMix < .5;
+  const key = Math.round(Lpx * 2) + '|' + Math.round((belly - 1) * 20) + '|' + (night ? 1 : 0);
+  if (f.key !== key){ f.key = key; f.sprs = []; f._night = night; }
+  if (!f.sprs[bucket]){ const tint = (1 - Math.exp(-.022 * (bucket / 3) * Dc)) * .8; f.sprs[bucket] = buildSprite(f, Lpx, belly, tint); }
+  return f.sprs[bucket];
+}
+function drawFish(f){
+  const spr = fishSprite(f), G = geom(f);
+  const e = f.e, n = norm(v3(-e.z, 0, e.x)), up = norm(cross(e, n));
+  const TLpx = spr.TLpx, cmPerPx = f.TL / TLpx;
+  // gövde boyunca şeritler: kaynak x → gövde koordinatı u (0 burun, 1 kuyruk ucu)
+  const N = clamp(Math.round(spr.TLpx / 4), 6, 22), xs0 = 0, xs1 = spr.w;
+  const O = [], XS = [];
+  for (let j = 0; j <= N; j++){
+    const xs = lerp(xs0, xs1, j / N), u = (spr.nose - xs) / TLpx;
+    const P = add(f.p, add(mul(e, (.42 - u) * f.TL), mul(n, lateral(f, u))));
+    O.push(projP(P)); XS.push(xs);
+  }
+  const c0 = projP(f.p), dn = projP(add(f.p, mul(up, -1))), s = sc(f.p.z);
+  let ybx = (dn[0] - c0[0]) * cmPerPx, yby = (dn[1] - c0[1]) * cmPerPx;
+  if (f.roll > .5){ ybx = -ybx; yby = -yby; }
+  const D = DPR, dS = spr.d;
+  for (let j = 0; j < N; j++){
+    const xa = XS[j], xb = XS[j + 1], wpx = xb - xa;
+    const ax = (O[j + 1][0] - O[j][0]) / wpx, ay = (O[j + 1][1] - O[j][1]) / wpx;
+    const ex = O[j][0] - ax * xa - ybx * spr.top, ey = O[j][1] - ay * xa - yby * spr.top;
+    ctx.setTransform(ax * D, ay * D, ybx * D, yby * D, ex * D, ey * D);
+    ctx.drawImage(spr.c, xa * dS, 0, Math.min(wpx + .9, spr.w - xa) * dS, spr.c.height, xa, 0, Math.min(wpx + .9, spr.w - xa), spr.h);
+  }
+  ctx.setTransform(D, 0, 0, D, 0, 0);
+  // önden/arkadan bakışta kesit elipsi (ince şerit yerine gövde hacmi)
+  const bodyLen = Math.hypot(O[N][0] - O[0][0], O[N][1] - O[0][1]) / (TLpx * s);
+  if (bodyLen < .55){
+    const a = 1 - bodyLen / .55, hh = f.TL * SP[f.sp].h * .82 * PX * s * .5, ww = Math.max(hh * .35, f.TL * (SP[f.sp].w || .14) * PX * s * .6);
+    const gr = ctx.createLinearGradient(0, c0[1] - hh, 0, c0[1] + hh); gr.addColorStop(0, rgba(hex(f.col.back), .9 * a)); gr.addColorStop(.5, rgba(hex(f.col.base), .9 * a)); gr.addColorStop(1, rgba(hex(f.col.belly), .9 * a));
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(c0[0], c0[1], ww, hh, 0, 0, TAU); ctx.fill();
+  }
+  // göğüs yüzgeci: kürek vuruşu
+  const pu = .26, pp = projP(add(f.p, add(mul(e, (.42 - pu) * f.TL), add(mul(n, lateral(f, pu)), mul(up, -f.TL * SP[f.sp].h * .12)))));
+  const bodyAng = Math.atan2(O[0][1] - O[N][1], O[0][0] - O[N][0]);
+  const flap = Math.sin(f.phaseP) * .55 * (f.ampP || .3), finL = f.TL * .13 * PX * s;
+  ctx.save(); ctx.translate(pp[0], pp[1]); ctx.rotate(bodyAng + Math.PI + (O[0][0] > O[N][0] ? -1 : 1) * (.9 + flap));
+  ctx.fillStyle = rgba(hex(f.col.fin), .4); ctx.beginPath(); ctx.ellipse(finL * .5, 0, finL * .6, finL * .24, 0, 0, TAU); ctx.fill(); ctx.restore();
+}
+function drawFishShadow(f){
+  const [x, y] = proj(f.p.x, Hc, f.p.z), hgt = (Hc - f.p.y) / Hc, s = sc(f.p.z);
+  const r = f.TL * .45 * PX * s * (1 + hgt * 1.5), a = .16 * (1 - hgt) * lampMix + .03;
+  const gr = ctx.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, `rgba(30,45,40,${a})`); gr.addColorStop(1, 'rgba(30,45,40,0)');
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(x, y, r, r * .32, 0, 0, TAU); ctx.fill();
+}
+function heart(x, y, s, a){
+  ctx.fillStyle = `rgba(236,128,150,${a})`; ctx.beginPath();
+  ctx.moveTo(x, y + s * .35); ctx.bezierCurveTo(x - s, y - s * .3, x - s * .45, y - s, x, y - s * .45); ctx.bezierCurveTo(x + s * .45, y - s, x + s, y - s * .3, x, y + s * .35); ctx.fill();
+}
+function drawEggs(e){
+  const p = eggPosOf(e), [x, y] = projP(p), s = sc(p.z), rr = .1 * PX * s + .6;
+  srand(e.seed);
+  if (e.kind === 'nest'){
+    const foam = Math.max(e.foam, e.n ? 30 : 0);
+    for (let i = 0; i < foam; i++){ const bx = x + gauss(sr) * 2.4 * PX * s, by = y + Math.abs(gauss(sr)) * .6 * PX * s, r = rand(.15, .45, sr) * PX * s; ctx.fillStyle = 'rgba(255,255,255,.3)'; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = .7; ctx.beginPath(); ctx.arc(bx, by, r, 0, TAU); ctx.fill(); ctx.stroke(); }
+  }
+  const hatch = 1 - e.t / e.tT, n = Math.min(e.n, 40);
+  for (let i = 0; i < n; i++){
+    let ex, ey;
+    if (e.row){ ex = x + (i / Math.max(1, n - 1) - .5) * 2.4 * PX * s + gauss(sr) * .1 * PX * s; ey = y + gauss(sr) * .25 * PX * s; }
+    else { ex = x + gauss(sr) * (e.kind === 'nest' ? 1.4 : e.kind === 'sand' ? 1.6 : .7) * PX * s; ey = y + gauss(sr) * (e.kind === 'sand' ? .15 : .5) * PX * s + (e.kind === 'nest' ? .5 * PX * s : 0); }
+    if (e.larva > 0){
+      const w = Math.sin(time * 14 + i) * .4;
+      ctx.strokeStyle = 'rgba(240,232,210,.85)'; ctx.lineWidth = Math.max(.8, rr * .7); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.quadraticCurveTo(ex - rr * 2, ey + w * rr * 2, ex - rr * 3.5, ey - w * rr); ctx.stroke();
+      ctx.fillStyle = 'rgba(250,236,190,.9)'; ctx.beginPath(); ctx.arc(ex, ey, rr * 1.1, 0, TAU); ctx.fill();
+      ctx.fillStyle = 'rgba(30,28,25,.8)'; ctx.beginPath(); ctx.arc(ex + rr * .4, ey - rr * .2, rr * .35, 0, TAU); ctx.fill();
+      continue;
+    }
+    ctx.fillStyle = 'rgba(252,238,196,.82)'; ctx.strokeStyle = 'rgba(160,130,80,.35)'; ctx.lineWidth = .6;
+    ctx.beginPath(); ctx.arc(ex, ey, rr, 0, TAU); ctx.fill(); ctx.stroke();
+    if (hatch > .45){ ctx.fillStyle = `rgba(40,35,30,${Math.min(.8, (hatch - .45) * 1.4)})`; ctx.beginPath(); ctx.arc(ex + rr * .25, ey - rr * .2, rr * .32, 0, TAU); ctx.fill(); }
+  }
+}
+function drawFood(fd){
+  const [x, y] = proj(fd.x, fd.y, fd.z), s = sc(fd.z), a = clamp(fd.life / 3, 0, 1);
+  if (fd.state === 'eggfall'){ ctx.fillStyle = `rgba(252,238,196,${.85 * a})`; ctx.beginPath(); ctx.arc(x, y, .1 * PX * s + .6, 0, TAU); ctx.fill(); return; }
+  ctx.save(); ctx.translate(x, y); ctx.rotate(fd.ph || 0);
+  ctx.fillStyle = rgba(fd.c, .88 * a);
+  if (fd.kind === 'pellet'){ ctx.beginPath(); ctx.arc(0, 0, .09 * PX * s + .7, 0, TAU); ctx.fill(); }
+  else { ctx.beginPath(); ctx.ellipse(0, 0, .2 * PX * s + 1, (.12 * PX * s + .6) * Math.abs(Math.cos(fd.ph || 0)) + .3, 0, 0, TAU); ctx.fill(); }
+  ctx.restore();
+}
+function drawBubble(b){
+  const [x, y] = proj(b.x, b.y, b.z), s = sc(b.z), r = b.r * PX * s + .6;
+  ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.lineWidth = .8; ctx.fillStyle = 'rgba(255,255,255,.12)';
+  ctx.beginPath(); ctx.ellipse(x, y, r, r * (b.nest ? 1 : .85), 0, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.beginPath(); ctx.arc(x - r * .35, y - r * .35, r * .25, 0, TAU); ctx.fill();
+}
+function drawLab(f){
+  const [x, y] = projP(f.p), s = sc(f.p.z), k = PX * s;
+  for (const [r, col] of [[f.TL * 1, 'rgba(230,90,90,.6)'], [f.TL * 3, 'rgba(240,200,80,.5)'], [f.TL * 8, 'rgba(90,170,230,.45)']]){
+    ctx.strokeStyle = col; ctx.lineWidth = 1.2; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.ellipse(x, y, r * k, r * k * .55, 0, 0, TAU); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  const v = f.vel || v3(), tip = projP(add(f.p, mul(v, 100 * 1.0)));
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(tip[0], tip[1]); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.beginPath(); ctx.arc(tip[0], tip[1], 2.5, 0, TAU); ctx.fill();
+  ctx.font = '600 11px Nunito, sans-serif'; ctx.fillStyle = 'rgba(255,255,255,.9)'; ctx.fillText('itme  hizalanma  çekim', x - 50, y - f.TL * 8 * k * .55 - 6);
+}
+
+function frame(){
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+  if (BG) ctx.drawImage(BG, 0, 0, W, H);
+  // zemin kostikleri
+  const bfl = proj(0, Hc, Dc), bfr = proj(Wc, Hc, Dc), ffl = proj(0, Hc, 0), ffr = proj(Wc, Hc, 0);
+  if (lampMix > .02){
+    ctx.save(); polyPath(ctx, [bfl, bfr, ffr, ffl]); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 14; i++){
+      const x = (i * 7.3 + Math.sin(time * .35 + i) * 3) % Wc, z = (i * 4.1 % Dc) + Math.cos(time * .3 + i * 2) * 2, [px, py] = proj(x, Hc, z), s = sc(z), r = (2.2 + Math.sin(time * .9 + i) * .8) * PX * s;
+      const gr = ctx.createRadialGradient(px, py, 0, px, py, r); gr.addColorStop(0, `rgba(255,250,215,${.09 * lampMix})`); gr.addColorStop(1, 'rgba(255,250,215,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.ellipse(px, py, r, r * .35, 0, 0, TAU); ctx.fill();
+    }
+    ctx.restore();
+  }
+  for (const f of fish) drawFishShadow(f);
+  // derinlik sırası: uzaktan yakına
+  const items = [];
+  for (const p of plants) items.push({z:p.z, k:p.type === 'v' ? 1 : 2, o:p});
+  for (const r of rocks) items.push({z:r.z, k:3, o:r});
+  if (wood) items.push({z:wood.z, k:4, o:wood});
+  for (const f of fish) items.push({z:f.p.z, k:5, o:f});
+  for (const e of eggs) items.push({z:eggPosOf(e).z - .01, k:6, o:e});
+  for (const fd of food) items.push({z:fd.z, k:7, o:fd});
+  for (const b of bubbles) items.push({z:b.z, k:8, o:b});
+  items.sort((a, b) => b.z - a.z);
+  for (const it of items){
+    const o = it.o;
+    if (it.k === 1) drawVallis(o);
+    else if (it.k === 2) drawAmazon(o);
+    else if (it.k === 3){ const s = sc(o.z), [x, y] = proj(o.x, Hc + .3, o.z); ctx.drawImage(o.spr.c, x - o.spr.base * s, y - o.spr.base * s * 1.1, o.spr.w * s, o.spr.w * s); }
+    else if (it.k === 4){ const s = sc(o.z), [x, y] = proj(o.x, Hc + .3, o.z), sp = o.spr; ctx.drawImage(sp.c, x - sp.bx * s, y - sp.by * s, sp.w * s, sp.h * s); }
+    else if (it.k === 5) drawFish(o);
+    else if (it.k === 6) drawEggs(o);
+    else if (it.k === 7) drawFood(o);
+    else drawBubble(o);
+  }
+  for (const p of puffs){ const [x, y] = projP(p.p); ctx.fillStyle = `rgba(214,196,150,${p.life * .6})`; ctx.beginPath(); ctx.arc(x, y, p.r * PX * sc(p.p.z) + .5, 0, TAU); ctx.fill(); }
+  for (const h of hearts){ const [x, y] = projP(h.p); heart(x, y, h.s * PX * sc(h.p.z), h.life * .8); }
+  for (const f of fish) if (f.task && f.task.falling) for (const t of f.task.falling){ if (t.got) continue; t.y = Math.min(Hc - .2, t.y + t.vy * (1 / 60)); const [x, y] = proj(t.x, t.y, t.z); ctx.fillStyle = 'rgba(252,238,196,.85)'; ctx.beginPath(); ctx.arc(x, y, .1 * PX * sc(t.z) + .7, 0, TAU); ctx.fill(); }
+  // yüzeyin alt yüzü (tam iç yansıma bandı) ve halkalar
+  const tl = proj(0, 0, 0), tr = proj(Wc, 0, 0), bl = proj(0, 0, Dc), br = proj(Wc, 0, Dc);
+  ctx.fillStyle = 'rgba(235,248,244,.22)'; polyPath(ctx, [tl, tr, br, bl]); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.45)'; ctx.lineWidth = 1.4; ctx.beginPath();
+  for (let x = 0; x <= W + 10; x += 10){ const y = WT + Math.sin(x * .03 + time * 1.4) * 1.6 + Math.sin(x * .011 - time) * 1.2; x ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+  ctx.stroke();
+  for (const r of ripples){ const [x, y] = proj(r.x, 0, r.z), s = sc(r.z); ctx.strokeStyle = `rgba(255,255,255,${.5 * (1 - r.t)})`; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, r.r * PX * s * (.3 + r.t), r.r * PX * s * (.3 + r.t) * .25, 0, 0, TAU); ctx.stroke(); }
+  // ışık huzmeleri
+  if (lampMix > .02){
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 5; i++){
+      const x = W * (.12 + i * .2) + Math.sin(time * .15 + i) * 20, a = (.032 + .02 * Math.sin(time * .4 + i * 1.7)) * lampMix;
+      const gr = ctx.createLinearGradient(0, WT, 0, ST); gr.addColorStop(0, `rgba(255,252,225,${a})`); gr.addColorStop(1, 'rgba(255,252,225,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.moveTo(x, WT); ctx.lineTo(x + 36, WT); ctx.lineTo(x + 120, ST); ctx.lineTo(x + 36, ST); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+  if (cardFish){ const [x, y] = projP(cardFish.p), s = sc(cardFish.p.z); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.4; ctx.setLineDash([4, 5]); ctx.beginPath(); ctx.ellipse(x, y, cardFish.TL * .7 * PX * s, cardFish.TL * .45 * PX * s, 0, 0, TAU); ctx.stroke(); ctx.setLineDash([]); if (labOn) drawLab(cardFish); }
+  ctx.globalCompositeOperation = 'multiply';
+  const night = 1 - lampMix;
+  if (night > .01){ ctx.fillStyle = rgba(mix([255, 255, 255], [96, 116, 168], night), 1); ctx.fillRect(0, 0, W, H); }
+  if (PAPER) ctx.drawImage(PAPER, 0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  if (night > .05){ const gr = ctx.createRadialGradient(W * .8, WT, 0, W * .8, WT, H * .7); gr.addColorStop(0, `rgba(170,190,255,${.12 * night})`); gr.addColorStop(1, 'rgba(170,190,255,0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); }
+  for (const s of sparks){ const r = 6 * s.life, g2 = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r); g2.addColorStop(0, `rgba(255,240,180,${.8 * s.life})`); g2.addColorStop(1, 'rgba(255,240,180,0)'); ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, TAU); ctx.fill(); }
+  ctx.globalCompositeOperation = 'source-over';
+}
+let last = 0;
+const PERF = {u:0, f:0, n:0};
+function loop(t){ const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; if (W && BG){ const a = performance.now(); update(dt); const b = performance.now(); frame(); const c = performance.now(); PERF.u += b - a; PERF.f += c - b; PERF.n++; } requestAnimationFrame(loop); }
+
+/* ---------------- kayıt ---------------- */
+const KEY = 'baba-akvaryum-v2';
+function save(){
+  try {
+    const data = {v:2, layoutSeed, nextId, lampOn, muted,
+      fish:fish.map(f => ({id:f.id, sp:f.sp, sex:f.sex, name:f.name, growth:+f.growth.toFixed(4), full:+f.full.toFixed(3), col:f.col, seed:f.seed, tsp:f.tsp, p:{x:f.p.x / Wc, y:f.p.y / Hc, z:f.p.z / Dc}, preg:f.preg, pregT:f.pregT, cool:f.cool, dad:f.dad || null})),
+      eggs:eggs.filter(e => e.n > 0).map(e => ({sp:e.sp, n:e.n, t:e.t, tT:e.tT, larva:e.larva, seed:e.seed, mom:e.mom, dad:e.dad, kind:e.kind, pi:e.pi, u:e.u, x:e.x / Wc, y:e.y / Hc, z:e.z / Dc, foam:e.foam, row:e.row}))};
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch (e) {}
+}
+function load(){
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (!d || !d.fish) return false;
+    layoutSeed = d.layoutSeed; nextId = d.nextId || 1; lampOn = d.lampOn !== false; muted = !!d.muted; lampMix = lampOn ? 1 : 0;
+    layout();
+    fish = d.fish.filter(f => SP[f.sp]).map(f => makeFish(f.sp, f.sex, Object.assign({}, f, {p:v3(f.p.x * Wc, f.p.y * Hc, f.p.z * Dc)})));
+    eggs = (d.eggs || []).filter(e => SP[e.sp]).map(e => Object.assign({}, e, {x:e.x * Wc, y:e.y * Hc, z:e.z * Dc}));
+    eggs.forEach(e => { if (e.kind === 'nest' && e.n === 0) e.n = 0; });
+    return true;
+  } catch (e) { return false; }
+}
+function starter(){
+  layout();
+  const add2 = (sp, sex, o) => fish.push(makeFish(sp, sex, o));
+  add2('lepistes', 'm', {growth:.9, full:.7, cool:0});
+  add2('lepistes', 'f', {growth:.95, full:.7, preg:30, pregT:GEST, cool:0});
+  fish[1].dad = {sex:'m', col:fish[0].col, tsp:fish[0].tsp};
+  for (let i = 0; i < 6; i++) add2('neon', i % 2 ? 'm' : 'f', {growth:.85, full:.6, cool:rand(20, 60)});
+  add2('koridoras', 'm', {growth:.8, full:.5}); add2('koridoras', 'f', {growth:.8, full:.5}); add2('koridoras', 'f', {growth:.8, full:.5});
+  add2('melek', 'f', {growth:.7, full:.5}); add2('beta', 'm', {growth:.8, full:.6});
+  add2('danyo', 'm', {growth:.8, full:.6}); add2('danyo', 'f', {growth:.8, full:.6}); add2('danyo', 'f', {growth:.8, full:.6});
+}
+
+/* ---------------- boyutlandırma ---------------- */
+function sizeCanvas(){
+  W = window.innerWidth; H = window.innerHeight; DPR = Math.min(window.devicePixelRatio || 1, 2);
+  WT = Math.max(64, H * .085); ST = H * .9;
+  PX = clamp(Math.min(W, (ST - WT) * .85) / 34, 7, 17);
+  Wc = W / PX; Hc = (ST - WT) / PX; Dc = clamp(Wc * .55, 22, 45); xc = Wc / 2; yc = Hc * .45;
+  cvs.width = Math.round(W * DPR); cvs.height = Math.round(H * DPR);
+}
+function rebuildArt(){ BG = renderBG(); PAPER = renderPaper(); rocks.forEach(renderRock); if (wood) renderWood(); fish.forEach(f => { f.key = ''; }); }
+let rsT = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rsT);
+  rsT = setTimeout(() => {
+    const ow = Wc, oh = Hc, od = Dc, W0 = W, H0 = H; sizeCanvas(); if (Math.abs(W - W0) < 2 && Math.abs(H - H0) < 2) return;
+    fish.forEach(f => { f.p.x *= Wc / ow; f.p.y *= Hc / oh; f.p.z *= Dc / od; });
+    eggs.forEach(e => { if (e.x !== undefined){ e.x *= Wc / ow; e.y *= Hc / oh; e.z *= Dc / od; } });
+    food = []; layout(); rebuildArt();
+  }, 300);
+});
+
+/* ---------------- arayüz ---------------- */
+const $ = id => document.getElementById(id);
+const cat = $('cat'), card = $('card');
+let cardFish = null, rmArm = false;
+const ICON = {
+  on:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  off:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M17 9.5l5 5M22 9.5l-5 5"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>'};
+function setIcons(){ $('snd').innerHTML = muted ? ICON.off : ICON.on; $('lamp').innerHTML = lampOn ? ICON.sun : ICON.moon; }
+$('snd').onclick = () => { muted = !muted; if (master) master.gain.setTargetAtTime(muted ? 0 : .5, AC.currentTime, .3); setIcons(); save(); };
+$('lamp').onclick = () => { lampOn = !lampOn; setIcons(); toast(lampOn ? 'Işık yandı; bazı balıklar irkildi (C-start kaçış tepkisi)' : 'Işıklar kısıldı; çoğu balık yavaşlar, koridoraslar canlanır'); save(); };
+function updateCount(){ const n = fish.length, t = new Set(fish.map(f => f.sp)).size; $('cnt').textContent = `${n} balık · ${t} tür`; }
+setInterval(updateCount, 1000);
+function openSheet(el){ [cat, card].forEach(s => s.classList.toggle('on', s === el)); $('add').style.opacity = el ? '0' : '1'; $('add').style.pointerEvents = el ? 'none' : 'auto'; if (el !== card) cardFish = null; }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => openSheet(null));
+$('add').onclick = () => { buildCatalog(); openSheet(cat); };
+const MODEWORD = {bcf:'Gövde–kuyruk', lab:'Göğüs yüzgeci', benthic:'Dip yüzücüsü'};
+let catBuilt = false;
+function buildCatalog(){
+  const full = fish.length >= CAP;
+  $('catNote').textContent = full ? `Akvaryum dolu (${CAP} balık). Yer açmak için bir balığın kartından onu çıkarabilirsin.` : 'Gençler gelir; besledikçe büyür, yetişkin olunca eşlerini bulurlar.';
+  if (catBuilt){ document.querySelectorAll('.sp button').forEach(b => b.disabled = full); return; }
+  catBuilt = true;
+  $('grid').innerHTML = ORDER.map(k => { const s = SP[k]; return `<div class="sp"><canvas width="312" height="168" data-k="${k}"></canvas><h3>${s.ad}</h3><div class="sci">${s.sci}</div><div class="chips"><span class="chip ${s.breed === 'live' ? 'live' : ''}">${s.breed === 'live' ? 'Canlı doğurur' : 'Yumurtlar'}</span><span class="chip g">${MODEWORD[s.mode]}</span><span class="chip g">${s.TL} cm</span></div><div class="row"><button data-k="${k}" data-s="m" ${full ? 'disabled' : ''}>♂ Erkek</button><button class="f" data-k="${k}" data-s="f" ${full ? 'disabled' : ''}>♀ Dişi</button></div></div>`; }).join('');
+  requestAnimationFrame(() => document.querySelectorAll('.sp canvas').forEach(c => {
+    const k = c.dataset.k, sex = SP[k].male ? 'm' : 'f';
+    const tmp = {sp:k, sex, col:mkCol(k, sex), seed:(R() * 1e9) | 0, growth:1, preg:0};
+    if (k === 'lepistes'){ tmp.tsp = []; for (let i = 0; i < 6; i++) tmp.tsp.push([rand(.3, .9), rand(-.7, .7), rand(.06, .12)]); }
+    previewInto(c, tmp, .8);
+  }));
+  $('grid').onclick = e => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    if (fish.length >= CAP){ buildCatalog(); return; }
+    const f = makeFish(b.dataset.k, b.dataset.s, {growth:.32, full:.55, cool:60, p:v3(rand(.2, .8) * Wc, 2, rand(.2, .7) * Dc)});
+    fish.push(f);
+    const [x, y] = projP(f.p); for (let k = 0; k < 8; k++) sparks.push({x, y, vx:rand(-30, 30), vy:rand(-20, 20), life:1});
+    chime(SC[b.dataset.s === 'm' ? 4 : 6], .08);
+    toast(`${f.name} geldi: ${b.dataset.s === 'm' ? 'erkek' : 'dişi'} ${SP[f.sp].ad}`);
+    if (fish.length >= CAP) buildCatalog();
+    save();
+  };
+}
+const TASKWORD = {court:'Kur yapıyor', chase:'Kovalamaca', tpos:'T pozisyonunda', wait:'Eşini bekliyor', carry:'Yumurtaları karın yüzgeçlerinde taşıyor', build:'Köpük yuva yapıyor', embrace:'Dişiye sarılıyor (yumurtlama sarılması)', embraceF:'Yuvanın altında bekliyor', collect:'Düşen yumurtaları ağzıyla topluyor', clean:'Yumurta yerini temizliyor', lay:'Yumurtaları sıra sıra diziyor', follow:'Dişiyi izleyip yumurtaları dölüyor', guard:'Yumurtaları koruyor, yüzgeçleriyle yelpazeliyor', scatter:'Yan yana yüzüp yumurta saçıyor', inverted:'Yaprağın altında ters dönmüş', air:'Yüzeye çıkıp hava alıyor'};
+function openCard(f){
+  cardFish = f; rmArm = false; $('rm').textContent = 'Akvaryumdan çıkar';
+  $('nm').value = f.name; $('fact').textContent = SP[f.sp].fact;
+  const s = SP[f.sp]; $('from').textContent = `${s.sci} · ${s.from} · yetişkin boyu ~${s.TL} cm` + (s.gest ? ` · gerçek gebelik ${s.gest}` : s.hatch ? ` · yumurtadan çıkış ${s.hatch}` : '') + ' (oyunda hızlandırılmış)';
+  refreshCard(true); openSheet(card);
+  tone(SC[3 + (f.id % 5)], {vol:.05, decay:1.2});
+}
+const fmt = (v, d = 1) => isFinite(v) ? v.toLocaleString('tr-TR', {minimumFractionDigits:d, maximumFractionDigits:d}) : '—';
+function refreshCard(first){
+  const f = cardFish; if (!f) return;
+  if (!fish.includes(f)){ openSheet(null); return; }
+  if (first || R() < .2) previewInto($('pv'), f, .82);
+  const sp = SP[f.sp];
+  $('meta').textContent = `${sp.ad} · ${f.sex === 'm' ? '♂ erkek' : '♀ dişi'} · ${stage(f).toLocaleLowerCase('tr')} · ${fmt(f.TL)} cm`;
+  $('fullB').style.width = (f.full * 100).toFixed(0) + '%'; $('fullT').textContent = f.full > .8 ? 'tok' : f.full > .4 ? 'iyi' : f.full > .15 ? 'acıkıyor' : 'aç';
+  $('grB').style.width = (f.growth * 100).toFixed(0) + '%'; $('grT').textContent = stage(f);
+  let st;
+  if (f.preg > 0) st = `Yavru bekliyor · yaklaşık ${Math.ceil(f.preg)} saniye`;
+  else if (f.task && TASKWORD[f.task.type]) st = TASKWORD[f.task.type];
+  else if (!adult(f)) st = f.growth < .3 ? 'Bitkilerin arasında saklanıyor; besledikçe büyür.' : 'Büyüyor. Yetişkin olunca eş arayacak.';
+  else if (f.full < .4) st = 'Biraz acıkmış; eş aramadan önce yem bekliyor.';
+  else if (f.cool > 0) st = 'Keşfediyor; bir süre sonra yeniden eş arayabilir.';
+  else { const mate = fish.some(o => o.sp === f.sp && o.sex !== f.sex && adult(o)); st = mate ? 'Eş arıyor.' : `Yetişkin. Bir ${f.sex === 'm' ? 'dişi' : 'erkek'} ${sp.ad.toLocaleLowerCase('tr')} eklersen eşleşebilir.`; }
+  if (fish.length >= CAP && adult(f)) st += ' (Akvaryum dolu, yeni yavru olmaz.)';
+  $('status').textContent = st;
+  const U = f.U, TLm = f.TL / 100, fT = f.omega / TAU, fP = (f.fan ? 3.5 : f.omegaP / TAU), Re = FP.reynolds(U, f.M);
+  $('sU').textContent = `${fmt(U * 100)} cm/s`; $('sU').title = `${fmt(U / TLm, 2)} boy/s`;
+  $('sF').textContent = fT > .05 ? `${fmt(fT)} Hz` : f.coast ? 'süzülüyor' : 'dinlenmede';
+  $('sFp').textContent = fP > .05 ? `${fmt(fP)} Hz` : '—';
+  $('sSt').textContent = fT > .05 && U > .15 * TLm ? fmt(fT * 2 * f.M.A / U, 2) : '—';
+  $('sRe').textContent = Math.round(Re).toLocaleString('tr-TR');
+  $('sStr').textContent = fT > .05 && U > .15 * TLm ? fmt(U / (fT * TLm), 2) : '—';
+  let gait;
+  if (f.coast) gait = 'Süzülme evresi: gövde düz, sürüklenme en düşük (hızlan–süzül döngüsü).';
+  else if (sp.mode !== 'bcf' && fT < .05) gait = 'Göğüs yüzgeçleriyle kürek çekiyor (labriform); kuyruk dinlenmede.';
+  else if (sp.mode !== 'bcf') gait = 'Göğüs yüzgeci sınırına ulaştı, kuyruk da devrede (yürüyüş geçişi).';
+  else gait = `Gövdede yürüyen dalga (karangiform), dalga boyu ≈ ${fmt(sp.lam, 2)} boy.`;
+  $('gait').textContent = gait + ` ${fmt(U / TLm, 2)} boy/s.`;
+}
+$('labT').onchange = e => { labOn = e.target.checked; };
+$('nm').addEventListener('input', e => { if (cardFish) cardFish.name = e.target.value.trim().slice(0, 16) || cardFish.name; });
+$('nm').addEventListener('change', save);
+$('rm').onclick = () => {
+  if (!cardFish) return;
+  if (!rmArm){ rmArm = true; $('rm').textContent = `Emin misin? ${cardFish.name} başka bir akvaryuma gider.`; return; }
+  const f = cardFish; fish.splice(fish.indexOf(f), 1);
+  fish.forEach(o => { if (o.task && o.task.partner === f.id) endTask(o); });
+  toast(`${f.name} yeni evine uğurlandı`); openSheet(null); save();
+};
+
+/* ---------------- dokunma ---------------- */
+let started = false;
+cvs.addEventListener('pointerdown', e => {
+  if (!started) return;
+  if (AC && AC.state === 'suspended') AC.resume();
+  const x = e.clientX, y = e.clientY;
+  let hit = null, hz = 1e9;
+  for (const f of fish){ const [px, py] = projP(f.p), s = sc(f.p.z), r = Math.max(18, f.TL * .6 * PX * s); if (Math.hypot(px - x, (py - y) * 1.3) < r && f.p.z < hz){ hz = f.p.z; hit = f; } }
+  if (hit){ openCard(hit); return; }
+  if (cat.classList.contains('on')) openSheet(null);
+  if (y < WT - 10 || y > H) return;
+  const cols = [[184,120,70],[206,150,80],[160,96,60],[214,120,90]];
+  for (let k = 0; k < 6; k++){
+    const z = rand(.15, .85) * Dc, xw = clamp(unprojX(x + rand(-14, 14), z), 1, Wc - 1), pellet = k >= 4;
+    food.push({x:xw, y:.15, z, state:pellet ? 'sink' : 'float', t:rand(2, 6), ph:R() * TAU, life:30, c:pick(cols), kind:pellet ? 'pellet' : 'flake'});
+    ripples.push({x:xw, z, t:0, r:.7});
+  }
+  while (food.length > 70) food.shift();
+  chime(SC[clamp(Math.round((1 - (y - WT) / (ST - WT)) * 7), 0, 9)], .045);
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden){ save(); AC && AC.suspend(); } else AC && AC.resume(); });
+
+/* ---------------- açılış ---------------- */
+sizeCanvas();
+const restored = load();
+if (!restored) starter();
+setIcons(); updateCount();
+if (/debug/.test(location.search)) window.AQ = {PERF,get fish(){ return fish; }, get food(){ return food; }, get eggs(){ return eggs; }, FP, SP, proj, get dims(){ return {W, H, PX, Wc, Hc, Dc}; }, toggleLamp:() => $('lamp').onclick(), add:(sp, sex, o) => { const f = makeFish(sp, sex, o || {}); fish.push(f); return f; }, startTask:(id, t) => { const f = byId(id); if (f) f.task = t; }};
+requestAnimationFrame(loop);
+setTimeout(() => {
+  rebuildArt();
+  $('go').textContent = restored ? 'balıkların seni bekliyor · dokun' : 'dokun ve başla';
+  const st = $('start');
+  st.onclick = () => {
+    if (started) return; started = true; initAudio(); if (AC && AC.state === 'suspended') AC.resume();
+    st.style.opacity = '0'; st.style.pointerEvents = 'none'; setTimeout(() => st.remove(), 1800);
+    chime(SC[2], .07); chime(SC[4], .06, .3); chime(SC[7], .05, .6);
+    setTimeout(() => toast('Suya dokun: yem yüzeye düşer · Balığa dokun: canlı biyomekaniğini gör'), 1200);
+  };
+}, 60);
+}
+</script>
+</body>
+</html>
