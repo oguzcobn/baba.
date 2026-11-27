@@ -26,10 +26,15 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-save --package-lock=false playwright@1.51.1
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install chromium
+      - run: python3 tools/build-offline.py
       - run: node --check renderer-three.js
       - run: node --check smoke.mjs
       - run: node smoke.mjs
+      - name: Test animated characters and the single 3D renderer
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/people-server.log 2>&1 &
+          node qa/people.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -38,5 +43,17 @@ jobs:
             games/modern-age-2026/modern-age-report.json
             games/modern-age-2026/modern-age-preview.png
             games/modern-age-2026/modern-age-menu.png
+            games/modern-age-2026/people-*.png
+            games/modern-age-2026/lighting-*.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Modern-Age-2026-3D
+          path: |
+            games/modern-age-2026/OYNA.html
+            games/modern-age-2026/assets/people/LICENSE.md
+            games/modern-age-2026/assets/people/SOURCE.md
       - name: Require working WebGL2 for 3D verification
         run: node -e "const r=require('./modern-age-report.json'); if (!r.webgl2) { console.error('3D not verified'); process.exit(1); }"
+      - name: Check published game in Chromium
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.run_attempt != '1')
+        run: node qa/published.mjs

@@ -25,7 +25,7 @@ try {
  await page.screenshot({path:'modern-age-menu.png'});
  await page.click('#new');
  await page.waitForFunction(()=>__MA.renderer?.engine==='Three.js r170',{},{timeout:20000}).catch(()=>{});
- report.engine=await page.evaluate(()=>__MA.renderer?.engine||'Canvas fallback');
+ report.engine=await page.evaluate(()=>__MA.renderer?.engine||'unavailable');
  report.gpu=await page.evaluate(()=>__MA.renderer?.gpu||null);
  report.software=await page.evaluate(()=>__MA.renderer?.software??null);
  report.webgl2=await page.evaluate(()=>!!__MA.renderer?.active&&__MA.renderer?.engine==='Three.js r170');
@@ -135,7 +135,7 @@ try {
  report.playtest.combatFixture=true;
  report.startupAndMenus=true;
  assert.deepEqual(errors,[]);
- assert.equal(report.webgl2,true,'Actual Three.js renderer unavailable; fallback is not a pass');
+ assert.equal(report.webgl2,true,'Three.js must be active');
  report.targetVerified=!report.software&&report.scenarios.every(s=>s.meanFPS>=59&&s.p95Ms<=17.5);
  if(process.env.REQUIRE_60FPS==='1')assert.equal(report.targetVerified,true,'Hardware performance target not verified');
 } catch(e){report.failure=String(e);process.exitCode=1}

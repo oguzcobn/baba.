@@ -1,6 +1,7 @@
 import * as THREE from './vendor/three.module.min.js';
 
-export function createThreeRenderer(api) {
+import {createPeople} from './people-three.js';
+export async function createThreeRenderer(api) {
  const canvas=api.canvas;
  const renderer=new THREE.WebGLRenderer({canvas,alpha:false,antialias:false,powerPreference:'high-performance'});
  renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -14,7 +15,16 @@ export function createThreeRenderer(api) {
  const software=/swiftshader|llvmpipe|software/i.test(gpu);
  const scene=new THREE.Scene(), camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,400);
  scene.background=new THREE.Color('#66844d');
+ const people=createPeople(scene);
+ await people.load();
  const sky=new THREE.HemisphereLight(0xc9e0ff,0x73715a,1.65);scene.add(sky);
+ const palette=Object.fromEntries(Object.entries({
+   moon:0x91b7ef, sunset:0xffb170, noon:0xfff3df, overcast:0xd9e2f0,
+   nightSky:0x829ed6, daySky:0xbcd7f5, nightGround:0x474c66, dayGround:0xa39a80,
+   nightHaze:0x51647d, duskHaze:0xdec0a4, dayHaze:0xc5d4dd
+ }).map(([key,value])=>[key,new THREE.Color(value)]));
+ scene.fog=new THREE.Fog(palette.dayHaze,126,215);
+ const smooth=(lo,hi,x)=>THREE.MathUtils.smoothstep(x,lo,hi);
  const sun=new THREE.DirectionalLight(0xffecd0,2.6);scene.add(sun,sun.target);
  sun.castShadow=true;sun.shadow.mapSize.set(software?512:2048,software?512:2048);
  sun.shadow.camera.near=.1;sun.shadow.camera.far=100;
@@ -46,10 +56,11 @@ export function createThreeRenderer(api) {
  const matrix=new THREE.Matrix4(),color=new THREE.Color(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),euler=new THREE.Euler(),size=new THREE.Vector3();
  let world,defs,countries,debris,N,T,cam,W,H,zoom,hour,season,weather,tile,project,quality,metrics;
  let batch={},buildingStatic=false,staticKey='',buildingKey='',statWorld=null,scale=software?.65:1,baseDpr=1,lastAdapt=0,lastShadow=0,lastX=Infinity,lastZ=Infinity,lastZoom=0,lastClimate='',disposed=false,drawCount=0,lastQuality=null;
- function add(g,x,y,z,sx,sy,sz,c,m=0,r=.8,yaw=0,pitch=0){
-   const type=r===-1?'contact':g==='mansion'?'landmark':g==='plane'?(r<.2?'water':'earth'):m>.17?(r<.35?'glass':'metal'):'wall';
+ function add(g,x,y,z,sx,sy,sz,c,m=0,r=.8,yaw=0,pitch=0,override=null){
+   const type=override||(r===-1?'contact':g==='mansion'?'landmark':g==='plane'?(r<.2?'water':'earth'):m>.17?(r<.35?'glass':'metal'):'wall');
    const k=g+'|'+type+(buildingStatic?'|'+Math.floor(x/12)+','+Math.floor(z/12):''); (batch[k]??=[]).push([x,y,z,sx,sy,sz,c,yaw,pitch]);
  }
+ const windowPane=(x,y,z,w,h,d,color)=>add('box',x,y,z,w,h,d,color,.22,.21,0,0,'window');
  const box=(x,y,z,w,h,d,c,m=0,r=.8,ya=0,pi=0)=>add('box',x,y,z,w,h,d,c,m,r,ya,pi);
  function tree3(x,z,t){
    const h=.84+t.tone*.85;
@@ -71,7 +82,7 @@ export function createThreeRenderer(api) {
    }
    return
  }
- if(kind==='landmark'&&country==='TR'){add('mansion',x,.02,z,.48,.48*p,.48,'#ffffff',0,.83);return}if(kind==='farm'){for(let i=0;i<6;i++){box(x-s*.38+i*s*.15,.04,z,s*.11,.07,s*.83,'#766044');for(let j=0;j<6;j++)add('low',x-s*.38+i*s*.15,.19*p,z-s*.35+j*s*.14,.18,.33*p,.18,'#a7b65e')}return}if(kind==='power'){for(let i=0;i<3;i++)for(let j=0;j<3;j++){let xx=x+(i-1)*.8,zz=z+(j-1)*.8;box(xx,.21*p,zz,.12,.4*p,.12,'#848e8f',.5);box(xx,.43*p,zz,.7,.06,.66,'#385c77',.35,.25,0,.26);for(let k=-1;k<=1;k++)box(xx+k*.21,.47*p,zz,.012,.012,.6,'#9db5c6',.4)}return}let h=(kind==='hq'?1.36:kind==='house'?1.15:kind==='hangar'?1.05:.87)*p,w=s*.82,d=s*.76;box(x,.09,z,w+.14,.18,d+.14,'#9a9e95');box(x,h*.5+.15,z,w,h,d,base);if(['house','barracks','hq'].includes(kind)&&!['IL','IR','US'].includes(country)){add('roof',x,h+.33*p+.15,z,w+.19,.45*p,d+.2,roofc,0,.79);for(let i=0;i<Math.floor(w/.23);i++){let xx=x-w/2+.13+i*.23;box(xx,h+.16*p+.15,z+d*.24,.025,.018,d*.51, '#bd8064',0,.8,0,-.28)}}else{box(x,h+.18,z,w+.12,.12,d+.12,'#8b9694',.3,.55);for(let j=0;j<2;j++)box(x-.45+j*.9,h+.36,z-.25,.46,.24,.48,'#a7afaa',.3,.65)}for(let j=0;j<Math.floor(w/.5);j++){let xx=x-w/2+.28+j*.5;for(let side of [-1,1]){box(xx,.15+h*.57,z+side*(d/2+.014),.33,h*.39,.035,'#deded0');box(xx,.15+h*.57,z+side*(d/2+.035),.25,h*.3,.025,'#416674',.22,.21);box(xx,.15+h*.57,z+side*(d/2+.052),.016,h*.3,.014,'#afc4c5')}}for(let j=0;j<Math.floor(d/.5);j++){let zz=z-d/2+.29+j*.5;box(x+w/2+.02,.15+h*.58,zz,.045,h*.38,.33,'#d2d6ca');box(x+w/2+.05,.15+h*.58,zz,.023,h*.29,.25,'#527580',.25,.2)}box(x,.15+h*.26,z+d/2+.065,.47,h*.52,.10,'#48564e',.13,.55);if(['factory','hangar','dock'].includes(kind))box(x,.15+h*.42,z+d/2+.09,w*.56,h*.8,.10,'#7b8c8b',.48,.6);if(kind==='hq'||kind==='research'){box(x+w*.42,h+.55,z-d*.36,.035,1.08,.035,'#d8dfdc',.4);box(x+w*.42+.18,h+.98,z-d*.36,.36,.22,.022,fc)}if(kind==='hq'||kind==='house'){
+ if(kind==='landmark'&&country==='TR'){add('mansion',x,.02,z,.48,.48*p,.48,'#ffffff',0,.83);return}if(kind==='farm'){for(let i=0;i<6;i++){box(x-s*.38+i*s*.15,.04,z,s*.11,.07,s*.83,'#766044');for(let j=0;j<6;j++)add('low',x-s*.38+i*s*.15,.19*p,z-s*.35+j*s*.14,.18,.33*p,.18,'#a7b65e')}return}if(kind==='power'){for(let i=0;i<3;i++)for(let j=0;j<3;j++){let xx=x+(i-1)*.8,zz=z+(j-1)*.8;box(xx,.21*p,zz,.12,.4*p,.12,'#848e8f',.5);box(xx,.43*p,zz,.7,.06,.66,'#385c77',.35,.25,0,.26);for(let k=-1;k<=1;k++)box(xx+k*.21,.47*p,zz,.012,.012,.6,'#9db5c6',.4)}return}let h=(kind==='hq'?1.36:kind==='house'?1.15:kind==='hangar'?1.05:.87)*p,w=s*.82,d=s*.76;box(x,.09,z,w+.14,.18,d+.14,'#9a9e95');box(x,h*.5+.15,z,w,h,d,base);if(['house','barracks','hq'].includes(kind)&&!['IL','IR','US'].includes(country)){add('roof',x,h+.33*p+.15,z,w+.19,.45*p,d+.2,roofc,0,.79);for(let i=0;i<Math.floor(w/.23);i++){let xx=x-w/2+.13+i*.23;box(xx,h+.16*p+.15,z+d*.24,.025,.018,d*.51, '#bd8064',0,.8,0,-.28)}}else{box(x,h+.18,z,w+.12,.12,d+.12,'#8b9694',.3,.55);for(let j=0;j<2;j++)box(x-.45+j*.9,h+.36,z-.25,.46,.24,.48,'#a7afaa',.3,.65)}for(let j=0;j<Math.floor(w/.5);j++){let xx=x-w/2+.28+j*.5;for(let side of [-1,1]){box(xx,.15+h*.57,z+side*(d/2+.014),.33,h*.39,.035,'#deded0');windowPane(xx,.15+h*.57,z+side*(d/2+.035),.25,h*.3,.025,'#416674');box(xx,.15+h*.57,z+side*(d/2+.052),.016,h*.3,.014,'#afc4c5')}}for(let j=0;j<Math.floor(d/.5);j++){let zz=z-d/2+.29+j*.5;box(x+w/2+.02,.15+h*.58,zz,.045,h*.38,.33,'#d2d6ca');windowPane(x+w/2+.05,.15+h*.58,zz,.023,h*.29,.25,'#527580')}box(x,.15+h*.26,z+d/2+.065,.47,h*.52,.10,'#48564e',.13,.55);if(['factory','hangar','dock'].includes(kind))box(x,.15+h*.42,z+d/2+.09,w*.56,h*.8,.10,'#7b8c8b',.48,.6);if(kind==='hq'||kind==='research'){box(x+w*.42,h+.55,z-d*.36,.035,1.08,.035,'#d8dfdc',.4);box(x+w*.42+.18,h+.98,z-d*.36,.36,.22,.022,fc)}if(kind==='hq'||kind==='house'){
    const front=z+d*.5,edge=x+w*.43;
    if(country==='TR'){box(x,h*.82,front,w*.65,.1,.48,'#efe5d3');for(const dir of [-1,1])box(x+dir*w*.28,h*.4,front+.12,.09,h*.8,.09,base)}
    if(country==='US'){for(const dir of [-1,1]){box(x+dir*w*.43,h*.36,z,w*.26,h*.7,d*.74,base);box(x+dir*w*.43,h*.73,z,w*.29,.09,d*.78,'#75818a')}}
@@ -81,35 +92,6 @@ export function createThreeRenderer(api) {
    if(country==='GR'){for(const dir of [-1,1]){add('cyl',x+dir*w*.26,h*.48,front+.17,.13,h*.91,.13,'#f3f0e3')}box(x,h*.96,front,w*.67,.11,.59,'#efeadd')}
  }
  if(b.hp<120){for(let i=0;i<5;i++)box(x-w*.4+i*w*.17,.12+h*.3,z+d/2+.08,.11,.22,.055,'#575953')}}
- // Two equal-length planar links. Solve knee by intersecting circles around hip and ankle.
- function person(u){
-   const yaw=Math.PI/2-u.angle,co=Math.cos(yaw),si=Math.sin(yaw);
-   const nation=u.enemy?world.enemyCountry:world.country,team=countries[nation][2];
-   const moving=Boolean(u.path?.length),phase=((u.travel||0)/.42)%1;
-   const soldier=u.kindUnit==='infantry',jacket=soldier?'#66765c':'#d9aa58';
-   function part(g,lx,y,lz,w,h,d,c,pitch=0){add(g,u.x+co*lx+si*lz,y,u.y-si*lx+co*lz,w,h,d,c,0,.82,yaw,pitch)}
-   part('box',0,.401,0,.225,.255,.143,jacket);
-   part('sphere',0,.615,0,.147,.172,.143,'#c4a78e');
-   part('sphere',0,.684,0,.181,.09,.17,soldier?'#586a52':'#eec464');
-   part('box',0,.437,.076,.158,.043,.016,team);
-   if(['TR','IL','US'].includes(nation))part('box',0,.36,-.088,.16,.17,.075,'#606c62');
-   if(['GB','IR','US'].includes(nation))part('box',.105,.31,0,.062,.091,.09,'#6b6553');
-   if(['GR','IR','TR'].includes(nation))part('box',0,.48,.011,.245,.043,.153,'#d5cfad');
-   for(const side of [-1,1]){
-     const t=(phase+(side===1?.5:0))%1, swing=t>=.5, f=swing?(t-.5)*2:t*2;
-     const ankleZ=moving?(swing?-.105+.21*f:.105-.21*f):0;
-     const ankleY=.044+(moving&&swing?.065*Math.sin(Math.PI*f):0);
-     const hipY=.30,dy=ankleY-hipY,len=Math.hypot(dy,ankleZ),lift=Math.sqrt(Math.max(0,.15**2-(len/2)**2));
-     const kneeY=(hipY+ankleY)/2+ankleZ/len*lift,kneeZ=ankleZ/2-dy/len*lift;
-     const leg=(ay,az,by,bz)=>part('box',side*.064,(ay+by)/2,(az+bz)/2,.079,Math.hypot(ay-by,az-bz),.08,'#495650',Math.atan2(az-bz,ay-by));
-     leg(hipY,0,kneeY,kneeZ);leg(kneeY,kneeZ,ankleY,ankleZ);
-     part('box',side*.064,ankleY-.014,ankleZ+.032,.095,.058,.14,'#343b38');
-     const work=['build','gather'].includes(u.role);
-     const arm=u.carry>0?-.72:work&&!moving?-.48+.30*Math.sin(world.time*5):moving?.48*Math.sin(phase*2*Math.PI)*side:0;
-     part('box',side*.147,.383,-Math.sin(arm)*.105,.072,.222,.076,'#bfa186',arm);
-   }
-   if(u.carry>0)part('box',0,.31,.143,.235,.17,.18,'#ac916d')
- }
  function vehicle(u){let x=u.x,z=u.y,ya=Math.PI/2-u.angle,co=Math.cos(ya),si=Math.sin(ya),kind=u.kindUnit,air=kind==='air',nav=kind==='naval',h=air?1.6:nav?.09+Math.sin(world.time*2+u.id)*.035:0,team=countries[u.enemy?world.enemyCountry:world.country][2];function p(g,lx,y,lz,w,hh,d,c,m=.25,r=.6,pi=0){add(g,x+co*lx+si*lz,h+y,z-si*lx+co*lz,w,hh,d,c,m,r,ya,pi)}if(air){p('sphere',0,.2,0,.30,.28,1.25,'#b4c0c4',.45,.36);p('box',0,.17,-.03,1.45,.045,.40,'#9facb3');p('box',0,.23,-.44,.64,.045,.22,'#9facb3');p('sphere',0,.33,.25,.19,.12,.32,'#456c83',.4,.2);p('box',0,.33,-.48,.05,.31,.21,team)}else if(nav){p('sphere',0,.12,0,.56,.35,1.40,'#899b9e',.4);p('box',0,.32,-.14,.40,.24,.46,'#b1b9b7');p('box',0,.35,.12,.32,.14,.04,'#456779',.3,.2);p('box',0,.65,-.14,.035,.48,.035,'#d4d5c8');p('box',.11,.79,-.14,.20,.12,.035,team)}else{p('box',0,.23,0,.65,.33,1.10,'#76866c');const nation=u.enemy?world.enemyCountry:world.country;
  const count={TR:4,US:4,IL:5,IR:3,GB:5,GR:3}[nation];
  for(const side of [-1,1]){
@@ -121,14 +103,6 @@ export function createThreeRenderer(api) {
    }
  }
  p('sphere',0,.46,-.05,.53,.27,.62,'#8b9b7e');p('box',0,.40,.42,.11,.10,.66,'#66745f',.5);p('box',.18,.40,.21,.11,.07,.14,team)}}
- function simplePerson(u){
-   const walk=u.path?.length?Math.sin(u.walk):0, team=countries[u.enemy?world.enemyCountry:world.country][2];
-   const ya=Math.PI/2-u.angle,co=Math.cos(ya),si=Math.sin(ya),col=u.kindUnit==='infantry'?'#68765a':'#e1ac58';
-   function part(g,lx,y,lz,w,h,d,c,p=0){add(g,u.x+co*lx+si*lz,y,u.y-si*lx+co*lz,w,h,d,c,0,.8,ya,p)}
-   part('box',0,.37,0,.23,.31,.15,col);part('sphere',0,.63,0,.18,.20,.18,'#c8a68b');
-   part('box',0,.45,.09,.15,.09,.03,team);
-   for(let j of [-1,1])part('box',j*.065,.15,walk*.07*j,.09,.30,.10,'#505b53',walk*.45*j);
- }
  function material(type){
    if(materials.has(type))return materials.get(type);
    if(type==='contact'){
@@ -143,6 +117,7 @@ export function createThreeRenderer(api) {
    }
    const surf=surfaces[type==='earth'?'earth':type==='water'?'water':'wall'];
    const options={color:0xffffff,metalness:type==='metal'?.65:type==='glass'?.35:0,roughness:type==='water'?.18:type==='glass'?.21:type==='metal'?.55:type==='earth'?.96:.82,side:type==='landmark'?THREE.DoubleSide:THREE.FrontSide};
+   if(type==='window')Object.assign(options,{metalness:.24,roughness:.23,emissive:0xffaa5e,emissiveIntensity:0});
    if(type==='landmark')options.vertexColors=true;
    else {options.map=surf.map;options.normalMap=surf.normalMap;options.normalScale=new THREE.Vector2(type==='earth'?.8:.35,type==='earth'?.8:.35)}
    const m=new THREE.MeshStandardMaterial(options);materials.set(type,m);return m;
@@ -230,6 +205,25 @@ export function createThreeRenderer(api) {
  function resize(){
    const s=api.state();baseDpr=Math.min(window.devicePixelRatio||1,1.5);renderer.setPixelRatio(baseDpr*scale);renderer.setSize(Math.max(1,s.W),Math.max(1,s.H),false);
  }
+ // World-space precipitation and hit flashes share the main camera and depth buffer.
+ const rainVertices=new Float32Array(150*6),snowVertices=new Float32Array(150*3);
+ function weatherGeometry(buffer){
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(buffer,3).setUsage(THREE.DynamicDrawUsage));return g
+ }
+ const rain=new THREE.LineSegments(weatherGeometry(rainVertices),new THREE.LineBasicMaterial({color:0xc4dfeb,transparent:true,opacity:.48,depthWrite:false}));
+ const snow=new THREE.Points(weatherGeometry(snowVertices),new THREE.PointsMaterial({color:0xeaf2f3,size:.09,depthWrite:false}));
+ rain.frustumCulled=false;snow.frustumCulled=false;scene.add(rain,snow);
+ function atmosphere(time){
+  rain.visible=weather()==='rain';snow.visible=weather()==='snow';
+  if(!rain.visible&&!snow.visible)return;
+  for(let i=0;i<150;i++){
+   const x=cam.x+((i*13.713+time*.61)%34)-17,z=cam.y+((i*7.913)%34)-17;
+   const y=8-(i*.813+time*(rain.visible?9:1.15))%8;
+   if(rain.visible)rainVertices.set([x,y,z,x-.06,y+.45,z],i*6);
+   else snowVertices.set([x,y,z],i*3)
+  }
+  (rain.visible?rain:snow).geometry.attributes.position.needsUpdate=true
+ }
  function draw(){
    if(disposed)return;
    const now=performance.now();({world,defs,countries,debris,N,T,cam,W,H,zoom,hour,season,weather,tile,project,quality,metrics}=api.state());
@@ -240,17 +234,31 @@ export function createThreeRenderer(api) {
    if(changed||staticKey!==footprint){staticKey=footprint;rebuildTerrain()}
    if(changed||buildingKey!==stages){buildingKey=stages;rebuildBuildings()}
    statWorld=world;
-   batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else if(zoom<.8||(world.units.length>300&&zoom<1.5))simplePerson(u);else person(u)}
+   people.begin();batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=.90&&world.units.length<=40);people.add(u,world.time,close);add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
+   atmosphere(world.time);
+   for(const fx of api.state().effects)if(fx.kind==='hit'){const radius=Math.max(.015,.19*(1-fx.age/.6));add('sphere',fx.x,.36,fx.y,radius,radius,radius,'#ffd45e')}
    for(const d of debris)add('box',d.x,d.y,d.z,d.s,d.s*.7,d.s,'#8e9088',0,.86,d.angle,d.angle*.7);
    updateMeshes('dynamic',batch);
    const halfW=W/(2*T*zoom),halfH=H/(2*T*zoom);
    camera.left=-halfW;camera.right=halfW;camera.top=halfH;camera.bottom=-halfH;camera.position.set(cam.x+80,80,cam.y+80);camera.lookAt(cam.x,0,cam.y);camera.updateProjectionMatrix();
-   const h=hour(),day=Math.max(.035,Math.sin((h-6)*Math.PI/12)),ang=(h-6)*Math.PI/12;
-   sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
+   people.end(metrics);
+   const h=hour(),angle=(h-6)*Math.PI/12,altitude=Math.sin(angle);
+   const daylight=smooth(-.19,.16,altitude),highSun=smooth(.08,.72,altitude);
+   const cloud=weather()==='rain'?.78:weather()==='snow'?.55:0;
+   sun.color.copy(palette.sunset).lerp(palette.noon,highSun).lerp(palette.moon,1-daylight).lerp(palette.overcast,cloud);
+   sun.intensity=(.40*(1-daylight)+(1.30+1.65*highSun)*daylight)*(1-.70*cloud);
+   sky.color.copy(palette.nightSky).lerp(palette.daySky,daylight).lerp(palette.overcast,cloud);
+   sky.groundColor.copy(palette.nightGround).lerp(palette.dayGround,daylight);
+   sky.intensity=.58+daylight*(.65+.40*cloud);
+   scene.environmentIntensity=.21+.47*daylight;
+   renderer.toneMappingExposure=1.13+.08*(1-daylight);
+   scene.fog.color.copy(palette.duskHaze).lerp(palette.dayHaze,highSun).lerp(palette.nightHaze,1-daylight).lerp(palette.overcast,cloud*.55);
+   scene.fog.near=126-12*cloud;scene.fog.far=225-38*cloud;
+   material('window').emissiveIntensity=.76*(1-smooth(-.16,.21,altitude));
    const ckey=weather()+'|'+season();
    if(ckey!==lastClimate){lastClimate=ckey;let wet=weather()==='rain';material('earth').roughness=wet?.63:.96;material('wall').roughness=wet?.62:.82;if(ground){ground.material.roughness=wet?.63:.96;ground.material.color.set(season()==='Kış'?'#ccd6d9':'#ffffff')}material('earth').color.set(season()==='Kış'?'#c8d1d6':'#ffffff')}
    if(now-lastShadow>(software?1000:250)||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
-     lastShadow=now;lastX=cam.x;lastZ=cam.y;lastZoom=zoom;sun.target.position.set(cam.x,0,cam.y);sun.position.set(cam.x-25*Math.cos(ang),25+20*day,cam.y+23);const span=Math.max(14,Math.min(42,halfW+halfH+5));Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
+     lastShadow=now;lastX=cam.x;lastZ=cam.y;lastZoom=zoom;sun.target.position.set(cam.x,0,cam.y);sun.position.set(cam.x-34*Math.cos(angle),11+27*Math.abs(altitude),cam.y+19);const span=Math.max(14,Math.min(42,halfW+halfH+5));Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
    }
    if(quality!==lastQuality||now-lastAdapt>2500){lastQuality=quality;lastAdapt=now;const f=metrics.frames.slice(-120).sort((a,b)=>a-b);const p90=f[Math.floor(f.length*.9)]||16.7;
      renderer.shadowMap.enabled=quality!=='low'&&!(software&&quality==='auto');let next=quality==='high'?1:quality==='low'?.55:scale;
@@ -262,5 +270,5 @@ export function createThreeRenderer(api) {
    metrics.scale=scale;metrics.draws=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.instances=Object.values(batch).reduce((sum,a)=>sum+a.length,0);metrics.cpu=performance.now()-now;
  }
  resize();
- return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
+ return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();rain.geometry.dispose();rain.material.dispose();snow.geometry.dispose();snow.material.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
 }
