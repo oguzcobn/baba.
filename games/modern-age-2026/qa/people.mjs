@@ -10,7 +10,7 @@ try{
  const lightSamples={};
  for(const [label,hour,weather] of [['noon',12,'clear'],['sunset',18,'clear'],['night',0,'clear'],['rain',12,'rain']]){
    await p.click('#climate');
-   await p.locator('#hours').fill(String(hour));await p.selectOption('#wchoice',weather);
+   await p.locator('#hours').evaluate((input,value)=>{input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}))},hour);await p.selectOption('#wchoice',weather);
    await p.click('#weather > button');
    await p.waitForTimeout(1200);
    const region=await p.locator('#map').boundingBox();
