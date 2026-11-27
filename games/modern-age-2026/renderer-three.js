@@ -41,6 +41,7 @@ export async function createThreeRenderer(api) {
  const env=pmrem.fromScene(envScene,.02);scene.environment=env.texture;scene.environmentIntensity=.65;
  floor.geometry.dispose();floor.material.dispose();panel.geometry.dispose();panel.material.dispose();pmrem.dispose();
  const geos={box:new THREE.BoxGeometry(1,1,1),plane:new THREE.PlaneGeometry(1,1).rotateX(-Math.PI/2),sphere:new THREE.SphereGeometry(.5,10,8),low:new THREE.IcosahedronGeometry(.5,1),cyl:new THREE.CylinderGeometry(.5,.5,1,12),cone:new THREE.ConeGeometry(.5,1,10)};
+ geos.puff=new THREE.PlaneGeometry(1,1);
  geos.wheel=new THREE.CylinderGeometry(.5,.5,1,12).rotateZ(Math.PI/2);
  const roofShape=new THREE.Shape();roofShape.moveTo(-.5,-.5);roofShape.lineTo(.5,-.5);roofShape.lineTo(0,.5);roofShape.closePath();
  geos.roof=new THREE.ExtrudeGeometry(roofShape,{depth:1,bevelEnabled:false}).translate(0,0,-.5).rotateY(Math.PI/2);
@@ -108,6 +109,17 @@ export async function createThreeRenderer(api) {
  p('sphere',0,.46,-.05,.53,.27,.62,'#8b9b7e');p('box',0,.40,.42,.11,.10,.66,'#66745f',.5);p('box',.18,.40,.21,.11,.07,.14,team)}}
  function material(type){
    if(materials.has(type))return materials.get(type);
+   if(type==='smoke'||type==='fire'){
+     const dim=48,rgba=new Uint8Array(dim*dim*4);
+     for(let y=0;y<dim;y++)for(let x=0;x<dim;x++){
+       const u=(x+.5)/dim*2-1,v=(y+.5)/dim*2-1,r=Math.hypot(u,v),i=4*(x+y*dim);
+       const wisps=.72+.14*Math.sin(u*8+Math.sin(v*6))+.11*Math.cos(v*13-u*6);
+       rgba[i]=rgba[i+1]=rgba[i+2]=255;rgba[i+3]=Math.round(255*Math.max(0,1-r*r)**2*wisps);
+     }
+     const map=new THREE.DataTexture(rgba,dim,dim);map.magFilter=map.minFilter=THREE.LinearFilter;map.needsUpdate=true;
+     const m=new THREE.MeshBasicMaterial({map,transparent:true,depthWrite:false,opacity:type==='fire'?.93:.67,blending:type==='fire'?THREE.AdditiveBlending:THREE.NormalBlending});
+     materials.set(type,m);return m
+   }
    if(type==='flare'){const m=new THREE.MeshBasicMaterial({color:0xffffff,toneMapped:false});materials.set(type,m);return m}
    if(type==='contact'){
      const dim=32,alpha=new Uint8Array(dim*dim*4);
@@ -135,7 +147,7 @@ export async function createThreeRenderer(api) {
        if(mesh){scene.remove(mesh);mesh.dispose()}
        const cap=prefix==='static'?arr.length:Math.max(16,2**Math.ceil(Math.log2(arr.length)));
        mesh=new THREE.InstancedMesh(geos[g],material(type),cap);mesh.instanceMatrix.setUsage(prefix==='static'?THREE.StaticDrawUsage:THREE.DynamicDrawUsage);
-       mesh.castShadow=g!=='plane';mesh.receiveShadow=true;scene.add(mesh);cache.set(key,mesh);
+       mesh.castShadow=g!=='plane'&&g!=='puff'&&type!=='flare';mesh.receiveShadow=true;scene.add(mesh);cache.set(key,mesh);
      }
      mesh.count=arr.length;mesh.visible=true;
      for(let i=0;i<arr.length;i++){const [x,y,z,sx,sy,sz,c,yaw,pitch]=arr[i];position.set(x,y,z);size.set(Math.max(.0001,sx),Math.max(.0001,sy),Math.max(.0001,sz));euler.set(pitch,yaw,0,'YXZ');quat.setFromEuler(euler);matrix.compose(position,quat,size);mesh.setMatrixAt(i,matrix);mesh.setColorAt(i,color.set(c))}
@@ -256,9 +268,9 @@ export async function createThreeRenderer(api) {
      for(let i=0;i<10;i++){
        const angle=i*2.399+fx.actor.id,r=Math.min(a,1)*(.45+(i%3)*.24);
        const x=fx.x+Math.cos(angle)*r,z=fx.y+Math.sin(angle)*r;
-       if(a<.45){const size=(.16+.30*Math.sin(Math.PI*a/.45))*(1+(i%3)*.2);add('low',x,base+a*.8,z,size,size*1.35,size,i%2?'#ffb54c':'#ff6c20',0,.6,angle,0,'flare')}
+       if(a<.45){const size=(.16+.30*Math.sin(Math.PI*a/.45))*(1+(i%3)*.2);add('puff',x,base+a*.8,z,size*3,size*3,1,i%2?'#ffcb67':'#ff661c',0,.6,Math.PI/4,-.61548,'fire')}
        const smoke=(.16+a*.24)*(1-Math.max(0,a-1.25)/.85);
-       if(smoke>.01)add('low',x+a*.19,base+.15+a*(.65+i%3*.14),z,smoke,smoke*1.22,smoke,i%2?'#48443e':'#65645e',0,.98,angle);
+       if(smoke>.01)add('puff',x+a*.19,base+.15+a*(.65+i%3*.14),z,smoke*4,smoke*4.5,1,i%2?'#514d46':'#767570',0,.98,Math.PI/4,-.61548,'smoke');
        if(a<.68)add('box',x,base+a*(2.1+i%3)-4*a*a,z,.07,.045,.10,'#474943',.25,.7,angle+a*5)
      }
      return;
@@ -314,7 +326,7 @@ export async function createThreeRenderer(api) {
    }
    if(quality!==lastQuality||now-lastAdapt>2500){lastQuality=quality;lastAdapt=now;const f=metrics.frames.slice(-120).sort((a,b)=>a-b);const p90=f[Math.floor(f.length*.9)]||16.7;
      renderer.shadowMap.enabled=quality!=='low'&&!(software&&quality==='auto');let next=quality==='high'?1:quality==='low'?.55:scale;
-     if(quality==='auto'&&f.length>=60){if(p90>18.3)next=Math.max(.40,scale-.08);else if(p90<16.9)next=Math.min(1,scale+.025)}
+     if(quality==='auto'&&f.length>=(software?12:45)){if(p90>18.3)next=Math.max(.40,scale-(p90>35?.15:.06));else if(p90<16.9)next=Math.min(1,scale+.025)}
      if(Math.abs(next-scale)>.005){scale=next;resize()}
    }
    surfaces.water.normalMap.offset.set(world.time*.016,world.time*.009);
@@ -322,5 +334,5 @@ export async function createThreeRenderer(api) {
    metrics.scale=scale;metrics.draws=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.instances=Object.values(batch).reduce((sum,a)=>sum+a.length,0);metrics.cpu=performance.now()-now;
  }
  resize();
- return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();rain.geometry.dispose();rain.material.dispose();snow.geometry.dispose();snow.material.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
+ return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();rain.geometry.dispose();rain.material.dispose();snow.geometry.dispose();snow.material.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();for(const k of ['contact','smoke','fire'])materials.get(k)?.map?.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
 }

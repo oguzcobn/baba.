@@ -45,6 +45,26 @@ try{
  assert.equal(await p.locator('#gfx,#menugfx').count(),0);
  await p.mouse.move(box.x+pos.x,box.y+pos.y);await p.mouse.wheel(0,3200);
  await p.waitForFunction(()=>__MA.metrics.crowdPeople>0);
+ const reconnaissance=await p.evaluate(()=>{
+   const w=__MA.world,scout=w.units[0];if(w.terrain.length!==128*128||__MA.seen(77,79))throw Error('Initial shroud');
+   scout.x=77.5;scout.y=79.5;scout.path=[];return scout.id;
+ });
+ await p.waitForFunction(()=>__MA.seen(77,79));
+ await p.evaluate(id=>{const u=__MA.world.units.find(u=>u.id===id);u.x=19;u.y=29},reconnaissance);
+ await p.waitForFunction(()=>!__MA.seen(77,79)&&__MA.world.explored[79*128+77]===1);
+ const combat=await p.evaluate(()=>{
+   const w=__MA.world,h=w.buildings.find(b=>b.type==='hq');w.relation='war';
+   const attacker=w.units.find(u=>u.kindUnit==='infantry');
+   attacker.x=19;attacker.y=28;attacker.cool=0;
+   for(const kind of ['worker','armor']){
+     __MA.spawnUnit(kind,h,true,true);const target=w.units.at(-1);
+     target.x=19.9;target.y=28;target.hp=1;target.path=[];attacker.attack=target.id;attacker.cool=0;
+     __MA.step(.05);
+   }
+   return __MA.effects.map(e=>e.kind);
+ });
+ for(const effect of ['hit','fall','blast'])assert.ok(combat.includes(effect),effect);
+ await p.waitForTimeout(150);await p.screenshot({path:'people-combat.png'});
  assert.deepEqual(errors,[]);
  await p.close();
  const offline=await b.newPage(),requests=[];
