@@ -1,0 +1,29 @@
+name: Bake Modern Age people
+on:
+  push:
+    branches: [modern-age-humans-v071]
+    paths: ['games/modern-age-2026/tools/prepare-people.py', '.github/workflows/modern-age-people-bake.yml']
+permissions:
+  contents: write
+jobs:
+  assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: games/modern-age-2026
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y blender python3-pil
+      - run: /usr/bin/python3 tools/download-people.py /tmp/rocketbox-source assets/people
+      - run: blender -b -t 2 --python-exit-code 1 -P tools/prepare-people.py -- /tmp/rocketbox-source "$PWD/assets/people"
+      - run: npm install --no-save --package-lock=false playwright@1.51.1 && npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/atlas-server.log 2>&1 &
+          node tools/bake-atlas.mjs
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add assets/people
+          git commit -m "Bake licensed Rocketbox characters and animated crowd atlases"
+          git push origin HEAD:modern-age-humans-v071
