@@ -164,6 +164,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    {id:'solstice-swell',name:['Solstice Swell — 3D Sörf','Solstice Swell — 3D Ocean Surfing'],tags:[['Simülasyon','Simulation'],['Sörf','Surfing'],['Huzur','Relaxing']],best:()=>T('4 kıyı · 3D','4 coastlines · 3D')},
     {id:'kar',name:['KAR. — Alpin Kayak','KAR. — Alpine Skiing'],tags:[['Simülasyon','Simulation'],['Kayak','Skiing']],best:()=>T('3 kar koşulu · 3D','3 snow conditions · 3D')},
     { id:'modern-age-2026',name:['Modern Age: 2026','Modern Age: 2026'],tags:[['Strateji','Strategy'],['Gerçek zamanlı','Real-time']],best:()=>T('6 ülke','6 nations') },
     { id:'ambermere',name:['Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'],tags:[['Simülasyon','Simulation'],['Balıkçılık','Fishing']],best:()=>T('30 tür','30 species') },
@@ -267,6 +268,7 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
+    'solstice-swell':'img/library/solstice-swell-1280.svg',
     'kar':'img/library/kar-1280.svg',
     'modern-age-2026': 'img/library/modern-age-2026-1280.webp',
     'ambermere': 'img/library/ambermere-1280.svg',
@@ -1083,6 +1085,7 @@ const App = (() => {
     else if (r === 'mudafi') mudafi();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'modern-age-2026') openEmbeddedGame({title:'Modern Age: 2026',url:'games/modern-age-2026/index.html',tag:T('BABA. · Strateji','BABA. · Strategy'),lead:T('Altı ülkeden birini seç, üssünü geliştir ve rakibinle ticaret yap veya savaş.','Lead one of six nations, build your base and trade or fight with your rival.'),tip:T('B ile işçileri seç, kaynaklara sağ tıkla. H ile karargâha dön.','Press B to select workers, right-click a resource and press H to return to headquarters.')});
+    else if (r === 'solstice-swell') openEmbeddedGame({title:T('Solstice Swell — 3D Sörf','Solstice Swell — 3D Ocean Surfing'),url:'games/solstice-swell/index.html?v=1',tag:T('BABA. · Sörf simülasyonu','BABA. · Surf simulator'),lead:T('Dört farklı kıyıda dalgaları keşfet, ışık parçalarını topla ve Zen modunda rahatla.','Surf four coastlines, collect Tide Motes and unwind in Zen mode.'),tip:T('WASD veya ok tuşlarıyla yönlen; boşlukla sıçra. Mobilde sürükle ve Catch Air düğmesini kullan.','Use WASD or arrows to carve and trim; Space to launch. On touch, drag and use Catch Air.')});
     else if (r === 'kar') openEmbeddedGame({title:T('KAR. — Alpin Kayak','KAR. — Alpine Skiing'),url:'games/kar/index.html?v=2',tag:'BABA. · Sim',lead:T('Alp yamaçlarında fizik tabanlı kayak ve serbest iniş.','Physics-based skiing and free runs on alpine slopes.'),tip:T('A/D dön, W eğil, S fren, boşluk zıpla; C kamera, F fizik.','A/D steer, W tuck, S brake, Space jump; C camera, F physics.')});
     else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
