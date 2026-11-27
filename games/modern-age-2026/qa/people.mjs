@@ -7,6 +7,7 @@ try{
  p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404'))errors.push(m.text())});
  await p.goto('http://localhost:8080/index.html');await p.selectOption('#mode','sandbox');await p.click('#new');
  await p.waitForFunction(()=>__MA.metrics.skinnedPeople===6);
+ await p.selectOption('#quality','high');
  const lightSamples={};
  for(const [label,hour,weather] of [['noon',12,'clear'],['sunset',18,'clear'],['night',0,'clear'],['rain',12,'rain']]){
    await p.click('#climate');

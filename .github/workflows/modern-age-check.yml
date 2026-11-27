@@ -54,3 +54,6 @@ jobs:
             games/modern-age-2026/assets/people/SOURCE.md
       - name: Require working WebGL2 for 3D verification
         run: node -e "const r=require('./modern-age-report.json'); if (!r.webgl2) { console.error('3D not verified'); process.exit(1); }"
+      - name: Check published game in Chromium
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.run_attempt != '1')
+        run: node qa/published.mjs
