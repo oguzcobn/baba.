@@ -40,3 +40,30 @@ jobs:
             games/modern-age-2026/modern-age-menu.png
       - name: Require working WebGL2 for 3D verification
         run: node -e "const r=require('./modern-age-report.json'); if (!r.webgl2) { console.error('3D not verified'); process.exit(1); }"
+  assets:
+    if: github.event_name == 'pull_request' && github.head_ref == 'modern-age-humans-v071' && github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: games/modern-age-2026
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: modern-age-humans-v071
+      - run: sudo apt-get update -qq && sudo apt-get install -y blender python3-pil
+      - run: /usr/bin/python3 tools/download-people.py /tmp/rocketbox-source assets/people
+      - run: blender -b -t 2 --python-exit-code 1 -P tools/prepare-people.py -- /tmp/rocketbox-source "$PWD/assets/people"
+      - run: npm install --no-save --package-lock=false playwright@1.51.1 && npx playwright install --with-deps chromium
+      - run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/atlas-server.log 2>&1 &
+          node tools/bake-atlas.mjs
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add assets/people
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Bake licensed Rocketbox characters and animated crowd atlases"
+          git push origin HEAD:modern-age-humans-v071

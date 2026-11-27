@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.min.js';
 
+import {createPeople} from './people-three.js';
 export function createThreeRenderer(api) {
  const canvas=api.canvas;
  const renderer=new THREE.WebGLRenderer({canvas,alpha:false,antialias:false,powerPreference:'high-performance'});
@@ -14,6 +15,7 @@ export function createThreeRenderer(api) {
  const software=/swiftshader|llvmpipe|software/i.test(gpu);
  const scene=new THREE.Scene(), camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,400);
  scene.background=new THREE.Color('#66844d');
+ const people=createPeople(scene);
  const sky=new THREE.HemisphereLight(0xc9e0ff,0x73715a,1.65);scene.add(sky);
  const sun=new THREE.DirectionalLight(0xffecd0,2.6);scene.add(sun,sun.target);
  sun.castShadow=true;sun.shadow.mapSize.set(software?512:2048,software?512:2048);
@@ -121,14 +123,6 @@ export function createThreeRenderer(api) {
    }
  }
  p('sphere',0,.46,-.05,.53,.27,.62,'#8b9b7e');p('box',0,.40,.42,.11,.10,.66,'#66745f',.5);p('box',.18,.40,.21,.11,.07,.14,team)}}
- function simplePerson(u){
-   const walk=u.path?.length?Math.sin(u.walk):0, team=countries[u.enemy?world.enemyCountry:world.country][2];
-   const ya=Math.PI/2-u.angle,co=Math.cos(ya),si=Math.sin(ya),col=u.kindUnit==='infantry'?'#68765a':'#e1ac58';
-   function part(g,lx,y,lz,w,h,d,c,p=0){add(g,u.x+co*lx+si*lz,y,u.y-si*lx+co*lz,w,h,d,c,0,.8,ya,p)}
-   part('box',0,.37,0,.23,.31,.15,col);part('sphere',0,.63,0,.18,.20,.18,'#c8a68b');
-   part('box',0,.45,.09,.15,.09,.03,team);
-   for(let j of [-1,1])part('box',j*.065,.15,walk*.07*j,.09,.30,.10,'#505b53',walk*.45*j);
- }
  function material(type){
    if(materials.has(type))return materials.get(type);
    if(type==='contact'){
@@ -240,13 +234,13 @@ export function createThreeRenderer(api) {
    if(changed||staticKey!==footprint){staticKey=footprint;rebuildTerrain()}
    if(changed||buildingKey!==stages){buildingKey=stages;rebuildBuildings()}
    statWorld=world;
-   batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else if(zoom<.8||(world.units.length>300&&zoom<1.5))simplePerson(u);else person(u)}
+   people.begin();batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=.90&&world.units.length<=40);if(!people.add(u,world.time,close))person(u);add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
    for(const d of debris)add('box',d.x,d.y,d.z,d.s,d.s*.7,d.s,'#8e9088',0,.86,d.angle,d.angle*.7);
    updateMeshes('dynamic',batch);
    const halfW=W/(2*T*zoom),halfH=H/(2*T*zoom);
    camera.left=-halfW;camera.right=halfW;camera.top=halfH;camera.bottom=-halfH;camera.position.set(cam.x+80,80,cam.y+80);camera.lookAt(cam.x,0,cam.y);camera.updateProjectionMatrix();
    const h=hour(),day=Math.max(.035,Math.sin((h-6)*Math.PI/12)),ang=(h-6)*Math.PI/12;
-   sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
+   people.end(day,metrics);sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
    const ckey=weather()+'|'+season();
    if(ckey!==lastClimate){lastClimate=ckey;let wet=weather()==='rain';material('earth').roughness=wet?.63:.96;material('wall').roughness=wet?.62:.82;if(ground){ground.material.roughness=wet?.63:.96;ground.material.color.set(season()==='Kış'?'#ccd6d9':'#ffffff')}material('earth').color.set(season()==='Kış'?'#c8d1d6':'#ffffff')}
    if(now-lastShadow>(software?1000:250)||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
@@ -262,5 +256,5 @@ export function createThreeRenderer(api) {
    metrics.scale=scale;metrics.draws=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.instances=Object.values(batch).reduce((sum,a)=>sum+a.length,0);metrics.cpu=performance.now()-now;
  }
  resize();
- return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
+ return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
 }
