@@ -1,0 +1,3648 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geko Bahçesi — Fotogerçekçi 3D Canlı Teraryum</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --ink: #2c241d;
+    --ink-soft: #635548;
+    --parchment: rgba(248, 243, 232, 0.78);
+    --parchment-solid: rgba(250, 245, 235, 0.94);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    overflow: hidden;
+    background: #1a2119;
+    color: var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    user-select: none;
+  }
+  .font-serif-art {
+    font-family: 'Georgia', 'Palatino Linotype', 'Book Antiqua', serif;
+    letter-spacing: 0.01em;
+  }
+  .gallery-pill {
+    background: var(--parchment);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    border: 1px solid rgba(255, 250, 240, 0.52);
+    box-shadow: 0 8px 30px rgba(14, 14, 10, 0.28), inset 0 1px 0 rgba(255,255,255,0.5);
+    transition: opacity 0.35s ease, background-color 0.25s ease, transform 0.25s ease;
+  }
+  .gallery-pill:hover { background: var(--parchment-solid); }
+  .ui-chrome { transition: opacity 0.45s ease, transform 0.45s ease; }
+  body.zen-mode .ui-chrome { opacity: 0; pointer-events: none; transform: translateY(6px); }
+  .dock-btn {
+    transition: all 0.2s ease; color: #463b30; border: 1px solid transparent;
+  }
+  .dock-btn:hover { background: rgba(255, 252, 245, 0.72); color: #221b14; transform: translateY(-1px); }
+  .dock-btn.active {
+    background: rgba(88, 114, 89, 0.22);
+    border-color: rgba(61, 84, 62, 0.48);
+    color: #233624;
+    box-shadow: 0 2px 10px rgba(61, 84, 62, 0.14);
+  }
+  .biome-link { transition: all 0.25s ease; color: #54473b; }
+  .biome-link:hover { color: #241d17; }
+  .biome-link.active {
+    background: rgba(255, 252, 245, 0.85); color: #251e18;
+    box-shadow: 0 2px 8px rgba(32, 26, 20, 0.1);
+  }
+  input[type="range"].art-slider {
+    -webkit-appearance: none; appearance: none;
+    height: 4px; border-radius: 999px;
+    background: linear-gradient(90deg, #7ea3b5 0%, #8aa882 48%, #d69c5e 82%, #c97355 100%);
+    outline: none;
+  }
+  input[type="range"].art-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #fcf8ef; border: 1.5px solid #4a3d31;
+    cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.28);
+  }
+  .scroll-soft::-webkit-scrollbar { width: 5px; height: 5px; }
+  .scroll-soft::-webkit-scrollbar-track { background: transparent; }
+  .scroll-soft::-webkit-scrollbar-thumb { background: rgba(74, 61, 49, 0.25); border-radius: 99px; }
+  #webglContainer {
+    position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: hidden;
+  }
+  #webglContainer canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+</style>
+</head>
+<body>
+
+  <!-- FULL-BLEED 3D WEBGL LIVING VIVARIUM -->
+  <div id="webglContainer"></div>
+
+  <!-- FLOATING 3D SPEECH BUBBLES OVERLAY -->
+  <div id="cinematicVignette" class="fixed inset-0 pointer-events-none z-10" style="background:radial-gradient(ellipse at center, rgba(0,0,0,0) 56%, rgba(8,10,8,0.42) 100%);"></div>
+  <div id="bubbleLayer" class="fixed inset-0 pointer-events-none z-10 overflow-hidden"></div>
+
+  <!-- TOP FLOATING GALLERY CHROME -->
+  <header class="ui-chrome fixed top-3.5 left-3.5 right-3.5 z-20 flex items-center justify-between gap-2 pointer-events-none">
+    <div class="gallery-pill pointer-events-auto rounded-full px-3.5 py-1.5 flex items-center gap-3 max-w-[68vw] overflow-x-auto scroll-soft">
+      <div class="flex items-center gap-2 shrink-0 pr-2 border-r border-[#4a3d31]/15">
+        <span class="font-serif-art font-semibold text-sm text-[#2c241d] tracking-wide">Geko Bahçesi</span>
+        <span class="text-[10px] px-1.5 py-0.2 rounded-full bg-[#587259]/15 text-[#2e442f] font-medium">3D</span>
+      </div>
+      <nav id="biomeTabs" class="flex items-center gap-1" aria-label="Biyom Seçimi"></nav>
+    </div>
+
+    <div class="gallery-pill pointer-events-auto rounded-full px-2 py-1 flex items-center gap-1 shrink-0">
+      <button id="btnRain" class="dock-btn px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1" title="Yağmur Yağdır / Durdur">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 16.2A4.5 4.5 0 0 0 17.5 8h-1.8A7 7 0 1 0 4 14.9"/><path d="M8 19v2M12 17v4M16 19v2"/></svg>
+        <span class="hidden sm:inline">Yağmur</span>
+      </button>
+      <button id="btnCollection" class="dock-btn px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" title="15 Tür Koleksiyonu">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c-4 4-6 7.5-6 11a6 6 0 0 0 12 0c0-3.5-2-7-6-11z"/><path d="M12 10v9"/></svg>
+        <span class="hidden md:inline">15 Tür</span>
+        <span id="activeGeckoBadge" class="text-[10px] px-1.5 py-0.2 rounded-full bg-[#587259]/20 text-[#2e442f] font-semibold">4</span>
+      </button>
+      <button id="btnGuide" class="dock-btn px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5" title="Botanik Tür Rehberi">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span class="hidden md:inline">Rehber</span>
+      </button>
+      <button id="btnSound" class="dock-btn p-1.5 rounded-full" title="Doğa Sesi & Yağmur">
+        <svg id="soundSvgOff" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+        <svg id="soundSvgOn" class="w-3.5 h-3.5 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      </button>
+      <button id="btnMacroCam" class="dock-btn px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1" title="Makro Yakın Takip Kamerası">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <span class="hidden sm:inline">Makro</span>
+      </button>
+      <button id="btnZen" class="dock-btn px-2 py-1 rounded-full text-[11px] font-medium" title="Zen Modu">Zen</button>
+    </div>
+  </header>
+
+  <!-- ZEN EXIT -->
+  <button id="btnExitZen" class="hidden fixed top-3.5 right-3.5 z-30 gallery-pill px-3 py-1.5 rounded-full text-xs font-medium text-[#2f2720] opacity-65 hover:opacity-100">
+    Menüyü Göster
+  </button>
+
+  <!-- SUBTLE CAMERA HINT -->
+  <div class="ui-chrome fixed top-14 left-4 z-10 pointer-events-none opacity-75 hidden sm:block">
+    <span class="text-[11px] text-[#f5efe2] drop-shadow-sm font-serif-art italic">Sürükleyerek kamerayı döndür · Yakınlaştırmak için kaydır</span> <span id="fpsBadge" class="ml-2 px-2 py-0.5 rounded-full text-[10px] bg-black/30 text-[#e8f5e9] font-mono">60 FPS</span>
+  </div>
+
+  <!-- MACRO CLOSE-UP CAMERA BAR -->
+  <div id="macroCamBar" class="hidden fixed bottom-16 left-1/2 -translate-x-1/2 z-20 gallery-pill rounded-full px-3 py-1.5 flex items-center gap-2 text-xs text-[#2c241d]">
+    <button id="btnMacroPrev" class="w-6 h-6 rounded-full hover:bg-[#4a3d31]/10 flex items-center justify-center font-bold" title="Önceki Geko">‹</button>
+    <span id="macroTargetLabel" class="font-serif-art font-semibold px-1 whitespace-nowrap">Makro Takip</span>
+    <button id="btnMacroNext" class="w-6 h-6 rounded-full hover:bg-[#4a3d31]/10 flex items-center justify-center font-bold" title="Sonraki Geko">›</button>
+    <div class="w-px h-4 bg-[#4a3d31]/20"></div>
+    <button id="btnMacroExit" class="px-2.5 py-0.5 rounded-full bg-[#4f6950] hover:bg-[#3d543e] text-white text-[11px] font-medium transition">Genel Görünüm</button>
+  </div>
+
+  <!-- WHISPER TOAST -->
+  <div id="toastArea" class="fixed top-16 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-all duration-300 opacity-0 -translate-y-2">
+    <div id="toastText" class="gallery-pill px-4 py-1.5 rounded-full text-xs font-serif-art text-[#2c241d]"></div>
+  </div>
+
+  <!-- SELECTED GECKO FLOATING CARD -->
+  <aside id="geckoCard" class="ui-chrome hidden fixed top-16 right-3.5 z-20 w-72 max-w-[calc(100vw-28px)] gallery-pill rounded-2xl p-4 text-xs text-[#2f2720]">
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <div>
+        <h2 id="cardName" class="font-serif-art font-bold text-sm text-[#2a221b]"></h2>
+        <p id="cardSci" class="italic text-[11px] text-[#635548]"></p>
+      </div>
+      <button id="btnCloseCard" class="w-6 h-6 rounded-full hover:bg-[#4a3d31]/10 flex items-center justify-center text-[#635548]" aria-label="Kapat">✕</button>
+    </div>
+
+    <div class="flex items-center gap-1.5 mb-3">
+      <span id="cardStateBadge" class="px-2 py-0.5 rounded-full bg-[#587259]/15 text-[#2e442f] text-[10px] font-medium"></span>
+      <span id="cardCycleBadge" class="px-2 py-0.5 rounded-full bg-[#b8925a]/15 text-[#5e4727] text-[10px]"></span>
+    </div>
+
+    <div class="space-y-2 mb-3">
+      <div>
+        <div class="flex justify-between text-[10px] mb-0.5 text-[#635548]">
+          <span>Tokluk</span><span id="cardHungerVal" class="font-medium text-[#2f2720]">80%</span>
+        </div>
+        <div class="w-full h-1 bg-[#4a3d31]/12 rounded-full overflow-hidden">
+          <div id="cardHungerBar" class="h-full bg-[#c99352] rounded-full transition-all duration-500" style="width:80%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] mb-0.5 text-[#635548]">
+          <span>Huzur & Ortam Uyumu</span><span id="cardComfortVal" class="font-medium text-[#2f2720]">90%</span>
+        </div>
+        <div class="w-full h-1 bg-[#4a3d31]/12 rounded-full overflow-hidden">
+          <div id="cardComfortBar" class="h-full bg-[#587259] rounded-full transition-all duration-500" style="width:90%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] mb-0.5 text-[#635548]">
+          <span id="cardStageLabel">Evre: Yavru</span><span id="cardGrowthVal" class="font-medium text-[#2f2720]">%0</span>
+        </div>
+        <div class="w-full h-1 bg-[#4a3d31]/12 rounded-full overflow-hidden">
+          <div id="cardGrowthBar" class="h-full bg-[#7c9c6b] rounded-full transition-all duration-500" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="cardEnvNotes" class="bg-[#fffcf5]/55 border border-[#4a3d31]/10 rounded-xl p-2.5 mb-3 space-y-1 text-[11px]"></div>
+
+    <div class="mb-3">
+      <span class="text-[10px] uppercase tracking-wider text-[#6e5f52] block mb-1.5">Doğal Besinleri</span>
+      <div id="cardFoods" class="flex flex-wrap gap-1"></div>
+    </div>
+
+    <div class="flex items-center gap-1.5 pt-2 border-t border-[#4a3d31]/12">
+      <button id="btnCardOpenGuide" class="flex-1 py-1.5 px-2.5 rounded-xl bg-[#4f6950] hover:bg-[#3f5740] text-[#fcf9f2] font-medium text-[11px] transition">Rehberde Oku</button>
+      <button id="btnCardMacro" class="py-1.5 px-2.5 rounded-xl bg-[#e3ede3] hover:bg-[#d1e2d1] text-[#263f28] font-medium text-[11px] transition" title="Çok Yakından Takip Et">Yakından İzle</button>
+      <button id="btnCardPet" class="py-1.5 px-2.5 rounded-xl bg-[#efe5d2] hover:bg-[#e5d6ba] text-[#453626] font-medium text-[11px] transition">Okşa</button>
+      <button id="btnCardRemove" class="py-1.5 px-2 rounded-xl bg-[#f0dfd9] hover:bg-[#e5cbc2] text-[#7a3f2f] text-[11px] transition" title="Teraryumdan Çıkar">Çıkar</button>
+    </div>
+  </aside>
+
+  <!-- 15 SPECIES COLLECTION DRAWER -->
+  <aside id="collectionDrawer" class="ui-chrome hidden fixed top-16 right-3.5 bottom-20 z-30 w-80 max-w-[calc(100vw-28px)] gallery-pill rounded-2xl flex flex-col overflow-hidden">
+    <div class="p-3.5 border-b border-[#4a3d31]/12 flex items-center justify-between">
+      <div>
+        <h2 class="font-serif-art font-bold text-sm text-[#2c241d]">15 Geko Türü</h2>
+        <p class="text-[11px] text-[#635548]">Teraryuma davet et veya yaşam alanına geç</p>
+      </div>
+      <button id="btnCloseCollection" class="w-7 h-7 rounded-full hover:bg-[#4a3d31]/10 flex items-center justify-center">✕</button>
+    </div>
+    <div class="px-3.5 py-2 border-b border-[#4a3d31]/10 flex items-center justify-between bg-[#fffcf5]/40">
+      <button id="btnResetBiomeSpecies" class="text-[11px] px-2.5 py-1 rounded-full bg-[#587259]/15 hover:bg-[#587259]/25 text-[#2c422d] font-medium transition">Bu Biyomun Doğal Türlerini Yerleştir</button>
+    </div>
+    <div id="collectionList" class="flex-1 overflow-y-auto scroll-soft p-2.5 space-y-2"></div>
+  </aside>
+
+  <!-- FLOATING MINIMALIST BOTTOM DOCK -->
+  <footer class="ui-chrome fixed bottom-3.5 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100vw-24px)]">
+    <div class="gallery-pill rounded-full px-2 py-1 flex items-center gap-1.5 overflow-x-auto scroll-soft">
+      <div id="toolBar" class="flex items-center gap-0.5 shrink-0"></div>
+      <div class="w-px h-5 bg-[#4a3d31]/15 shrink-0"></div>
+      <button id="btnCalcium" class="dock-btn px-2 py-1 rounded-full text-[11px] font-medium flex items-center gap-1 shrink-0" title="Böceklere Kalsiyum Tozu Serp">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z"/></svg>
+        <span>Kalsiyum</span>
+      </button>
+      <div class="w-px h-5 bg-[#4a3d31]/15 shrink-0"></div>
+      <div class="flex items-center gap-1.5 px-1 shrink-0">
+        <span id="hudHumidity" class="text-[11px] text-[#4b6470] font-medium tabular-nums">%72 nem</span>
+        <input id="tempSlider" type="range" min="18" max="36" step="1" value="26" class="art-slider w-14 sm:w-16" aria-label="Sıcaklık">
+        <span id="tempSliderLabel" class="text-[11px] font-semibold text-[#3d3126] w-7 tabular-nums">26°C</span>
+      </div>
+      <div class="flex items-center bg-[#4a3d31]/8 p-0.5 rounded-full shrink-0" role="group" aria-label="Gün Döngüsü">
+        <button data-time="day" class="time-btn px-2 py-1 rounded-full text-[11px] transition">Gündüz</button>
+        <button data-time="dusk" class="time-btn px-2 py-1 rounded-full text-[11px] transition">Akşamüstü</button>
+        <button data-time="night" class="time-btn px-2 py-1 rounded-full text-[11px] transition">Gece</button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- BOTANICAL FIELD GUIDE MODAL -->
+  <div id="guideModal" class="hidden fixed inset-0 z-50 bg-[#1a1714]/55 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6">
+    <div class="w-full max-w-4xl max-h-[88vh] rounded-3xl flex flex-col overflow-hidden bg-[#f8f3e8] border border-[#4a3d31]/20 shadow-2xl">
+      <div class="px-6 py-4 border-b border-[#4a3d31]/15 flex items-center justify-between bg-[#efe7d7]">
+        <div>
+          <h2 class="font-serif-art font-bold text-lg text-[#2c241d]">Botanik & Biyolojik Geko Tür Rehberi</h2>
+          <p class="text-xs text-[#635548]">15 geko türünün doğrulanmış makale ve bakım rehberlerine dayalı özellikleri</p>
+        </div>
+        <button id="btnCloseGuide" class="w-8 h-8 rounded-full hover:bg-[#4a3d31]/10 flex items-center justify-center text-sm">✕</button>
+      </div>
+      <div class="px-6 py-3 border-b border-[#4a3d31]/10 flex flex-wrap items-center gap-2 bg-[#f5efe2]">
+        <input id="guideSearch" type="text" placeholder="Tür adı, Latince ad veya özellik ara..." class="flex-1 min-w-[180px] px-3.5 py-1.5 rounded-full bg-white/85 border border-[#4a3d31]/18 text-xs focus:outline-none focus:border-[#587259]">
+        <div id="guideFilters" class="flex items-center gap-1 flex-wrap">
+          <button data-filter="all" class="guide-filter active px-3 py-1 rounded-full text-xs font-medium bg-[#4f6950] text-white">Tümü (15)</button>
+          <button data-filter="rainforest" class="guide-filter px-3 py-1 rounded-full text-xs bg-[#e7decb] text-[#453a2f]">Yağmur Ormanı</button>
+          <button data-filter="arid" class="guide-filter px-3 py-1 rounded-full text-xs bg-[#e7decb] text-[#453a2f]">Çöl & Savana</button>
+          <button data-filter="cool_forest" class="guide-filter px-3 py-1 rounded-full text-xs bg-[#e7decb] text-[#453a2f]">Serin Mağara</button>
+          <button data-filter="mediterranean" class="guide-filter px-3 py-1 rounded-full text-xs bg-[#e7decb] text-[#453a2f]">Akdeniz</button>
+        </div>
+      </div>
+      <div id="guideBody" class="flex-1 overflow-y-auto scroll-soft p-5 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  // =========================================================================
+  // 1. VERIFIED BIOLOGICAL DATA FOR ALL 15 GECKO SPECIES
+  // =========================================================================
+  const FOODS = {
+    cricket:  { id: 'cricket',  name: 'Cırcır',   fullName: 'Cırcır Böceği', type: 'insect', color: 0x6b5538 },
+    dubia:    { id: 'dubia',    name: 'Dubia',    fullName: 'Dubia Böceği',  type: 'insect', color: 0x4d3626 },
+    fruitfly: { id: 'fruitfly', name: 'Sinek',    fullName: 'Meyve Sineği',  type: 'insect', color: 0x3b3733 },
+    mealworm: { id: 'mealworm', name: 'Un Kurdu', fullName: 'Un Kurdu',      type: 'insect', color: 0xc48c42 },
+    cgd:      { id: 'cgd',      name: 'Püre',     fullName: 'Meyve Püresi',  type: 'puree',  color: 0xd99a5b },
+    nectar:   { id: 'nectar',   name: 'Nektar',   fullName: 'Çiçek Nektarı', type: 'nectar', color: 0xcf5360 }
+  };
+
+  const BIOMES = {
+    rainforest: {
+      id: 'rainforest', name: 'Yağmur Ormanı',
+      defaultTemp: 26, defaultHumidity: 74, defaultTime: 'day',
+      defaultSpecies: ['crested', 'giant_day', 'electric_blue', 'tokay'],
+      sky: { day: 0xc4d9bd, dusk: 0xd9b398, night: 0x132029 },
+      fog: { day: 0xb8cfb0, dusk: 0xb88e7a, night: 0x111e26 },
+      groundColor: '#3a6632', groundAccent: '#588c42', barkColor: '#5c422e', hasWater: true
+    },
+    arid: {
+      id: 'arid', name: 'Çöl & Savana',
+      defaultTemp: 29, defaultHumidity: 38, defaultTime: 'dusk',
+      defaultSpecies: ['leopard', 'fat_tailed', 'knob_tailed', 'wonder'],
+      sky: { day: 0xe8d5b5, dusk: 0xd99b78, night: 0x1a1e30 },
+      fog: { day: 0xe3cca6, dusk: 0xc98867, night: 0x181b2b },
+      groundColor: '#cfa574', groundAccent: '#b58352', barkColor: '#8c7258', hasWater: false
+    },
+    cool_forest: {
+      id: 'cool_forest', name: 'Serin Mağara',
+      defaultTemp: 22, defaultHumidity: 80, defaultTime: 'night',
+      defaultSpecies: ['leaf_tailed', 'chinese_cave'],
+      sky: { day: 0x9fb3b0, dusk: 0x6f7f87, night: 0x111a21 },
+      fog: { day: 0x8ea3a0, dusk: 0x5c6d75, night: 0x0f181f },
+      groundColor: '#3f524c', groundAccent: '#567058', barkColor: '#45352a', hasWater: true
+    },
+    mediterranean: {
+      id: 'mediterranean', adultCm: 12, name: 'Akdeniz Avlusu',
+      defaultTemp: 26, defaultHumidity: 65, defaultTime: 'dusk',
+      defaultSpecies: ['mediterranean'],
+      sky: { day: 0xcfe0e8, dusk: 0xdfb190, night: 0x161f33 },
+      fog: { day: 0xd6dfd8, dusk: 0xc99c7f, night: 0x151d2e },
+      groundColor: '#ba8866', groundAccent: '#d1a27e', barkColor: '#695543', hasWater: false
+    }
+  };
+
+  const SPECIES_LIST = [
+    {
+      id: 'leopard', adultCm: 22, nameTr: 'Leopar Gekosu', nameEn: 'Leopard Gecko', sci: 'Eublepharis macularius',
+      biome: 'arid', arboreal: false, hasEyelids: true, hasToePads: false,
+      sizeCm: '17–25 cm', scale: 1.0, lifespan: '15–20 yıl',
+      cycle: 'crepuscular', cycleLabel: 'Alacakaranlık',
+      tempMin: 23, tempMax: 35, humMin: 30, humMax: 48,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia', 'mealworm'],
+      callText: 'cırt-cırt', callPitch: 520,
+      palette: { base: '#e2bc5c', hi: '#f7e09c', shadow: '#8c6929', belly: '#f7f0df', spot: '#2e2219', tail: '#d4c3aa', eye: '#736243' },
+      pattern: 'leopard',
+      habitatNote: 'Afganistan, Pakistan, İran ve Hindistan\'ın kurak kayalık çalılıkları ve yarı çöl düzlükleri.',
+      dietNote: 'Tamamen böcekçildir: cırcır böceği, dubia hamamböceği, un kurdu, kara asker sineği larvası ve ipekböceği yer. Kalsiyum tozu önemlidir.',
+      fact: 'Çoğu gekodan farklı olarak hareketli göz kapaklarına sahiptir; göz kırpabilir ve uyurken gözlerini kapatabilir. Yapışkan ayak pedleri yerine kayalara tutunan pençeleri vardır ve avlanırken kuyruğunu sallar.',
+      sources: [
+        { title: 'San Diego Zoo', url: 'https://animals.sandiegozoo.org/animals/leopard-gecko' },
+        { title: 'ReptiFiles Care Guide', url: 'https://www.zenhabitats.com/blogs/reptile-care-sheets-resources/leopard-gecko-care-sheet-reptifiles' }
+      ]
+    },
+    {
+      id: 'fat_tailed', adultCm: 22, nameTr: 'Afrika Kalın Kuyruklu Gekosu', nameEn: 'African Fat-Tailed Gecko', sci: 'Hemitheconyx caudicinctus',
+      biome: 'arid', arboreal: false, hasEyelids: true, hasToePads: false,
+      sizeCm: '18–25 cm', scale: 1.04, lifespan: '15–20+ yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gece / Alacakaranlık',
+      tempMin: 24, tempMax: 34, humMin: 48, humMax: 80,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia', 'mealworm'],
+      callText: 'mır-cik', callPitch: 440,
+      palette: { base: '#c49a72', hi: '#e0c2a0', shadow: '#633f2b', belly: '#f2ddd2', spot: '#472a1d', stripe: '#f7f2e8', eye: '#3b261c' },
+      pattern: 'banded_stripe',
+      habitatNote: 'Batı Afrika\'nın kuru ve nemli savanaları; gündüzleri nemli termit yuvaları ve kaya altlarında saklanır.',
+      dietNote: 'Böcekçildir: cırcır böceği, dubia/discoid hamamböceği, un kurdu ve ipekböceği yer; kalsiyum ve multivitamin takviyesi gerekir.',
+      fact: 'Kıtlık dönemlerinde hayatta kalmak için kalın, halkalı kuyruğunda yüksek miktarda yağ depolar. Leopar gekosu gibi hareketli göz kapaklarına sahiptir ancak daha yüksek nem ister.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/African_fat-tailed_gecko' },
+        { title: 'The Bio Dude / ReptiFiles', url: 'https://www.thebiodude.com/blogs/gecko-caresheets/african-fat-tailed-gecko-hemitheconyx-caudicinctus-care-sheet-and-bioactive-terrarium-maintenance' }
+      ]
+    },
+    {
+      id: 'knob_tailed', adultCm: 11, nameTr: 'Topuz Kuyruklu Geko', nameEn: 'Smooth Knob-Tailed Gecko', sci: 'Nephrurus levis',
+      biome: 'arid', arboreal: false, hasEyelids: false, hasToePads: false,
+      sizeCm: '10–12 cm', scale: 0.84, lifespan: '10–15 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 22, tempMax: 32, humMin: 30, humMax: 45,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia', 'mealworm'],
+      callText: 'hav!', callPitch: 360,
+      palette: { base: '#c98570', hi: '#e8b5a0', shadow: '#7a4134', belly: '#f8f1e8', spot: '#7a3f32', accent: '#f0dfd4', eye: '#211917' },
+      pattern: 'knob',
+      habitatNote: 'Avustralya iç kesimlerinin kurak spinifex çölleri ve kum tepeleri; kendi yuvasını kazar ve girişini kapatır.',
+      dietNote: 'Böcekçildir: dubia böceği, cırcır böceği, un kurdu ve kara asker sineği larvası yer; yağmur sonrası açık alanda avlanır.',
+      fact: 'Avustralya\'nın "havlayan geko" ailesindendir; tehdit hissettiğinde havlama benzeri ses çıkarır. Havuç şeklindeki kısa kuyruğunun ucunda yuvarlak, benzersiz bir topuz bulunur.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Nephrurus_levis' },
+        { title: 'DubiaRoaches Care Sheet', url: 'https://dubiaroaches.com/blogs/gecko-care/knob-tailed-gecko-care-sheet' }
+      ]
+    },
+    {
+      id: 'wonder', adultCm: 17, nameTr: 'Harika Geko (Kurbağa Gözlü)', nameEn: 'Common Wonder Gecko', sci: 'Teratoscincus scincus',
+      biome: 'arid', arboreal: false, hasEyelids: false, hasToePads: false,
+      sizeCm: '15–20 cm', scale: 0.94, lifespan: '15–20 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 23, tempMax: 32, humMin: 32, humMax: 46,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia', 'mealworm'],
+      callText: 'kuyruk tıkırtısı', callPitch: 680,
+      palette: { base: '#d4ae72', hi: '#edd5a4', shadow: '#806035', belly: '#f5efe0', spot: '#543f2c', leg: '#db9546', eye: '#7ea368' },
+      pattern: 'scales',
+      habitatNote: 'Orta Asya, İran, Afganistan ve Batı Çin\'in kum çölleri; gündüzleri nemli alt kum tabakasına derin yuvalar kazar.',
+      dietNote: 'Böcekçildir: cırcır böceği, hamamböceği, çekirge, un kurdu ve böceklerle beslenir; kalsiyum ve D3 desteği gerekir.',
+      fact: 'Vücudu balık pullarına benzeyen iri pullarla kaplıdır. Kuyruğundaki büyük plakaları birbirine sürterek (stridülasyon) çıngırak benzeri bir ses çıkarır; parmaklarındaki taraklı pullar kumda koşmasını sağlar.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Teratoscincus_scincus' },
+        { title: 'Swell Reptiles Guide', url: 'https://www.reptiles.swelluk.com/help-guides/wonder-gecko-care-guide/' }
+      ]
+    },
+    {
+      id: 'mediterranean', nameTr: 'Akdeniz Ev Gekosu (Süleymancık)', nameEn: 'Mediterranean House Gecko', sci: 'Hemidactylus turcicus',
+      biome: 'mediterranean', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '10–13 cm', scale: 0.84, lifespan: '~9 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 23, tempMax: 32, humMin: 55, humMax: 76,
+      dietType: 'Böcekçil', foods: ['fruitfly', 'cricket', 'mealworm'],
+      callText: 'cik-cik', callPitch: 920,
+      palette: { base: '#e0bfb0', hi: '#f5e2d8', shadow: '#947568', belly: '#faf2ed', spot: '#6b4f45', tubercle: '#fff7f0', eye: '#9e7e57' },
+      pattern: 'tubercles',
+      habitatNote: 'Akdeniz kıyılarının taş duvarları, kayalıkları ve sıcak akşam lambalarının çevresi. Türkiye, Yunanistan ve Kıbrıs\'ta zarar verilmesi geleneksel olarak uğursuz sayılır.',
+      dietNote: 'Görsel avcı böcekçildir: meyve sineği, küçük cırcır böceği, güve, örümcek ve un kurdu yer.',
+      fact: 'Gece ortaya çıktığı için "ay kertenkelesi" olarak da bilinir. Erkek cırcır böceklerinin çağrılarını dinleyerek yaklaşan böcekleri pusu kurup avlar ve kuş benzeri ince cıvıltılar çıkarır.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Mediterranean_house_gecko' },
+        { title: 'Reptile Supply Care Sheet', url: 'https://reptilesupply.com/blogs/care-sheets/how-to-care-for-your-house-gecko' }
+      ]
+    },
+    {
+      id: 'crested', adultCm: 23, nameTr: 'Tepeli Geko', nameEn: 'Crested Gecko', sci: 'Correlophus ciliatus',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '20–25 cm', scale: 1.0, lifespan: '15–20+ yıl',
+      cycle: 'crepuscular', cycleLabel: 'Gece / Alacakaranlık',
+      tempMin: 21, tempMax: 29, humMin: 58, humMax: 82,
+      dietType: 'Hepçil (Meyve & Böcek)', foods: ['cgd', 'nectar', 'cricket', 'dubia'],
+      callText: 'viik', callPitch: 780,
+      palette: { base: '#cf874e', hi: '#edb880', shadow: '#784420', belly: '#f5e6cf', spot: '#753f1d', crest: '#f5d4a6', eye: '#c49749' },
+      pattern: 'crested',
+      habitatNote: 'Yeni Kaledonya\'nın tropikal yağmur ormanlarına endemiktir; yüksek dallar arasında uzun sıçramalar yapar.',
+      dietNote: 'Hepçildir: meyve-böcek karışımlı CGD püresi, olgun mango/papaya/muz, nektar, cırcır böceği ve dubia yer (un kurdu önerilmez).',
+      fact: '1866\'da tanımlandıktan sonra neslinin tükendiği sanılmış, 1994\'te yeniden keşfedilmiştir! Gözlerinin üstündeki kirpik benzeri tepeleriyle tanınır ve göz kapağı olmadığı için gözlerini diliyle yalar.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Crested_gecko' },
+        { title: 'ReptiFiles Diet Guide', url: 'https://reptifiles.com/crested-gecko/care-guide/crested-gecko-food' }
+      ]
+    },
+    {
+      id: 'gargoyle', adultCm: 21, nameTr: 'Gargoyl Gekosu', nameEn: 'Gargoyle Gecko', sci: 'Rhacodactylus auriculatus',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '18–23 cm', scale: 0.98, lifespan: '15–20 yıl',
+      cycle: 'crepuscular', cycleLabel: 'Gece / Alacakaranlık',
+      tempMin: 22, tempMax: 29, humMin: 52, humMax: 85,
+      dietType: 'Hepçil (Meyve & Böcek)', foods: ['cgd', 'cricket', 'dubia', 'nectar'],
+      callText: 'hır-cik', callPitch: 620,
+      palette: { base: '#968b81', hi: '#bdb3a8', shadow: '#4f4841', belly: '#e3dbd0', spot: '#c45835', dark: '#3a342f', eye: '#b0763d' },
+      pattern: 'gargoyle',
+      habitatNote: 'Yeni Kaledonya\'nın güneyindeki çalılık ormanlarda yaşar; dallar arasında kendi boyunun 3 katına sıçrayabilir.',
+      dietNote: 'Hepçildir: CGD meyve püresi, haftada 2 kez kalsiyumlu dubia/cırcır böceği ve ara sıra nektar veya tropik meyve sever.',
+      fact: 'Kafasının arkasındaki boynuz veya kulak benzeri çıkıntılar nedeniyle "gargoyl" adını almıştır. Tepeli gekonun aksine kopardığı kuyruğunu yeniden büyütebilir.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Gargoyle_gecko' },
+        { title: 'ReptiFiles Gargoyle Guide', url: 'https://reptifiles.com/gargoyle-gecko/care-guide/gargoyle-gecko-food' }
+      ]
+    },
+    {
+      id: 'leachianus', adultCm: 38, nameTr: 'Dev Yeni Kaledonya Gekosu', nameEn: 'Leachianus Gecko', sci: 'Rhacodactylus leachianus',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '23–43 cm', scale: 1.24, lifespan: '20–30+ yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 21, tempMax: 30, humMin: 58, humMax: 85,
+      dietType: 'Hepçil (Meyve & Böcek)', foods: ['cgd', 'nectar', 'dubia', 'cricket'],
+      callText: 'grrr-gık', callPitch: 240,
+      palette: { base: '#767f62', hi: '#a1aa8c', shadow: '#3e4633', belly: '#cbceb9', spot: '#3d4531', lichen: '#dcd8c3', eye: '#8c7a4a' },
+      pattern: 'leachie',
+      habitatNote: 'Yeni Kaledonya\'nın yüksek orman kanopisi; gündüzleri büyük ağaç kovuklarının içinde dinlenir.',
+      dietNote: 'Hepçildir: yüksek raflara konan farklı aromalı CGD meyve püreleri, incir/meyve nektarı ve iri böceklerle beslenir.',
+      fact: 'Dünyanın yaşayan en büyük geko türüdür! Yosunlu ağaç kabuğu gibi görünen gevşek, kadifemsi deriye sahiptir ve gekolar arasındaki en geniş ses repertuvarına (hırıltı, ıslık, cıvıltı) sahiptir.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Rhacodactylus_leachianus' },
+        { title: 'ReptiFiles Leachie Guide', url: 'https://reptifiles.com/leachie-gecko' }
+      ]
+    },
+    {
+      id: 'giant_day', adultCm: 26, nameTr: 'Dev Gündüz Gekosu', nameEn: 'Giant Day Gecko', sci: 'Phelsuma grandis',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '23–28 cm', scale: 1.06, lifespan: '15–20 yıl',
+      cycle: 'diurnal', cycleLabel: 'Gündüzcül',
+      tempMin: 25, tempMax: 32, humMin: 48, humMax: 76,
+      dietType: 'Hepçil (Böcek & Nektar)', foods: ['nectar', 'cricket', 'dubia', 'cgd'],
+      callText: 'tık-tık', callPitch: 700,
+      palette: { base: '#49a350', hi: '#8be07b', shadow: '#26612e', belly: '#f2eccb', spot: '#cf4236', accent: '#7bd177', eye: '#29221c' },
+      pattern: 'day_gecko',
+      habitatNote: 'Kuzey Madagaskar\'ın güneşli tropikal ve subtropikal ormanları; gündüzleri güneşlenmeyi çok sever.',
+      dietNote: 'Hepçildir: kalsiyumlu cırcır böceği ve hamamböceğinin yanı sıra kırmızı/sarı çiçek nektarına ve CGD meyve püresine doğuştan ilgi duyar.',
+      fact: 'Parlak zümrüt yeşili gövdesi, burnundan gözüne uzanan kırmızı çizgisi ve sırtındaki kırmızı benekleriyle ünlüdür. Boyun yanlarındaki keselerde kalsiyum depolar.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Phelsuma_grandis' },
+        { title: 'ReptiFiles Day Gecko', url: 'https://reptifiles.com/giant-day-gecko' }
+      ]
+    },
+    {
+      id: 'electric_blue', adultCm: 8.2, nameTr: 'Elektrik Mavisi Gündüz Gekosu', nameEn: 'Electric Blue Day Gecko', sci: 'Lygodactylus williamsi',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '5–8.9 cm', scale: 0.78, lifespan: '8–10 yıl',
+      cycle: 'diurnal', cycleLabel: 'Gündüzcül',
+      tempMin: 24, tempMax: 34, humMin: 52, humMax: 85,
+      dietType: 'Hepçil (Mikro Böcek & Nektar)', foods: ['fruitfly', 'nectar', 'cgd'],
+      callText: 'pıt-pıt', callPitch: 1050,
+      palette: { base: '#21a0c7', hi: '#73e2fa', shadow: '#135773', belly: '#eda13e', spot: '#171d22', accent: '#62d9f2', eye: '#1a1f24' },
+      pattern: 'electric_blue',
+      habitatNote: 'Tanzanya\'daki Kimboza Ormanı\'nın yalnızca ~8 km²\'lik alanında, dev Pandanus ağaçlarının yaprak taçlarında yaşar (IUCN Kritik Tehlikede).',
+      dietNote: 'Çok küçük olduğu için meyve sineği (Drosophila) gibi mikro böcekler, çiçek nektarı ve meyve püresi (CGD) ile beslenir.',
+      fact: 'Baskın erkekler göz alıcı elektrik turkuazı rengindedir; ruh haline ve sıcaklığa göre rengi koyulaşabilir veya parlayabilir. Yapraklardaki su damlacıklarını yalayarak su içer.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Lygodactylus_williamsi' },
+        { title: 'HappyDragons Care Guide', url: 'https://www.happydragons.com/reptiles/electric-blue-gecko/care-guide' }
+      ]
+    },
+    {
+      id: 'tokay', adultCm: 32, nameTr: 'Tokay Gekosu', nameEn: 'Tokay Gecko', sci: 'Gekko gecko',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '25–40 cm', scale: 1.14, lifespan: '10–20 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 25, tempMax: 36, humMin: 58, humMax: 82,
+      dietType: 'Böcekçil / Etçil', foods: ['dubia', 'cricket', 'mealworm'],
+      callText: 'to-kay!', callPitch: 340,
+      palette: { base: '#7997ad', hi: '#aec7d9', shadow: '#445969', belly: '#dbe4eb', spot: '#d96432', accent: '#e8a146', eye: '#c4933b' },
+      pattern: 'tokay',
+      habitatNote: 'Güney ve Güneydoğu Asya\'nın yağmur ormanları, kayalıkları ve köy evlerinin duvarları.',
+      dietNote: 'Pusu avcısıdır: büyük hamamböcekleri, cırcır böcekleri, çekirgeler ve larvalarla beslenir; kalsiyum takviyesi şarttır.',
+      fact: 'Erkeklerin güçlü "to-kay!" çağrısı hem kendi adına hem de tüm "geko" kelimesine ilham vermiştir! Kafalarının tepesinde ışığa duyarlı üçüncü (parietal) göz bulunur ve yumurtalarını eşiyle birlikte korur.',
+      sources: [
+        { title: 'Smithsonian National Zoo', url: 'https://nationalzoo.si.edu/animals/tokay-gecko' },
+        { title: 'ReptiFiles Tokay Guide', url: 'https://reptifiles.com/tokay-gecko' }
+      ]
+    },
+    {
+      id: 'mourning', adultCm: 9.5, nameTr: 'Yaslı Geko', nameEn: 'Mourning Gecko', sci: 'Lepidodactylus lugubris',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '8.5–10 cm', scale: 0.78, lifespan: '10–15 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gece / Alacakaranlık',
+      tempMin: 21, tempMax: 29, humMin: 60, humMax: 88,
+      dietType: 'Hepçil (Mikro Böcek & Püre)', foods: ['fruitfly', 'cgd', 'nectar', 'cricket'],
+      callText: 'çik-çik', callPitch: 980,
+      palette: { base: '#d6c1a3', hi: '#f0e2ce', shadow: '#857155', belly: '#f5edd6', spot: '#5e4837', eye: '#45382d' },
+      pattern: 'mourning',
+      habitatNote: 'Hint ve Pasifik Okyanusu kıyılarındaki tropikal ormanlar ve lagün çevreleri.',
+      dietNote: 'Meyve sineği, küçük cırcır böceği, polen, nektar ve CGD meyve püresi yer. Sürekli yumurtladıkları için kalsiyum çok önemlidir.',
+      fact: 'Neredeyse tamamen dişilerden oluşur ve partenogenez (eşeysiz üreme) yoluyla kendini klonlar! Koloniler halinde yaşar ve aralarında yumuşak tıkırtı ve cıvıltılarla iletişim kurar.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Lepidodactylus_lugubris' },
+        { title: 'The Bio Dude Care Sheet', url: 'https://www.thebiodude.com/blogs/gecko-caresheets/mourning-gecko-bioactive-care-and-maintenance' }
+      ]
+    },
+    {
+      id: 'leaf_tailed', adultCm: 10.5, nameTr: 'Yaprak Kuyruklu Geko', nameEn: 'Satanic Leaf-Tailed Gecko', sci: 'Uroplatus phantasticus',
+      biome: 'cool_forest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '9–11 cm', scale: 0.90, lifespan: '10+ yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 18, tempMax: 25, humMin: 60, humMax: 92,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia', 'fruitfly'],
+      callText: 'yaprak hışırtısı', callPitch: 640,
+      palette: { base: '#8c5a3b', hi: '#ba8460', shadow: '#4a2b19', belly: '#b38b6b', spot: '#472817', vein: '#57331f', eye: '#c45547' },
+      pattern: 'leaf_tail',
+      habitatNote: 'Madagaskar\'ın serin ve nemli doğu yağmur ormanları; 27°C üzeri sıcaklıklar için çok hassastır.',
+      dietNote: 'Katı böcekçildir: cırcır böceği, küçük hamamböcekleri, güveler ve sineklerle beslenir.',
+      fact: 'Doğanın en usta kamuflaj sanatçılarındandır: yassı, damarlı ve kenarı tırtıklı kuyruğu kurumuş bir sonbahar yaprağına birebir benzer (fitomimikri). Dallara yapışarak gölgesini gizler.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Uroplatus_phantasticus' },
+        { title: 'Tails and Scales Care Sheet', url: 'https://tailsandscales.ca/pages/satanic-leaf-tailed-gecko-care-sheet' }
+      ]
+    },
+    {
+      id: 'chinese_cave', adultCm: 19, nameTr: 'Çin Mağara Gekosu', nameEn: 'Chinese Cave Gecko', sci: 'Goniurosaurus luii',
+      biome: 'cool_forest', arboreal: false, hasEyelids: true, hasToePads: false,
+      sizeCm: '14–24 cm', scale: 0.96, lifespan: '10–12+ yıl',
+      cycle: 'crepuscular', cycleLabel: 'Alacakaranlık / Gece',
+      tempMin: 19, tempMax: 26, humMin: 58, humMax: 88,
+      dietType: 'Böcekçil', foods: ['cricket', 'dubia'],
+      callText: 'pıs-cik', callPitch: 580,
+      palette: { base: '#38394a', hi: '#5d5f78', shadow: '#1c1d26', belly: '#c4bac0', spot: '#f2e8ce', eye: '#e35627' },
+      pattern: 'cave_bands',
+      habitatNote: 'Güney Çin ve Kuzey Vietnam\'ın nemli kireçtaşı mağaraları ve ormanlık karst kayalıkları (IUCN Hassas).',
+      dietNote: 'Katı böcekçildir: kalsiyumla tozlanmış cırcır böceği ve dubia hamamböceği yer; serin ve karanlık ortamda avlanır.',
+      fact: 'Koyu kömür-lacivert gövdesindeki keskin krem bantlar ve parlayan turuncu-kırmızı gözleriyle büyüleyicidir. Hareketli göz kapakları vardır ve nemli kayalara pençeleriyle tutunur.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Goniurosaurus_luii' },
+        { title: 'ReptiFiles Cave Gecko', url: 'https://reptifiles.com/chinese-cave-gecko' }
+      ]
+    },
+    {
+      id: 'flying', adultCm: 18, nameTr: 'Kuhl Uçan (Paraşüt) Gekosu', nameEn: "Kuhl's Flying Gecko", sci: 'Gekko kuhli',
+      biome: 'rainforest', arboreal: true, hasEyelids: false, hasToePads: true,
+      sizeCm: '15–20 cm', scale: 0.96, lifespan: '6–10 yıl',
+      cycle: 'nocturnal', cycleLabel: 'Gececil',
+      tempMin: 24, tempMax: 29, humMin: 60, humMax: 85,
+      dietType: 'Ağırlıklı Böcekçil', foods: ['cricket', 'dubia', 'cgd'],
+      callText: 'vıjj-cik', callPitch: 740,
+      palette: { base: '#99876f', hi: '#c4b49b', shadow: '#544839', belly: '#e0d6c3', spot: '#473b2e', flap: '#b3a189', eye: '#a6935d' },
+      pattern: 'flying',
+      habitatNote: 'Güneydoğu Asya\'nın (Malezya, Tayland, Sumatra, Borneo, Cava) tropikal orman gövdeleri.',
+      dietNote: 'Ağırlıklı olarak cırcır böceği ve hamamböceği yer; ara sıra tatlı meyve veya CGD püresini de tadar.',
+      fact: 'Gövde yanlarındaki deri kanatçıklarını, perdeli ayaklarını ve kürek şeklindeki kuyruğunu açarak ağaçtan ağaca paraşüt gibi süzülür! Gündüzleri güneşli kabuklarda dinlenirken iç organlarını UV ışığından koruyan koyu pigmentlere sahiptir.',
+      sources: [
+        { title: 'Wikipedia', url: 'https://en.wikipedia.org/wiki/Gekko_kuhli' },
+        { title: 'The Painted Reptile', url: 'https://paintedreptile.com/pages/kuhls-flying-gecko-care-sheet' }
+      ]
+    }
+  ];
+  const SPECIES_MAP = Object.fromEntries(SPECIES_LIST.map(s => [s.id, s]));
+
+  // =========================================================================
+  // 2. SERENE AMBIENT RAIN + PENTATONIC WEB AUDIO ENGINE
+  // =========================================================================
+  class SereneAudio {
+    constructor() { this.ctx = null; this.muted = true; this.initialized = false; this.rainGain = null; this.rainLevel = 0.08; }
+    init() {
+      if (this.initialized) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        const len = this.ctx.sampleRate * 3;
+        const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+        const out = buf.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < len; i++) {
+          const w = Math.random() * 2 - 1;
+          b0 = 0.997 * b0 + w * 0.029; b1 = 0.985 * b1 + w * 0.032; b2 = 0.950 * b2 + w * 0.048;
+          out[i] = (b0 + b1 + b2) * 0.22;
+        }
+        const src = this.ctx.createBufferSource(); src.buffer = buf; src.loop = true;
+        const lpf = this.ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = 920;
+        this.rainGain = this.ctx.createGain(); this.rainGain.gain.value = 0;
+        src.connect(lpf); lpf.connect(this.rainGain); this.rainGain.connect(this.ctx.destination);
+        src.start();
+        this.initialized = true;
+      } catch (e) {}
+    }
+    setRainIntensity(isRaining) {
+      this.rainLevel = isRaining ? 0.16 : 0.06;
+      if (this.rainGain && this.ctx && !this.muted) {
+        this.rainGain.gain.setTargetAtTime(this.rainLevel, this.ctx.currentTime, 0.8);
+      }
+    }
+    toggle() {
+      this.init();
+      this.muted = !this.muted;
+      if (!this.muted && this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      if (this.rainGain && this.ctx) {
+        this.rainGain.gain.setTargetAtTime(this.muted ? 0 : this.rainLevel, this.ctx.currentTime, 0.5);
+      }
+      if (!this.muted) this.playChime(392, 0.045, 0.7);
+      return !this.muted;
+    }
+    playChime(freq = 440, vol = 0.04, duration = 0.65) {
+      if (this.muted || !this.ctx) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+      osc.type = 'sine'; osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.0005, now);
+      gain.gain.linearRampToValueAtTime(vol, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0005, now + duration);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + duration + 0.03);
+    }
+    playFeed() {
+      const pent = [329.63, 392, 440, 523.25, 587.33];
+      const f = pent[Math.floor(Math.random() * pent.length)];
+      this.playChime(f, 0.042, 0.55);
+      setTimeout(() => this.playChime(f * 1.5, 0.028, 0.65), 115);
+    }
+    playChirp(pitch = 600, isTokay = false) {
+      if (this.muted || !this.ctx) return;
+      if (isTokay) {
+        this.playChime(293.66, 0.05, 0.18);
+        setTimeout(() => this.playChime(440, 0.055, 0.28), 165);
+        return;
+      }
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(pitch, now);
+      osc.frequency.exponentialRampToValueAtTime(pitch * 1.24, now + 0.09);
+      gain.gain.setValueAtTime(0.0005, now);
+      gain.gain.linearRampToValueAtTime(0.03, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.22);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now); osc.stop(now + 0.24);
+    }
+    playMist() {
+      if (this.muted || !this.ctx) return;
+      const sz = Math.floor(this.ctx.sampleRate * 0.24);
+      const buf = this.ctx.createBuffer(1, sz, this.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < sz; i++) d[i] = (Math.random() * 2 - 1) * Math.sin((i / sz) * Math.PI);
+      const n = this.ctx.createBufferSource(); n.buffer = buf;
+      const flt = this.ctx.createBiquadFilter(); flt.type = 'bandpass'; flt.frequency.value = 2300; flt.Q.value = 0.8;
+      const g = this.ctx.createGain(); g.gain.value = 0.028;
+      n.connect(flt); flt.connect(g); g.connect(this.ctx.destination);
+      n.start();
+    }
+  }
+  const audio = new SereneAudio();
+
+  // =========================================================================
+  // 3. PROCEDURAL HAND-PAINTED GOUACHE TEXTURES (SKIN, BARK, GROUND, EYES)
+  // =========================================================================
+  const skinTextureCache = {};
+  function getGeckoSkinTextures(sp) {
+    if (skinTextureCache[sp.id]) return skinTextureCache[sp.id];
+    const w = 256, h = 256;
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const p = sp.palette;
+
+    // Gouache base wash
+    const grad = g.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, p.hi);
+    grad.addColorStop(0.45, p.base);
+    grad.addColorStop(0.85, p.shadow);
+    grad.addColorStop(1, p.belly);
+    g.fillStyle = grad; g.fillRect(0, 0, w, h);
+
+    // Subtle stippled granular reptile scales (organic watercolor pigment grain)
+    for (let i = 0; i < 1600; i++) {
+      const sx = Math.random() * w, sy = Math.random() * h;
+      g.fillStyle = Math.random() > 0.5 ? 'rgba(255,250,235,0.08)' : 'rgba(28,20,14,0.09)';
+      g.beginPath(); g.arc(sx, sy, 0.8 + Math.random() * 1.4, 0, Math.PI * 2); g.fill();
+    }
+
+    // Species-authentic patterns!
+    if (sp.pattern === 'leopard') {
+      g.fillStyle = p.spot;
+      for (let i = 0; i < 55; i++) {
+        const x = Math.random() * w, y = Math.random() * h * 0.72;
+        g.beginPath(); g.ellipse(x, y, 4 + Math.random() * 6, 3 + Math.random() * 5, Math.random() * 3, 0, Math.PI * 2); g.fill();
+      }
+    } else if (sp.pattern === 'banded_stripe') {
+      g.fillStyle = p.spot;
+      [35, 115, 195].forEach(bx => { g.fillRect(bx, 0, 42, h * 0.85); });
+      g.fillStyle = p.stripe;
+      g.fillRect(0, h * 0.24, w, 12);
+    } else if (sp.pattern === 'tokay') {
+      for (let i = 0; i < 65; i++) {
+        g.fillStyle = i % 3 === 0 ? p.accent : p.spot;
+        g.beginPath(); g.arc(Math.random() * w, Math.random() * h * 0.78, 4 + Math.random() * 6, 0, Math.PI * 2); g.fill();
+      }
+    } else if (sp.pattern === 'day_gecko') {
+      g.fillStyle = p.spot;
+      for (let i = 0; i < 24; i++) {
+        g.beginPath(); g.ellipse(30 + Math.random() * 196, 20 + Math.random() * 110, 5 + Math.random() * 6, 4 + Math.random() * 5, 0, 0, Math.PI * 2); g.fill();
+      }
+    } else if (sp.pattern === 'gargoyle') {
+      g.strokeStyle = p.spot; g.lineWidth = 10;
+      for (let y = 25; y < 160; y += 36) {
+        g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(80, y - 18, 170, y + 18, w, y); g.stroke();
+      }
+      g.strokeStyle = p.dark; g.lineWidth = 6;
+      for (let y = 42; y < 175; y += 44) {
+        g.beginPath(); g.moveTo(0, y); g.bezierCurveTo(90, y + 15, 180, y - 15, w, y); g.stroke();
+      }
+    } else if (sp.pattern === 'leachie') {
+      for (let i = 0; i < 42; i++) {
+        g.fillStyle = i % 2 ? p.lichen : p.spot;
+        g.globalAlpha = 0.55;
+        g.beginPath(); g.ellipse(Math.random() * w, Math.random() * h * 0.8, 12 + Math.random() * 16, 7 + Math.random() * 10, Math.random() * 3, 0, Math.PI * 2); g.fill();
+      }
+      g.globalAlpha = 1;
+    } else if (sp.pattern === 'cave_bands') {
+      g.fillStyle = p.spot;
+      [30, 105, 180, 235].forEach(bx => { g.fillRect(bx, 0, 12, h * 0.85); });
+    } else if (sp.pattern === 'mourning') {
+      g.strokeStyle = p.spot; g.lineWidth = 5;
+      for (let x = 20; x < w; x += 42) {
+        g.beginPath(); g.moveTo(x - 14, 30); g.lineTo(x, 65); g.lineTo(x + 14, 30); g.stroke();
+      }
+    } else if (sp.pattern === 'scales') {
+      g.strokeStyle = 'rgba(72, 52, 34, 0.45)'; g.lineWidth = 2;
+      for (let y = 10; y < h; y += 16) {
+        for (let x = (y % 32 ? 8 : 0); x < w; x += 18) {
+          g.beginPath(); g.arc(x, y, 9, 0, Math.PI); g.stroke();
+        }
+      }
+    } else if (sp.pattern === 'tubercles') {
+      g.fillStyle = p.tubercle;
+      for (let y = 18; y < 180; y += 22) {
+        for (let x = 10; x < w; x += 22) {
+          g.beginPath(); g.arc(x + (y % 44 ? 8 : 0), y, 3, 0, Math.PI * 2); g.fill();
+        }
+      }
+    } else if (sp.pattern === 'leaf_tail') {
+      g.strokeStyle = p.vein; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(0, h * 0.35); g.lineTo(w, h * 0.35); g.stroke();
+      for (let x = 25; x < w; x += 32) {
+        g.beginPath(); g.moveTo(x, h * 0.35); g.lineTo(x + 22, 10); g.stroke();
+        g.beginPath(); g.moveTo(x, h * 0.35); g.lineTo(x + 22, h * 0.72); g.stroke();
+      }
+    } else if (sp.pattern === 'knob') {
+      g.fillStyle = p.accent;
+      for (let i = 0; i < 65; i++) {
+        g.beginPath(); g.arc(Math.random() * w, Math.random() * h * 0.75, 2.2 + Math.random() * 2.5, 0, Math.PI * 2); g.fill();
+      }
+    } else if (sp.pattern === 'electric_blue') {
+      const eg = g.createLinearGradient(0, 0, 0, h);
+      eg.addColorStop(0, '#6ce6ff'); eg.addColorStop(0.5, '#1ca0c9'); eg.addColorStop(0.85, '#144c63'); eg.addColorStop(1, '#f0a642');
+      g.fillStyle = eg; g.fillRect(0, 0, w, h);
+    }
+
+    // High-resolution micro-granular reptile scale bump map (Voronoi-like dermal tubercles!)
+    const bc = document.createElement('canvas'); bc.width = 256; bc.height = 256;
+    const bg = bc.getContext('2d');
+    bg.fillStyle = '#606060'; bg.fillRect(0, 0, 256, 256);
+    const step = sp.pattern === 'scales' ? 12 : 7;
+    for (let y = 0; y < 256; y += step) {
+      for (let x = 0; x < 256; x += step) {
+        const ox = (Math.floor(y / step) % 2) * (step * 0.5) + (Math.random() - 0.5) * 1.6;
+        const oy = (Math.random() - 0.5) * 1.6;
+        const r = step * 0.46;
+        const rg = bg.createRadialGradient(x + ox - r * 0.2, y + oy - r * 0.2, 0.4, x + ox, y + oy, r);
+        rg.addColorStop(0, '#f0f0f0');
+        rg.addColorStop(0.75, '#989898');
+        rg.addColorStop(1, '#383838');
+        bg.fillStyle = rg;
+        bg.beginPath(); bg.arc(x + ox, y + oy, r, 0, Math.PI * 2); bg.fill();
+      }
+    }
+
+    const map = new THREE.CanvasTexture(c);
+    map.encoding = THREE.sRGBEncoding;
+    const bumpMap = new THREE.CanvasTexture(bc);
+    skinTextureCache[sp.id] = { map, bumpMap };
+    return skinTextureCache[sp.id];
+  }
+
+  function createEyeTexture(sp) {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const g = c.getContext('2d');
+    const rg = g.createRadialGradient(64, 64, 8, 64, 64, 60);
+    rg.addColorStop(0, '#fff2d0');
+    rg.addColorStop(0.35, sp.palette.eye);
+    rg.addColorStop(0.88, '#211914');
+    rg.addColorStop(1, '#120e0b');
+    g.fillStyle = rg; g.fillRect(0, 0, 128, 128);
+    // Fine iris fibers
+    g.strokeStyle = 'rgba(255,245,215,0.22)'; g.lineWidth = 1.5;
+    for (let a = 0; a < Math.PI * 2; a += 0.28) {
+      g.beginPath(); g.moveTo(64 + Math.cos(a) * 18, 64 + Math.sin(a) * 18);
+      g.lineTo(64 + Math.cos(a) * 52, 64 + Math.sin(a) * 52); g.stroke();
+    }
+    // Pupil (vertical slit vs. round diurnal!)
+    g.fillStyle = '#0c0a09';
+    g.beginPath();
+    if (sp.cycle === 'diurnal') g.arc(64, 64, 24, 0, Math.PI * 2);
+    else g.ellipse(64, 64, 11, 42, 0, 0, Math.PI * 2);
+    g.fill();
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function createBarkTexture(hexBase, mossy = true) {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const g = c.getContext('2d');
+    g.fillStyle = hexBase; g.fillRect(0, 0, 256, 256);
+    // Hand-painted vertical wood grain strokes
+    for (let i = 0; i < 180; i++) {
+      g.fillStyle = i % 2 ? 'rgba(25,18,12,0.18)' : 'rgba(220,195,165,0.10)';
+      g.fillRect(Math.random() * 256, Math.random() * 256, 3 + Math.random() * 8, 35 + Math.random() * 90);
+    }
+    if (mossy) {
+      for (let i = 0; i < 45; i++) {
+        g.fillStyle = i % 2 ? 'rgba(92, 134, 74, 0.45)' : 'rgba(128, 166, 92, 0.35)';
+        g.beginPath(); g.ellipse(Math.random() * 256, Math.random() * 256, 12 + Math.random() * 24, 8 + Math.random() * 14, Math.random() * 3, 0, Math.PI * 2); g.fill();
+      }
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(3, 1);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  function createGroundTexture(c1, c2) {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+    const g = c.getContext('2d');
+    g.fillStyle = c1; g.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 420; i++) {
+      g.fillStyle = i % 2 ? c2 : 'rgba(30,24,18,0.12)';
+      g.globalAlpha = 0.28;
+      g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 10 + Math.random() * 36, 8 + Math.random() * 28, Math.random() * 3, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(2, 2);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+
+  // =========================================================================
+  // 4. THREE.JS 3D SCENE, LIGHTING & ORBIT CAMERA SETUP
+  // =========================================================================
+  const container = document.getElementById('webglContainer');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.04, 100);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.84;
+  renderer.physicallyCorrectLights = false;
+
+  // Procedural Photorealistic IBL / HDRI Environment Reflection Map via PMREMGenerator
+  const pmremGen = new THREE.PMREMGenerator(renderer);
+  pmremGen.compileEquirectangularShader();
+  const envMapCache = {};
+  function buildBiomeEnvMap(biomeId, timeOfDay) {
+    const key = `${biomeId}_${timeOfDay}`;
+    if (envMapCache[key]) return envMapCache[key];
+    const ec = document.createElement('canvas'); ec.width = 512; ec.height = 256;
+    const eg = ec.getContext('2d');
+    const b = BIOMES[biomeId];
+    const skyCol = new THREE.Color(b.sky[timeOfDay]);
+    const gndCol = new THREE.Color(b.groundColor);
+    const grad = eg.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, '#' + skyCol.clone().offsetHSL(0, 0, 0.14).getHexString());
+    grad.addColorStop(0.45, '#' + skyCol.getHexString());
+    grad.addColorStop(0.55, '#' + gndCol.clone().offsetHSL(0, 0, 0.05).getHexString());
+    grad.addColorStop(1, '#' + gndCol.clone().multiplyScalar(0.45).getHexString());
+    eg.fillStyle = grad; eg.fillRect(0, 0, 512, 256);
+    // Soft sunlit canopy bokeh / light windows for realistic glossy reflections on eyes, wet leaves & glass!
+    if (timeOfDay !== 'night') {
+      const sunGlow = eg.createRadialGradient(340, 62, 6, 340, 62, 110);
+      sunGlow.addColorStop(0, timeOfDay === 'day' ? 'rgba(235,224,196,0.42)' : 'rgba(224,162,110,0.40)');
+      sunGlow.addColorStop(1, 'rgba(255,240,210,0)');
+      eg.fillStyle = sunGlow; eg.fillRect(0, 0, 512, 256);
+      for (let i = 0; i < 24; i++) {
+        eg.fillStyle = 'rgba(225,218,200,0.08)';
+        eg.beginPath(); eg.arc(Math.random() * 512, 20 + Math.random() * 90, 8 + Math.random() * 24, 0, Math.PI * 2); eg.fill();
+      }
+    } else {
+      const moonGlow = eg.createRadialGradient(220, 48, 4, 220, 48, 85);
+      moonGlow.addColorStop(0, 'rgba(205,228,255,0.65)');
+      moonGlow.addColorStop(1, 'rgba(140,180,220,0)');
+      eg.fillStyle = moonGlow; eg.fillRect(0, 0, 512, 256);
+    }
+    const eqTex = new THREE.CanvasTexture(ec);
+    eqTex.mapping = THREE.EquirectangularReflectionMapping;
+    eqTex.encoding = THREE.sRGBEncoding;
+    const rt = pmremGen.fromEquirectangular(eqTex);
+    eqTex.dispose();
+    envMapCache[key] = rt.texture;
+    return rt.texture;
+  }
+  container.appendChild(renderer.domElement);
+
+  // Cinematic 3-Point + Warm Bounce Lighting Rig (Warm Key / Cool Shadow / Translucent Rim)
+  const hemiLight = new THREE.HemisphereLight(0xfff3d9, 0x24332d, 0.65);
+  scene.add(hemiLight);
+
+  const sunLight = new THREE.DirectionalLight(0xffebc2, 1.75);
+  sunLight.position.set(9, 10.5, 6.5);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.width = 1024;
+  sunLight.shadow.mapSize.height = 1024;
+  sunLight.shadow.camera.near = 1;
+  sunLight.shadow.camera.far = 32;
+  sunLight.shadow.camera.left = -7.8; sunLight.shadow.camera.right = 7.8;
+  sunLight.shadow.camera.top = 7.8; sunLight.shadow.camera.bottom = -7.8;
+  sunLight.shadow.bias = -0.0004;
+  scene.add(sunLight);
+
+  // Cinematic backlight rim light carving silhouettes of scales, crests & foliage
+  const rimLight = new THREE.DirectionalLight(0xffe0b0, 0.95);
+  rimLight.position.set(-6.5, 6.5, -8.5);
+  scene.add(rimLight);
+
+  // Subtle warm ground-bounce fill illuminating gecko undersides
+  const bounceLight = new THREE.PointLight(0xffd296, 0.42, 14, 1.6);
+  bounceLight.position.set(0, 1.4, 2.5);
+  scene.add(bounceLight);
+
+  const lanternLight = new THREE.PointLight(0xffb85c, 0, 12, 1.8);
+  lanternLight.position.set(3.2, 4.2, -3.1);
+  scene.add(lanternLight);
+
+  // Orbit Camera State (smooth damping + gentle breathing sway)
+  const camState = {
+    theta: 0.08, phi: 1.18, radius: 13.5,
+    targetTheta: 0.08, targetPhi: 1.18, targetRadius: 13.5,
+    lookAt: new THREE.Vector3(0, 1.6, 0),
+    targetLookAt: new THREE.Vector3(0, 1.6, 0)
+  };
+
+  // Scene Groups
+  const envGroup = new THREE.Group(); scene.add(envGroup);
+  const geckoGroup = new THREE.Group(); scene.add(geckoGroup);
+  const foodGroup = new THREE.Group(); scene.add(foodGroup);
+  const fxGroup = new THREE.Group(); scene.add(fxGroup);
+  const eggGroup = new THREE.Group(); scene.add(eggGroup);
+  let activeEggs = [];
+  // Zero-GC pre-allocated scratch vectors for locked 60 FPS
+  const _dir = new THREE.Vector3();
+  const _pt = new THREE.Vector3();
+  const _tan = new THREE.Vector3();
+  const _surfN = new THREE.Vector3(0, 1, 0);
+  let lastHudHum = -1;
+  let fpsFrames = 0, fpsLastTime = performance.now();
+  const bubbleNodes = new Map();
+
+  // Walkable 3D Paths (Logs/Branches) & Dynamic Swaying Foliage Arrays
+  let walkableLogs = [];    // [{ curve: CatmullRomCurve3, radius: number }]
+  let walkableMeshes = [];  // Floor, logs, rocks, ledges for exact foot-to-surface raycasting
+  let solidObstacles = [];  // Tree trunks, steep rock faces, walls to prevent ANY clipping
+  let swayPlants = [];      // [{ mesh, worldPos, baseRotX, baseRotZ, stiffness, phase, amp, curX, velX, curZ, velZ }]
+  let hangingVines = [];    // [{ pivot, phase, len, ang, vel }]
+  let caveDrips = [];       // [{ mesh, y, vy, startY, x, z }]
+  let sunShafts = [];       // [{ mesh, baseX, phase }]
+  let groundMist = [];      // [{ mesh, phase, baseX, baseZ }]
+  let swingingLantern = null;
+  let grassFieldMesh = null;
+  let waterRipples = [];    // [{ mesh, age }]
+  let waterSurfaceY = 0.08;
+  let waterCenter = new THREE.Vector3(2.8, 0.08, 1.6);
+
+  // =========================================================================
+  // 5. 3D HABITAT BUILDER (LOGS, TREES, FERNS, ROCKS, WATER, LANTERN)
+  // =========================================================================
+  function clearGroup(grp) {
+    while (grp.children.length > 0) grp.remove(grp.children[0]);
+  }
+
+  function addWalkableLog(points, radius, barkMat, addMoss = true) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p[0], p[1], p[2])));
+    const tubeGeo = new THREE.TubeGeometry(curve, 36, radius, 12, false);
+    const mesh = new THREE.Mesh(tubeGeo, barkMat);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    mesh.userData.walkableSurface = true;
+    walkableMeshes.push(mesh);
+    envGroup.add(mesh);
+
+    // End caps so logs look solid
+    [0, 1].forEach(t => {
+      const pt = curve.getPoint(t);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.96, 10, 8), barkMat);
+      cap.position.copy(pt);
+      envGroup.add(cap);
+    });
+
+    if (addMoss) {
+      const mossMat = new THREE.MeshStandardMaterial({ color: 0x628a49, roughness: 0.92 });
+      for (let t = 0.15; t <= 0.85; t += 0.22) {
+        const pt = curve.getPoint(t);
+        const m = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.72, 10, 8), mossMat);
+        m.scale.set(1.5, 0.42, 1.1);
+        m.position.set(pt.x, pt.y + radius * 0.82, pt.z);
+        m.receiveShadow = true;
+        envGroup.add(m);
+      }
+    }
+    walkableLogs.push({ curve, radius });
+    return curve;
+  }
+
+  const leafTexCache = {};
+  function getBotanicalFrondTexture(hexColor, isGrass = false) {
+    const key = `${hexColor}_${isGrass}`;
+    if (leafTexCache[key]) return leafTexCache[key];
+    const c = document.createElement('canvas'); c.width = 256; c.height = 512;
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, 256, 512);
+    const col = new THREE.Color(hexColor);
+    const hi  = '#' + col.clone().offsetHSL(0.02, 0.05, 0.14).getHexString();
+    const mid = '#' + col.getHexString();
+    const dk  = '#' + col.clone().multiplyScalar(0.58).getHexString();
+
+    if (isGrass) {
+      const gr = g.createLinearGradient(0, 512, 0, 20);
+      gr.addColorStop(0, dk); gr.addColorStop(0.55, mid); gr.addColorStop(1, hi);
+      g.fillStyle = gr;
+      g.beginPath(); g.moveTo(116, 512); g.quadraticCurveTo(122, 220, 128, 12); g.quadraticCurveTo(134, 220, 140, 512); g.closePath(); g.fill();
+    } else {
+      // Realistic serrated botanical fern frond with central rachis & 14 pairs of veined pinnae!
+      g.strokeStyle = dk; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(128, 504); g.lineTo(128, 26); g.stroke();
+      const pairs = 15;
+      for (let i = 0; i < pairs; i++) {
+        const t = i / (pairs - 1);
+        const y = 475 - t * 430;
+        const len = Math.sin((0.12 + t * 0.86) * Math.PI) * 112;
+        const wid = 14 * (1 - t * 0.45);
+        [-1, 1].forEach(side => {
+          const gr = g.createLinearGradient(128, y, 128 + side * len, y - 16);
+          gr.addColorStop(0, dk); gr.addColorStop(0.5, mid); gr.addColorStop(1, hi);
+          g.fillStyle = gr;
+          g.beginPath();
+          g.moveTo(128, y);
+          g.quadraticCurveTo(128 + side * len * 0.5, y - wid, 128 + side * len, y - 14);
+          g.quadraticCurveTo(128 + side * len * 0.5, y + wid * 0.7, 128, y + 6);
+          g.closePath(); g.fill();
+        });
+      }
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    leafTexCache[key] = tex;
+    return tex;
+  }
+
+  function addSwayingFernCluster(x, y, z, scale = 1, leafColor = 0x4b7d48, frondCount = 8) {
+    const cluster = new THREE.Group();
+    cluster.position.set(x, y, z);
+    const isGrass = activeBiomeId === 'arid';
+    const tex = getBotanicalFrondTexture(leafColor, isGrass);
+    const leafMat = new THREE.MeshPhysicalMaterial({
+      map: tex, alphaTest: 0.35, transparent: false,
+      roughness: 0.68, clearcoat: 0.08, clearcoatRoughness: 0.62,
+      side: THREE.DoubleSide
+    });
+    // Curved segmented botanical frond plane
+    const leafGeo = new THREE.PlaneGeometry(0.95 * scale, 1.85 * scale, 2, 10);
+    leafGeo.translate(0, 0.925 * scale, 0);
+    const pos = leafGeo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const ly = pos.getY(i);
+      const t = ly / (1.85 * scale);
+      pos.setZ(i, -(t * t) * 0.65 * scale);
+    }
+    leafGeo.computeVertexNormals();
+
+    for (let i = 0; i < frondCount; i++) {
+      const pivot = new THREE.Group();
+      pivot.rotation.y = (i / frondCount) * Math.PI * 2 + Math.random() * 0.35;
+      const tilt = 0.28 + Math.random() * 0.55;
+      const leaf = new THREE.Mesh(leafGeo, leafMat);
+      leaf.rotation.x = tilt;
+      leaf.castShadow = true; leaf.receiveShadow = true;
+      pivot.add(leaf);
+      cluster.add(pivot);
+      swayPlants.push({
+        mesh: leaf, worldPos: new THREE.Vector3(x, y, z),
+        baseRotX: tilt, baseRotZ: 0,
+        phase: Math.random() * Math.PI * 2,
+        amp: 0.055 + Math.random() * 0.045,
+        stiffness: 1.2 + Math.random() * 0.7,
+        curX: 0, velX: 0, curZ: 0, velZ: 0
+      });
+    }
+    envGroup.add(cluster);
+  }
+
+  function addSwayingTree(x, y, z, height = 5.2, canopyColor = 0x467346, barkMat) {
+    const tree = new THREE.Group();
+    tree.position.set(x, y, z);
+    // Curved organic gnarled tree trunk via CatmullRomCurve3
+    const trunkCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0.22, height * 0.35, 0.15),
+      new THREE.Vector3(-0.18, height * 0.72, -0.1),
+      new THREE.Vector3(0.1, height, 0.05)
+    ]);
+    const trunk = new THREE.Mesh(new THREE.TubeGeometry(trunkCurve, 18, 0.24, 10, false), barkMat);
+    trunk.castShadow = true; trunk.receiveShadow = true;
+    tree.add(trunk);
+
+    // Radiating botanical frond/leaf boughs at the canopy crown (photorealistic, zero low-poly balls!)
+    const canopy = new THREE.Group();
+    canopy.position.set(0.1, height - 0.2, 0.05);
+    const frondTex = getBotanicalFrondTexture(canopyColor, false);
+    const frondMat = new THREE.MeshPhysicalMaterial({
+      map: frondTex, alphaTest: 0.35, roughness: 0.70, clearcoat: 0.08, side: THREE.DoubleSide
+    });
+    const boughGeo = new THREE.PlaneGeometry(1.45, 2.5, 2, 8);
+    boughGeo.translate(0, 1.25, 0);
+    const bp = boughGeo.attributes.position;
+    for (let i = 0; i < bp.count; i++) {
+      const t = bp.getY(i) / 2.5;
+      bp.setZ(i, -(t * t) * 0.9);
+    }
+    boughGeo.computeVertexNormals();
+
+    for (let i = 0; i < 11; i++) {
+      const p = new THREE.Group();
+      p.rotation.y = (i / 11) * Math.PI * 2 + Math.random() * 0.3;
+      const m = new THREE.Mesh(boughGeo, frondMat);
+      m.rotation.x = 0.65 + Math.random() * 0.45;
+      m.position.y = (Math.random() - 0.5) * 0.5;
+      m.castShadow = true; m.receiveShadow = true;
+      p.add(m);
+      canopy.add(p);
+    }
+    tree.add(canopy);
+    solidObstacles.push({ type: 'cyl', x, z, r: 0.68 });
+    envGroup.add(tree);
+    swayPlants.push({
+      mesh: canopy, baseRotX: 0, baseRotZ: 0,
+      phase: Math.random() * Math.PI * 2, amp: 0.045, stiffness: 0.85
+    });
+  }
+
+  const rockTexCache = {};
+  function getRockTexture(hex) {
+    if (rockTexCache[hex]) return rockTexCache[hex];
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const g = c.getContext('2d');
+    const base = new THREE.Color(hex);
+    g.fillStyle = '#' + base.getHexString(); g.fillRect(0, 0, 256, 256);
+    // Natural mineral strata & lichen speckles
+    for (let y = 0; y < 256; y += 6) {
+      g.fillStyle = y % 12 === 0 ? 'rgba(20,16,12,0.12)' : 'rgba(255,248,235,0.08)';
+      g.fillRect(0, y, 256, 2 + Math.random() * 4);
+    }
+    for (let i = 0; i < 650; i++) {
+      g.fillStyle = i % 3 === 0 ? 'rgba(25,20,16,0.16)' : 'rgba(235,230,218,0.10)';
+      g.beginPath(); g.arc(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 3.5, 0, Math.PI * 2); g.fill();
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.encoding = THREE.sRGBEncoding;
+    rockTexCache[hex] = tex;
+    return tex;
+  }
+
+  function addRock(x, y, z, rx, ry, rz, color = 0x7a7d72) {
+    // High-subdivision smoothly displaced organic boulder (photorealistic!)
+    const geo = new THREE.IcosahedronGeometry(1, 3);
+    const pos = geo.attributes.position;
+    const seed = x * 3.1 + z * 5.7;
+    for (let i = 0; i < pos.count; i++) {
+      const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+      const n = 1.0 + 0.14 * Math.sin(vx * 3.2 + seed) * Math.cos(vy * 3.5)
+                    + 0.08 * Math.sin(vz * 5.1 - seed)
+                    + 0.05 * Math.cos((vx + vy + vz) * 6.5);
+      // Slightly flatten top for natural basking ledges
+      const yFlat = vy > 0.45 ? 0.45 + (vy - 0.45) * 0.55 : vy;
+      pos.setXYZ(i, vx * n, yFlat * n, vz * n);
+    }
+    geo.computeVertexNormals();
+    const tex = getRockTexture(color);
+    const mat = new THREE.MeshStandardMaterial({
+      map: tex, bumpMap: tex, bumpScale: 0.06,
+      roughness: 0.88, metalness: 0.04
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(x, y, z);
+    m.scale.set(rx, ry, rz);
+    m.rotation.set(Math.random() * 0.2, Math.random() * 3, Math.random() * 0.2);
+    m.castShadow = true; m.receiveShadow = true;
+    m.userData.walkableSurface = true;
+    walkableMeshes.push(m);
+    envGroup.add(m);
+    return m;
+  }
+
+  function createMonsteraTexture() {
+    const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, 256, 256);
+    const gr = g.createRadialGradient(128, 120, 12, 128, 128, 120);
+    gr.addColorStop(0, '#5a9454'); gr.addColorStop(0.65, '#3b733c'); gr.addColorStop(1, '#234a27');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(128, 244);
+    g.bezierCurveTo(22, 210, 14, 70, 128, 16);
+    g.bezierCurveTo(242, 70, 234, 210, 128, 244);
+    g.fill();
+    // Signature fenestrations (split cuts)
+    g.globalCompositeOperation = 'destination-out';
+    [[-62, 95], [-68, 145], [62, 95], [68, 145]].forEach(([dx, y]) => {
+      g.beginPath(); g.ellipse(128 + dx, y, 28, 9, dx < 0 ? 0.28 : -0.28, 0, Math.PI * 2); g.fill();
+    });
+    g.globalCompositeOperation = 'source-over';
+    g.strokeStyle = 'rgba(145, 200, 125, 0.45)'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(128, 242); g.lineTo(128, 26); g.stroke();
+    const tex = new THREE.CanvasTexture(c);
+    tex.encoding = THREE.sRGBEncoding;
+    return tex;
+  }
+  let sharedMonsteraTex = null;
+
+  function addMonsteraPlant(x, y, z, scale = 1.0) {
+    if (!sharedMonsteraTex) sharedMonsteraTex = createMonsteraTexture();
+    const mat = new THREE.MeshPhysicalMaterial({
+      map: sharedMonsteraTex, alphaTest: 0.4, roughness: 0.58, clearcoat: 0.12, clearcoatRoughness: 0.55, side: THREE.DoubleSide
+    });
+    const grp = new THREE.Group(); grp.position.set(x, y, z);
+    const geo = new THREE.PlaneGeometry(1.15 * scale, 1.25 * scale, 2, 4);
+    geo.translate(0, 0.65 * scale, 0);
+    for (let i = 0; i < 4; i++) {
+      const piv = new THREE.Group();
+      piv.rotation.y = (i / 4) * Math.PI * 2 + 0.4;
+      const m = new THREE.Mesh(geo, mat);
+      const tilt = 0.45 + Math.random() * 0.35;
+      m.rotation.x = tilt; m.castShadow = true; m.receiveShadow = true;
+      piv.add(m); grp.add(piv);
+      swayPlants.push({
+        mesh: m, worldPos: new THREE.Vector3(x, y, z),
+        baseRotX: tilt, baseRotZ: 0, phase: Math.random() * 6,
+        amp: 0.045, stiffness: 1.0, curX: 0, velX: 0, curZ: 0, velZ: 0
+      });
+    }
+    envGroup.add(grp);
+  }
+
+  function addHangingVine(x, y, z, len = 2.6, color = 0x567d4a) {
+    const piv = new THREE.Group(); piv.position.set(x, y, z);
+    const stemMat = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.012, len, 6), stemMat);
+    stem.position.y = -len * 0.5;
+    piv.add(stem);
+    const leafGeo = new THREE.SphereGeometry(0.08, 6, 5);
+    const leafMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(color).offsetHSL(0.02, 0.06, 0.08), roughness: 0.65 });
+    for (let d = 0.25; d < len; d += 0.28) {
+      const lf = new THREE.Mesh(leafGeo, leafMat);
+      lf.scale.set(1.3, 0.35, 0.7);
+      lf.position.set((Math.floor(d * 4) % 2 ? 0.09 : -0.09), -d, 0);
+      piv.add(lf);
+    }
+    envGroup.add(piv);
+    hangingVines.push({ pivot: piv, phase: Math.random() * Math.PI * 2, len, ang: 0, vel: 0 });
+  }
+
+  function addVolumetricSunShafts() {
+    const shaftMat = new THREE.MeshBasicMaterial({
+      color: 0xfae7b8, transparent: true, opacity: 0.026,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide
+    });
+    [[-2.2, 4.2, -1.2], [0.8, 4.4, -0.8], [3.0, 4.0, -1.5]].forEach(([sx, sy, sz], i) => {
+      const m = new THREE.Mesh(new THREE.ConeGeometry(1.9, 9.5, 16, 1, true), shaftMat);
+      m.position.set(sx, sy, sz);
+      m.rotation.z = -0.26;
+      envGroup.add(m);
+      sunShafts.push({ mesh: m, baseX: sx, phase: i * 1.9 });
+    });
+  }
+
+  function addGroundMistWisps() {
+    const mc = document.createElement('canvas'); mc.width = 128; mc.height = 128;
+    const mg = mc.getContext('2d');
+    const gr = mg.createRadialGradient(64, 64, 4, 64, 64, 62);
+    gr.addColorStop(0, 'rgba(235, 248, 245, 0.32)');
+    gr.addColorStop(1, 'rgba(235, 248, 245, 0)');
+    mg.fillStyle = gr; mg.fillRect(0, 0, 128, 128);
+    const tex = new THREE.CanvasTexture(mc);
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.25, depthWrite: false, side: THREE.DoubleSide });
+    for (let i = 0; i < 6; i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), mat);
+      m.rotation.x = -Math.PI * 0.5;
+      const bx = (Math.random() - 0.5) * 7.5, bz = (Math.random() - 0.5) * 6.5;
+      m.position.set(bx, 0.16 + i * 0.05, bz);
+      envGroup.add(m);
+      groundMist.push({ mesh: m, baseX: bx, baseZ: bz, phase: Math.random() * Math.PI * 2 });
+    }
+  }
+
+  function addRainforestGrassCarpet() {
+    const BLADE_COUNT = 1800;
+    // Tapered curved 3D grass blade geometry
+    const bladeGeo = new THREE.PlaneGeometry(0.065, 0.34, 1, 3);
+    bladeGeo.translate(0, 0.17, 0);
+    const bp = bladeGeo.attributes.position;
+    for (let i = 0; i < bp.count; i++) {
+      const y = bp.getY(i);
+      const t = y / 0.34;
+      bp.setX(i, bp.getX(i) * (1 - t * 0.85)); // Taper cleanly to sharp grass tip
+      bp.setZ(i, -(t * t) * 0.09);             // Natural outward arch
+    }
+    bladeGeo.computeVertexNormals();
+
+    const bladeMat = new THREE.MeshStandardMaterial({
+      color: 0xdbe6d5, roughness: 0.86, metalness: 0.0, side: THREE.DoubleSide
+    });
+    const inst = new THREE.InstancedMesh(bladeGeo, bladeMat, BLADE_COUNT);
+    inst.receiveShadow = true;
+
+    const dummy = new THREE.Object3D();
+    const col = new THREE.Color();
+    const palette = [0x3d6e34, 0x4b823c, 0x5d9444, 0x6ea64e, 0x345e2d];
+
+    let placed = 0;
+    let attempts = 0;
+    while (placed < BLADE_COUNT && attempts < BLADE_COUNT * 3) {
+      attempts++;
+      const ang = Math.random() * Math.PI * 2;
+      const rad = Math.sqrt(Math.random()) * 6.95;
+      const gx = Math.cos(ang) * rad;
+      const gz = Math.sin(ang) * rad;
+      // Leave terracotta water dish clear!
+      if (Math.hypot(gx - 2.5, gz - 1.4) < 1.22) continue;
+
+      const edgeFade = Math.max(0, 1 - (rad / 7.2) * (rad / 7.2));
+      const gy = Math.sin(gx * 0.5 + 1.0) * Math.cos(gz * 0.6) * 0.16 * edgeFade;
+
+      dummy.position.set(gx, gy - 0.01, gz);
+      dummy.rotation.set(
+        (Math.random() - 0.5) * 0.35,
+        Math.random() * Math.PI * 2,
+        (Math.random() - 0.5) * 0.35
+      );
+      const hScale = 0.65 + Math.random() * 1.15;
+      dummy.scale.set(0.8 + Math.random() * 0.6, hScale, 1);
+      dummy.updateMatrix();
+      inst.setMatrixAt(placed, dummy.matrix);
+
+      col.setHex(palette[Math.floor(Math.random() * palette.length)]);
+      col.offsetHSL((Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.08, (Math.random() - 0.5) * 0.07);
+      inst.setColorAt(placed, col);
+      placed++;
+    }
+    inst.count = placed;
+    inst.instanceMatrix.needsUpdate = true;
+    if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+    envGroup.add(inst);
+    grassFieldMesh = inst;
+  }
+
+  function addGlassVivariumRim() {
+    // Sleek low-iron glass vivarium corner silhouettes & subtle rim sheen (no heavy walls blocking clicks!)
+    const rimMat = new THREE.MeshStandardMaterial({ color: 0x2b251f, roughness: 0.5, metalness: 0.35 });
+    const glassMat = new THREE.MeshPhysicalMaterial({
+      color: 0xe6f4f2, transparent: true, opacity: 0.06,
+      roughness: 0.05, clearcoat: 1.0, reflectivity: 0.9, depthWrite: false, side: THREE.DoubleSide
+    });
+    // Subtle curved glass backdrop aura behind diorama
+    const backArc = new THREE.Mesh(new THREE.CylinderGeometry(7.25, 7.25, 6.2, 32, 1, true, Math.PI * 0.65, Math.PI * 0.7), glassMat);
+    backArc.position.y = 3.1;
+    envGroup.add(backArc);
+    // Fine minimalist top brass/dark-bronze conservatory ring
+    const topRing = new THREE.Mesh(new THREE.TorusGeometry(7.25, 0.045, 8, 48), rimMat);
+    topRing.rotation.x = Math.PI * 0.5; topRing.position.y = 6.2;
+    envGroup.add(topRing);
+  }
+
+  function buildBiome3D(biomeId) {
+    clearGroup(envGroup);
+    walkableLogs = [];
+    walkableMeshes = [];
+    solidObstacles = [];
+    swayPlants = [];
+    hangingVines = [];
+    caveDrips = [];
+    sunShafts = [];
+    groundMist = [];
+    swingingLantern = null;
+    grassFieldMesh = null;
+    waterRipples = [];
+
+    const b = BIOMES[biomeId];
+    const groundTex = createGroundTexture(b.groundColor, b.groundAccent);
+    const groundMat = new THREE.MeshStandardMaterial({ map: groundTex, bumpMap: groundTex, bumpScale: 0.07, roughness: 0.94, metalness: 0.02 });
+    const barkTex = createBarkTexture(b.barkColor, biomeId !== 'arid');
+    const barkMat = new THREE.MeshPhysicalMaterial({ map: barkTex, bumpMap: barkTex, bumpScale: 0.08, roughness: 0.92, clearcoat: 0.03, clearcoatRoughness: 0.75 });
+
+    // Sculpted Organic 3D Terrain Topography (rolling moss mounds / desert dunes / stream bed!)
+    const floorGeo = new THREE.CylinderGeometry(7.2, 7.6, 0.7, 48, 1);
+    const fPos = floorGeo.attributes.position;
+    for (let i = 0; i < fPos.count; i++) {
+      const fy = fPos.getY(i);
+      if (fy > 0.1) {
+        const fx = fPos.getX(i), fz = fPos.getZ(i);
+        const r = Math.hypot(fx, fz);
+        const mound = biomeId === 'arid'
+          ? Math.sin(fx * 0.65) * Math.cos(fz * 0.55) * 0.24
+          : Math.sin(fx * 0.5 + 1.0) * Math.cos(fz * 0.6) * 0.16;
+        // Gently keep water bowl / cave pool depression flat
+        const edgeFade = Math.max(0, 1 - (r / 7.2) * (r / 7.2));
+        fPos.setY(i, fy + mound * edgeFade);
+      }
+    }
+    floorGeo.computeVertexNormals();
+    const floor = new THREE.Mesh(floorGeo, groundMat);
+    floor.position.y = -0.35;
+    floor.receiveShadow = true;
+    floor.userData.walkableSurface = true;
+    walkableMeshes.push(floor);
+    envGroup.add(floor);
+
+    addGlassVivariumRim();
+    addVolumetricSunShafts();
+    if (biomeId === 'rainforest' || biomeId === 'cool_forest') addGroundMistWisps();
+
+    // Subtle wooden botanical plinth rim under diorama
+    const plinth = new THREE.Mesh(
+      new THREE.CylinderGeometry(7.65, 7.85, 0.35, 40),
+      new THREE.MeshStandardMaterial({ color: 0x3b2e23, roughness: 0.75 })
+    );
+    plinth.position.y = -0.82;
+    envGroup.add(plinth);
+
+    if (biomeId === 'rainforest') {
+      // 3 Intersecting Walkable Mossy Driftwood Logs!
+      addWalkableLog([[-4.6, 0.3, 1.2], [-2.0, 1.85, 0.2], [0.8, 2.55, -0.3], [4.2, 3.3, -1.2]], 0.34, barkMat, true);
+      addWalkableLog([[-0.6, 2.25, -0.1], [1.2, 1.5, 1.2], [3.6, 0.45, 2.0]], 0.26, barkMat, true);
+      addWalkableLog([[-3.4, 3.2, -1.8], [-0.4, 3.65, -1.2], [2.6, 3.25, -1.5]], 0.22, barkMat, true);
+      // Supporting vertical gnarled trunks
+      addWalkableLog([[-4.4, 0.0, 1.2], [-4.1, 1.9, -0.4], [-3.4, 3.3, -1.8]], 0.30, barkMat, true);
+
+      // Swaying tropical trees & ferns
+      addSwayingTree(-4.8, 0, -2.8, 5.4, 0x3e6e42, barkMat);
+      addSwayingTree(4.6, 0, -2.6, 5.8, 0x4b7d48, barkMat);
+      addSwayingFernCluster(-3.8, 0.05, 2.4, 1.15, 0x528a4f, 8);
+      addSwayingFernCluster(4.2, 0.05, 1.8, 1.25, 0x457a47, 9);
+      addSwayingFernCluster(0.6, 0.05, -3.2, 1.35, 0x5c9455, 8);
+      addSwayingFernCluster(-1.2, 2.1, 0.1, 0.65, 0x6ba65d, 6); // Epiphytic fern growing ON the log!
+
+      // Mossy river boulders
+      addRock(-2.4, 0.25, 2.1, 0.85, 0.45, 0.72, 0x6f786c);
+      addRock(1.2, 0.2, 2.8, 0.65, 0.35, 0.55, 0x667064);
+
+      // Shallow terracotta water dish with reflective water surface
+      waterCenter.set(2.5, 0.14, 1.4);
+      waterSurfaceY = 0.14;
+      const bowlRim = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.13, 10, 28),
+        new THREE.MeshStandardMaterial({ color: 0xa66346, roughness: 0.78 })
+      );
+      bowlRim.rotation.x = Math.PI / 2; bowlRim.position.set(2.5, 0.14, 1.4);
+      bowlRim.castShadow = true; bowlRim.receiveShadow = true;
+      envGroup.add(bowlRim);
+      const waterMesh = new THREE.Mesh(
+        new THREE.CircleGeometry(1.0, 28),
+        new THREE.MeshPhysicalMaterial({ color: 0x3b7885, roughness: 0.04, metalness: 0.15, clearcoat: 1.0, clearcoatRoughness: 0.03, reflectivity: 0.95, transparent: true, opacity: 0.88 })
+      );
+      waterMesh.rotation.x = -Math.PI / 2; waterMesh.position.copy(waterCenter);
+      envGroup.add(waterMesh);
+      addRainforestGrassCarpet();
+      // Lush Monstera deliciosa, pendulum hanging vines & miniature forest mushrooms!
+      addMonsteraPlant(2.8, 0.05, -2.4, 1.15);
+      addMonsteraPlant(-3.4, 0.05, -1.2, 0.95);
+      addHangingVine(-3.2, 6.0, -1.8, 2.7, 0x4f7d47);
+      addHangingVine(1.8, 6.0, -2.2, 3.1, 0x5d8c52);
+      addHangingVine(4.1, 6.0, -0.9, 2.4, 0x4a7343);
+      const mushCap = new THREE.MeshStandardMaterial({ color: 0xd9a066, roughness: 0.55 });
+      const mushStem = new THREE.MeshStandardMaterial({ color: 0xf2e8d5, roughness: 0.7 });
+      [[-2.1, 0.08, 1.5], [-1.95, 0.08, 1.62], [0.4, 0.06, 2.4]].forEach(([mx, my, mz], idx) => {
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.032, 0.14, 6), mushStem);
+        st.position.set(mx, my + 0.07, mz);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.08 + idx * 0.015, 8, 6, 0, Math.PI * 2, 0, Math.PI * 0.55), mushCap);
+        cap.position.set(mx, my + 0.13, mz);
+        envGroup.add(st, cap);
+      });
+
+    } else if (biomeId === 'arid') {
+      // Sun-bleached walkable driftwood logs
+      addWalkableLog([[-3.8, 0.22, 1.6], [-1.2, 0.95, 0.8], [1.4, 0.35, 1.9]], 0.25, barkMat, false);
+      addWalkableLog([[0.8, 0.25, -0.4], [2.8, 1.25, -0.8], [4.5, 0.4, 0.6]], 0.24, barkMat, false);
+
+      // Sculpted layered sandstone basking arch & hide on the left
+      addRock(-3.2, 0.75, -1.6, 2.2, 1.1, 1.6, 0xc78056);
+      addRock(-2.2, 1.45, -1.7, 1.6, 0.65, 1.2, 0xd69267);
+      addRock(-3.8, 1.35, -1.3, 1.1, 0.6, 1.0, 0xbd754c);
+      addRock(3.2, 0.65, -2.2, 1.8, 0.9, 1.4, 0xcf8b61);
+      addRock(-0.5, 0.22, 2.6, 0.6, 0.28, 0.5, 0xb88660);
+      // Walkable path over the sandstone terrace
+      walkableLogs.push({
+        curve: new THREE.CatmullRomCurve3([new THREE.Vector3(-4.0, 1.8, -1.4), new THREE.Vector3(-2.3, 2.05, -1.6), new THREE.Vector3(-1.2, 1.4, -1.2)]),
+        radius: 0.12
+      });
+
+      // Swaying golden spinifex grass tufts
+      addSwayingFernCluster(-4.2, 0.02, 2.2, 0.85, 0xb8a363, 10);
+      addSwayingFernCluster(3.6, 0.02, 2.1, 0.95, 0xa89658, 10);
+      addSwayingFernCluster(1.2, 0.02, -2.8, 0.8, 0x9ca362, 9);
+
+    } else if (biomeId === 'cool_forest') {
+      // Limestone cave arch & mossy bridge
+      addRock(-3.8, 1.5, -2.4, 2.0, 2.2, 1.7, 0x62706f);
+      addRock(3.6, 1.6, -2.4, 2.1, 2.3, 1.8, 0x5c6b6a);
+      addWalkableLog([[-3.4, 2.0, -1.6], [-0.8, 2.35, -1.2], [1.8, 1.9, -1.4]], 0.36, barkMat, true);
+      addWalkableLog([[1.0, 1.6, 0.4], [2.6, 2.35, 0.8], [4.0, 1.4, 1.6]], 0.20, barkMat, true);
+      addWalkableLog([[-3.6, 0.4, 1.4], [-1.4, 1.1, 1.0], [0.6, 0.45, 1.8]], 0.22, barkMat, true);
+
+      // Autumn-toned foliage & cool ferns
+      addSwayingFernCluster(-4.0, 0.05, 1.8, 1.05, 0x487051, 7);
+      addSwayingFernCluster(3.8, 0.05, 1.2, 0.95, 0x8f593b, 6); // Dried autumn leaves for leaf-tailed camo!
+      addSwayingFernCluster(0.2, 0.05, -3.4, 1.2, 0x3e664b, 8);
+
+      // Shallow crystal cave pool
+      waterCenter.set(0.2, 0.07, 1.8);
+      waterSurfaceY = 0.07;
+      const pool = new THREE.Mesh(
+        new THREE.CircleGeometry(2.1, 32),
+        new THREE.MeshPhysicalMaterial({ color: 0x366d7a, roughness: 0.04, metalness: 0.18, clearcoat: 1.0, clearcoatRoughness: 0.03, reflectivity: 0.95, transparent: true, opacity: 0.86 })
+      );
+      pool.rotation.x = -Math.PI / 2; pool.position.copy(waterCenter);
+      envGroup.add(pool);
+      addHangingVine(-2.8, 5.8, -1.9, 2.4, 0x44664a);
+      addHangingVine(2.9, 5.8, -1.6, 2.6, 0x4b6e4e);
+      // Real dripping cave droplets falling into the pool and creating ripples!
+      const dripMat = new THREE.MeshPhysicalMaterial({ color: 0xd8f3fc, roughness: 0.05, clearcoat: 1.0, transparent: true, opacity: 0.85 });
+      [[0.1, 1.6], [-0.5, 2.1], [0.7, 1.9]].forEach(([dx, dz]) => {
+        const dMesh = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 6), dripMat);
+        dMesh.scale.set(0.75, 1.45, 0.75);
+        const startY = 4.6 + Math.random() * 1.2;
+        dMesh.position.set(dx, startY, dz);
+        envGroup.add(dMesh);
+        caveDrips.push({ mesh: dMesh, x: dx, z: dz, y: startY, startY, vy: 0 });
+      });
+
+    } else {
+      // MEDITERRANEAN STONE COURTYARD
+      const wallMat = new THREE.MeshStandardMaterial({ color: 0xd9c7ab, roughness: 0.9 });
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(11, 5.4, 0.7), wallMat);
+      wall.position.set(0, 2.7, -3.6);
+      wall.receiveShadow = true; wall.castShadow = true;
+      solidObstacles.push({ type: 'wallZ', minZ: -2.65 });
+      envGroup.add(wall);
+
+      // Walkable limestone ledges along the sunlit wall
+      const ledge1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.28, 0.9), wallMat);
+      ledge1.position.set(-2.2, 2.4, -3.0); ledge1.receiveShadow = true; ledge1.castShadow = true;
+      walkableMeshes.push(ledge1);
+      envGroup.add(ledge1);
+      const ledge2 = new THREE.Mesh(new THREE.BoxGeometry(4.0, 0.28, 0.9), wallMat);
+      ledge2.position.set(2.3, 1.65, -3.0); ledge2.receiveShadow = true; ledge2.castShadow = true;
+      walkableMeshes.push(ledge2);
+      envGroup.add(ledge2);
+
+      walkableLogs.push({
+        curve: new THREE.CatmullRomCurve3([new THREE.Vector3(-4.0, 2.55, -2.9), new THREE.Vector3(-0.3, 2.55, -2.9)]),
+        radius: 0.08
+      });
+      walkableLogs.push({
+        curve: new THREE.CatmullRomCurve3([new THREE.Vector3(0.5, 1.80, -2.9), new THREE.Vector3(4.1, 1.80, -2.9)]),
+        radius: 0.08
+      });
+      // Olive branch curving into courtyard
+      addWalkableLog([[-4.6, 0.2, -1.6], [-3.2, 2.0, -0.8], [-1.2, 3.0, -0.6]], 0.22, barkMat, false);
+      addSwayingTree(-4.8, 0, -2.0, 4.6, 0x6f8761, barkMat);
+      addSwayingFernCluster(4.0, 0.05, 1.8, 0.9, 0x6c8560, 8);
+
+      // Gently swinging wrought-iron Mediterranean porch lantern + climbing ivy!
+      addHangingVine(-1.4, 5.3, -3.2, 2.2, 0x5c7a4f);
+      addHangingVine(1.6, 5.3, -3.2, 2.5, 0x527048);
+      const lanPivot = new THREE.Group();
+      lanPivot.position.set(3.2, 4.75, -3.05);
+      const lanternBody = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.24, 0.18, 0.52, 6),
+        new THREE.MeshStandardMaterial({ color: 0xffdf91, emissive: 0xffa73b, emissiveIntensity: 0.9, roughness: 0.3 })
+      );
+      lanternBody.position.y = -0.65;
+      const lanternCap = new THREE.Mesh(
+        new THREE.ConeGeometry(0.32, 0.24, 6),
+        new THREE.MeshStandardMaterial({ color: 0x383029, roughness: 0.6 })
+      );
+      lanternCap.position.y = -0.29;
+      lanPivot.add(lanternBody, lanternCap);
+      envGroup.add(lanPivot);
+      swingingLantern = lanPivot;
+    }
+  }
+
+  // =========================================================================
+  // 6. REALISTIC MULTI-PART ARTICULATED 3D GECKO RIG BUILDER (ALL 15 SPECIES!)
+  // =========================================================================
+  function buildGecko3DRig(sp) {
+    const root = new THREE.Group();
+    const { map, bumpMap } = getGeckoSkinTextures(sp);
+    const skinMat = new THREE.MeshPhysicalMaterial({
+      map, bumpMap, bumpScale: 0.036,
+      roughness: sp.pattern === 'electric_blue' ? 0.46 : 0.72,
+      metalness: 0.02,
+      clearcoat: sp.biome === 'arid' ? 0.05 : 0.12,
+      clearcoatRoughness: 0.58,
+      reflectivity: 0.25
+    });
+    const accentMat = new THREE.MeshPhysicalMaterial({
+      color: sp.palette.crest || sp.palette.accent || sp.palette.spot,
+      roughness: 0.72, clearcoat: 0.08, clearcoatRoughness: 0.6
+    });
+    const eyeTex = createEyeTexture(sp);
+    const eyeMat = new THREE.MeshPhysicalMaterial({
+      map: eyeTex, roughness: 0.04, metalness: 0.08,
+      clearcoat: 1.0, clearcoatRoughness: 0.04, reflectivity: 0.95
+    });
+    const eyelidMat = new THREE.MeshStandardMaterial({ color: sp.palette.base, roughness: 0.65 });
+    const tongueMat = new THREE.MeshStandardMaterial({ color: 0xd96b7b, roughness: 0.3 });
+
+    // 1:1 true-to-life scale updated dynamically from adultCm & growth (Baby -> Juvenile -> Adult)
+    const base1to1 = (sp.adultCm / 22) * 0.56;
+    root.scale.set(base1to1 * 0.52, base1to1 * 0.52, base1to1 * 0.52);
+
+    // --- 5-SEGMENT ARTICULATED SPINE (Chest -> Mid -> Pelvis) ---
+    const torsoGroup = new THREE.Group();
+    torsoGroup.position.y = 0.30;
+    root.add(torsoGroup);
+
+    const chest = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 14), skinMat);
+    chest.scale.set(0.88, 0.72, 1.25); chest.position.set(0, 0, 0.24); chest.castShadow = true;
+    torsoGroup.add(chest);
+
+    const midBody = new THREE.Mesh(new THREE.SphereGeometry(0.27, 16, 14), skinMat);
+    const bodyWidth = sp.pattern === 'leachie' ? 1.15 : (sp.pattern === 'leaf_tail' ? 0.72 : 0.92);
+    midBody.scale.set(bodyWidth, 0.74, 1.55); midBody.position.set(0, 0, 0); midBody.castShadow = true;
+    torsoGroup.add(midBody);
+
+    const pelvis = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), skinMat);
+    pelvis.scale.set(0.86, 0.70, 1.15); pelvis.position.set(0, 0, -0.28); pelvis.castShadow = true;
+    torsoGroup.add(pelvis);
+
+    // Lateral gliding skin flaps for Kuhl's Flying Gecko!
+    let leftFlap = null, rightFlap = null;
+    if (sp.pattern === 'flying') {
+      const flapGeo = new THREE.BoxGeometry(0.24, 0.02, 0.65);
+      const flapMat = new THREE.MeshStandardMaterial({ color: sp.palette.flap, roughness: 0.7 });
+      leftFlap = new THREE.Mesh(flapGeo, flapMat); leftFlap.position.set(-0.24, -0.02, 0);
+      rightFlap = new THREE.Mesh(flapGeo, flapMat); rightFlap.position.set(0.24, -0.02, 0);
+      torsoGroup.add(leftFlap, rightFlap);
+    }
+
+    // Dorsal eyelash crest spines for Crested Gecko!
+    if (sp.pattern === 'crested') {
+      for (let z = -0.32; z <= 0.34; z += 0.11) {
+        [-0.12, 0.12].forEach(x => {
+          const spn = new THREE.Mesh(new THREE.ConeGeometry(0.028, 0.09, 5), accentMat);
+          spn.position.set(x, 0.18, z); spn.rotation.z = x < 0 ? 0.3 : -0.3;
+          torsoGroup.add(spn);
+        });
+      }
+    }
+
+    // --- SCULPTED 3D ANATOMICAL HEAD ---
+    const headPivot = new THREE.Group();
+    headPivot.position.set(0, 0.06, 0.46);
+    torsoGroup.add(headPivot);
+
+    const cranium = new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 14), skinMat);
+    const hW = sp.pattern === 'knob' ? 1.18 : (sp.pattern === 'tokay' ? 1.15 : 0.96);
+    cranium.scale.set(hW, 0.74, 1.15); cranium.position.set(0, 0, 0.10); cranium.castShadow = true;
+    headPivot.add(cranium);
+
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.145, 14, 12), skinMat);
+    snout.scale.set(0.88, 0.64, 1.45); snout.position.set(0, -0.02, 0.28); snout.castShadow = true;
+    headPivot.add(snout);
+
+    // Gargoyle 3D Cranial Horns / Knobs
+    if (sp.pattern === 'gargoyle') {
+      [-0.14, 0.14].forEach(x => {
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.11, 6), accentMat);
+        horn.position.set(x, 0.14, -0.02); horn.rotation.x = -0.4;
+        headPivot.add(horn);
+      });
+    }
+    // Giant Day Gecko red nostril-to-eye stripes
+    if (sp.pattern === 'day_gecko') {
+      const redMat = new THREE.MeshStandardMaterial({ color: 0xcf4236, roughness: 0.5 });
+      [-0.13, 0.13].forEach(x => {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.035, 0.18), redMat);
+        bar.position.set(x, 0.04, 0.25);
+        headPivot.add(bar);
+      });
+    }
+
+    // 3D Glossy Eyes + Movable Eyelids
+    const eyeR = (sp.pattern === 'knob' || sp.pattern === 'scales') ? 0.088 : 0.072;
+    const eyelids = [];
+    [-1, 1].forEach(side => {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(eyeR, 14, 12), eyeMat);
+      eye.position.set(side * 0.155, 0.07, 0.19);
+      eye.rotation.y = side * Math.PI * 0.44;
+      headPivot.add(eye);
+      if (sp.hasEyelids) {
+        const lid = new THREE.Mesh(new THREE.SphereGeometry(eyeR * 1.07, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55), eyelidMat);
+        lid.position.copy(eye.position);
+        lid.rotation.x = -Math.PI * 0.45; // open by default
+        headPivot.add(lid);
+        eyelids.push(lid);
+      }
+      if (sp.pattern === 'crested' || sp.pattern === 'leaf_tail') {
+        const lash = new THREE.Mesh(new THREE.ConeGeometry(0.025, 0.10, 5), accentMat);
+        lash.position.set(side * 0.15, 0.15, 0.18); lash.rotation.z = -side * 0.45;
+        headPivot.add(lash);
+      }
+    });
+
+    // 3D Pink Tongue (for eye-licking & eating!)
+    const tongue = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.035, 0.26, 8), tongueMat);
+    tongue.rotation.x = Math.PI * 0.45;
+    tongue.position.set(0, -0.02, 0.42);
+    tongue.scale.set(0.01, 0.01, 0.01);
+    headPivot.add(tongue);
+
+    // --- 5-JOINT ARTICULATED 3D TAIL ---
+    const tailJoints = [];
+    let parentJoint = torsoGroup;
+    const tailSegCount = sp.pattern === 'knob' || sp.pattern === 'leachie' ? 3 : 5;
+    for (let i = 0; i < tailSegCount; i++) {
+      const j = new THREE.Group();
+      j.position.set(0, 0, i === 0 ? -0.36 : -0.24);
+      const taper = 1 - (i / (tailSegCount + 0.6));
+      let segMesh;
+      if (sp.pattern === 'leaf_tail' && i >= 1) {
+        segMesh = new THREE.Mesh(new THREE.SphereGeometry(0.24 * taper, 12, 10), skinMat);
+        segMesh.scale.set(1.45, 0.14, 1.35);
+      } else if (sp.pattern === 'leopard' || sp.pattern === 'banded_stripe') {
+        segMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18 * (0.45 + taper * 0.65), 12, 10), skinMat);
+        segMesh.scale.set(0.95, 0.78, 1.35);
+      } else if (sp.pattern === 'flying') {
+        segMesh = new THREE.Mesh(new THREE.SphereGeometry(0.16 * taper, 10, 8), skinMat);
+        segMesh.scale.set(1.5, 0.25, 1.3);
+      } else {
+        segMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14 * taper, 10, 8), skinMat);
+        segMesh.scale.set(0.85, 0.75, 1.5);
+      }
+      segMesh.position.z = -0.11; segMesh.castShadow = true;
+      j.add(segMesh);
+      // Knob tip for Smooth Knob-Tailed Gecko!
+      if (sp.pattern === 'knob' && i === tailSegCount - 1) {
+        const knob = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 10), accentMat);
+        knob.position.z = -0.22; knob.castShadow = true;
+        j.add(knob);
+      }
+      parentJoint.add(j);
+      tailJoints.push(j);
+      parentJoint = j;
+    }
+
+    // --- 4 ARTICULATED 3D IK LEGS WITH 5 SPLAYED TOES ---
+    const legs = [];
+    const legDefs = [
+      { side: -1, z:  0.26, phase: 0,       isFront: true },
+      { side:  1, z:  0.26, phase: Math.PI, isFront: true },
+      { side: -1, z: -0.26, phase: Math.PI, isFront: false },
+      { side:  1, z: -0.26, phase: 0,       isFront: false }
+    ];
+    const toePadMat = new THREE.MeshStandardMaterial({ color: sp.palette.hi, roughness: 0.55 });
+    legDefs.forEach(ld => {
+      const hip = new THREE.Group();
+      hip.position.set(ld.side * 0.18, -0.04, ld.z);
+      torsoGroup.add(hip);
+
+      const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.048, 0.04, 0.26, 8), skinMat);
+      upper.rotation.z = ld.side * 1.15;
+      upper.position.set(ld.side * 0.11, -0.04, 0);
+      upper.castShadow = true;
+      hip.add(upper);
+
+      const knee = new THREE.Group();
+      knee.position.set(ld.side * 0.22, -0.09, 0);
+      hip.add(knee);
+
+      const lower = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.03, 0.22, 8), skinMat);
+      lower.position.set(0, -0.09, 0.03);
+      lower.castShadow = true;
+      knee.add(lower);
+
+      // 5 fanned toes!
+      const foot = new THREE.Group();
+      foot.position.set(0, -0.17, 0.05);
+      for (let t = -2; t <= 2; t++) {
+        const ang = t * 0.36;
+        const toe = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.014, 0.11, 5), skinMat);
+        toe.rotation.x = Math.PI * 0.5;
+        toe.rotation.z = -ang;
+        toe.position.set(Math.sin(ang) * 0.05, 0, Math.cos(ang) * 0.05);
+        foot.add(toe);
+        if (sp.hasToePads) {
+          const pad = new THREE.Mesh(new THREE.SphereGeometry(0.022, 6, 6), toePadMat);
+          pad.scale.set(1.2, 0.4, 1.4);
+          pad.position.set(Math.sin(ang) * 0.095, -0.005, Math.cos(ang) * 0.095);
+          foot.add(pad);
+        }
+      }
+      knee.add(foot);
+      legs.push({ hip, knee, foot, side: ld.side, phase: ld.phase, isFront: ld.isFront });
+    });
+
+    // Invisible larger raycast hit sphere for effortless gentle clicking
+    const hitSphere = new THREE.Mesh(
+      new THREE.SphereGeometry(0.75, 8, 8),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    hitSphere.position.set(0, 0.25, 0);
+    root.add(hitSphere);
+
+    return { root, torsoGroup, headPivot, tailJoints, legs, eyelids, tongue, leftFlap, rightFlap, hitSphere };
+  }
+
+  // =========================================================================
+  // 7. 3D REALISTIC RAIN, WIND PHYSICS & FIREFLIES
+  // =========================================================================
+  let isRaining = false;
+  let rainAutoTimer = 28 + Math.random() * 25;
+  let windTime = 0;
+
+  // 3D Rain streaks (LineSegments)
+  const RAIN_COUNT = 320;
+  const rainPos = new Float32Array(RAIN_COUNT * 6);
+  const rainVel = new Float32Array(RAIN_COUNT);
+  for (let i = 0; i < RAIN_COUNT; i++) {
+    const rx = (Math.random() - 0.5) * 15, ry = Math.random() * 11, rz = (Math.random() - 0.5) * 15;
+    rainPos[i * 6] = rx; rainPos[i * 6 + 1] = ry; rainPos[i * 6 + 2] = rz;
+    rainPos[i * 6 + 3] = rx - 0.06; rainPos[i * 6 + 4] = ry - 0.42; rainPos[i * 6 + 5] = rz;
+    rainVel[i] = 8.5 + Math.random() * 4;
+  }
+  const rainGeo = new THREE.BufferGeometry();
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  const rainMat = new THREE.LineBasicMaterial({ color: 0xd9eef5, transparent: true, opacity: 0.0 });
+  const rainLines = new THREE.LineSegments(rainGeo, rainMat);
+  fxGroup.add(rainLines);
+
+  // 3D Golden Fireflies / Dust Motes
+  const FF_COUNT = 26;
+  const ffData = Array.from({ length: FF_COUNT }, () => ({
+    pos: new THREE.Vector3((Math.random() - 0.5) * 11, 0.6 + Math.random() * 4.5, (Math.random() - 0.5) * 9),
+    phase: Math.random() * Math.PI * 2,
+    spd: 0.5 + Math.random() * 0.6
+  }));
+  const ffGeo = new THREE.BufferGeometry();
+  const ffArr = new Float32Array(FF_COUNT * 3);
+  ffGeo.setAttribute('position', new THREE.BufferAttribute(ffArr, 3));
+  const ffMat = new THREE.PointsMaterial({ color: 0xffe999, size: 0.16, transparent: true, opacity: 0.75 });
+  const ffPoints = new THREE.Points(ffGeo, ffMat);
+  fxGroup.add(ffPoints);
+
+  function spawnWaterRipple() {
+    if (!BIOMES[activeBiomeId].hasWater) return;
+    const geo = new THREE.RingGeometry(0.04, 0.08, 20);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xdff5fc, transparent: true, opacity: 0.65, side: THREE.DoubleSide });
+    const m = new THREE.Mesh(geo, mat);
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(
+      waterCenter.x + (Math.random() - 0.5) * 1.2,
+      waterSurfaceY + 0.015,
+      waterCenter.z + (Math.random() - 0.5) * 1.2
+    );
+    fxGroup.add(m);
+    waterRipples.push({ mesh: m, age: 0 });
+  }
+
+  // =========================================================================
+  // 8. STATE MANAGEMENT & 3D GECKO AI (WALKING ON LOGS & GROUND!)
+  // =========================================================================
+  let activeBiomeId = 'rainforest';
+  let activeTool = 'observe';
+  let calciumEnabled = false;
+  let selectedGeckoUid = null;
+  let macroFollowUid = null;
+  let nextUid = 1;
+  let toastTimeout = null;
+  const terrariums = {};
+
+  const downRay = new THREE.Raycaster();
+  const downDir = new THREE.Vector3(0, -1, 0);
+  const rayOrigin = new THREE.Vector3();
+
+  const tmpNormal = new THREE.Vector3(0, 1, 0);
+  const normalMat = new THREE.Matrix3();
+
+  function sampleSurface(x, z, fromY = 4.0) {
+    if (walkableMeshes.length === 0) return { y: 0, normal: new THREE.Vector3(0, 1, 0) };
+    rayOrigin.set(x, fromY, z);
+    downRay.set(rayOrigin, downDir);
+    const hits = downRay.intersectObjects(walkableMeshes, false);
+    if (hits.length > 0) {
+      const h = hits[0];
+      _surfN.set(0, 1, 0);
+      if (h.face) {
+        normalMat.getNormalMatrix(h.object.matrixWorld);
+        _surfN.copy(h.face.normal).applyMatrix3(normalMat).normalize();
+        if (_surfN.y < 0) _surfN.negate();
+      }
+      return { y: Math.max(0, h.point.y), normal: _surfN };
+    }
+    _surfN.set(0, 1, 0);
+    return { y: 0, normal: _surfN };
+  }
+
+  function resolvePhysicalObstacles(pos, prevX, prevZ, geckoRadius) {
+    // Keep inside diorama rim
+    const rDist = Math.hypot(pos.x, pos.z);
+    if (rDist > 6.2) {
+      const k = 6.2 / rDist;
+      pos.x *= k; pos.z *= k;
+    }
+    // Push smoothly out of solid trunks & walls (zero clipping!)
+    for (let i = 0; i < solidObstacles.length; i++) {
+      const ob = solidObstacles[i];
+      if (ob.type === 'cyl') {
+        const dx = pos.x - ob.x, dz = pos.z - ob.z;
+        const d = Math.hypot(dx, dz);
+        const minD = ob.r + geckoRadius;
+        if (d < minD && d > 0.001) {
+          pos.x = ob.x + (dx / d) * minD;
+          pos.z = ob.z + (dz / d) * minD;
+        }
+      } else if (ob.type === 'wallZ' && pos.z < ob.minZ + geckoRadius) {
+        pos.z = ob.minZ + geckoRadius;
+      }
+    }
+    // Check if next step hits an unclimbable vertical step (> 0.48 units sudden cliff); if so, slide tangentially!
+    const nextSurf = sampleSurface(pos.x, pos.z, pos.y + 1.6);
+    if (nextSurf.y - pos.y > 0.52) {
+      pos.x = prevX;
+      pos.z = prevZ;
+      return { blocked: true, surf: sampleSurface(prevX, prevZ, pos.y + 1.0) };
+    }
+    return { blocked: false, surf: nextSurf };
+  }
+
+  function sampleSurfaceY(x, z, fromY = 4.0) {
+    return sampleSurface(x, z, fromY).y;
+  }
+
+  function computeGecko1to1Scale(sp, growth) {
+    // 1:1 proportion in ~100cm vivarium: baby = 0.48x adult, full adult = 1.0x
+    const adultScale = (sp.adultCm / 22) * 0.58;
+    return adultScale * (0.48 + 0.52 * Math.max(0, Math.min(1, growth)));
+  }
+
+  function getLifeStageName(growth) {
+    if (growth < 0.40) return 'Yavru';
+    if (growth < 0.85) return 'Genç';
+    return 'Yetişkin';
+  }
+
+  const sharedEggGeo = new THREE.SphereGeometry(0.085, 12, 10);
+  const sharedEggMat = new THREE.MeshPhysicalMaterial({ color: 0xe3dac6, roughness: 0.72, clearcoat: 0.05 });
+
+  function layGeckoEggClutch(speciesId, pos) {
+    if (activeGeckos.length + activeEggs.length >= 12) return;
+    const clutch = new THREE.Group();
+    const count = Math.random() < 0.55 ? 2 : 1;
+    for (let i = 0; i < count; i++) {
+      const egg = new THREE.Mesh(sharedEggGeo, sharedEggMat);
+      egg.scale.set(0.85, 1.25, 0.85);
+      egg.position.set(i * 0.13 - (count - 1) * 0.065, 0.08, (i % 2) * 0.04);
+      egg.rotation.z = (i === 0 ? 0.2 : -0.25);
+      clutch.add(egg);
+    }
+    clutch.position.set(pos.x, sampleSurfaceY(pos.x, pos.z, pos.y + 0.6), pos.z);
+    eggGroup.add(clutch);
+    activeEggs.push({
+      speciesId, mesh: clutch, pos: clutch.position.clone(),
+      age: 0, hatchTime: 16 + Math.random() * 6
+    });
+    showToast(`${SPECIES_MAP[speciesId].nameTr} yumurta bıraktı! Yakında yavru çıkacak`);
+    audio.playChime(659.25, 0.04, 0.6);
+  }
+
+  function createGeckoState(speciesId, initialGrowth = 0.0, spawnPos = null) {
+    const sp = SPECIES_MAP[speciesId];
+    const useLog = sp.arboreal && walkableLogs.length > 0;
+    const logIdx = useLog ? Math.floor(Math.random() * walkableLogs.length) : -1;
+    const logT = 0.15 + Math.random() * 0.7;
+    const pos = new THREE.Vector3();
+    if (spawnPos) {
+      pos.copy(spawnPos);
+    } else if (useLog) {
+      const log = walkableLogs[logIdx];
+      log.curve.getPoint(logT, pos);
+      pos.y += log.radius + 0.03;
+    } else {
+      const gx = (Math.random() - 0.5) * 6.2;
+      const gz = (Math.random() - 0.5) * 4.8;
+      pos.set(gx, sampleSurfaceY(gx, gz, 2.0), gz);
+    }
+
+    const rig = buildGecko3DRig(sp);
+    const sc0 = computeGecko1to1Scale(sp, initialGrowth);
+    rig.root.scale.set(sc0, sc0, sc0);
+    rig.root.position.copy(pos);
+    rig.hitSphere.userData.geckoUid = nextUid;
+    geckoGroup.add(rig.root);
+
+    return {
+      uid: nextUid++,
+      speciesId,
+      rig,
+      pos,
+      targetPos: pos.clone(),
+      onLogIdx: logIdx,
+      pendingLogIdx: -1,
+      pendingLogT: 0.5,
+      logT,
+      targetLogT: logT,
+      leapStartPos: pos.clone(),
+      leaping: false,
+      yaw: Math.random() * Math.PI * 2,
+      prevYaw: 0,
+      yawVel: 0,
+      pitch: 0,
+      roll: 0,
+      speed: 0,
+      targetSpeed: 0,
+      crouch: 0,
+      crouchVel: 0,
+      anticipateTimer: 0,
+      stalkTimer: 0,
+      shakeTimer: 0,
+      swallowTimer: 0,
+      burstPauseTimer: 0,
+      isBasking: false,
+      tailAngles: [0, 0, 0, 0, 0],
+      tailVels: [0, 0, 0, 0, 0],
+      jumpH: 0,
+      gliding: false,
+      leapProg: 0,
+      state: 'idle',
+      stateTimer: 1.5 + Math.random() * 3,
+      hunger: 58 + Math.floor(Math.random() * 22),
+      comfort: 86,
+      growth: initialGrowth,
+      breedCooldown: 18 + Math.random() * 14,
+      mateUid: null,
+      courtTimer: 0,
+      walkPhase: Math.random() * Math.PI * 2,
+      breathPhase: Math.random() * Math.PI * 2,
+      blinkTimer: 2.5 + Math.random() * 4.5,
+      blinkProg: 0,
+      tongueTimer: 4 + Math.random() * 7,
+      tongueProg: 0,
+      bubbleText: '',
+      bubbleTimer: 0
+    };
+  }
+
+  function initBiomeState(biomeId) {
+    const b = BIOMES[biomeId];
+    terrariums[biomeId] = {
+      temp: b.defaultTemp,
+      humidity: b.defaultHumidity,
+      timeOfDay: b.defaultTime,
+      speciesIds: [...b.defaultSpecies]
+    };
+  }
+
+  let activeGeckos = [];
+  let activeFoods = [];
+  let mistPuffs = [];
+
+  function rebuildActiveBiome(biomeId) {
+    activeBiomeId = biomeId;
+    selectedGeckoUid = null;
+    exitMacroCamera(true);
+    document.getElementById('geckoCard').classList.add('hidden');
+    clearGroup(geckoGroup);
+    clearGroup(foodGroup);
+    clearGroup(eggGroup);
+    activeGeckos = [];
+    activeFoods = [];
+    activeEggs = [];
+    bubbleNodes.forEach(el => el.remove());
+    bubbleNodes.clear();
+
+    buildBiome3D(biomeId);
+    const t = terrariums[biomeId];
+    t.speciesIds.forEach(sid => activeGeckos.push(createGeckoState(sid)));
+
+    applyLighting(biomeId, t.timeOfDay);
+    document.getElementById('tempSlider').value = t.temp;
+    document.getElementById('tempSliderLabel').textContent = `${t.temp}°C`;
+    updateTimeUI();
+    renderBiomeTabs();
+    updateActiveGeckoBadge();
+    renderCollectionList();
+  }
+
+  function applyLighting(biomeId, timeOfDay) {
+    const b = BIOMES[biomeId];
+    const envTex = buildBiomeEnvMap(biomeId, timeOfDay);
+    scene.environment = envTex;
+    scene.background = new THREE.Color(b.sky[timeOfDay]);
+    scene.fog = new THREE.FogExp2(b.fog[timeOfDay], isRaining ? 0.036 : 0.022);
+
+    if (timeOfDay === 'day') {
+      // Balanced filmic daylight: rich organic colors, deep soft shadows, zero blown-out whites
+      sunLight.color.setHex(0xf5e2bc); sunLight.intensity = isRaining ? 0.65 : 1.05;
+      sunLight.position.set(9, 10.5, 6.5);
+      hemiLight.color.setHex(0xd4e0e8); hemiLight.groundColor.setHex(0x1e2c24); hemiLight.intensity = 0.38;
+      rimLight.color.setHex(0xe8cfa0); rimLight.intensity = isRaining ? 0.22 : 0.38;
+      bounceLight.color.setHex(biomeId === 'arid' ? 0xd9965b : 0x9cb584); bounceLight.intensity = 0.16;
+      renderer.toneMappingExposure = 0.82;
+      lanternLight.intensity = 0;
+      ffMat.opacity = 0.22;
+    } else if (timeOfDay === 'dusk') {
+      // Warm grounded golden hour without clipping highlights
+      sunLight.color.setHex(0xeb8d4d); sunLight.intensity = 0.95;
+      sunLight.position.set(-10.5, 4.5, 5.5);
+      hemiLight.color.setHex(0xb88470); hemiLight.groundColor.setHex(0x191c2b); hemiLight.intensity = 0.30;
+      rimLight.color.setHex(0xe0a56c); rimLight.intensity = 0.45;
+      bounceLight.color.setHex(0xd6854d); bounceLight.intensity = 0.18;
+      renderer.toneMappingExposure = 0.85;
+      lanternLight.intensity = biomeId === 'mediterranean' ? 1.8 : 0;
+      ffMat.opacity = 0.58;
+    } else {
+      // Serene moonlit night with natural contrast
+      sunLight.color.setHex(0x6c9bc7); sunLight.intensity = 0.48;
+      sunLight.position.set(5, 11, -7);
+      hemiLight.color.setHex(0x3b5878); hemiLight.groundColor.setHex(0x0c1217); hemiLight.intensity = 0.22;
+      rimLight.color.setHex(0x7ca6cf); rimLight.intensity = 0.42;
+      bounceLight.color.setHex(0x3a5a6e); bounceLight.intensity = 0.12;
+      renderer.toneMappingExposure = 0.86;
+      lanternLight.intensity = biomeId === 'mediterranean' ? 2.6 : 0;
+      ffMat.opacity = 0.90;
+    }
+  }
+
+  // =========================================================================
+  // 9. 3D FOOD MESH BUILDER & INTERACTION
+  // =========================================================================
+  function spawnFood3D(foodId, pos, useCalcium) {
+    if (activeFoods.length > 16) {
+      const old = activeFoods.shift();
+      foodGroup.remove(old.mesh);
+    }
+    const g = new THREE.Group();
+    const parts = { legs: [], antennae: [], wings: [], segments: [], hindLegs: [] };
+    const dustMix = (hex) => {
+      const c = new THREE.Color(hex);
+      if (useCalcium) c.lerp(new THREE.Color(0xf4efe4), 0.52);
+      return c;
+    };
+
+    if (foodId === 'cricket') {
+      // 1-to-1 Acheta domesticus (House Cricket): head, eyes, pronotum, wings, cerci, 6 legs + jumping femurs, long antennae
+      const bodyMat = new THREE.MeshStandardMaterial({ color: dustMix(0x7c5e3a), roughness: 0.45, metalness: 0.08 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: dustMix(0x4a3520), roughness: 0.5 });
+      const wingMat = new THREE.MeshStandardMaterial({ color: dustMix(0x9c7b50), roughness: 0.35, transparent: true, opacity: 0.85 });
+      const eyeMat  = new THREE.MeshStandardMaterial({ color: 0x16110d, roughness: 0.12 });
+
+      // Head + compound eyes
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), darkMat);
+      head.scale.set(0.95, 0.9, 0.85); head.position.set(0, 0.075, 0.14); head.castShadow = true;
+      g.add(head);
+      [-0.038, 0.038].forEach(ex => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), eyeMat);
+        eye.position.set(ex, 0.09, 0.155); g.add(eye);
+      });
+      // Pronotum (thorax shield)
+      const thorax = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.075, 0.11), bodyMat);
+      thorax.position.set(0, 0.08, 0.05); thorax.castShadow = true; g.add(thorax);
+      // Tapered segmented abdomen + folded wings
+      const abd = new THREE.Mesh(new THREE.SphereGeometry(0.068, 12, 8), bodyMat);
+      abd.scale.set(0.85, 0.72, 2.1); abd.position.set(0, 0.072, -0.09); abd.castShadow = true; g.add(abd);
+      const wingCover = new THREE.Mesh(new THREE.SphereGeometry(0.065, 10, 8), wingMat);
+      wingCover.scale.set(0.88, 0.35, 1.85); wingCover.position.set(0, 0.105, -0.06); g.add(wingCover);
+      // Twin rear cerci
+      [-0.03, 0.03].forEach(cx => {
+        const cerc = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.009, 0.12, 5), darkMat);
+        cerc.position.set(cx, 0.07, -0.24); cerc.rotation.x = Math.PI * 0.44; cerc.rotation.z = cx > 0 ? -0.25 : 0.25;
+        g.add(cerc);
+      });
+      // Twin long sweeping filiform antennae
+      [-0.025, 0.025].forEach(ax => {
+        const antPivot = new THREE.Group(); antPivot.position.set(ax, 0.09, 0.17);
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.005, 0.28, 5), darkMat);
+        ant.rotation.x = Math.PI * 0.38; ant.rotation.z = ax > 0 ? -0.35 : 0.35;
+        ant.position.set(ax * 1.4, 0.04, 0.11);
+        antPivot.add(ant); g.add(antPivot); parts.antennae.push(antPivot);
+      });
+      // 4 walking legs (front & middle)
+      [0.08, 0.01].forEach((lz, row) => {
+        [-1, 1].forEach(side => {
+          const lp = new THREE.Group(); lp.position.set(side * 0.05, 0.06, lz);
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.005, 0.13, 5), darkMat);
+          leg.rotation.z = side * 0.72; leg.position.set(side * 0.045, -0.03, 0);
+          lp.add(leg); g.add(lp); parts.legs.push({ pivot: lp, phase: (row + (side > 0 ? 1 : 0)) * Math.PI, side });
+        });
+      });
+      // 2 enlarged muscular jumping hind legs (saltatorial femur + tibia!)
+      [-1, 1].forEach(side => {
+        const hp = new THREE.Group(); hp.position.set(side * 0.055, 0.08, -0.04);
+        const femur = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 6), bodyMat);
+        femur.scale.set(0.65, 0.85, 2.7); femur.position.set(side * 0.03, 0.05, -0.06); femur.rotation.x = 0.55;
+        const tibia = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.005, 0.19, 5), darkMat);
+        tibia.position.set(side * 0.045, 0.0, -0.15); tibia.rotation.x = -0.35;
+        hp.add(femur, tibia); g.add(hp); parts.hindLegs.push(hp);
+      });
+
+    } else if (foodId === 'dubia') {
+      // 1-to-1 Blaptica dubia (Dubia Roach): glossy arched 8-plate segmented oval carapace, pronotum hood, amber bands, 6 tripod legs, antennae
+      const shellDark = new THREE.MeshStandardMaterial({ color: dustMix(0x3a2417), roughness: 0.24, metalness: 0.15 });
+      const shellBand = new THREE.MeshStandardMaterial({ color: dustMix(0x6e4526), roughness: 0.28, metalness: 0.12 });
+      const legMat    = new THREE.MeshStandardMaterial({ color: dustMix(0x4a2f1d), roughness: 0.45 });
+
+      // Pronotum hood shield covering head
+      const pronotum = new THREE.Mesh(new THREE.SphereGeometry(0.115, 14, 10), shellDark);
+      pronotum.scale.set(1.08, 0.36, 0.85); pronotum.position.set(0, 0.055, 0.13); pronotum.castShadow = true;
+      g.add(pronotum);
+      // 7 overlapping curved tergite abdominal plates with subtle amber banding
+      for (let i = 0; i < 7; i++) {
+        const t = i / 6;
+        const wPlate = Math.sin((0.18 + t * 0.72) * Math.PI) * 0.145;
+        const plate = new THREE.Mesh(new THREE.SphereGeometry(wPlate, 12, 8), i % 2 === 0 ? shellDark : shellBand);
+        plate.scale.set(1.05, 0.32, 0.42);
+        plate.position.set(0, 0.052 - t * 0.006, 0.07 - i * 0.042);
+        plate.castShadow = true;
+        g.add(plate);
+      }
+      // Twin long whip-like antennae sweeping ahead
+      [-0.035, 0.035].forEach(ax => {
+        const ap = new THREE.Group(); ap.position.set(ax, 0.045, 0.20);
+        const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.003, 0.005, 0.24, 5), legMat);
+        ant.rotation.x = Math.PI * 0.46; ant.rotation.z = ax > 0 ? -0.3 : 0.3;
+        ant.position.set(ax * 1.1, 0.0, 0.10);
+        ap.add(ant); g.add(ap); parts.antennae.push(ap);
+      });
+      // 6 spiny legs in alternating tripod gait
+      [0.09, 0.0, -0.09].forEach((lz, row) => {
+        [-1, 1].forEach(side => {
+          const lp = new THREE.Group(); lp.position.set(side * 0.08, 0.04, lz);
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.005, 0.12, 5), legMat);
+          leg.rotation.z = side * 0.95; leg.position.set(side * 0.045, -0.02, 0);
+          lp.add(leg); g.add(lp);
+          const tripodPhase = ((row + (side > 0 ? 1 : 0)) % 2) * Math.PI;
+          parts.legs.push({ pivot: lp, phase: tripodPhase, side });
+        });
+      });
+
+    } else if (foodId === 'fruitfly') {
+      // 1-to-1 Drosophila (Fruit Fly): bright brick-red compound eyes, tan thorax, black-striped abdomen, rapid translucent wings
+      const tanMat  = new THREE.MeshStandardMaterial({ color: dustMix(0xc7924e), roughness: 0.4 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x241d17, roughness: 0.4 });
+      const redEye  = new THREE.MeshStandardMaterial({ color: 0xc92c24, roughness: 0.18 });
+      const wingMat = new THREE.MeshStandardMaterial({ color: 0xeef7ff, transparent: true, opacity: 0.52, roughness: 0.1, side: THREE.DoubleSide });
+
+      const thorax = new THREE.Mesh(new THREE.SphereGeometry(0.036, 10, 8), tanMat);
+      thorax.scale.set(0.95, 0.95, 1.15); g.add(thorax);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 8), tanMat);
+      head.position.set(0, 0.005, 0.045); g.add(head);
+      [-0.022, 0.022].forEach(ex => {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.017, 8, 6), redEye);
+        eye.position.set(ex, 0.01, 0.052); g.add(eye);
+      });
+      const abd = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 8), tanMat);
+      abd.scale.set(0.92, 0.85, 1.35); abd.position.set(0, -0.006, -0.055); g.add(abd);
+      // Black abdominal stripes
+      [-0.04, -0.065].forEach(sz => {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(0.031, 0.006, 6, 12), darkMat);
+        band.position.set(0, -0.005, sz); g.add(band);
+      });
+      // Translucent veined wings
+      [-1, 1].forEach(side => {
+        const wp = new THREE.Group(); wp.position.set(side * 0.02, 0.026, 0.005);
+        const wing = new THREE.Mesh(new THREE.CircleGeometry(0.065, 10), wingMat);
+        wing.scale.set(1.35, 0.52, 1); wing.rotation.x = -Math.PI * 0.5;
+        wing.position.set(side * 0.055, 0, -0.01);
+        wp.add(wing); g.add(wp); parts.wings.push({ pivot: wp, side });
+      });
+
+    } else if (foodId === 'mealworm') {
+      // 1-to-1 Tenebrio molitor (Mealworm Larva): 12 glossy golden-amber articulated chitinous rings + dark head capsule + prolegs!
+      const headMat = new THREE.MeshStandardMaterial({ color: dustMix(0x7d451c), roughness: 0.28, metalness: 0.1 });
+      const segA    = new THREE.MeshStandardMaterial({ color: dustMix(0xdba046), roughness: 0.22, metalness: 0.14 });
+      const segB    = new THREE.MeshStandardMaterial({ color: dustMix(0xb87828), roughness: 0.25, metalness: 0.12 });
+      const segCount = 12;
+      for (let i = 0; i < segCount; i++) {
+        const t = i / (segCount - 1);
+        const r = 0.036 * (0.65 + 0.35 * Math.sin(t * Math.PI));
+        const seg = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), i === 0 ? headMat : (i % 2 ? segA : segB));
+        seg.scale.set(1.0, 0.82, 1.18);
+        seg.position.set(0, r * 0.85, 0.18 - i * 0.034);
+        seg.castShadow = true;
+        g.add(seg);
+        parts.segments.push({ mesh: seg, baseZ: seg.position.z, idx: i });
+      }
+
+    } else if (foodId === 'cgd') {
+      // Sculpted rustic ceramic dish on a small botanical leaf with glossy mango-papaya CGD smoothie!
+      const dish = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.18, 0.075, 18), new THREE.MeshStandardMaterial({ color: 0x966847, roughness: 0.78 }));
+      dish.position.y = 0.038; dish.castShadow = true; dish.receiveShadow = true;
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.23, 0.022, 8, 20), new THREE.MeshStandardMaterial({ color: 0x855a3c, roughness: 0.72 }));
+      rim.rotation.x = Math.PI * 0.5; rim.position.y = 0.072;
+      const puree = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.20, 0.045, 18), new THREE.MeshStandardMaterial({ color: 0xe8a856, roughness: 0.18, metalness: 0.06 }));
+      puree.position.y = 0.055;
+      g.add(dish, rim, puree);
+
+    } else {
+      // 1-to-1 Sculpted 5-Petal Crimson-Coral Tropical Hibiscus Blossom with shimmering golden nectar drops!
+      const petalMat = new THREE.MeshStandardMaterial({ color: 0xd64b58, roughness: 0.45, side: THREE.DoubleSide });
+      const centerMat = new THREE.MeshStandardMaterial({ color: 0xf2c34b, emissive: 0x523508, roughness: 0.3 });
+      const dropMat = new THREE.MeshStandardMaterial({ color: 0xffe082, emissive: 0x7a4f10, roughness: 0.06, metalness: 0.2, transparent: true, opacity: 0.92 });
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2;
+        const pet = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8), petalMat);
+        pet.scale.set(1.1, 0.16, 1.45);
+        pet.position.set(Math.cos(ang) * 0.11, 0.045, Math.sin(ang) * 0.11);
+        pet.rotation.y = -ang; pet.rotation.x = -0.18;
+        pet.castShadow = true;
+        g.add(pet);
+      }
+      const stamen = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.024, 0.12, 8), centerMat);
+      stamen.position.y = 0.07; g.add(stamen);
+      // 3 glistening amber nectar dewdrops inside petals
+      [[0.05, 0.05], [-0.06, 0.03], [0.01, -0.06]].forEach(([dx, dz]) => {
+        const drop = new THREE.Mesh(new THREE.SphereGeometry(0.032, 10, 8), dropMat);
+        drop.scale.set(1.1, 0.65, 1.1); drop.position.set(dx, 0.06, dz); g.add(drop);
+      });
+    }
+
+    const landY = pos.y + 0.01;
+    g.position.set(pos.x, landY + 1.15, pos.z);
+    foodGroup.add(g);
+    activeFoods.push({
+      id: nextUid++, foodId, mesh: g, parts,
+      pos: g.position.clone(), baseY: landY,
+      vel: new THREE.Vector3((Math.random() - 0.5) * 0.35, 0.35, (Math.random() - 0.5) * 0.35),
+      grounded: false, hopCooldown: 1.2 + Math.random() * 1.6,
+      crawlDir: Math.random() * Math.PI * 2,
+      calcium: useCalcium, age: 0, seed: Math.random() * 10
+    });
+  }
+
+  function spawnMist3D(pos) {
+    const terr = terrariums[activeBiomeId];
+    terr.humidity = Math.min(98, terr.humidity + 2.5);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xe8f6fc, transparent: true, opacity: 0.35, depthWrite: false });
+    for (let i = 0; i < 5; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.35 + Math.random() * 0.35, 8, 8), mat.clone());
+      m.position.set(pos.x + (Math.random() - 0.5) * 1.4, pos.y + 0.5 + Math.random() * 1.0, pos.z + (Math.random() - 0.5) * 1.4);
+      fxGroup.add(m);
+      mistPuffs.push({ mesh: m, age: 0, vy: 0.35 + Math.random() * 0.25 });
+    }
+    activeGeckos.forEach(g => {
+      if (g.pos.distanceTo(pos) < 3.5 && SPECIES_MAP[g.speciesId].humMin >= 50) {
+        g.tongueProg = 0.2; g.bubbleText = 'ferah sis~'; g.bubbleTimer = 1.8;
+      }
+    });
+    audio.playMist();
+    if (selectedGeckoUid) renderSelectedGeckoCard();
+  }
+
+  // =========================================================================
+  // 10. SIMULATION TICK (LOG-WALKING, IK GAIT, WIND PHYSICS, RAIN)
+  // =========================================================================
+  function evaluateComfort(g, terr) {
+    const sp = SPECIES_MAP[g.speciesId];
+    let score = 100; const issues = [];
+    if (terr.temp < sp.tempMin) { score -= Math.min(30, (sp.tempMin - terr.temp) * 5); issues.push({ ok: false, text: `Biraz serin (İdeal: ${sp.tempMin}–${sp.tempMax}°C)` }); }
+    else if (terr.temp > sp.tempMax) { score -= Math.min(35, (terr.temp - sp.tempMax) * 6); issues.push({ ok: false, text: `Biraz sıcak (İdeal: ${sp.tempMin}–${sp.tempMax}°C)` }); }
+    else issues.push({ ok: true, text: `Sıcaklık ideal (${sp.tempMin}–${sp.tempMax}°C)` });
+
+    if (terr.humidity < sp.humMin) { score -= Math.min(25, (sp.humMin - terr.humidity) * 1.2); issues.push({ ok: false, text: `Sisleme veya yağmur açabilirsin (%${sp.humMin}–${sp.humMax})` }); }
+    else if (terr.humidity > sp.humMax) { score -= Math.min(20, (terr.humidity - sp.humMax) * 1.0); issues.push({ ok: false, text: `Nem biraz yüksek (%${sp.humMin}–${sp.humMax})` }); }
+    else issues.push({ ok: true, text: `Nem oranı ideal (%${sp.humMin}–${sp.humMax})` });
+
+    if (activeBiomeId !== sp.biome) { score -= 10; issues.push({ ok: false, text: `Doğal biyomu: ${BIOMES[sp.biome].name}` }); }
+    else issues.push({ ok: true, text: `Doğal biyomunda (${BIOMES[sp.biome].name})` });
+    return { score: Math.max(25, Math.min(100, Math.round(score))), issues };
+  }
+
+  function isSpeciesActiveNow(sp, tod) {
+    if (sp.cycle === 'diurnal') return tod === 'day' || tod === 'dusk';
+    if (sp.cycle === 'crepuscular') return tod === 'dusk' || tod === 'night';
+    return tod === 'night' || tod === 'dusk';
+  }
+
+  function angleDiff(a, b) {
+    let d = b - a;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    return d;
+  }
+
+  function setRainState(on, announce = true) {
+    isRaining = on;
+    document.getElementById('btnRain').classList.toggle('active', isRaining);
+    applyLighting(activeBiomeId, terrariums[activeBiomeId].timeOfDay);
+    audio.setRainIntensity(isRaining);
+    if (announce) showToast(isRaining ? 'Teraryuma hafif bir yağmur başladı' : 'Yağmur dindi, hava duruldu');
+  }
+
+  const bubbleLayer = document.getElementById('bubbleLayer');
+  const tmpVec = new THREE.Vector3();
+
+  function updateSimulation(dt) {
+    windTime += dt;
+    const terr = terrariums[activeBiomeId];
+    if (!terr) return;
+
+    // Natural occasional rain weather cycle!
+    rainAutoTimer -= dt;
+    if (rainAutoTimer <= 0) {
+      if (!isRaining && activeBiomeId !== 'arid') {
+        setRainState(true, true);
+        rainAutoTimer = 18 + Math.random() * 14;
+      } else {
+        if (isRaining) setRainState(false, false);
+        rainAutoTimer = 35 + Math.random() * 35;
+      }
+    }
+
+    // Humidity physics
+    const baseHum = BIOMES[activeBiomeId].defaultHumidity;
+    if (isRaining) terr.humidity = Math.min(96, terr.humidity + dt * 1.4);
+    else if (terr.humidity > baseHum) terr.humidity = Math.max(baseHum, terr.humidity - dt * 0.25);
+    const humInt = Math.round(terr.humidity);
+    if (humInt !== lastHudHum) {
+      lastHudHum = humInt;
+      document.getElementById('hudHumidity').textContent = `%${humInt} nem`;
+    }
+    // Live FPS readout (updated every 500ms, zero overhead)
+    fpsFrames++;
+    const nowPerf = performance.now();
+    if (nowPerf - fpsLastTime >= 500) {
+      const fps = Math.round((fpsFrames * 1000) / (nowPerf - fpsLastTime));
+      const el = document.getElementById('fpsBadge');
+      if (el) el.textContent = `${Math.min(60, fps)} FPS`;
+      fpsFrames = 0; fpsLastTime = nowPerf;
+    }
+
+    // Dynamic Spring-Damper Wind Gust & Rain Droop Physics!
+    const globalGust = (0.7 + 0.55 * Math.sin(windTime * 0.42) + 0.3 * Math.sin(windTime * 1.15)) * (isRaining ? 1.75 : 1.0);
+    swayPlants.forEach(p => {
+      if (p.curX === undefined) { p.curX = 0; p.velX = 0; p.curZ = 0; p.velZ = 0; }
+      const targetX = Math.sin(windTime * p.stiffness + p.phase) * p.amp * globalGust + (isRaining ? 0.095 : 0);
+      const targetZ = Math.cos(windTime * p.stiffness * 0.8 + p.phase) * p.amp * 0.7 * globalGust;
+      const k = 14.0 * p.stiffness;
+      const damp = 4.2;
+      // Raindrop leaf-bounce impulse physics!
+      if (isRaining && Math.random() < dt * 1.4) p.velX += 0.55;
+      // Interactive Gecko-to-Foliage brush physics (leaves bend aside as geckos pass!)
+      if (p.worldPos) {
+        for (let gi = 0; gi < activeGeckos.length; gi++) {
+          const g = activeGeckos[gi];
+          if (g.speed > 0.08 && Math.abs(g.pos.x - p.worldPos.x) < 1.15 && Math.abs(g.pos.z - p.worldPos.z) < 1.15) {
+            p.velX += (g.pos.z - p.worldPos.z) * 1.8 * dt;
+            p.velZ += (p.worldPos.x - g.pos.x) * 1.8 * dt;
+          }
+        }
+      }
+      p.velX += ((targetX - p.curX) * k - p.velX * damp) * dt;
+      p.velZ += ((targetZ - p.curZ) * k - p.velZ * damp) * dt;
+      p.curX += p.velX * dt;
+      p.curZ += p.velZ * dt;
+      p.mesh.rotation.x = p.baseRotX + p.curX;
+      p.mesh.rotation.z = p.baseRotZ + p.curZ;
+    });
+
+    // Hanging Pendulum Vine Physics
+    for (let i = 0; i < hangingVines.length; i++) {
+      const v = hangingVines[i];
+      const windTorque = Math.sin(windTime * 0.9 + v.phase) * 0.14 * globalGust;
+      const gTorque = -(9.8 / v.len) * Math.sin(v.ang);
+      v.vel += (gTorque + windTorque - v.vel * 1.2) * dt;
+      v.ang += v.vel * dt;
+      v.pivot.rotation.z = v.ang;
+      v.pivot.rotation.x = v.ang * 0.45;
+    }
+
+    // Subtle zero-cost wind breath across the 1,800-blade rainforest grass carpet
+    if (grassFieldMesh) {
+      grassFieldMesh.rotation.z = Math.sin(windTime * 1.35) * 0.008 * globalGust;
+    }
+
+    // Swinging Mediterranean Lantern + Soft Warm Candle Flicker
+    if (swingingLantern) {
+      swingingLantern.rotation.z = Math.sin(windTime * 1.1) * 0.065 * globalGust;
+      if (lanternLight.intensity > 0) {
+        lanternLight.position.x = 3.2 + Math.sin(windTime * 1.1) * 0.12;
+      }
+    }
+
+    // Gravity-Driven Cave Water Drips -> Trigger Real Pool Ripples on Impact!
+    for (let i = 0; i < caveDrips.length; i++) {
+      const cd = caveDrips[i];
+      cd.vy += 9.8 * dt;
+      cd.y -= cd.vy * dt;
+      if (cd.y <= waterSurfaceY) {
+        cd.y = cd.startY + Math.random() * 1.8;
+        cd.vy = 0;
+        spawnWaterRipple();
+      }
+      cd.mesh.position.y = cd.y;
+    }
+
+    // Volumetric Sun Shafts & Drifting Low-Lying Ground Mist
+    const showShafts = terr.timeOfDay !== 'night' && !isRaining;
+    for (let i = 0; i < sunShafts.length; i++) {
+      const sf = sunShafts[i];
+      sf.mesh.visible = showShafts;
+      if (showShafts) sf.mesh.position.x = sf.baseX + Math.sin(windTime * 0.25 + sf.phase) * 0.35;
+    }
+    for (let i = 0; i < groundMist.length; i++) {
+      const gm = groundMist[i];
+      gm.mesh.position.x = gm.baseX + Math.sin(windTime * 0.18 + gm.phase) * 0.8;
+      gm.mesh.position.z = gm.baseZ + Math.cos(windTime * 0.15 + gm.phase) * 0.6;
+      gm.mesh.material.opacity = isRaining ? 0.16 : Math.max(0.04, (terr.humidity - 50) * 0.003);
+    }
+
+    // 3D Rain Particles & Water Pool Ripples
+    const targetRainOp = isRaining ? 0.45 : 0.0;
+    rainMat.opacity += (targetRainOp - rainMat.opacity) * Math.min(1, dt * 2.5);
+    if (rainMat.opacity > 0.01) {
+      const arr = rainGeo.attributes.position.array;
+      for (let i = 0; i < RAIN_COUNT; i++) {
+        arr[i * 6 + 1] -= rainVel[i] * dt;
+        arr[i * 6 + 4] = arr[i * 6 + 1] - 0.42;
+        arr[i * 6] -= 0.4 * dt;
+        arr[i * 6 + 3] = arr[i * 6] - 0.06;
+        if (arr[i * 6 + 1] < 0) {
+          const nx = (Math.random() - 0.5) * 15, ny = 9 + Math.random() * 3, nz = (Math.random() - 0.5) * 15;
+          arr[i * 6] = nx; arr[i * 6 + 1] = ny; arr[i * 6 + 2] = nz;
+          arr[i * 6 + 3] = nx - 0.06; arr[i * 6 + 4] = ny - 0.42; arr[i * 6 + 5] = nz;
+        }
+      }
+      rainGeo.attributes.position.needsUpdate = true;
+      if (Math.random() < dt * 8) spawnWaterRipple();
+    }
+
+    for (let i = waterRipples.length - 1; i >= 0; i--) {
+      const r = waterRipples[i];
+      r.age += dt;
+      const sc = 1 + r.age * 7.5;
+      r.mesh.scale.set(sc, sc, 1);
+      r.mesh.material.opacity = Math.max(0, 0.6 - r.age * 0.75);
+      if (r.age > 0.85) { fxGroup.remove(r.mesh); waterRipples.splice(i, 1); }
+    }
+
+    // Mist puffs
+    for (let i = mistPuffs.length - 1; i >= 0; i--) {
+      const mp = mistPuffs[i];
+      mp.age += dt;
+      mp.mesh.position.y += mp.vy * dt;
+      mp.mesh.scale.setScalar(1 + mp.age * 0.8);
+      mp.mesh.material.opacity = Math.max(0, 0.35 - mp.age * 0.25);
+      if (mp.age > 1.4) { fxGroup.remove(mp.mesh); mistPuffs.splice(i, 1); }
+    }
+
+    // Fireflies / Dust motes
+    const fArr = ffGeo.attributes.position.array;
+    ffData.forEach((ff, i) => {
+      ff.phase += dt * ff.spd;
+      ff.pos.x += Math.sin(ff.phase) * 0.22 * dt;
+      ff.pos.y += Math.cos(ff.phase * 1.3) * 0.14 * dt;
+      ff.pos.z += Math.sin(ff.phase * 0.8) * 0.22 * dt;
+      fArr[i * 3] = ff.pos.x; fArr[i * 3 + 1] = ff.pos.y; fArr[i * 3 + 2] = ff.pos.z;
+    });
+    ffGeo.attributes.position.needsUpdate = true;
+
+    // 3D Food Gravity, Bounce & Cricket Hop Physics
+    for (let i = activeFoods.length - 1; i >= 0; i--) {
+      const f = activeFoods[i];
+      f.age += dt;
+      if (f.age > 50) { foodGroup.remove(f.mesh); activeFoods.splice(i, 1); continue; }
+      // Animate 1-to-1 miniature insect anatomy!
+      if (f.parts) {
+        f.parts.antennae.forEach((ap, idx) => {
+          ap.rotation.y = Math.sin(f.age * 7 + idx * 2 + f.seed) * 0.22;
+          ap.rotation.x = Math.cos(f.age * 5 + idx + f.seed) * 0.14;
+        });
+        f.parts.wings.forEach(w => {
+          w.pivot.rotation.z = w.side * (0.2 + Math.sin(f.age * 58) * 0.85);
+        });
+        if (f.foodId === 'mealworm') {
+          f.parts.segments.forEach(seg => {
+            seg.mesh.position.x = Math.sin(f.age * 6.5 - seg.idx * 0.55 + f.seed) * 0.032;
+            seg.mesh.position.z = seg.baseZ + Math.cos(f.age * 6.5 - seg.idx * 0.55) * 0.006;
+          });
+        }
+        if (f.foodId === 'dubia' || f.foodId === 'cricket') {
+          const legSpd = f.grounded ? (f.foodId === 'dubia' ? 14 : 9) : 3;
+          f.parts.legs.forEach(l => {
+            l.pivot.rotation.y = Math.sin(f.age * legSpd + l.phase) * 0.38;
+          });
+        }
+      }
+      if (f.foodId === 'fruitfly') {
+        f.mesh.position.x = f.pos.x + Math.sin(f.age * 4.2 + f.seed) * 0.32;
+        f.mesh.position.y = f.baseY + 0.38 + Math.cos(f.age * 3.1 + f.seed) * 0.16;
+        f.mesh.position.z = f.pos.z + Math.cos(f.age * 2.6 + f.seed) * 0.28;
+        f.mesh.rotation.y = Math.atan2(Math.cos(f.age * 4.2 + f.seed), -Math.sin(f.age * 2.6 + f.seed));
+        continue;
+      }
+      // Apply 3D gravity & surface collision bounce
+      if (!f.grounded) {
+        f.vel.y -= 13.5 * dt;
+        f.mesh.position.addScaledVector(f.vel, dt);
+        const surfY = sampleSurfaceY(f.mesh.position.x, f.mesh.position.z, f.mesh.position.y + 0.6) + 0.05;
+        if (f.mesh.position.y <= surfY) {
+          f.mesh.position.y = surfY;
+          f.baseY = surfY;
+          if (Math.abs(f.vel.y) > 0.6) {
+            f.vel.y = -f.vel.y * 0.34;
+            f.vel.x *= 0.55; f.vel.z *= 0.55;
+          } else {
+            f.vel.set(0, 0, 0);
+            f.grounded = true;
+          }
+        }
+        f.pos.copy(f.mesh.position);
+      } else if (f.foodId === 'cricket') {
+        f.hopCooldown -= dt;
+        if (f.hopCooldown <= 0) {
+          f.hopCooldown = 1.6 + Math.random() * 2.4;
+          const ang = Math.random() * Math.PI * 2;
+          // Keep cricket inside diorama bounds
+          const toCenter = Math.hypot(f.mesh.position.x, f.mesh.position.z) > 4.5
+            ? Math.atan2(-f.mesh.position.z, -f.mesh.position.x) : ang;
+          f.vel.set(Math.cos(toCenter) * 0.9, 2.6 + Math.random() * 0.7, Math.sin(toCenter) * 0.9);
+          f.mesh.rotation.y = Math.atan2(f.vel.x, f.vel.z);
+          f.grounded = false;
+        }
+      } else if (f.foodId === 'dubia' || f.foodId === 'mealworm') {
+        f.crawlDir += Math.sin(f.age * 1.4 + f.seed) * 0.8 * dt;
+        const cSpd = f.foodId === 'dubia' ? 0.26 : 0.10;
+        const nx = f.mesh.position.x + Math.sin(f.crawlDir) * cSpd * dt;
+        const nz = f.mesh.position.z + Math.cos(f.crawlDir) * cSpd * dt;
+        if (Math.hypot(nx, nz) < 5.0) {
+          f.mesh.position.x = nx; f.mesh.position.z = nz;
+          f.mesh.position.y = sampleSurfaceY(nx, nz, f.mesh.position.y + 0.5) + 0.01;
+          f.pos.copy(f.mesh.position);
+        } else {
+          f.crawlDir += Math.PI * 0.85;
+        }
+        f.mesh.rotation.y = f.crawlDir;
+      }
+    }
+
+    // --- EGG INCUBATION & HATCHING ---
+    for (let i = activeEggs.length - 1; i >= 0; i--) {
+      const egg = activeEggs[i];
+      egg.age += dt;
+      if (egg.age > egg.hatchTime - 3.5) {
+        // Gentle pre-hatch wiggle!
+        egg.mesh.rotation.z = Math.sin(egg.age * 24) * 0.14;
+      }
+      if (egg.age >= egg.hatchTime) {
+        eggGroup.remove(egg.mesh);
+        activeEggs.splice(i, 1);
+        if (activeGeckos.length < 12) {
+          const baby = createGeckoState(egg.speciesId, 0.0, egg.pos);
+          baby.bubbleText = 'Yumurtadan çıktı!';
+          baby.bubbleTimer = 3.0;
+          activeGeckos.push(baby);
+          terrariums[activeBiomeId].speciesIds.push(egg.speciesId);
+          updateActiveGeckoBadge();
+          renderCollectionList();
+          showToast(`Yeni bir yavru ${SPECIES_MAP[egg.speciesId].nameTr} yumurtadan çıktı!`);
+          audio.playFeed();
+        }
+      }
+    }
+
+    // --- COURTSHIP & REPRODUCTION CHECK (Adults mate & lay eggs; Mourning Gecko parthenogenesis!) ---
+    for (let i = 0; i < activeGeckos.length; i++) {
+      const ga = activeGeckos[i];
+      if (ga.breedCooldown > 0) ga.breedCooldown -= dt;
+      if (ga.growth < 0.85 || ga.hunger < 65 || ga.comfort < 68 || ga.breedCooldown > 0) continue;
+      if (activeGeckos.length + activeEggs.length >= 12) continue;
+      // Parthenogenesis for Mourning Gecko!
+      if (ga.speciesId === 'mourning') {
+        ga.breedCooldown = 42;
+        ga.bubbleText = 'Partenogenez yumurtası'; ga.bubbleTimer = 2.6;
+        layGeckoEggClutch(ga.speciesId, ga.pos);
+        continue;
+      }
+      // Look for another happy adult of the same species!
+      for (let j = i + 1; j < activeGeckos.length; j++) {
+        const gb = activeGeckos[j];
+        if (gb.speciesId !== ga.speciesId || gb.growth < 0.85 || gb.hunger < 65 || gb.breedCooldown > 0) continue;
+        const d = ga.pos.distanceTo(gb.pos);
+        if (d < 2.2) {
+          ga.breedCooldown = 48; gb.breedCooldown = 48;
+          ga.courtTimer = 2.4; gb.courtTimer = 2.4;
+          ga.bubbleText = 'Çiftleşme dansı ♪'; gb.bubbleText = 'Çiftleşme dansı ♪';
+          ga.bubbleTimer = 2.6; gb.bubbleTimer = 2.6;
+          audio.playChirp(SPECIES_MAP[ga.speciesId].callPitch, ga.speciesId === 'tokay');
+          layGeckoEggClutch(ga.speciesId, ga.pos);
+          break;
+        }
+      }
+    }
+
+    // --- 3D GECKO AI, LOG-WALKING & ZERO-SLIDE ARTICULATED PHYSICS ---
+    activeGeckos.forEach(g => {
+      const sp = SPECIES_MAP[g.speciesId];
+      g.breathPhase += dt * 2.2;
+      g.hunger = Math.max(18, g.hunger - dt * 0.18);
+      const env = evaluateComfort(g, terr);
+      g.comfort += (env.score - g.comfort) * Math.min(1, dt * 1.5);
+      if (g.bubbleTimer > 0) g.bubbleTimer -= dt;
+
+      // Eyelids or Eye-licking tongue
+      if (sp.hasEyelids) {
+        g.blinkTimer -= dt;
+        if (g.blinkTimer <= 0) {
+          g.blinkProg += dt * 5;
+          if (g.blinkProg >= 1) { g.blinkProg = 0; g.blinkTimer = 3 + Math.random() * 5; }
+        }
+        const lidClose = g.state === 'sleep' ? 0.15 : (-Math.PI * 0.45 + Math.sin(g.blinkProg * Math.PI) * 1.15);
+        g.rig.eyelids.forEach(l => { l.rotation.x = lidClose; });
+      } else {
+        g.tongueTimer -= dt;
+        if (g.tongueTimer <= 0 && g.state !== 'sleep') {
+          g.tongueProg += dt * 2.2;
+          if (g.tongueProg >= 1) { g.tongueProg = 0; g.tongueTimer = 5.5 + Math.random() * 8; }
+        }
+        const ts = Math.sin(g.tongueProg * Math.PI);
+        if (ts > 0.05) {
+          g.rig.tongue.scale.set(1, ts, 1);
+          g.rig.tongue.rotation.x = Math.PI * 0.32 - ts * 0.35; // flicks up toward eye!
+        } else {
+          g.rig.tongue.scale.set(0.01, 0.01, 0.01);
+        }
+      }
+
+      // Check for nearby favorite food
+      let bestFood = null, bestDist = Infinity;
+      for (const f of activeFoods) {
+        if (sp.foods.includes(f.foodId)) {
+          const d = g.pos.distanceTo(f.mesh.position);
+          if (d < bestDist) { bestDist = d; bestFood = f; }
+        }
+      }
+
+      const activeNow = isSpeciesActiveNow(sp, terr.timeOfDay);
+
+      if (bestFood && g.hunger < 96 && !g.leaping && !g.gliding) {
+        if (g.state !== 'hunt') {
+          g.state = 'hunt';
+          // If gecko is high on a log and food is far below/away, leap down cleanly first!
+          const dyFood = Math.abs(bestFood.mesh.position.y - g.pos.y);
+          if (g.onLogIdx >= 0 && dyFood > 0.65) {
+            g.onLogIdx = -1;
+            g.leaping = true;
+            g.leapProg = 0;
+            g.leapStartPos.copy(g.pos);
+            const landX = bestFood.mesh.position.x + (Math.random() - 0.5) * 0.6;
+            const landZ = bestFood.mesh.position.z + (Math.random() - 0.5) * 0.6;
+            g.targetPos.set(landX, sampleSurfaceY(landX, landZ, bestFood.mesh.position.y + 1.2), landZ);
+            g.pendingLogIdx = -1;
+          } else {
+            g.targetPos.copy(bestFood.mesh.position);
+            g.targetPos.y = sampleSurfaceY(g.targetPos.x, g.targetPos.z, g.targetPos.y + 0.8);
+          }
+        }
+      } else if (g.state === 'hunt' && !bestFood) {
+        g.state = 'idle'; g.stateTimer = 1.8;
+      }
+
+      if (g.leaping || g.gliding) {
+        // True parabolic 3D leap or parachute glide between perches/surfaces (NEVER walking in mid-air!)
+        const dur = g.gliding ? 1.45 : 0.68;
+        g.leapProg = Math.min(1, g.leapProg + dt / dur);
+        g.pos.lerpVectors(g.leapStartPos, g.targetPos, g.leapProg);
+        const arcPeak = g.gliding ? 0.95 : 0.72;
+        g.jumpH = Math.sin(g.leapProg * Math.PI) * arcPeak;
+        const dx = g.targetPos.x - g.leapStartPos.x;
+        const dz = g.targetPos.z - g.leapStartPos.z;
+        const desYaw = Math.atan2(dx, dz);
+        g.yaw += angleDiff(g.yaw, desYaw) * Math.min(1, dt * 10);
+        g.pitch = (g.leapProg - 0.45) * 0.6;
+        g.speed = 0; // Legs stay tucked/spread, never walking in mid-air!
+        if (g.leapProg >= 1) {
+          g.leaping = false; g.gliding = false; g.jumpH = 0; g.pitch = 0;
+          g.crouchVel = -2.8; // Soft physical landing squash-and-spring!
+          if (g.pendingLogIdx >= 0 && walkableLogs[g.pendingLogIdx]) {
+            g.onLogIdx = g.pendingLogIdx;
+            g.logT = g.pendingLogT;
+            g.targetLogT = g.pendingLogT;
+            const log = walkableLogs[g.onLogIdx];
+            const pt = log.curve.getPoint(g.logT);
+            g.pos.set(pt.x, pt.y + log.radius + 0.03, pt.z);
+          } else {
+            g.pos.y = sampleSurfaceY(g.pos.x, g.pos.z, g.pos.y + 1.5);
+          }
+          g.pendingLogIdx = -1;
+          if (g.state !== 'hunt') { g.state = 'idle'; g.stateTimer = 2.5 + Math.random() * 4.0; }
+        }
+      } else if (g.state === 'hunt' && bestFood) {
+        g.targetPos.x = bestFood.mesh.position.x;
+        g.targetPos.z = bestFood.mesh.position.z;
+        const dx = g.targetPos.x - g.pos.x;
+        const dz = g.targetPos.z - g.pos.z;
+        const flatDist = Math.hypot(dx, dz);
+        if (flatDist < 0.62) {
+          const caughtType = bestFood.foodId;
+          const idx = activeFoods.indexOf(bestFood);
+          if (idx !== -1) { foodGroup.remove(bestFood.mesh); activeFoods.splice(idx, 1); }
+          g.hunger = Math.min(100, g.hunger + (bestFood.calcium ? 34 : 26));
+          g.comfort = Math.min(100, g.comfort + (bestFood.calcium ? 12 : 6));
+          const prevStage = getLifeStageName(g.growth);
+          g.growth = Math.min(1.0, g.growth + (bestFood.calcium ? 0.34 : 0.24));
+          const newStage = getLifeStageName(g.growth);
+          if (newStage !== prevStage) {
+            showToast(`${sp.nameTr} büyüdü ve ${newStage} oldu!`);
+            audio.playChime(587.33, 0.045, 0.7);
+          }
+          g.tongueProg = 0.25; g.state = 'idle'; g.stateTimer = 2.8; g.speed = 0; g.pitch = 0;
+          // Real biomechanics (PMC10484749, 2023): geckos rapidly shake mealworms to subdue them, never crickets!
+          if (caughtType === 'mealworm') g.shakeTimer = 0.75;
+          g.swallowTimer = 1.2;
+          g.bubbleText = bestFood.calcium ? 'Kalsiyumlu ziyafet' : (caughtType === 'mealworm' ? 'Silkeleyerek yuttu' : 'Afiyetle yedi');
+          g.bubbleTimer = 2.3;
+          audio.playFeed();
+          if (selectedGeckoUid === g.uid) renderSelectedGeckoCard();
+        } else {
+          const spd = (sp.id === 'electric_blue' || sp.id === 'giant_day') ? 1.65 : 1.15;
+          g.speed = spd;
+          const prevX = g.pos.x, prevZ = g.pos.z;
+          g.pos.x += (dx / flatDist) * spd * dt;
+          g.pos.z += (dz / flatDist) * spd * dt;
+          const col = resolvePhysicalObstacles(g.pos, prevX, prevZ, 0.34 * g.rig.root.scale.x + 0.12);
+          const desYaw = Math.atan2(dx, dz);
+          g.yaw += angleDiff(g.yaw, desYaw) * Math.min(1, dt * 7);
+          const fwdX = Math.sin(g.yaw), fwdZ = Math.cos(g.yaw);
+          const probeD = 0.30 * g.rig.root.scale.x + 0.10;
+          const frontY = sampleSurfaceY(g.pos.x + fwdX * probeD, g.pos.z + fwdZ * probeD, g.pos.y + 1.2);
+          const rearY  = sampleSurfaceY(g.pos.x - fwdX * probeD, g.pos.z - fwdZ * probeD, g.pos.y + 1.2);
+          const bodyY  = Math.max(col.surf.y, (frontY + rearY) * 0.5) + 0.025;
+          g.pos.y += (bodyY - g.pos.y) * Math.min(1, dt * 16);
+          g.pitch += (Math.max(-0.6, Math.min(0.6, Math.atan2(rearY - frontY, probeD * 2))) - g.pitch) * Math.min(1, dt * 8);
+          g.walkPhase += dt * 11;
+        }
+      } else if (g.state === 'walk') {
+        if (g.onLogIdx >= 0 && walkableLogs[g.onLogIdx]) {
+          // Walk strictly ALONG the 3D surface curve of the wooden log!
+          const log = walkableLogs[g.onLogIdx];
+          const stepT = (g.targetLogT > g.logT ? 1 : -1) * 0.13 * dt;
+          g.logT = Math.max(0.06, Math.min(0.94, g.logT + stepT));
+          const pt = log.curve.getPoint(g.logT);
+          const tan = log.curve.getTangent(g.logT);
+          if (stepT < 0) tan.negate();
+          g.pos.set(pt.x, pt.y + log.radius + 0.03, pt.z);
+          const desYaw = Math.atan2(tan.x, tan.z);
+          g.yaw += angleDiff(g.yaw, desYaw) * Math.min(1, dt * 7);
+          g.pitch += (-Math.asin(Math.max(-0.7, Math.min(0.7, tan.y))) - g.pitch) * Math.min(1, dt * 6);
+          g.speed = 0.85;
+          g.walkPhase += dt * 8.5;
+          if (Math.abs(g.targetLogT - g.logT) < 0.03) {
+            g.state = 'idle'; g.speed = 0; g.stateTimer = 3.0 + Math.random() * 5.0;
+          }
+        } else {
+          // Walk strictly ON the 3D ground / rocks (raycast-grounded every frame!)
+          const dx = g.targetPos.x - g.pos.x;
+          const dz = g.targetPos.z - g.pos.z;
+          const flatDist = Math.hypot(dx, dz);
+          if (flatDist < 0.25) {
+            g.state = 'idle'; g.speed = 0; g.pitch = 0;
+            g.stateTimer = 3.0 + Math.random() * 5.0;
+          } else {
+            const spd = 0.82;
+            g.speed = spd;
+            const prevX = g.pos.x, prevZ = g.pos.z;
+            g.pos.x += (dx / flatDist) * spd * dt;
+            g.pos.z += (dz / flatDist) * spd * dt;
+            const col = resolvePhysicalObstacles(g.pos, prevX, prevZ, 0.36 * g.rig.root.scale.x + 0.14);
+            if (col.blocked) {
+              // Steer naturally around steep rock/trunk instead of clipping through it!
+              g.state = 'idle'; g.speed = 0; g.stateTimer = 0.5;
+            } else {
+              const surf = col.surf;
+              const desYaw = Math.atan2(dx, dz);
+              g.yaw += angleDiff(g.yaw, desYaw) * Math.min(1, dt * 5.5);
+              // 2-Point Front/Rear Surface Probe so belly & snout hug stones and slopes with ZERO clipping!
+              const fwdX = Math.sin(g.yaw), fwdZ = Math.cos(g.yaw);
+              const probeD = 0.32 * g.rig.root.scale.x + 0.12;
+              const frontY = sampleSurfaceY(g.pos.x + fwdX * probeD, g.pos.z + fwdZ * probeD, g.pos.y + 1.2);
+              const rearY  = sampleSurfaceY(g.pos.x - fwdX * probeD, g.pos.z - fwdZ * probeD, g.pos.y + 1.2);
+              const bodyY  = Math.max(surf.y, (frontY + rearY) * 0.5) + 0.025;
+              g.pos.y += (bodyY - g.pos.y) * Math.min(1, dt * 16);
+              const twoPtPitch = Math.atan2(rearY - frontY, probeD * 2);
+              const rightX = Math.cos(g.yaw), rightZ = -Math.sin(g.yaw);
+              const slopeRoll = Math.asin(Math.max(-0.5, Math.min(0.5, (surf.normal.x * rightX + surf.normal.z * rightZ))));
+              g.pitch += (Math.max(-0.65, Math.min(0.65, twoPtPitch)) - g.pitch) * Math.min(1, dt * 8);
+              g.roll  += (slopeRoll - g.roll) * Math.min(1, dt * 7);
+              g.walkPhase += dt * (4.5 + g.speed * 5.5);
+            }
+          }
+        }
+      } else if (g.state === 'sleep') {
+        g.speed = 0; g.stateTimer -= dt;
+        if (activeNow || g.stateTimer <= 0) { g.state = 'idle'; g.stateTimer = 2 + Math.random() * 3; }
+      } else {
+        g.speed *= 0.85; g.stateTimer -= dt;
+        if (g.stateTimer <= 0) {
+          if (!activeNow && Math.random() < 0.6) {
+            g.state = 'sleep'; g.stateTimer = 7 + Math.random() * 8;
+          } else if (sp.arboreal && walkableLogs.length > 0) {
+            if (g.onLogIdx >= 0 && Math.random() < 0.72) {
+              // Keep walking along this wooden log!
+              g.targetLogT = 0.08 + Math.random() * 0.84;
+              g.state = 'walk';
+            } else {
+              // Leap or parachute-glide cleanly from current perch to another wooden log!
+              const newIdx = Math.floor(Math.random() * walkableLogs.length);
+              const newT = 0.15 + Math.random() * 0.7;
+              const dest = walkableLogs[newIdx].curve.getPoint(newT);
+              dest.y += walkableLogs[newIdx].radius + 0.03;
+              g.onLogIdx = -1;
+              g.pendingLogIdx = newIdx;
+              g.pendingLogT = newT;
+              g.leapStartPos.copy(g.pos);
+              g.targetPos.copy(dest);
+              g.gliding = (sp.id === 'flying');
+              g.leaping = !g.gliding;
+              g.leapProg = 0;
+              if (g.gliding) { g.bubbleText = 'paraşütle süzülüyor~'; g.bubbleTimer = 2.0; }
+              g.state = 'walk';
+            }
+          } else {
+            // Roam naturally across the 3D terrarium ground & rocks
+            g.onLogIdx = -1;
+            const ang = Math.random() * Math.PI * 2;
+            const rad = 1.0 + Math.random() * 4.0;
+            const tx = Math.cos(ang) * rad, tz = Math.sin(ang) * rad;
+            g.targetPos.set(tx, sampleSurfaceY(tx, tz, 2.5), tz);
+            g.state = 'walk';
+          }
+        }
+      }
+
+      // --- PEER-REVIEWED GECKO BIOMECHANICS ENGINE ---
+      if (g.shakeTimer > 0) g.shakeTimer = Math.max(0, g.shakeTimer - dt);
+      if (g.swallowTimer > 0) g.swallowTimer = Math.max(0, g.swallowTimer - dt);
+
+      g.crouchVel += (-g.crouch * 42 - g.crouchVel * 7.5) * dt;
+      g.crouch = Math.max(-0.14, Math.min(0.12, g.crouch + g.crouchVel * dt));
+
+      const dYaw = angleDiff(g.prevYaw || g.yaw, g.yaw);
+      g.yawVel += ((dYaw / Math.max(0.008, dt)) - g.yawVel) * Math.min(1, dt * 8);
+      g.prevYaw = g.yaw;
+
+      const walkAmp = (g.state === 'sleep' || g.leaping || g.gliding) ? 0 : Math.min(1, g.speed * 1.15);
+      // Standing wave at slow walk -> Travelling S-wave at fast chase (PubMed 32279015)!
+      const fastFactor = Math.max(0, Math.min(1, (g.speed - 0.7) * 1.4));
+      const spineSway = Math.sin(g.walkPhase) * (0.12 + fastFactor * 0.08) * walkAmp;
+      const stepBob = Math.abs(Math.sin(g.walkPhase)) * 0.025 * walkAmp;
+
+      // Basking sploot posture when resting in warm daytime light
+      const baskFlatten = (g.state === 'idle' && terr.timeOfDay === 'day' && sp.cycle === 'diurnal') ? -0.05 : 0;
+
+      g.rig.root.position.set(g.pos.x, g.pos.y + g.jumpH + stepBob, g.pos.z);
+      g.rig.root.rotation.set(g.pitch, g.yaw, g.roll + (g.gliding ? -g.yawVel * 0.08 : 0), 'YXZ');
+
+      const breathPulse = Math.sin(g.breathPhase) * 0.038;
+      g.rig.torsoGroup.position.y = 0.30 + g.crouch + baskFlatten;
+      g.rig.torsoGroup.scale.set(1 - (g.crouch + baskFlatten) * 0.65, 1 + breathPulse + (g.crouch + baskFlatten) * 1.2, 1);
+      g.rig.torsoGroup.rotation.y = spineSway;
+
+      // Head stabilization + Mealworm head-shake subjugation (PMC10484749) + Gular swallow!
+      const mealShake = g.shakeTimer > 0 ? Math.sin(g.shakeTimer * 44) * 0.55 : 0;
+      const swallowTilt = g.swallowTimer > 0 ? -0.18 - Math.sin(g.swallowTimer * 14) * 0.08 : 0;
+      const curiousLook = Math.sin(g.breathPhase * 0.42) * 0.16 * (1 - walkAmp * 0.6);
+      g.rig.headPivot.rotation.y = -spineSway * 1.15 + curiousLook + mealShake + Math.max(-0.35, Math.min(0.35, g.yawVel * 0.12));
+      g.rig.headPivot.rotation.x = swallowTilt + (g.state === 'hunt' ? 0.14 : Math.sin(g.breathPhase * 0.7) * 0.04);
+
+      // Smooth 1:1 growth scale interpolation (Baby -> Juvenile -> Adult)
+      const targetScale = computeGecko1to1Scale(sp, g.growth);
+      const curScale = g.rig.root.scale.x + (targetScale - g.rig.root.scale.x) * Math.min(1, dt * 3.5);
+      g.rig.root.scale.set(curScale, curScale, curScale);
+      if (g.courtTimer > 0) {
+        g.courtTimer = Math.max(0, g.courtTimer - dt);
+        g.rig.headPivot.rotation.x += Math.sin(g.courtTimer * 18) * 0.22; // Courtship head-bobbing!
+      }
+
+      // Coupled Multi-Body Spring-Damper 5-Segment Tail Physics (each segment couples to parent!)
+      const huntingTailBuzz = (g.state === 'hunt' || g.courtTimer > 0) ? 1.0 : 0.0;
+      g.rig.tailJoints.forEach((tj, i) => {
+        const waveLag = (i + 1) * (0.42 + fastFactor * 0.58);
+        const parentAngle = i === 0 ? -spineSway * 1.15 : g.tailAngles[i - 1] * 0.65;
+        let targetAng = parentAngle
+                        + Math.sin(g.walkPhase - waveLag) * (0.06 + walkAmp * 0.24)
+                        - Math.max(-0.55, Math.min(0.55, g.yawVel * (0.12 + i * 0.04)));
+        if (huntingTailBuzz > 0 && i >= 2) {
+          targetAng += Math.sin(windTime * 30 - i * 1.15) * 0.28;
+        }
+        if (g.gliding) {
+          targetAng = Math.cos(windTime * 9 + i * 0.4) * 0.36;
+        }
+        const stiffness = 34 - i * 4.5;
+        const damping = 6.2 - i * 0.4;
+        g.tailVels[i] += ((targetAng - g.tailAngles[i]) * stiffness - g.tailVels[i] * damping) * dt;
+        g.tailAngles[i] += g.tailVels[i] * dt;
+        tj.rotation.y = g.tailAngles[i];
+        const fifthLegPress = (g.pitch < -0.14 && i === 0) ? 0.28 : 0;
+        const gravityDroop = (g.onLogIdx >= 0 && i >= 2) ? -0.06 : 0;
+        const aerialPitch = g.gliding ? Math.sin(windTime * 9) * 0.22 : (g.leaping ? -0.16 : -g.pitch * 0.14);
+        tj.rotation.x = fifthLegPress + aerialPitch + gravityDroop;
+      });
+
+      if (g.rig.leftFlap) {
+        const targetFs = g.gliding ? 2.0 : 0.72;
+        g.rig.leftFlap.scale.x += (targetFs - g.rig.leftFlap.scale.x) * Math.min(1, dt * 8);
+        g.rig.rightFlap.scale.x = g.rig.leftFlap.scale.x;
+      }
+
+      // 2-Bone Articulated 4-Leg Diagonal Trot IK + Digital Hyperextension (Toe-Peeling, PubMed 22696482)!
+      g.rig.legs.forEach(leg => {
+        if (g.gliding) {
+          // Superman skydiving posture (Robert Full / PNAS 2008)!
+          leg.hip.rotation.y = leg.isFront ? 0.38 : -0.38;
+          leg.hip.rotation.z = leg.side * 0.62;
+          leg.knee.rotation.z = -leg.side * 0.25;
+          if (leg.foot) leg.foot.rotation.x = 0;
+        } else if (g.leaping) {
+          leg.hip.rotation.y = leg.isFront ? 0.55 : -0.65;
+          leg.hip.rotation.z = leg.side * 0.28;
+          leg.knee.rotation.z = leg.side * 0.45;
+          if (leg.foot) leg.foot.rotation.x = -0.3;
+        } else {
+          const ph = g.walkPhase + leg.phase;
+          const sw = g.state === 'sleep' ? 0 : Math.sin(ph) * (0.48 + fastFactor * 0.14) * walkAmp;
+          const lift = g.state === 'sleep' ? 0 : Math.max(0, Math.cos(ph)) * 0.44 * walkAmp;
+          leg.hip.rotation.y = sw;
+          leg.hip.rotation.z = leg.side * lift;
+          leg.knee.rotation.z = -leg.side * lift * 0.85;
+          leg.knee.rotation.x = Math.sin(ph) * 0.22 * walkAmp;
+          // Digital hyperextension: peel adhesive toes upward right before lift-off!
+          if (leg.foot) {
+            leg.foot.rotation.x = sp.hasToePads ? (-lift * 1.25) : (-lift * 0.35);
+          }
+        }
+      });
+
+      // Pooled zero-GC 3D speech bubble projection (60 FPS friendly!)
+      let bEl = bubbleNodes.get(g.uid);
+      if (g.bubbleTimer > 0 && g.bubbleText) {
+        tmpVec.set(g.pos.x, g.pos.y + g.jumpH + 0.65 * curScale + 0.28, g.pos.z).project(camera);
+        if (tmpVec.z < 1) {
+          if (!bEl) {
+            bEl = document.createElement('div');
+            bEl.className = 'absolute px-3 py-1 rounded-full text-[11px] font-serif-art italic bg-[#faf5eb]/90 text-[#2c241d] border border-[#4a3d31]/20 shadow-sm whitespace-nowrap';
+            bubbleLayer.appendChild(bEl);
+            bubbleNodes.set(g.uid, bEl);
+          }
+          const sx = (tmpVec.x * 0.5 + 0.5) * window.innerWidth;
+          const sy = (-tmpVec.y * 0.5 + 0.5) * window.innerHeight;
+          bEl.style.display = 'block';
+          bEl.style.transform = `translate3d(${sx.toFixed(0)}px, ${sy.toFixed(0)}px, 0) translate(-50%, -100%)`;
+          bEl.style.opacity = Math.min(1, g.bubbleTimer).toFixed(2);
+          if (bEl.textContent !== g.bubbleText) bEl.textContent = g.bubbleText;
+        } else if (bEl) {
+          bEl.style.display = 'none';
+        }
+      } else if (bEl) {
+        bEl.style.display = 'none';
+      }
+    });
+
+    // Macro Close-Up Follow Camera live tracking!
+    if (macroFollowUid !== null) {
+      const fg = activeGeckos.find(x => x.uid === macroFollowUid);
+      if (fg) {
+        const sc = fg.rig.root.scale.x;
+        camState.targetLookAt.set(fg.pos.x, fg.pos.y + fg.jumpH + 0.24 * sc, fg.pos.z);
+      } else {
+        exitMacroCamera();
+      }
+    }
+
+    // Smooth 3D Orbit Camera Damping + subtle breathing drift
+    camState.theta += (camState.targetTheta - camState.theta) * Math.min(1, dt * 6);
+    camState.phi += (camState.targetPhi - camState.phi) * Math.min(1, dt * 6);
+    camState.radius += (camState.targetRadius - camState.radius) * Math.min(1, dt * 6);
+    camState.lookAt.lerp(camState.targetLookAt, Math.min(1, dt * 5));
+
+    const idleSway = macroFollowUid ? 0 : Math.sin(windTime * 0.25) * 0.03;
+    const th = camState.theta + idleSway;
+    camera.position.set(
+      camState.lookAt.x + camState.radius * Math.sin(camState.phi) * Math.sin(th),
+      camState.lookAt.y + camState.radius * Math.cos(camState.phi),
+      camState.lookAt.z + camState.radius * Math.sin(camState.phi) * Math.cos(th)
+    );
+    camera.lookAt(camState.lookAt);
+  }
+
+  // =========================================================================
+  // 11. 3D RAYCASTING & CAMERA ORBIT INPUTS
+  // =========================================================================
+  const raycaster = new THREE.Raycaster();
+  const pointerNDC = new THREE.Vector2();
+  let dragStart = null, isDragging = false, prevPtr = { x: 0, y: 0 };
+
+  renderer.domElement.addEventListener('pointerdown', e => {
+    audio.init();
+    dragStart = { x: e.clientX, y: e.clientY };
+    prevPtr = { x: e.clientX, y: e.clientY };
+    isDragging = false;
+  });
+
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (!dragStart) return;
+    const dx = e.clientX - prevPtr.x, dy = e.clientY - prevPtr.y;
+    if (Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y) > 5) isDragging = true;
+    if (isDragging) {
+      camState.targetTheta -= dx * 0.0065;
+      camState.targetPhi = Math.max(0.55, Math.min(1.42, camState.targetPhi - dy * 0.005));
+    }
+    prevPtr = { x: e.clientX, y: e.clientY };
+  });
+
+  window.addEventListener('pointerup', e => {
+    if (dragStart && !isDragging) {
+      handle3DClick(e.clientX, e.clientY);
+    }
+    dragStart = null; isDragging = false;
+  });
+
+  renderer.domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    camState.targetRadius = Math.max(1.05, Math.min(18.5, camState.targetRadius + e.deltaY * (macroFollowUid ? 0.0025 : 0.008)));
+  }, { passive: false });
+
+  function handle3DClick(clientX, clientY) {
+    pointerNDC.x = (clientX / window.innerWidth) * 2 - 1;
+    pointerNDC.y = -(clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(pointerNDC, camera);
+
+    if (activeTool === 'observe') {
+      const hitSpheres = activeGeckos.map(g => g.rig.hitSphere);
+      const hits = raycaster.intersectObjects(hitSpheres, false);
+      if (hits.length > 0) {
+        const uid = hits[0].object.userData.geckoUid;
+        const g = activeGeckos.find(x => x.uid === uid);
+        if (g) {
+          selectedGeckoUid = g.uid;
+          petGecko(g);
+          camState.targetLookAt.set(g.pos.x * 0.45, Math.max(1.0, g.pos.y + 0.4), g.pos.z * 0.45);
+          document.getElementById('collectionDrawer').classList.add('hidden');
+          renderSelectedGeckoCard();
+          return;
+        }
+      }
+      selectedGeckoUid = null;
+      camState.targetLookAt.set(0, 1.6, 0);
+      document.getElementById('geckoCard').classList.add('hidden');
+      return;
+    }
+
+    // Raycast against walkable 3D logs, rocks, and ground!
+    const envHits = raycaster.intersectObjects(envGroup.children, true);
+    let dropPoint = new THREE.Vector3(0, 0, 0);
+    if (envHits.length > 0) dropPoint.copy(envHits[0].point);
+
+    if (activeTool === 'mist') {
+      spawnMist3D(dropPoint);
+      return;
+    }
+
+    if (FOODS[activeTool]) {
+      const fDef = FOODS[activeTool];
+      const useCalcium = calciumEnabled && fDef.type === 'insect';
+      spawnFood3D(activeTool, dropPoint, useCalcium);
+      audio.playChime(useCalcium ? 587.33 : 440, 0.035, 0.35);
+      const anyEats = activeGeckos.some(g => SPECIES_MAP[g.speciesId].foods.includes(activeTool));
+      if (!anyEats && activeGeckos.length > 0) {
+        const firstSp = SPECIES_MAP[activeGeckos[0].speciesId];
+        activeGeckos[0].bubbleText = `${FOODS[firstSp.foods[0]].fullName} severim`;
+        activeGeckos[0].bubbleTimer = 2.6;
+      }
+    }
+  }
+
+  function petGecko(g) {
+    const sp = SPECIES_MAP[g.speciesId];
+    g.state = 'idle'; g.stateTimer = 3.2;
+    g.comfort = Math.min(100, g.comfort + 8);
+    g.bubbleText = sp.callText; g.bubbleTimer = 2.4;
+    if (sp.hasEyelids) g.blinkProg = 0.25; else g.tongueProg = 0.2;
+    audio.playChirp(sp.callPitch, sp.id === 'tokay');
+    renderSelectedGeckoCard();
+  }
+
+  // =========================================================================
+  // 12. UI RENDERING (TABS, DOCK, COLLECTION, FIELD GUIDE)
+  // =========================================================================
+  function showToast(msg) {
+    const area = document.getElementById('toastArea');
+    document.getElementById('toastText').textContent = msg;
+    area.classList.remove('opacity-0', '-translate-y-2');
+    area.classList.add('opacity-100', 'translate-y-0');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      area.classList.add('opacity-0', '-translate-y-2');
+      area.classList.remove('opacity-100', 'translate-y-0');
+    }, 2400);
+  }
+
+  function renderBiomeTabs() {
+    const c = document.getElementById('biomeTabs'); c.innerHTML = '';
+    Object.values(BIOMES).forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = `biome-link px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${b.id === activeBiomeId ? 'active' : ''}`;
+      btn.textContent = b.name;
+      btn.addEventListener('click', () => {
+        rebuildActiveBiome(b.id);
+        audio.playChime(392, 0.035, 0.45);
+      });
+      c.appendChild(btn);
+    });
+  }
+
+  function updateTimeUI() {
+    const tod = terrariums[activeBiomeId].timeOfDay;
+    document.querySelectorAll('.time-btn').forEach(btn => {
+      const act = btn.dataset.time === tod;
+      btn.classList.toggle('bg-[#fffcf5]', act);
+      btn.classList.toggle('font-medium', act);
+      btn.classList.toggle('shadow-sm', act);
+    });
+  }
+
+  function updateActiveGeckoBadge() {
+    document.getElementById('activeGeckoBadge').textContent = activeGeckos.length;
+  }
+
+  const TOOL_SVGS = {
+    observe: '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s-6-4.35-8.5-8.28A5.2 5.2 0 0 1 12 6.5a5.2 5.2 0 0 1 8.5 6.22C18 16.65 12 21 12 21z"/></svg>',
+    mist:    '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+    cricket: '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="13" rx="6" ry="3"/><path d="M9 12L6 6M15 12l3-6M8 15l-3 4M16 15l3 4"/></svg>',
+    dubia:   '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="6.5" ry="4.5"/><path d="M12 7.5v9M8.5 9v6M15.5 9v6"/></svg>',
+    fruitfly:'<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="2.2"/><path d="M10 11C6 7 4 9 7 12M14 11c4-4 6-2 3 1"/></svg>',
+    mealworm:'<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 14c2-4 5-4 7 0s5 4 7 0"/></svg>',
+    cgd:     '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8 9c1-1.5 3-1.5 4 0"/></svg>',
+    nectar:  '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="2.5"/><path d="M12 4a3 3 0 0 1 0 5.5M12 20a3 3 0 0 1 0-5.5M4 12a3 3 0 0 1 5.5 0M20 12a3 3 0 0 1-5.5 0"/></svg>'
+  };
+
+  function renderToolBar() {
+    const bar = document.getElementById('toolBar'); bar.innerHTML = '';
+    const tools = [{ id: 'observe', label: 'İncele' }, { id: 'mist', label: 'Sisle' }, ...Object.values(FOODS).map(f => ({ id: f.id, label: f.name }))];
+    tools.forEach(t => {
+      const btn = document.createElement('button');
+      btn.className = `dock-btn px-2 py-1 rounded-full text-[11px] font-medium whitespace-nowrap flex items-center gap-1 ${activeTool === t.id ? 'active' : ''}`;
+      btn.innerHTML = `${TOOL_SVGS[t.id] || ''}<span>${t.label}</span>`;
+      btn.addEventListener('click', () => {
+        activeTool = t.id;
+        renderToolBar();
+        if (t.id === 'mist') showToast('Kütüklere veya bitkilere tıklayarak yumuşak sis sık');
+        else if (FOODS[t.id]) showToast(`${FOODS[t.id].fullName} bırakmak için bir kütüğe veya zemine tıkla`);
+      });
+      bar.appendChild(btn);
+    });
+  }
+
+  function renderSelectedGeckoCard() {
+    const card = document.getElementById('geckoCard');
+    const g = activeGeckos.find(x => x.uid === selectedGeckoUid);
+    if (!g) { card.classList.add('hidden'); return; }
+    const sp = SPECIES_MAP[g.speciesId];
+    const env = evaluateComfort(g, terrariums[activeBiomeId]);
+    card.classList.remove('hidden');
+    document.getElementById('cardName').textContent = sp.nameTr;
+    document.getElementById('cardSci').textContent = sp.sci;
+    const stMap = { idle: 'Dinleniyor', walk: 'Kütükte Geziniyor', hunt: 'Avlanıyor', sleep: 'Uyuyor', glide: 'Süzülüyor' };
+    document.getElementById('cardStateBadge').textContent = g.gliding ? stMap.glide : (stMap[g.state] || 'Huzurlu');
+    document.getElementById('cardCycleBadge').textContent = sp.cycleLabel;
+    document.getElementById('cardHungerVal').textContent = `%${Math.round(g.hunger)}`;
+    document.getElementById('cardHungerBar').style.width = `${Math.round(g.hunger)}%`;
+    document.getElementById('cardComfortVal').textContent = `%${Math.round(g.comfort)}`;
+    document.getElementById('cardComfortBar').style.width = `${Math.round(g.comfort)}%`;
+    const gPct = Math.round(g.growth * 100);
+    document.getElementById('cardStageLabel').textContent = `Evre: ${getLifeStageName(g.growth)} (${sp.adultCm} cm yetişkin)`;
+    document.getElementById('cardGrowthVal').textContent = `%${gPct}`;
+    document.getElementById('cardGrowthBar').style.width = `${gPct}%`;
+    document.getElementById('cardEnvNotes').innerHTML = env.issues.map(it =>
+      `<div class="flex items-center gap-1.5 ${it.ok ? 'text-[#345738]' : 'text-[#8f5236]'}"><span>${it.ok ? '✓' : '·'}</span><span>${it.text}</span></div>`
+    ).join('');
+    const fb = document.getElementById('cardFoods');
+    fb.innerHTML = sp.foods.map(fid => `<button data-pickfood="${fid}" class="px-2.5 py-0.5 rounded-full bg-[#efe5d1] hover:bg-[#e5d5b5] text-[#453626] text-[11px] transition">${FOODS[fid].fullName}</button>`).join('');
+    fb.querySelectorAll('[data-pickfood]').forEach(b => b.addEventListener('click', () => {
+      activeTool = b.dataset.pickfood; renderToolBar();
+      showToast(`${FOODS[activeTool].fullName} seçildi — kütüğe veya zemine tıkla`);
+    }));
+  }
+
+  function renderCollectionList() {
+    const list = document.getElementById('collectionList'); list.innerHTML = '';
+    const terr = terrariums[activeBiomeId];
+    SPECIES_LIST.forEach(sp => {
+      const present = activeGeckos.some(g => g.speciesId === sp.id);
+      const isNative = sp.biome === activeBiomeId;
+      const row = document.createElement('div');
+      row.className = 'p-2.5 rounded-xl border border-[#4a3d31]/12 bg-[#fffcf6]/75 flex items-center gap-2.5';
+
+      const swatch = document.createElement('div');
+      swatch.className = 'w-8 h-8 rounded-full shrink-0 border border-[#4a3d31]/20 shadow-inner';
+      swatch.style.background = `radial-gradient(circle at 35% 35%, ${sp.palette.hi}, ${sp.palette.base} 60%, ${sp.palette.shadow})`;
+
+      const info = document.createElement('div');
+      info.className = 'flex-1 min-w-0';
+      info.innerHTML = `<div class="font-medium text-xs text-[#2c241d] truncate">${sp.nameTr}</div><div class="text-[10px] text-[#635548] truncate">${BIOMES[sp.biome].name} · ${sp.cycleLabel}</div>`;
+
+      const actions = document.createElement('div');
+      actions.className = 'flex items-center gap-1 shrink-0';
+      const toggleBtn = document.createElement('button');
+      toggleBtn.className = present
+        ? 'px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#f0dfd9] text-[#7a3f2f]'
+        : 'px-2.5 py-1 rounded-full text-[11px] font-medium bg-[#e3ede3] text-[#2e4730]';
+      toggleBtn.textContent = present ? 'Çıkar' : 'Ekle';
+      toggleBtn.addEventListener('click', () => {
+        if (present) {
+          activeGeckos = activeGeckos.filter(g => {
+            if (g.speciesId === sp.id) { geckoGroup.remove(g.rig.root); return false; }
+            return true;
+          });
+          terr.speciesIds = terr.speciesIds.filter(id => id !== sp.id);
+          if (selectedGeckoUid && !activeGeckos.some(g => g.uid === selectedGeckoUid)) {
+            selectedGeckoUid = null; document.getElementById('geckoCard').classList.add('hidden');
+          }
+        } else {
+          if (activeGeckos.length >= 12) { showToast('En fazla 12 geko aynı anda barınabilir'); return; }
+          activeGeckos.push(createGeckoState(sp.id));
+          terr.speciesIds.push(sp.id);
+          showToast(`${sp.nameTr} 3D teraryuma eklendi`);
+          audio.playChime(523.25, 0.04, 0.45);
+        }
+        updateActiveGeckoBadge(); renderCollectionList();
+      });
+      actions.appendChild(toggleBtn);
+
+      if (!isNative) {
+        const goBtn = document.createElement('button');
+        goBtn.className = 'px-2 py-1 rounded-full text-[10px] bg-[#efe5d1] text-[#54422d]';
+        goBtn.textContent = 'Git';
+        goBtn.addEventListener('click', () => {
+          if (!terrariums[sp.biome].speciesIds.includes(sp.id)) terrariums[sp.biome].speciesIds.push(sp.id);
+          rebuildActiveBiome(sp.biome);
+        });
+        actions.appendChild(goBtn);
+      }
+      row.appendChild(swatch); row.appendChild(info); row.appendChild(actions);
+      list.appendChild(row);
+    });
+  }
+
+  let guideFilter = 'all';
+  function renderFieldGuide(focusSpeciesId = null) {
+    const body = document.getElementById('guideBody');
+    const q = document.getElementById('guideSearch').value.trim().toLowerCase();
+    body.innerHTML = '';
+    const filtered = SPECIES_LIST.filter(sp => {
+      if (guideFilter !== 'all' && sp.biome !== guideFilter) return false;
+      if (!q) return true;
+      return sp.nameTr.toLowerCase().includes(q) || sp.nameEn.toLowerCase().includes(q) || sp.sci.toLowerCase().includes(q) || sp.fact.toLowerCase().includes(q);
+    });
+    if (filtered.length === 0) {
+      body.innerHTML = '<div class="col-span-full text-center py-8 text-sm text-[#635548]">Aramaya uygun geko türü bulunamadı.</div>';
+      return;
+    }
+    filtered.forEach(sp => {
+      const card = document.createElement('article');
+      card.id = `guide-sp-${sp.id}`;
+      card.className = `rounded-2xl border p-4 bg-[#fffdf8] transition ${focusSpeciesId === sp.id ? 'border-[#587259] ring-2 ring-[#587259]/25' : 'border-[#4a3d31]/16'}`;
+      card.innerHTML = `
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-2xl shrink-0 border border-[#4a3d31]/18 shadow-inner" style="background:radial-gradient(circle at 35% 35%, ${sp.palette.hi}, ${sp.palette.base} 60%, ${sp.palette.shadow})"></div>
+          <div class="min-w-0">
+            <h3 class="font-serif-art font-bold text-base text-[#2c241d] leading-tight">${sp.nameTr}</h3>
+            <p class="italic text-xs text-[#635548]">${sp.sci} · ${sp.nameEn}</p>
+            <div class="flex flex-wrap gap-1 mt-1">
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-[#e5efe4] text-[#2f4a31]">${BIOMES[sp.biome].name}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-[#efe5d1] text-[#634c2e]">${sp.cycleLabel}</span>
+              <span class="px-2 py-0.5 rounded-full text-[10px] bg-[#ede7dc] text-[#4f4337]">${sp.hasEyelids ? 'Göz Kapaklı' : 'Gözlerini Yalar'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-1.5 text-[11px] bg-[#f7f2e7] rounded-xl p-2.5 mb-2.5 border border-[#4a3d31]/10">
+          <div><span class="text-[#635548]">Boyut:</span> <strong>${sp.sizeCm}</strong></div>
+          <div><span class="text-[#635548]">Ömür:</span> <strong>${sp.lifespan}</strong></div>
+          <div><span class="text-[#635548]">Sıcaklık:</span> <strong>${sp.tempMin}–${sp.tempMax}°C</strong></div>
+          <div><span class="text-[#635548]">Nem:</span> <strong>%${sp.humMin}–${sp.humMax}</strong></div>
+          <div class="col-span-2"><span class="text-[#635548]">Beslenme:</span> <strong>${sp.dietType}</strong> (${sp.foods.map(f => FOODS[f].fullName).join(', ')})</div>
+        </div>
+        <div class="space-y-1.5 text-xs text-[#453a2f] leading-relaxed">
+          <p><strong class="text-[#2c241d]">Yaşam Alanı:</strong> ${sp.habitatNote}</p>
+          <p><strong class="text-[#2c241d]">Diyet:</strong> ${sp.dietNote}</p>
+          <p><strong class="text-[#2c241d]">Özgün Biyoloji:</strong> ${sp.fact}</p>
+        </div>
+      `;
+      const footer = document.createElement('div');
+      footer.className = 'mt-3 pt-2 border-t border-[#4a3d31]/12 flex items-center justify-between gap-2 flex-wrap';
+      footer.innerHTML = `<div class="text-[11px] text-[#635548]">Kaynaklar: ${sp.sources.map(s => `<a href="${s.url}" target="_blank" rel="noopener noreferrer" class="text-[#456147] underline hover:text-[#283d29]">${s.title} ↗</a>`).join(' · ')}</div>`;
+      const visitBtn = document.createElement('button');
+      visitBtn.className = 'px-3 py-1 rounded-full bg-[#4f6950] hover:bg-[#3d543e] text-white text-[11px] font-medium transition';
+      visitBtn.textContent = '3D Teraryumda Gör';
+      visitBtn.addEventListener('click', () => {
+        document.getElementById('guideModal').classList.add('hidden');
+        if (!terrariums[sp.biome].speciesIds.includes(sp.id)) terrariums[sp.biome].speciesIds.push(sp.id);
+        rebuildActiveBiome(sp.biome);
+        const inst = activeGeckos.find(g => g.speciesId === sp.id);
+        if (inst) { selectedGeckoUid = inst.uid; petGecko(inst); renderSelectedGeckoCard(); }
+      });
+      footer.appendChild(visitBtn); card.appendChild(footer);
+      body.appendChild(card);
+    });
+    if (focusSpeciesId) {
+      setTimeout(() => {
+        const el = document.getElementById(`guide-sp-${focusSpeciesId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 60);
+    }
+  }
+
+  // =========================================================================
+  // 13. EVENT WIRING & MAIN LOOP
+  // =========================================================================
+  function enterMacroCamera(uid) {
+    const g = activeGeckos.find(x => x.uid === uid) || activeGeckos[0];
+    if (!g) return;
+    macroFollowUid = g.uid;
+    selectedGeckoUid = g.uid;
+    const sp = SPECIES_MAP[g.speciesId];
+    const sc = g.rig.root.scale.x;
+    // Ideal macro close-up distance scaled to gecko size (tiny baby or giant adult!)
+    camState.targetRadius = Math.max(1.25, Math.min(2.7, sc * 3.8));
+    camState.targetPhi = 1.24;
+    camState.targetTheta = g.yaw + 0.65;
+    document.getElementById('macroCamBar').classList.remove('hidden');
+    document.getElementById('macroTargetLabel').textContent = `${sp.nameTr} (${getLifeStageName(g.growth)})`;
+    document.getElementById('btnMacroCam').classList.add('active');
+    renderSelectedGeckoCard();
+    showToast(`${sp.nameTr} makro yakın takibe alındı — sürükleyerek 360° etrafında dön`);
+  }
+
+  function exitMacroCamera(silent = false) {
+    if (macroFollowUid === null && silent) return;
+    macroFollowUid = null;
+    camState.targetRadius = 13.5;
+    camState.targetPhi = 1.18;
+    camState.targetLookAt.set(0, 1.6, 0);
+    document.getElementById('macroCamBar').classList.add('hidden');
+    document.getElementById('btnMacroCam').classList.remove('active');
+    if (!silent) showToast('Genel teraryum kamerasına dönüldü');
+  }
+
+  function cycleMacroGecko(step) {
+    if (activeGeckos.length === 0) return;
+    const idx = activeGeckos.findIndex(x => x.uid === macroFollowUid);
+    const nextIdx = (idx + step + activeGeckos.length) % activeGeckos.length;
+    enterMacroCamera(activeGeckos[nextIdx].uid);
+  }
+
+  document.getElementById('btnMacroCam').addEventListener('click', () => {
+    if (macroFollowUid !== null) exitMacroCamera();
+    else enterMacroCamera(selectedGeckoUid || (activeGeckos[0] && activeGeckos[0].uid));
+  });
+  document.getElementById('btnCardMacro').addEventListener('click', () => {
+    if (selectedGeckoUid) enterMacroCamera(selectedGeckoUid);
+  });
+  document.getElementById('btnMacroExit').addEventListener('click', () => exitMacroCamera());
+  document.getElementById('btnMacroPrev').addEventListener('click', () => cycleMacroGecko(-1));
+  document.getElementById('btnMacroNext').addEventListener('click', () => cycleMacroGecko(1));
+
+  // Double-click any gecko to glide smoothly into Macro Close-Up!
+  renderer.domElement.addEventListener('dblclick', e => {
+    pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+    pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(pointerNDC, camera);
+    const hits = raycaster.intersectObjects(activeGeckos.map(g => g.rig.hitSphere), false);
+    if (hits.length > 0) enterMacroCamera(hits[0].object.userData.geckoUid);
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && macroFollowUid !== null) exitMacroCamera();
+  });
+
+  document.getElementById('btnRain').addEventListener('click', () => setRainState(!isRaining, true));
+  document.getElementById('btnSound').addEventListener('click', () => {
+    const on = audio.toggle();
+    document.getElementById('soundSvgOff').classList.toggle('hidden', on);
+    document.getElementById('soundSvgOn').classList.toggle('hidden', !on);
+    showToast(on ? 'Hafif yağmur ve orman sesleri açıldı' : 'Ses kapatıldı');
+  });
+  document.getElementById('btnZen').addEventListener('click', () => {
+    document.body.classList.add('zen-mode');
+    document.getElementById('btnExitZen').classList.remove('hidden');
+  });
+  document.getElementById('btnExitZen').addEventListener('click', () => {
+    document.body.classList.remove('zen-mode');
+    document.getElementById('btnExitZen').classList.add('hidden');
+  });
+  document.getElementById('btnCalcium').addEventListener('click', () => {
+    calciumEnabled = !calciumEnabled;
+    document.getElementById('btnCalcium').classList.toggle('active', calciumEnabled);
+    showToast(calciumEnabled ? 'Kalsiyum tozu aktif' : 'Kalsiyum tozu kapatıldı');
+  });
+  document.getElementById('tempSlider').addEventListener('input', e => {
+    const val = parseInt(e.target.value, 10);
+    terrariums[activeBiomeId].temp = val;
+    document.getElementById('tempSliderLabel').textContent = `${val}°C`;
+    if (selectedGeckoUid) renderSelectedGeckoCard();
+  });
+  document.querySelectorAll('.time-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      terrariums[activeBiomeId].timeOfDay = btn.dataset.time;
+      applyLighting(activeBiomeId, btn.dataset.time);
+      updateTimeUI();
+      audio.playChime(btn.dataset.time === 'day' ? 523.25 : (btn.dataset.time === 'dusk' ? 440 : 329.63), 0.035, 0.45);
+    });
+  });
+  document.getElementById('btnCloseCard').addEventListener('click', () => {
+    selectedGeckoUid = null;
+    camState.targetLookAt.set(0, 1.6, 0);
+    document.getElementById('geckoCard').classList.add('hidden');
+  });
+  document.getElementById('btnCardPet').addEventListener('click', () => {
+    const g = activeGeckos.find(x => x.uid === selectedGeckoUid);
+    if (g) petGecko(g);
+  });
+  document.getElementById('btnCardOpenGuide').addEventListener('click', () => {
+    const g = activeGeckos.find(x => x.uid === selectedGeckoUid);
+    if (!g) return;
+    guideFilter = 'all'; document.getElementById('guideSearch').value = ''; updateGuideFilterButtons();
+    document.getElementById('guideModal').classList.remove('hidden');
+    renderFieldGuide(g.speciesId);
+  });
+  document.getElementById('btnCardRemove').addEventListener('click', () => {
+    const g = activeGeckos.find(x => x.uid === selectedGeckoUid);
+    if (g) {
+      geckoGroup.remove(g.rig.root);
+      activeGeckos = activeGeckos.filter(x => x.uid !== selectedGeckoUid);
+      terrariums[activeBiomeId].speciesIds = terrariums[activeBiomeId].speciesIds.filter(id => id !== g.speciesId);
+    }
+    selectedGeckoUid = null; camState.targetLookAt.set(0, 1.6, 0);
+    document.getElementById('geckoCard').classList.add('hidden');
+    updateActiveGeckoBadge(); renderCollectionList();
+  });
+  document.getElementById('btnCollection').addEventListener('click', () => {
+    const d = document.getElementById('collectionDrawer');
+    d.classList.toggle('hidden');
+    if (!d.classList.contains('hidden')) { document.getElementById('geckoCard').classList.add('hidden'); renderCollectionList(); }
+  });
+  document.getElementById('btnCloseCollection').addEventListener('click', () => document.getElementById('collectionDrawer').classList.add('hidden'));
+  document.getElementById('btnResetBiomeSpecies').addEventListener('click', () => {
+    const b = BIOMES[activeBiomeId];
+    terrariums[activeBiomeId].speciesIds = [...b.defaultSpecies];
+    terrariums[activeBiomeId].temp = b.defaultTemp;
+    terrariums[activeBiomeId].humidity = b.defaultHumidity;
+    rebuildActiveBiome(activeBiomeId);
+    showToast(`${b.name} doğal türleriyle yenilendi`);
+  });
+
+  function updateGuideFilterButtons() {
+    document.querySelectorAll('.guide-filter').forEach(btn => {
+      const act = btn.dataset.filter === guideFilter;
+      btn.className = act ? 'guide-filter active px-3 py-1 rounded-full text-xs font-medium bg-[#4f6950] text-white' : 'guide-filter px-3 py-1 rounded-full text-xs bg-[#e7decb] text-[#453a2f]';
+    });
+  }
+  document.getElementById('btnGuide').addEventListener('click', () => { document.getElementById('guideModal').classList.remove('hidden'); renderFieldGuide(); });
+  document.getElementById('btnCloseGuide').addEventListener('click', () => document.getElementById('guideModal').classList.add('hidden'));
+  document.getElementById('guideSearch').addEventListener('input', () => renderFieldGuide());
+  document.querySelectorAll('.guide-filter').forEach(btn => btn.addEventListener('click', () => {
+    guideFilter = btn.dataset.filter; updateGuideFilterButtons(); renderFieldGuide();
+  }));
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  let lastTime = 0, rafId = null;
+  function animate(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000 || 0.016);
+    lastTime = now;
+    updateSimulation(dt);
+    renderer.render(scene, camera);
+    rafId = requestAnimationFrame(animate);
+  }
+
+  window.onload = () => {
+    Object.keys(BIOMES).forEach(initBiomeState);
+    renderToolBar();
+    rebuildActiveBiome('rainforest');
+    if (rafId) cancelAnimationFrame(rafId);
+    lastTime = performance.now();
+    rafId = requestAnimationFrame(animate);
+  };
+})();
+</script>
+</body>
+</html>

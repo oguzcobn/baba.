@@ -176,6 +176,7 @@ const App = (() => {
     { id: 'operasyon-hatti', name: ['OPERASYON HATTI. — Taktik 3D FPS', 'OPERATION LINE. — Tactical 3D FPS'], tags: [['FPS', 'FPS'], ['Taktik', 'Tactical'], ['3D', '3D']], best: () => T('4 bölge · 3 silah', '4 zones · 3 weapons') },
     { id: 'simitci', name: ['SİMİTÇİ. — Uzun Sokak Tycoon', 'SIMIT. — Uzun Sokak Tycoon'], tags: [['Tycoon', 'Tycoon'], ['2.5D izometrik', '2.5D isometric'], ['Trabzon', 'Trabzon']], best: () => T('9 görev · kortej', '9 missions · fan march') },
     { id: 'yelken', name: ['YELKEN. — Optimist Yelken Simülasyonu', 'SAIL. — Optimist Sailing Simulator'], tags: [['3D Yelken', '3D Sailing'], ['Fizik', 'Physics'], ['Trabzon', 'Trabzon']], best: () => T('Yarış modu · 5 karakter', 'Race mode · 5 characters') },
+    { id: 'geko-bahcesi', name: ['GEKO BAHÇESİ. — 3D Canlı Teraryum', 'GECKO GARDEN. — Living 3D Terrarium'], tags: [['Simülasyon', 'Simulation'], ['15 tür', '15 species'], ['Huzur', 'Relaxing']], best: () => T('15 tür · 4 biyom', '15 species · 4 biomes') },
     { id: 'lanternlight', name: ['LANTERNLIGHT. — Gece Hayatta Kalma', 'LANTERNLIGHT. — Night Survival'], tags: [['Hayatta kalma', 'Survival'], ['Kariyer · Üs', 'Career · Base'], ['3D PBR', '3D PBR']], best: () => { try { const d = JSON.parse(localStorage.getItem('ll_career') || 'null'); return d ? T(`Gece ${d.night}`, `Night ${d.night}`) : T('Yeni', 'New'); } catch (_) { return T('Yeni', 'New'); } } },
     { id: 'yayla-savunmasi', name: ['Trabzon Yayla Savunması', 'Trabzon Highland Defense'], tags: [['Kule Savunma', 'Tower Defense'], ['3D PBR', '3D PBR'], ['Karadeniz', 'Black Sea']], best: () => T('10 dalga · 3D', '10 waves · 3D') },
     { id: 'amsterdam-coffeeshop', name: ['AMSTERDAM. — Coffeeshop İmparatorluğu', 'AMSTERDAM. — Coffeeshop Empire'], tags: [['Market simülasyonu', 'Store sim'], ['3D birinci şahıs', '3D first person'], ['39 karakter', '39 characters']], best: () => T('Jordaan · 3D · +18', 'Jordaan · 3D · 18+') },
@@ -671,6 +672,16 @@ const App = (() => {
     });
   }
 
+  function gekoBahcesi() {
+    openEmbeddedGame({
+      title: T('Geko Bahçesi', 'Gecko Garden'),
+      url: 'games/geko-bahcesi/index.html?v=1',
+      tag: T('BABA. SİMÜLASYON · 3D Teraryum', 'BABA. SIMULATION · 3D Terrarium'),
+      lead: T('15 gerçek geko türü, 4 biyom: besle, sisle, büyüt, yumurtadan çıkışını izle.', '15 real gecko species in 4 biomes: feed, mist, raise and watch eggs hatch.'),
+      tip: T('Sürükle: kamerayı döndür · Kaydır: yakınlaş · Gekoya çift tık: makro takip.', 'Drag to orbit · scroll to zoom · double-click a gecko for macro follow.')
+    });
+  }
+
   function lanternlight() {
     openEmbeddedGame({
       title: 'Lanternlight',
@@ -1060,6 +1071,7 @@ const App = (() => {
     else if (r === 'yasam') yasamGame();
     else if (r === 'akvaryum') akvaryumGame();
     else if (r === 'dune') duneGame();
+    else if (r === 'geko-bahcesi') gekoBahcesi();
     else if (r === 'lanternlight') lanternlight();
     else if (r === 'yayla-savunmasi') yaylaSavunmasi();
     else if (r === 'amsterdam-coffeeshop') amsterdamCoffeeshop();
