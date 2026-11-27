@@ -21,10 +21,9 @@ try{
  await p.waitForTimeout(800);await p.screenshot({path:'people-close.png'});
  await p.evaluate(()=>{const w=__MA.world;const u=w.units[0];u.carry=15;u.kind='mat';u.role='move';u.path=[{x:u.x+2,y:u.y}];});
  await p.waitForTimeout(250);await p.screenshot({path:'people-carry.png'});
- await p.click('#gfx');await p.waitForTimeout(250);await p.screenshot({path:'people-canvas.png'});
- assert.equal(await p.evaluate(()=>ModernPeople.sheets.every(i=>i.naturalWidth===640)),true);
- await p.click('#gfx');await p.mouse.move(box.x+pos.x,box.y+pos.y);await p.mouse.wheel(0,3200);
+ assert.equal(await p.locator('#gfx,#menugfx').count(),0);
+ await p.mouse.move(box.x+pos.x,box.y+pos.y);await p.mouse.wheel(0,3200);
  await p.waitForFunction(()=>__MA.metrics.crowdPeople>0);
  assert.deepEqual(errors,[]);
- console.log('Verified 6 rigged workers, infantry, carrying, close camera, 3 complete Canvas atlases and distant instanced characters.');
+ console.log('Verified 6 rigged workers, infantry, carrying, close camera, single Three.js renderer and distant instanced 3D meshes.');
 }finally{await b.close()}

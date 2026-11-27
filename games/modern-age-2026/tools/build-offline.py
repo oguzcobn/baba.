@@ -12,8 +12,7 @@ for key,filename in [('modern-utils','vendor/BufferGeometryUtils.js'),('modern-g
         source=source.replace("'"+ref+"'","'"+target+"'")
     mapping[key]=uri('text/javascript',source.encode())
 html=(root/'index.html').read_text().replace('</head>','<script type="importmap">'+json.dumps({'imports':mapping})+'</script></head>')
-people={p.name:uri('model/gltf-binary' if p.suffix=='.glb' else 'image/webp',p.read_bytes()) for p in (root/'assets/people').iterdir() if p.suffix in ('.glb','.webp')}
+people={p.name:uri('model/gltf-binary' if p.suffix=='.glb' else 'image/webp',p.read_bytes()) for p in (root/'assets/people').iterdir() if p.suffix=='.glb'}
 html=html.replace('<script src="./people-state.js"></script>','<script>window.MODERN_EMBEDDED_PEOPLE='+json.dumps(people)+';'+(root/'people-state.js').read_text()+'</script>')
-html=html.replace('<script src="./mansion-data.js"></script>','<script>'+(root/'mansion-data.js').read_text()+'</script>')
 html=html.replace("import('./renderer-three.js')","import('modern-render')").replace("import('./landmark.js')","import('modern-landmark')")
 (root/'OYNA.html').write_text(html)

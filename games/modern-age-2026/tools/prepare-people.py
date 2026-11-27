@@ -66,3 +66,9 @@ for name,role in [('Construction_Male_02','crew-a'),('Construction_Female_01','c
         track.mute=True
     scene.render.fps=24
     bpy.ops.export_scene.gltf(filepath=str(out/(role+'.glb')),export_format='GLB',export_animation_mode='NLA_TRACKS',export_yup=True,export_force_sampling=True,export_skins=True,export_image_format='JPEG',export_jpeg_quality=84)
+    crowd=mesh.modifiers.new('Distant 3D topology','DECIMATE')
+    crowd.ratio=.20
+    bpy.context.view_layer.objects.active=mesh
+    bpy.ops.object.modifier_move_to_index(modifier=crowd.name,index=0)
+    bpy.ops.object.modifier_apply(modifier=crowd.name)
+    bpy.ops.export_scene.gltf(filepath=str(out/(role+'-lod.glb')),export_format='GLB',export_animation_mode='NLA_TRACKS',export_yup=True,export_force_sampling=True,export_skins=True,export_image_format='JPEG',export_jpeg_quality=78)

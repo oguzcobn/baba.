@@ -30,6 +30,10 @@ jobs:
       - run: node --check renderer-three.js
       - run: node --check smoke.mjs
       - run: node smoke.mjs
+      - name: Test animated characters and the single 3D renderer
+        run: |
+          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/people-server.log 2>&1 &
+          node qa/people.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -38,6 +42,7 @@ jobs:
             games/modern-age-2026/modern-age-report.json
             games/modern-age-2026/modern-age-preview.png
             games/modern-age-2026/modern-age-menu.png
+            games/modern-age-2026/people-*.png
       - name: Require working WebGL2 for 3D verification
         run: node -e "const r=require('./modern-age-report.json'); if (!r.webgl2) { console.error('3D not verified'); process.exit(1); }"
   assets:
@@ -52,18 +57,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: modern-age-humans-v071
+          ref: ${{ github.event.pull_request.head.sha }}
       - run: sudo apt-get update -qq && sudo apt-get install -y blender python3-pil
       - run: /usr/bin/python3 tools/download-people.py /tmp/rocketbox-source assets/people
-      - run: blender -b -t 2 --python-exit-code 1 -P tools/prepare-people.py -- /tmp/rocketbox-source "$PWD/assets/people"
-      - run: npm install --no-save --package-lock=false playwright@1.51.1 && npx playwright install --with-deps chromium
       - run: |
-          python3 -m http.server 8080 --bind 127.0.0.1 >/tmp/atlas-server.log 2>&1 &
-          node tools/bake-atlas.mjs
+          curl -fsSL --retry 3 https://download.blender.org/release/Blender4.3/blender-4.3.2-linux-x64.tar.xz -o /tmp/blender.tar.xz
+          tar -xJf /tmp/blender.tar.xz -C /tmp
+          /tmp/blender-4.3.2-linux-x64/blender -b -t 2 --python-exit-code 1 -P tools/prepare-people.py -- /tmp/rocketbox-source "$PWD/assets/people"
       - run: |
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
           git add assets/people
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Bake licensed Rocketbox characters and animated crowd atlases"
+          git commit -m "Bake licensed Rocketbox characters and 3D crowd meshes"
           git push origin HEAD:modern-age-humans-v071

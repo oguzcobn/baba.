@@ -1,7 +1,7 @@
 import * as THREE from './vendor/three.module.min.js';
 
 import {createPeople} from './people-three.js';
-export function createThreeRenderer(api) {
+export async function createThreeRenderer(api) {
  const canvas=api.canvas;
  const renderer=new THREE.WebGLRenderer({canvas,alpha:false,antialias:false,powerPreference:'high-performance'});
  renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -16,6 +16,7 @@ export function createThreeRenderer(api) {
  const scene=new THREE.Scene(), camera=new THREE.OrthographicCamera(-1,1,1,-1,.1,400);
  scene.background=new THREE.Color('#66844d');
  const people=createPeople(scene);
+ await people.load();
  const sky=new THREE.HemisphereLight(0xc9e0ff,0x73715a,1.65);scene.add(sky);
  const sun=new THREE.DirectionalLight(0xffecd0,2.6);scene.add(sun,sun.target);
  sun.castShadow=true;sun.shadow.mapSize.set(software?512:2048,software?512:2048);
@@ -83,35 +84,6 @@ export function createThreeRenderer(api) {
    if(country==='GR'){for(const dir of [-1,1]){add('cyl',x+dir*w*.26,h*.48,front+.17,.13,h*.91,.13,'#f3f0e3')}box(x,h*.96,front,w*.67,.11,.59,'#efeadd')}
  }
  if(b.hp<120){for(let i=0;i<5;i++)box(x-w*.4+i*w*.17,.12+h*.3,z+d/2+.08,.11,.22,.055,'#575953')}}
- // Two equal-length planar links. Solve knee by intersecting circles around hip and ankle.
- function person(u){
-   const yaw=Math.PI/2-u.angle,co=Math.cos(yaw),si=Math.sin(yaw);
-   const nation=u.enemy?world.enemyCountry:world.country,team=countries[nation][2];
-   const moving=Boolean(u.path?.length),phase=((u.travel||0)/.42)%1;
-   const soldier=u.kindUnit==='infantry',jacket=soldier?'#66765c':'#d9aa58';
-   function part(g,lx,y,lz,w,h,d,c,pitch=0){add(g,u.x+co*lx+si*lz,y,u.y-si*lx+co*lz,w,h,d,c,0,.82,yaw,pitch)}
-   part('box',0,.401,0,.225,.255,.143,jacket);
-   part('sphere',0,.615,0,.147,.172,.143,'#c4a78e');
-   part('sphere',0,.684,0,.181,.09,.17,soldier?'#586a52':'#eec464');
-   part('box',0,.437,.076,.158,.043,.016,team);
-   if(['TR','IL','US'].includes(nation))part('box',0,.36,-.088,.16,.17,.075,'#606c62');
-   if(['GB','IR','US'].includes(nation))part('box',.105,.31,0,.062,.091,.09,'#6b6553');
-   if(['GR','IR','TR'].includes(nation))part('box',0,.48,.011,.245,.043,.153,'#d5cfad');
-   for(const side of [-1,1]){
-     const t=(phase+(side===1?.5:0))%1, swing=t>=.5, f=swing?(t-.5)*2:t*2;
-     const ankleZ=moving?(swing?-.105+.21*f:.105-.21*f):0;
-     const ankleY=.044+(moving&&swing?.065*Math.sin(Math.PI*f):0);
-     const hipY=.30,dy=ankleY-hipY,len=Math.hypot(dy,ankleZ),lift=Math.sqrt(Math.max(0,.15**2-(len/2)**2));
-     const kneeY=(hipY+ankleY)/2+ankleZ/len*lift,kneeZ=ankleZ/2-dy/len*lift;
-     const leg=(ay,az,by,bz)=>part('box',side*.064,(ay+by)/2,(az+bz)/2,.079,Math.hypot(ay-by,az-bz),.08,'#495650',Math.atan2(az-bz,ay-by));
-     leg(hipY,0,kneeY,kneeZ);leg(kneeY,kneeZ,ankleY,ankleZ);
-     part('box',side*.064,ankleY-.014,ankleZ+.032,.095,.058,.14,'#343b38');
-     const work=['build','gather'].includes(u.role);
-     const arm=u.carry>0?-.72:work&&!moving?-.48+.30*Math.sin(world.time*5):moving?.48*Math.sin(phase*2*Math.PI)*side:0;
-     part('box',side*.147,.383,-Math.sin(arm)*.105,.072,.222,.076,'#bfa186',arm);
-   }
-   if(u.carry>0)part('box',0,.31,.143,.235,.17,.18,'#ac916d')
- }
  function vehicle(u){let x=u.x,z=u.y,ya=Math.PI/2-u.angle,co=Math.cos(ya),si=Math.sin(ya),kind=u.kindUnit,air=kind==='air',nav=kind==='naval',h=air?1.6:nav?.09+Math.sin(world.time*2+u.id)*.035:0,team=countries[u.enemy?world.enemyCountry:world.country][2];function p(g,lx,y,lz,w,hh,d,c,m=.25,r=.6,pi=0){add(g,x+co*lx+si*lz,h+y,z-si*lx+co*lz,w,hh,d,c,m,r,ya,pi)}if(air){p('sphere',0,.2,0,.30,.28,1.25,'#b4c0c4',.45,.36);p('box',0,.17,-.03,1.45,.045,.40,'#9facb3');p('box',0,.23,-.44,.64,.045,.22,'#9facb3');p('sphere',0,.33,.25,.19,.12,.32,'#456c83',.4,.2);p('box',0,.33,-.48,.05,.31,.21,team)}else if(nav){p('sphere',0,.12,0,.56,.35,1.40,'#899b9e',.4);p('box',0,.32,-.14,.40,.24,.46,'#b1b9b7');p('box',0,.35,.12,.32,.14,.04,'#456779',.3,.2);p('box',0,.65,-.14,.035,.48,.035,'#d4d5c8');p('box',.11,.79,-.14,.20,.12,.035,team)}else{p('box',0,.23,0,.65,.33,1.10,'#76866c');const nation=u.enemy?world.enemyCountry:world.country;
  const count={TR:4,US:4,IL:5,IR:3,GB:5,GR:3}[nation];
  for(const side of [-1,1]){
@@ -224,6 +196,25 @@ export function createThreeRenderer(api) {
  function resize(){
    const s=api.state();baseDpr=Math.min(window.devicePixelRatio||1,1.5);renderer.setPixelRatio(baseDpr*scale);renderer.setSize(Math.max(1,s.W),Math.max(1,s.H),false);
  }
+ // World-space precipitation and hit flashes share the main camera and depth buffer.
+ const rainVertices=new Float32Array(150*6),snowVertices=new Float32Array(150*3);
+ function weatherGeometry(buffer){
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(buffer,3).setUsage(THREE.DynamicDrawUsage));return g
+ }
+ const rain=new THREE.LineSegments(weatherGeometry(rainVertices),new THREE.LineBasicMaterial({color:0xc4dfeb,transparent:true,opacity:.48,depthWrite:false}));
+ const snow=new THREE.Points(weatherGeometry(snowVertices),new THREE.PointsMaterial({color:0xeaf2f3,size:.09,depthWrite:false}));
+ rain.frustumCulled=false;snow.frustumCulled=false;scene.add(rain,snow);
+ function atmosphere(time){
+  rain.visible=weather()==='rain';snow.visible=weather()==='snow';
+  if(!rain.visible&&!snow.visible)return;
+  for(let i=0;i<150;i++){
+   const x=cam.x+((i*13.713+time*.61)%34)-17,z=cam.y+((i*7.913)%34)-17;
+   const y=8-(i*.813+time*(rain.visible?9:1.15))%8;
+   if(rain.visible)rainVertices.set([x,y,z,x-.06,y+.45,z],i*6);
+   else snowVertices.set([x,y,z],i*3)
+  }
+  (rain.visible?rain:snow).geometry.attributes.position.needsUpdate=true
+ }
  function draw(){
    if(disposed)return;
    const now=performance.now();({world,defs,countries,debris,N,T,cam,W,H,zoom,hour,season,weather,tile,project,quality,metrics}=api.state());
@@ -234,13 +225,15 @@ export function createThreeRenderer(api) {
    if(changed||staticKey!==footprint){staticKey=footprint;rebuildTerrain()}
    if(changed||buildingKey!==stages){buildingKey=stages;rebuildBuildings()}
    statWorld=world;
-   people.begin();batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=.90&&world.units.length<=40);if(!people.add(u,world.time,close))person(u);add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
+   people.begin();batch={};for(const u of world.units){let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=.90&&world.units.length<=40);people.add(u,world.time,close);add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
+   atmosphere(world.time);
+   for(const fx of api.state().effects)if(fx.kind==='hit'){const radius=Math.max(.015,.19*(1-fx.age/.6));add('sphere',fx.x,.36,fx.y,radius,radius,radius,'#ffd45e')}
    for(const d of debris)add('box',d.x,d.y,d.z,d.s,d.s*.7,d.s,'#8e9088',0,.86,d.angle,d.angle*.7);
    updateMeshes('dynamic',batch);
    const halfW=W/(2*T*zoom),halfH=H/(2*T*zoom);
    camera.left=-halfW;camera.right=halfW;camera.top=halfH;camera.bottom=-halfH;camera.position.set(cam.x+80,80,cam.y+80);camera.lookAt(cam.x,0,cam.y);camera.updateProjectionMatrix();
    const h=hour(),day=Math.max(.035,Math.sin((h-6)*Math.PI/12)),ang=(h-6)*Math.PI/12;
-   people.end(day,metrics);sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
+   people.end(metrics);sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
    const ckey=weather()+'|'+season();
    if(ckey!==lastClimate){lastClimate=ckey;let wet=weather()==='rain';material('earth').roughness=wet?.63:.96;material('wall').roughness=wet?.62:.82;if(ground){ground.material.roughness=wet?.63:.96;ground.material.color.set(season()==='Kış'?'#ccd6d9':'#ffffff')}material('earth').color.set(season()==='Kış'?'#c8d1d6':'#ffffff')}
    if(now-lastShadow>(software?1000:250)||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
@@ -256,5 +249,5 @@ export function createThreeRenderer(api) {
    metrics.scale=scale;metrics.draws=renderer.info.render.calls;metrics.triangles=renderer.info.render.triangles;metrics.instances=Object.values(batch).reduce((sum,a)=>sum+a.length,0);metrics.cpu=performance.now()-now;
  }
  resize();
- return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
+ return {active:true,draw,resize,gpu,software,engine:'Three.js r'+THREE.REVISION,get drawCount(){return drawCount},get resolution(){return [canvas.width,canvas.height]},dispose(){disposed=true;people.dispose();rain.geometry.dispose();rain.material.dispose();snow.geometry.dispose();snow.material.dispose();for(const m of cache.values()){scene.remove(m);m.dispose()}if(ground){ground.geometry.dispose();ground.material.dispose()}if(river)river.geometry.dispose();materials.get('contact')?.map.dispose();for(const g of Object.values(geos))g.dispose();for(const m of materials.values())m.dispose();for(const s of Object.values(surfaces)){s.map.dispose();s.normalMap.dispose()}env.dispose();renderer.dispose()}};
 }
