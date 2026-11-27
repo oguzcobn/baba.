@@ -1,0 +1,68 @@
+{
+  "version": "1.0.0",
+  "story": {
+    "act": 1,
+    "missionId": "ch1_m01_pasli_motor",
+    "choices": {
+      "oakridgeNightRace": null,
+      "tommyRevenge": null,
+      "vinceFate": null
+    }
+  },
+  "player": {
+    "name": "Jack",
+    "age": 16,
+    "money": 150,
+    "hp": 100,
+    "peaceRep": 50,
+    "streetRep": 10,
+    "wantedStars": 0,
+    "hasSimenaPhoto": false,
+    "simenaPhotoInBox": false,
+    "weapons": [
+      "fists"
+    ],
+    "ammo": {
+      "pistol9mm": 0,
+      "silenced9mm": 0,
+      "shotgun": 0
+    }
+  },
+  "garage": [
+    {
+      "id": "sedan_88",
+      "name": "1988 Oakridge Sedan",
+      "color": "#27355B",
+      "hp": 100,
+      "engineLvl": 1,
+      "brakesLvl": 1
+    }
+  ],
+  "properties": {
+    "oakridge_home": {
+      "owned": true,
+      "musicTrack": "sunset_lofi",
+      "furniture": []
+    },
+    "boston_dorm": {
+      "owned": false,
+      "musicTrack": "rainy_jazz",
+      "furniture": []
+    },
+    "boston_studio": {
+      "owned": false,
+      "musicTrack": "rainy_jazz",
+      "furniture": []
+    },
+    "boston_campus_house": {
+      "owned": false,
+      "musicTrack": "acoustic_evening",
+      "furniture": []
+    },
+    "boston_harbor_loft": {
+      "owned": false,
+      "musicTrack": "sunset_lofi",
+      "furniture": []
+    }
+  }
+}

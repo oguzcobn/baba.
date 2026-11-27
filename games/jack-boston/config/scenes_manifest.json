@@ -1,0 +1,95 @@
+{
+  "ready_scenes": [
+    {
+      "id": "ch1_garage",
+      "chapter": 1,
+      "file": "assets/scenes/ch1_01_garage_marcus.jpg",
+      "title": "Paslı Motor — Garajda Marcus",
+      "mood": "sunset_warm"
+    },
+    {
+      "id": "ch1_cafe",
+      "chapter": 1,
+      "file": "assets/scenes/ch1_02_cafe_jeanine.jpg",
+      "title": "Oakridge Kafe Önü — Jack ve Jeanine",
+      "mood": "sunset_warm"
+    },
+    {
+      "id": "ch1_lighthouse",
+      "chapter": 1,
+      "file": "assets/scenes/ch1_03_lighthouse_sunset.jpg",
+      "title": "Sahil Feneri — Sahil Rüzgarı",
+      "mood": "sunset_romantic"
+    },
+    {
+      "id": "ch1_betrayal",
+      "chapter": 1,
+      "file": "assets/scenes/ch1_04_betrayal_rain.jpg",
+      "title": "Yağmurda İhanet Yüzleşmesi",
+      "mood": "night_rain"
+    },
+    {
+      "id": "ch2_library",
+      "chapter": 2,
+      "file": "assets/scenes/ch2_01_library_simena.jpg",
+      "title": "Kütüphane Penceresi — Simena ile Tanışma",
+      "mood": "autumn_rain"
+    },
+    {
+      "id": "ch2_hilltop",
+      "chapter": 2,
+      "file": "assets/scenes/ch2_02_hilltop_confession.jpg",
+      "title": "Seyir Tepesi'nde Büyük İtiraf",
+      "mood": "summer_sunset"
+    },
+    {
+      "id": "ch2_polaroid",
+      "chapter": 2,
+      "file": "assets/scenes/ch2_03_beach_polaroid.jpg",
+      "title": "Sahilde Kamp Ateşi ve Polaroid Fotoğraf",
+      "mood": "summer_bonfire"
+    }
+  ],
+  "planned_scenes_to_generate": [
+    {
+      "id": "ch3_boston_arrival",
+      "chapter": 3,
+      "title": "Boston'a Varış ve Leo ile Tanışma"
+    },
+    {
+      "id": "ch3_last_call",
+      "chapter": 3,
+      "title": "Yağmurlu Yurt Odasında Simena ile Son Telefon"
+    },
+    {
+      "id": "ch3_vince_meeting",
+      "chapter": 3,
+      "title": "Boston Yeraltı Barında Vince ile Tanışma"
+    },
+    {
+      "id": "ch4_campfire_photo",
+      "chapter": 4,
+      "title": "Ulusal Parkta Yıldızların Altında Simena'nın Fotoğrafına Bakış"
+    },
+    {
+      "id": "ch4_harbor_showdown",
+      "chapter": 4,
+      "title": "Liman Deposunda Vince ile Son Hesaplaşma"
+    },
+    {
+      "id": "ch5_elena_cafe",
+      "chapter": 5,
+      "title": "İlkbahar Boston'da Elena ile Tanışma"
+    },
+    {
+      "id": "ch5_memory_box",
+      "chapter": 5,
+      "title": "Sahilde Simena'nın Fotoğrafını Anı Kutusuna Kaldırma"
+    },
+    {
+      "id": "ch5_wedding_finale",
+      "chapter": 5,
+      "title": "Mezuniyet ve Elena ile Sade Düğün Finali"
+    }
+  ]
+}
