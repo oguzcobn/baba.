@@ -1,0 +1,2828 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>KAR — Alpine Realism 2.0</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #dcebf7;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #f8fafc;
+      touch-action: none;
+    }
+    #game-container { position: fixed; inset: 0; width: 100%; height: 100%; }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Minimalist Serene Glass */
+    .glass-soft {
+      background: rgba(15, 29, 46, 0.36);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(10, 25, 47, 0.14);
+    }
+
+    /* Top Minimal HUD */
+    .hud-top {
+      position: fixed; top: 18px; left: 20px; right: 20px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      pointer-events: none; z-index: 20; gap: 12px;
+      transition: opacity 0.4s ease;
+    }
+    .hud-top.menu-hidden { opacity: 0; pointer-events: none; }
+
+    .telemetry-pill {
+      display: flex; align-items: baseline; gap: 18px;
+      padding: 10px 18px; pointer-events: auto;
+    }
+    .t-item { display: flex; flex-direction: column; }
+    .t-lbl {
+      font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(226, 238, 250, 0.72); font-weight: 500;
+    }
+    .t-val {
+      font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums;
+      color: #ffffff; letter-spacing: -0.01em; line-height: 1.2;
+    }
+    .t-unit { font-size: 11px; font-weight: 400; color: rgba(186, 230, 253, 0.85); margin-left: 2px; }
+    .t-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.16); align-self: center; }
+
+    .hud-actions {
+      display: flex; gap: 8px; pointer-events: auto; flex-wrap: wrap; justify-content: flex-end;
+    }
+    .hud-btn {
+      background: rgba(15, 29, 46, 0.36);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: rgba(248, 250, 252, 0.94);
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px; font-weight: 500; letter-spacing: 0.02em;
+      cursor: pointer;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.14s ease;
+    }
+    .hud-btn:hover { background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.42); }
+    .hud-btn:active { transform: scale(0.96); }
+    .hud-btn.active { background: rgba(255, 255, 255, 0.26); border-color: rgba(255, 255, 255, 0.65); }
+
+    /* Optional Live Physics Telemetry Panel (toggleable, calm design) */
+    .physics-panel {
+      position: fixed; bottom: 20px; left: 20px; z-index: 20;
+      padding: 14px 16px; width: 256px; pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .physics-panel.hidden { opacity: 0; transform: translateY(8px); pointer-events: none; }
+    .phys-title {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: rgba(186, 230, 253, 0.85); margin-bottom: 10px; font-weight: 600;
+      display: flex; justify-content: space-between;
+    }
+    .phys-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px;
+    }
+    .phys-row { display: flex; flex-direction: column; }
+    .phys-k { font-size: 10px; color: rgba(203, 213, 225, 0.78); }
+    .phys-v { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #fff; }
+
+    .carve-bar-wrap { margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.12); }
+    .carve-track {
+      position: relative; height: 5px; background: rgba(255,255,255,0.16);
+      border-radius: 999px; overflow: hidden; margin-top: 5px;
+    }
+    .carve-center {
+      position: absolute; left: 50%; top: 0; bottom: 0; width: 1.5px;
+      background: rgba(255,255,255,0.55); transform: translateX(-50%);
+    }
+    .carve-fill {
+      position: absolute; top: 0; bottom: 0; background: #bae6fd; border-radius: 999px;
+    }
+
+    /* Gentle Toast */
+    #toast-banner {
+      position: fixed; top: 76px; left: 50%; transform: translateX(-50%) translateY(-8px);
+      z-index: 25; pointer-events: none;
+      padding: 7px 18px; border-radius: 999px;
+      background: rgba(15, 29, 46, 0.58);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #f8fafc; font-size: 12.5px; font-weight: 500; letter-spacing: 0.06em;
+      opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease;
+      white-space: nowrap;
+    }
+    #toast-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* =======================================================================
+       SERENE, MINIMALIST, PEACEFUL MENU OVERLAY
+       ======================================================================= */
+    .overlay {
+      position: fixed; inset: 0; z-index: 40;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, rgba(16, 32, 52, 0.16) 0%, rgba(12, 24, 40, 0.42) 100%);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      padding: 24px;
+      transition: opacity 0.45s ease;
+    }
+    .overlay.hidden { display: none; }
+
+    .serene-card {
+      width: 100%; max-width: 410px;
+      background: rgba(15, 28, 44, 0.44);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 28px;
+      padding: 36px 32px 30px;
+      box-shadow: 0 24px 70px rgba(10, 22, 38, 0.28);
+      text-align: center;
+    }
+    .serene-eyebrow {
+      font-size: 10.5px; letter-spacing: 0.28em; text-transform: uppercase;
+      color: rgba(224, 242, 254, 0.78); font-weight: 500; margin-bottom: 10px;
+    }
+    .serene-title {
+      font-size: 40px; font-weight: 300; letter-spacing: 0.26em;
+      color: #ffffff; margin-bottom: 10px; padding-left: 0.26em;
+    }
+    .serene-sub {
+      font-size: 13.5px; font-weight: 400; color: rgba(226, 238, 250, 0.84);
+      line-height: 1.6; margin-bottom: 26px;
+    }
+
+    /* Minimal Pill Selector */
+    .mode-pills {
+      display: inline-flex; gap: 6px; padding: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px; margin-bottom: 24px;
+      max-width: 100%; flex-wrap: wrap; justify-content: center;
+    }
+    .mode-pill {
+      background: transparent; border: none; color: rgba(226, 238, 250, 0.8);
+      padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: all 0.22s ease;
+    }
+    .mode-pill:hover { color: #ffffff; }
+    .mode-pill.selected {
+      background: rgba(255, 255, 255, 0.92);
+      color: #0f172a; font-weight: 600;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .serene-btn {
+      width: 100%; padding: 14px 24px; border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.92);
+      color: #0f172a; font-size: 14.5px; font-weight: 600; letter-spacing: 0.06em;
+      cursor: pointer; transition: all 0.22s ease;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.18);
+    }
+    .serene-btn:hover { background: #ffffff; transform: translateY(-1px); box-shadow: 0 14px 32px rgba(15, 23, 42, 0.25); }
+    .serene-btn:active { transform: scale(0.98); }
+
+    .serene-link {
+      display: inline-block; margin-top: 16px;
+      background: none; border: none; color: rgba(226, 238, 250, 0.76);
+      font-size: 12px; letter-spacing: 0.04em; cursor: pointer;
+      padding: 4px 8px; transition: color 0.18s ease;
+    }
+    .serene-link:hover { color: #ffffff; }
+
+    .controls-drawer {
+      margin-top: 14px; padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      text-align: left; font-size: 11.5px; color: rgba(226, 238, 250, 0.85);
+    }
+    .controls-drawer.hidden { display: none; }
+    .c-row { display: flex; align-items: center; gap: 7px; }
+    .kbd {
+      background: rgba(255, 255, 255, 0.14); border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 6px; padding: 2px 6px; font-size: 10px; font-weight: 600; color: #fff;
+      white-space: nowrap;
+    }
+
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px;
+    }
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px; padding: 12px 8px;
+    }
+    .stat-pill .v { font-size: 18px; font-weight: 600; color: #ffffff; }
+    .stat-pill .l { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(203,213,225,0.75); margin-top: 3px; }
+
+    /* Mobile Touch Controls */
+    .touch-controls, .touch-left-pad {
+      position: fixed; bottom: 20px; z-index: 25; display: none; gap: 10px;
+    }
+    .touch-left-pad { left: 16px; }
+    .touch-controls { right: 16px; align-items: flex-end; }
+    .touch-btn {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: rgba(15, 29, 46, 0.44);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: #fff; font-size: 16px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+    }
+    .touch-btn:active, .touch-btn.pressed { background: rgba(255,255,255,0.32); transform: scale(0.94); }
+    .touch-btn.sm { width: 50px; height: 46px; border-radius: 16px; font-size: 11px; }
+
+    @media (max-width: 780px) {
+      .hud-top { top: 12px; left: 12px; right: 12px; }
+      .telemetry-pill { gap: 12px; padding: 8px 14px; }
+      .t-val { font-size: 17px; }
+      .physics-panel { bottom: 84px; left: 12px; width: 220px; padding: 10px 12px; }
+      .touch-controls, .touch-left-pad { display: flex; }
+      .serene-card { padding: 28px 22px 24px; }
+      .controls-drawer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container"></div>
+
+  <!-- Minimalist Top HUD -->
+  <div id="hud-top" class="hud-top menu-hidden">
+    <div class="glass-soft telemetry-pill">
+      <div class="t-item">
+        <span class="t-lbl">Hız</span>
+        <span class="t-val"><span id="hud-speed">0</span><span class="t-unit">km/h</span></span>
+      </div>
+      <div class="t-sep"></div>
+      <div class="t-item">
+        <span class="t-lbl">Mesafe</span>
+        <span class="t-val"><span id="hud-dist">0</span><span class="t-unit">m</span></span>
+      </div>
+      <div class="t-sep"></div>
+      <div class="t-item">
+        <span class="t-lbl">Skor</span>
+        <span class="t-val" id="hud-score">0</span>
+      </div>
+    </div>
+
+    <div class="hud-actions">
+      <button id="btn-snow-mode" class="hud-btn" title="Kar ve Atmosfer">Taze Kar</button>
+      <button id="btn-camera" class="hud-btn" title="Kamera (C)">Takip</button>
+      <button id="btn-physics" class="hud-btn" title="Canlı Fizik Verileri (F)">Fizik</button>
+      <button id="btn-sound" class="hud-btn" title="Ses (M)">Ses</button>
+      <button id="btn-pause" class="hud-btn" title="Duraklat (P / Esc)">Duraklat</button>
+    </div>
+  </div>
+
+  <!-- Live Physics Telemetry Card (Toggled via 'Fizik' or 'F') -->
+  <div id="physics-panel" class="glass-soft physics-panel hidden">
+    <div class="phys-title">
+      <span>FİZİK &amp; KAR MEKANİĞİ</span>
+      <span id="phys-regime">CARVING</span>
+    </div>
+    <div class="phys-grid">
+      <div class="phys-row">
+        <span class="phys-k">Kenar Açısı (Ψ)</span>
+        <span class="phys-v" id="phys-psi">0°</span>
+      </div>
+      <div class="phys-row">
+        <span class="phys-k">Dönüş Yarıçapı (R)</span>
+        <span class="phys-v" id="phys-radius">∞ m</span>
+      </div>
+      <div class="phys-row">
+        <span class="phys-k">Kar Batması (e)</span>
+        <span class="phys-v" id="phys-depth">0 mm</span>
+      </div>
+      <div class="phys-row">
+        <span class="phys-k">Normal Kuvvet (Fn)</span>
+        <span class="phys-v" id="phys-fn">736 N</span>
+      </div>
+      <div class="phys-row">
+        <span class="phys-k">G-Kuvveti</span>
+        <span class="phys-v" id="phys-g">1.00 G</span>
+      </div>
+      <div class="phys-row">
+        <span class="phys-k">Eğim (α)</span>
+        <span class="phys-v" id="phys-slope">14°</span>
+      </div>
+    </div>
+    <div class="carve-bar-wrap">
+      <div style="display:flex; justify-content:space-between; font-size:10px; color:rgba(203,213,225,0.8);">
+        <span id="hud-stance">Dengeli İniş</span>
+        <span id="hud-combo" style="color:#fde68a;"></span>
+      </div>
+      <div class="carve-track">
+        <div class="carve-center"></div>
+        <div id="carve-fill" class="carve-fill" style="left:50%; width:0%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-banner">SLALOM +250</div>
+
+  <!-- Mobile Touch Controls -->
+  <div class="touch-left-pad" id="touch-left-pad">
+    <button class="touch-btn" id="touch-left" aria-label="Sola Dön">◀</button>
+    <button class="touch-btn" id="touch-right" aria-label="Sağa Dön">▶</button>
+  </div>
+  <div class="touch-controls" id="touch-right-pad">
+    <button class="touch-btn sm" id="touch-brake" aria-label="Fren">FREN</button>
+    <button class="touch-btn sm" id="touch-tuck" aria-label="Eğil">EĞİL</button>
+    <button class="touch-btn sm" id="touch-grab" aria-label="Grab">GRAB</button>
+    <button class="touch-btn sm" id="touch-jump" aria-label="Zıpla">ZIPLA</button>
+  </div>
+
+  <!-- Serene Start Overlay -->
+  <div id="start-overlay" class="overlay">
+    <div class="serene-card">
+      <div class="serene-eyebrow">ALPIN KAYAK SİMÜLASYONU</div>
+      <h1 class="serene-title">KAR</h1>
+      <p class="serene-sub">
+        Sessiz bir dağ sabahı. Her dönüş, kayağın gerçek kenar geometrisi ve kar sertliğiyle hesaplanarak taze kara işlenir.
+      </p>
+
+      <div class="mode-pills" id="condition-selector" style="margin-bottom:12px;">
+        <button class="mode-pill selected" data-mode="powder">Taze Kar</button>
+        <button class="mode-pill" data-mode="groomed">Ezilmiş Pist</button>
+        <button class="mode-pill" data-mode="sunset">Gün Batımı</button>
+      </div>
+
+      <div class="mode-pills" id="playstyle-selector" style="margin-bottom:22px;">
+        <button class="mode-pill selected" data-play="challenge">Zorlu İniş</button>
+        <button class="mode-pill" data-play="zen">Zen Modu (Çarpışmasız)</button>
+      </div>
+
+      <button id="btn-start" class="serene-btn">Kaymaya Başla</button>
+
+      <button id="btn-toggle-controls" class="serene-link">Kontroller &amp; Akrobasi ▾</button>
+      <div id="controls-drawer" class="controls-drawer hidden">
+        <div class="c-row"><span class="kbd">A / D</span> Carve / Havada Spin</div>
+        <div class="c-row"><span class="kbd">W / S</span> Çömel / Fren / Takla</div>
+        <div class="c-row"><span class="kbd">Space</span> Zıpla / Rampadan Uç</div>
+        <div class="c-row"><span class="kbd">Shift / G</span> Havada Kayak Grab</div>
+        <div class="c-row"><span class="kbd">C</span> Kamera (Takip / FPS)</div>
+        <div class="c-row"><span class="kbd">F</span> Canlı Fizik Paneli</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Serene Pause Overlay -->
+  <div id="pause-overlay" class="overlay hidden">
+    <div class="serene-card">
+      <div class="serene-eyebrow">MOLA</div>
+      <h2 class="serene-title" style="font-size:30px;">DURAKLATILDI</h2>
+      <p class="serene-sub">Nefes al, manzaranın tadını çıkar veya inişe kaldığın yerden devam et.</p>
+      <button id="btn-resume" class="serene-btn">Devam Et</button>
+      <button id="btn-restart-pause" class="serene-link">Zirveden Yeniden Başla</button>
+    </div>
+  </div>
+
+  <!-- Serene Crash / End Overlay -->
+  <div id="gameover-overlay" class="overlay hidden">
+    <div class="serene-card">
+      <div class="serene-eyebrow" id="crash-reason">İNİŞ TAMAMLANDI</div>
+      <h2 class="serene-title" style="font-size:28px; letter-spacing:0.14em;">DENGENİ KAYBETTİN</h2>
+      <p class="serene-sub">Kenar açısını yumuşak vererek karın tutuşunu koruyabilir, engellerin arasından akıcı çizgiler çizebilirsin.</p>
+
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="v" id="end-dist">0 m</div>
+          <div class="l">Mesafe</div>
+        </div>
+        <div class="stat-pill">
+          <div class="v" id="end-maxspd">0 km/h</div>
+          <div class="l">Maks. Hız</div>
+        </div>
+        <div class="stat-pill">
+          <div class="v" id="end-score">0</div>
+          <div class="l">Skor</div>
+        </div>
+      </div>
+
+      <button id="btn-restart" class="serene-btn">Yeniden İnişe Geç</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    // =========================================================================
+    // 1. PHYSICAL CONSTANTS & REAL SKI CONSTRUCTION SPECS
+    //    Based on: Komissarov (2018/2019, arXiv:1812.02539v3),
+    //    Mössner et al. (2013, J. Glaciology), Lind & Sanders (1996)
+    // =========================================================================
+    const PHYS = {
+      mass: 75.0,          // Skier + equipment mass m (kg)
+      g: 9.81,             // Gravitational acceleration (m/s^2)
+      rhoAir: 1.20,        // Alpine air density (kg/m^3)
+      cdAreaUpright: 0.42, // C_d * A upright stance (m^2)
+      cdAreaTuck: 0.20,    // C_d * A aerodynamic egg tuck (m^2)
+
+      // Real Parabolic All-Mountain / Carving Ski Geometry:
+      skiLength: 1.72,     // Total ski length L_ski (m)
+      contactLen: 1.54,    // Effective running edge length 2*l (m)
+      wTip: 0.124,         // Shovel width (m)
+      wWaist: 0.074,       // Waist width (m)
+      wTail: 0.108,        // Tail width (m)
+      camberHeight: 0.012, // Unloaded camber arch (m)
+      // Sidecut depth h_sc = (wTip + wTail)/4 - wWaist/2 = 0.021 m
+      // Sidecut radius R_sc = l^2 / (2 * h_sc) ≈ 14.1 m
+      R_sc: 14.1,
+      stanceHalfWidth: 0.175 // Half distance between left & right ski centers (m)
+    };
+    PHYS.wAvg = (PHYS.wTip + PHYS.wWaist + PHYS.wTail) / 3.0;
+
+    // =========================================================================
+    // 2. DETERMINISTIC ALPINE TERRAIN MATH (SHARED BY JS & GLSL VERTEX SHADER)
+    // =========================================================================
+    function getTerrainHeight(x, z) {
+      const baseSlope = z * 0.245; // ~13.8° average slope (within Komissarov pure-carving sweet spot)
+      const valley = Math.pow(Math.abs(x) * 0.0175, 2.2) * 14.5;
+      const undulation =
+        Math.sin(z * 0.030) * 2.0 +
+        Math.cos(x * 0.052 + z * 0.021) * 1.35 +
+        Math.sin(x * 0.092 - z * 0.064) * 0.48 +
+        Math.cos(x * 0.20 + z * 0.15) * 0.14;
+      const rw = Math.sin(z * 0.082) * Math.cos(x * 0.075);
+      const kicker = rw > 0.74 ? (rw - 0.74) * 4.4 : 0.0;
+      return baseSlope + valley + undulation + kicker;
+    }
+
+    function getTerrainNormal(x, z, outVec) {
+      const e = 0.32;
+      const hL = getTerrainHeight(x - e, z);
+      const hR = getTerrainHeight(x + e, z);
+      const hD = getTerrainHeight(x, z - e);
+      const hU = getTerrainHeight(x, z + e);
+      outVec.set(hL - hR, 2.0 * e, hD - hU).normalize();
+      return outVec;
+    }
+
+    // =========================================================================
+    // 3. SNOW MECHANICS & ATMOSPHERE PRESETS
+    //    Snow hardness H_V (N/m^3 -> converted from Mössner et al. N/mm^3)
+    //    Critical shear stress S_c (N/m^2), dynamic friction mu
+    // =========================================================================
+    const MODES = {
+      powder: {
+        name: 'Taze Kar',
+        skyTop: new THREE.Color(0x285f99),
+        skyHorizon: new THREE.Color(0xd9ecf9),
+        fogColor: new THREE.Color(0xd7eaf7),
+        sunColor: new THREE.Color(0xfff9f0),
+        sunDir: new THREE.Vector3(0.55, 0.60, 0.58).normalize(),
+        shadowTint: new THREE.Color(0x749bc7),
+        sssColor: new THREE.Color(0x91ceff),
+        trackColor: new THREE.Color(0x9fc4e6),
+        glitterStrength: 1.2,
+        // Mössner et al. fresh snow: low volumetric hardness H_V -> deep imprint!
+        H_V: 2.2e7,      // 0.022 N/mm^3 (soft fresh powder)
+        S_c: 4.5e4,      // Critical shear strength (Pa)
+        muDry: 0.055,    // Base + compaction snow friction
+        compactionDrag: 0.042,
+        visualDepthGain: 1.45,
+        sprayMult: 1.55
+      },
+      groomed: {
+        name: 'Ezilmiş Pist',
+        skyTop: new THREE.Color(0x1b4b82),
+        skyHorizon: new THREE.Color(0xcce2f5),
+        fogColor: new THREE.Color(0xcde2f3),
+        sunColor: new THREE.Color(0xedf4fa),
+        sunDir: new THREE.Vector3(0.68, 0.42, 0.52).normalize(),
+        shadowTint: new THREE.Color(0x6388b5),
+        sssColor: new THREE.Color(0x8bc2f0),
+        trackColor: new THREE.Color(0x7ea8d4),
+        glitterStrength: 0.95,
+        // Packed groomed slope: higher hardness H_V, lower friction (~0.032) for faster clean runs
+        H_V: 1.4e8,      // 0.14 N/mm^3 (firm groomed snow)
+        S_c: 2.6e5,      // High shear grip for aggressive carving
+        muDry: 0.030,
+        compactionDrag: 0.008,
+        visualDepthGain: 1.08,
+        sprayMult: 0.85
+      },
+      sunset: {
+        name: 'Gün Batımı',
+        skyTop: new THREE.Color(0x2c3663),
+        skyHorizon: new THREE.Color(0xf6b38b),
+        fogColor: new THREE.Color(0xeab8a1),
+        sunColor: new THREE.Color(0xffbd85),
+        sunDir: new THREE.Vector3(-0.78, 0.25, 0.57).normalize(),
+        shadowTint: new THREE.Color(0x5b6a9c),
+        sssColor: new THREE.Color(0xff9f6e),
+        trackColor: new THREE.Color(0x9ba2cc),
+        glitterStrength: 1.48,
+        H_V: 5.5e7,      // 0.055 N/mm^3 (evening softening snow)
+        S_c: 1.1e5,
+        muDry: 0.044,
+        compactionDrag: 0.024,
+        visualDepthGain: 1.18,
+        sprayMult: 1.18
+      }
+    };
+    const MODE_ORDER = ['powder', 'groomed', 'sunset'];
+    let currentModeKey = 'powder';
+
+    // =========================================================================
+    // 4. SERENE ALPINE WEB AUDIO SYNTHESIZER
+    // =========================================================================
+    class AlpineAudio {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.started = false;
+        this.windGain = null;
+        this.windFilter = null;
+        this.carveGain = null;
+        this.carveFilter = null;
+      }
+
+      init() {
+        if (this.started) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        try {
+          this.ctx = new AudioCtx();
+          const bufLen = this.ctx.sampleRate * 2;
+          const noiseBuf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+          const d = noiseBuf.getChannelData(0);
+          for (let i = 0; i < bufLen; i++) d[i] = Math.random() * 2 - 1;
+
+          // Gentle mountain wind
+          const windSrc = this.ctx.createBufferSource();
+          windSrc.buffer = noiseBuf;
+          windSrc.loop = true;
+          this.windFilter = this.ctx.createBiquadFilter();
+          this.windFilter.type = 'bandpass';
+          this.windFilter.frequency.value = 260;
+          this.windFilter.Q.value = 1.8;
+          this.windGain = this.ctx.createGain();
+          this.windGain.gain.value = 0;
+          windSrc.connect(this.windFilter).connect(this.windGain).connect(this.ctx.destination);
+          windSrc.start();
+
+          // Crisp ski edge snow-carving sound
+          const carveSrc = this.ctx.createBufferSource();
+          carveSrc.buffer = noiseBuf;
+          carveSrc.loop = true;
+          this.carveFilter = this.ctx.createBiquadFilter();
+          this.carveFilter.type = 'bandpass';
+          this.carveFilter.frequency.value = 1600;
+          this.carveFilter.Q.value = 0.85;
+          this.carveGain = this.ctx.createGain();
+          this.carveGain.gain.value = 0;
+          carveSrc.connect(this.carveFilter).connect(this.carveGain).connect(this.ctx.destination);
+          carveSrc.start();
+
+          this.started = true;
+        } catch (e) {
+          this.started = false;
+        }
+      }
+
+      setEnabled(val) {
+        this.enabled = val;
+        if (this.ctx && !val && this.windGain && this.carveGain) {
+          this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
+          this.carveGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.08);
+        }
+      }
+
+      update(speedKmh, edgeNorm, skidNorm, grounded, active) {
+        if (!this.started || !this.ctx || !this.enabled || !active) {
+          if (this.ctx && this.windGain && this.carveGain) {
+            this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            this.carveGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+          }
+          return;
+        }
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+        const now = this.ctx.currentTime;
+        const vNorm = Math.min(speedKmh / 100, 1.0);
+        this.windFilter.frequency.setTargetAtTime(200 + vNorm * 620, now, 0.1);
+        this.windGain.gain.setTargetAtTime(0.012 + vNorm * 0.11, now, 0.1);
+
+        const carveEnergy = grounded ? (0.008 + vNorm * 0.03 + (edgeNorm * 0.09 + skidNorm * 0.14) * vNorm) : 0;
+        this.carveFilter.frequency.setTargetAtTime(1100 + edgeNorm * 1300 + skidNorm * 700, now, 0.06);
+        this.carveGain.gain.setTargetAtTime(carveEnergy, now, 0.05);
+      }
+
+      playImpact(strength = 1.0) {
+        if (!this.started || !this.ctx || !this.enabled) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(98 * strength, now);
+        osc.frequency.exponentialRampToValueAtTime(32, now + 0.19);
+        gain.gain.setValueAtTime(0.18 * Math.min(strength, 1.3), now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.23);
+      }
+
+      playChime(combo) {
+        if (!this.started || !this.ctx || !this.enabled) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const f = 440 + Math.min(combo, 7) * 55;
+        osc.frequency.setValueAtTime(f, now);
+        osc.frequency.exponentialRampToValueAtTime(f * 1.25, now + 0.16);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+        osc.connect(gain).connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+    }
+
+    const audio = new AlpineAudio();
+
+    // =========================================================================
+    // 5. HIGH-RES TOROIDAL SKI-SHAPED SNOW DEFORMATION HEIGHTMAP (1024x1024)
+    //    Stamps the exact oriented parabolic ski silhouette, edge-angle width,
+    //    pressure-sinkage depth e, asymmetric downhill berm, & pole craters!
+    // =========================================================================
+    const TRAIL_RES = 1024;
+    const TRAIL_WORLD_SIZE = 56.0; // 56m x 56m -> ~5.4 cm per texel!
+    const PX_PER_METER = TRAIL_RES / TRAIL_WORLD_SIZE;
+
+    const trailCanvas = document.createElement('canvas');
+    trailCanvas.width = TRAIL_RES;
+    trailCanvas.height = TRAIL_RES;
+    const trailCtx = trailCanvas.getContext('2d');
+    trailCtx.fillStyle = '#000000';
+    trailCtx.fillRect(0, 0, TRAIL_RES, TRAIL_RES);
+
+    const trailTexture = new THREE.CanvasTexture(trailCanvas);
+    trailTexture.flipY = false;
+    trailTexture.wrapS = THREE.RepeatWrapping;
+    trailTexture.wrapT = THREE.RepeatWrapping;
+    trailTexture.minFilter = THREE.LinearFilter;
+    trailTexture.magFilter = THREE.LinearFilter;
+
+    function resetTrailCanvas() {
+      lastClearRow=-1;
+      trailCtx.fillStyle = '#000000';
+      trailCtx.fillRect(0, 0, TRAIL_RES, TRAIL_RES);
+      trailTexture.needsUpdate = true;
+    }
+
+    function worldToTrailPx(wx, wz) {
+      let u = (wx / TRAIL_WORLD_SIZE) % 1;
+      if (u < 0) u += 1;
+      let v = (wz / TRAIL_WORLD_SIZE) % 1;
+      if (v < 0) v += 1;
+      return { x: u * TRAIL_RES, y: v * TRAIL_RES };
+    }
+
+    let lastClearRow = -1;
+    function clearAheadInTrail(skierZ) {
+      const aheadZ = skierZ - TRAIL_WORLD_SIZE * 0.45;
+      let v = (aheadZ / TRAIL_WORLD_SIZE) % 1;
+      if (v < 0) v += 1;
+      const row = Math.floor(v * TRAIL_RES);
+      if (row !== lastClearRow) {
+        trailCtx.fillStyle = '#000000';
+        const halfBand = 22;
+        const startY = row - halfBand;
+        const bandH = halfBand * 2;
+        if (startY < 0) {
+          trailCtx.fillRect(0, 0, TRAIL_RES, row + halfBand);
+          trailCtx.fillRect(0, TRAIL_RES + startY, TRAIL_RES, -startY);
+        } else if (startY + bandH > TRAIL_RES) {
+          trailCtx.fillRect(0, startY, TRAIL_RES, TRAIL_RES - startY);
+          trailCtx.fillRect(0, 0, TRAIL_RES, (startY + bandH) - TRAIL_RES);
+        } else {
+          trailCtx.fillRect(0, startY, TRAIL_RES, bandH);
+        }
+        lastClearRow = row;
+      }
+    }
+
+    // Stamp an exact oriented ski footprint into the snow heightmap:
+    //   R channel = snow compression / groove depth (from real penetration depth e)
+    //   G channel = displaced snow berm piled on the outside/edges of the ski
+    function stampSkiFootprint(wx, wz, yawRad, edgeAngleRad, depthNorm, bermNorm, bermSide) {
+      const p = worldToTrailPx(wx, wz);
+      const halfL = (PHYS.contactLen * 0.5) * PX_PER_METER;
+      // Effective footprint width narrows as ski tilts on edge (cos(Psi)), widens on flat step or skid
+      const cosPsi = Math.cos(Math.min(1.25, Math.abs(edgeAngleRad)));
+      const tipW = Math.max(2.1, (PHYS.wTip * (0.5 + 0.5 * cosPsi)) * PX_PER_METER * 0.72);
+      const waistW = Math.max(1.7, (PHYS.wWaist * (0.45 + 0.55 * cosPsi)) * PX_PER_METER * 0.72);
+      const tailW = Math.max(2.0, (PHYS.wTail * (0.5 + 0.5 * cosPsi)) * PX_PER_METER * 0.72);
+
+      const drawSkiAt = (cx, cy) => {
+        trailCtx.save();
+        trailCtx.translate(cx, cy);
+        // With flipY = false, canvas +X = world +X and canvas +Y = world +Z;
+        // rotating tip (0, -halfL) by +yawRad points it to (+sin(yaw), -cos(yaw))
+        trailCtx.rotate(yawRad);
+        trailCtx.globalCompositeOperation = 'lighter';
+
+        // 1. Displaced snow berm (Green channel) — asymmetric on carving outside, symmetric on flat step/landing
+        if (bermNorm > 0.015) {
+          const bermOffset = bermSide * (waistW * 1.45 + 2.2);
+          const bermW = waistW * 1.9 + 2.8;
+          const bGrad = trailCtx.createLinearGradient(bermOffset - bermW, 0, bermOffset + bermW, 0);
+          bGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0)');
+          bGrad.addColorStop(0.5, `rgba(0, 255, 0, ${Math.min(0.65, bermNorm).toFixed(3)})`);
+          bGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+          trailCtx.fillStyle = bGrad;
+          trailCtx.beginPath();
+          trailCtx.ellipse(bermOffset, 0, bermW, halfL * 1.04, 0, 0, Math.PI * 2);
+          trailCtx.fill();
+
+          // Symmetric opposite small ridge when pressing flat into snow (standing/stepping/landing)
+          if (Math.abs(edgeAngleRad) < 0.18) {
+            const bGrad2 = trailCtx.createLinearGradient(-bermOffset - bermW, 0, -bermOffset + bermW, 0);
+            bGrad2.addColorStop(0.0, 'rgba(0, 0, 0, 0)');
+            bGrad2.addColorStop(0.5, `rgba(0, 255, 0, ${(Math.min(0.45, bermNorm * 0.7)).toFixed(3)})`);
+            bGrad2.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+            trailCtx.fillStyle = bGrad2;
+            trailCtx.beginPath();
+            trailCtx.ellipse(-bermOffset, 0, bermW, halfL * 1.02, 0, 0, Math.PI * 2);
+            trailCtx.fill();
+          }
+        }
+
+        // 2. Exact Parabolic Sidecut Ski Silhouette (Red channel = carved depression)
+        const rAlpha = Math.min(0.85, depthNorm);
+        trailCtx.fillStyle = `rgba(255, 0, 0, ${rAlpha.toFixed(3)})`;
+        trailCtx.beginPath();
+        // Curved shovel tip (-halfL) -> narrow waist (0) -> tail (+halfL)
+        trailCtx.moveTo(0, -halfL - 2.2);
+        trailCtx.quadraticCurveTo(tipW, -halfL, tipW, -halfL * 0.65);
+        trailCtx.quadraticCurveTo(waistW, 0, tailW, halfL * 0.72);
+        trailCtx.quadraticCurveTo(tailW, halfL, 0, halfL + 1.2);
+        trailCtx.quadraticCurveTo(-tailW, halfL, -tailW, halfL * 0.72);
+        trailCtx.quadraticCurveTo(-waistW, 0, -tipW, -halfL * 0.65);
+        trailCtx.quadraticCurveTo(-tipW, -halfL, 0, -halfL - 2.2);
+        trailCtx.closePath();
+        trailCtx.fill();
+
+        trailCtx.restore();
+      };
+
+      drawSkiAt(p.x, p.y);
+      const pad = halfL + 12;
+      if (p.x < pad) drawSkiAt(p.x + TRAIL_RES, p.y);
+      if (p.x > TRAIL_RES - pad) drawSkiAt(p.x - TRAIL_RES, p.y);
+      if (p.y < pad) drawSkiAt(p.x, p.y + TRAIL_RES);
+      if (p.y > TRAIL_RES - pad) drawSkiAt(p.x, p.y - TRAIL_RES);
+    }
+
+    // Stamp a round ski pole basket imprint when the skier plants a pole in the snow
+    function stampPoleImprint(wx, wz) {
+      const p = worldToTrailPx(wx, wz);
+      const r = 3.2;
+      const drawAt = (cx, cy) => {
+        trailCtx.save();
+        trailCtx.globalCompositeOperation = 'lighter';
+        const g = trailCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+        g.addColorStop(0.0, 'rgba(255, 0, 0, 0.72)');
+        g.addColorStop(0.6, 'rgba(0, 255, 0, 0.35)');
+        g.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+        trailCtx.fillStyle = g;
+        trailCtx.beginPath();
+        trailCtx.arc(cx, cy, r, 0, Math.PI * 2);
+        trailCtx.fill();
+        trailCtx.restore();
+      };
+      drawAt(p.x, p.y);
+    }
+
+    // =========================================================================
+    // 6. THREE.JS SCENE, RENDERER & SERENE ALPINE SKY
+    // =========================================================================
+    const container = document.getElementById('game-container');
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(MODES.powder.fogColor.getHex(), 0.0048);
+
+    const camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.12, 650);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const mobileQuality = matchMedia('(pointer: coarse)').matches;
+    const maxDpr = Math.min(devicePixelRatio || 1, mobileQuality ? 1.35 : 1.75);
+    let renderDpr = maxDpr;
+    renderer.setPixelRatio(renderDpr);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.04;
+    container.appendChild(renderer.domElement);
+
+    const hemiLight = new THREE.HemisphereLight(0xe4f3ff, 0x6785ad, 0.76);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff9f0, 1.32);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = mobileQuality ? 1024 : 2048;
+    sunLight.shadow.mapSize.height = mobileQuality ? 1024 : 2048;
+    sunLight.shadow.normalBias = 0.035;
+    sunLight.shadow.camera.near = 2;
+    sunLight.shadow.camera.far = 140;
+    const sd = 30;
+    sunLight.shadow.camera.left = -sd;
+    sunLight.shadow.camera.right = sd;
+    sunLight.shadow.camera.top = sd;
+    sunLight.shadow.camera.bottom = -sd;
+    sunLight.shadow.bias = -0.0007;
+    scene.add(sunLight);
+    scene.add(sunLight.target);
+
+    // Alpine Sky Dome
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      depthWrite: false,
+      uniforms: {
+        uTopColor: { value: MODES.powder.skyTop.clone() },
+        uHorizonColor: { value: MODES.powder.skyHorizon.clone() },
+        uSunDir: { value: MODES.powder.sunDir.clone() },
+        uSunColor: { value: MODES.powder.sunColor.clone() }
+      },
+      vertexShader: `
+        varying vec3 vDir;
+        void main() {
+          vDir = normalize(position);
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uTopColor;
+        uniform vec3 uHorizonColor;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunColor;
+        varying vec3 vDir;
+        void main() {
+          float h = clamp(vDir.y * 1.35 + 0.08, 0.0, 1.0);
+          vec3 col = mix(uHorizonColor, uTopColor, pow(h, 0.62));
+          float sunDot = max(dot(normalize(vDir), normalize(uSunDir)), 0.0);
+           float horizon = exp(-max(0.0,vDir.y)*7.0);
+           col = mix(col,uHorizonColor,horizon*0.22);
+           float wisps = sin(vDir.x*17.0+sin(vDir.z*12.0))*sin(vDir.z*21.0+vDir.y*36.0);
+           float cloud = smoothstep(0.48,0.86,wisps)*smoothstep(0.05,0.24,vDir.y)*(1.0-smoothstep(0.30,0.64,vDir.y));
+           col = mix(col,mix(uHorizonColor,vec3(1.0),0.64),cloud*0.30);
+           col += uSunColor * smoothstep(0.99988,0.99996,sunDot)*1.5;
+          col += uSunColor * pow(sunDot, 130.0) * 1.3;
+          col += uSunColor * pow(sunDot, 11.0) * 0.2;
+          gl_FragColor = vec4(col, 1.0);
+           #include <tonemapping_fragment>
+           #include <encodings_fragment>
+        }
+      `
+    });
+    const skyDome = new THREE.Mesh(new THREE.SphereGeometry(520, 32, 20), skyMat);
+    scene.add(skyDome);
+
+    // =========================================================================
+    // 7. HIGH-RESOLUTION SNOW TERRAIN MESH & SHADER (DEFORMATION + SSS + GLITTER)
+    // =========================================================================
+    const TERRAIN_W = 128;
+    const TERRAIN_L = 152;
+    const TERRAIN_SEGS_X = 160;
+    const TERRAIN_SEGS_Z = 180;
+    const GRID_STEP_X = TERRAIN_W / TERRAIN_SEGS_X;
+    const GRID_STEP_Z = TERRAIN_L / TERRAIN_SEGS_Z;
+
+    const snowGeo = new THREE.PlaneGeometry(TERRAIN_W, TERRAIN_L, TERRAIN_SEGS_X, TERRAIN_SEGS_Z);
+    snowGeo.rotateX(-Math.PI / 2);
+
+    const snowUniforms = {
+      uSkierPos: { value: new THREE.Vector3(0, 0, 0) },
+      uSkierAirHeight: { value: 0.0 },
+      uTrailTex: { value: trailTexture },
+      uTrailWorldSize: { value: TRAIL_WORLD_SIZE },
+      uTrackDepthScale: { value: MODES.powder.visualDepthGain },
+      uSunDir: { value: MODES.powder.sunDir.clone() },
+      uSunColor: { value: MODES.powder.sunColor.clone() },
+      uShadowTint: { value: MODES.powder.shadowTint.clone() },
+      uSssColor: { value: MODES.powder.sssColor.clone() },
+      uTrackColor: { value: MODES.powder.trackColor.clone() },
+      uFogColor: { value: MODES.powder.fogColor.clone() },
+      uFogDensity: { value: 0.0048 },
+      uGlitterStrength: { value: MODES.powder.glitterStrength },
+      uGroomedPattern: { value: 0.0 }
+    };
+
+    const snowMat = new THREE.ShaderMaterial({
+      uniforms: snowUniforms,
+      vertexShader: `
+        uniform vec3 uSkierPos;
+        uniform sampler2D uTrailTex;
+        uniform float uTrailWorldSize;
+        uniform float uTrackDepthScale;
+
+        varying vec3 vWorldPos;
+        varying vec3 vBaseNormal;
+        varying float vTrackDepth;
+        varying float vTrackBerm;
+        varying float vTrailMask;
+
+        float terrainHeight(vec2 p) {
+          float baseSlope = p.y * 0.245;
+          float valley = pow(abs(p.x) * 0.0175, 2.2) * 14.5;
+          float undul =
+            sin(p.y * 0.030) * 2.0 +
+            cos(p.x * 0.052 + p.y * 0.021) * 1.35 +
+            sin(p.x * 0.092 - p.y * 0.064) * 0.48 +
+            cos(p.x * 0.20 + p.y * 0.15) * 0.14;
+          float rw = sin(p.y * 0.082) * cos(p.x * 0.075);
+          float kicker = rw > 0.74 ? (rw - 0.74) * 4.4 : 0.0;
+          return baseSlope + valley + undul + kicker;
+        }
+
+        void main() {
+          vec4 wp = modelMatrix * vec4(position, 1.0);
+          wp.y = terrainHeight(wp.xz);
+
+          float e = 0.35;
+          float hL = terrainHeight(wp.xz + vec2(-e, 0.0));
+          float hR = terrainHeight(wp.xz + vec2(e, 0.0));
+          float hD = terrainHeight(wp.xz + vec2(0.0, -e));
+          float hU = terrainHeight(wp.xz + vec2(0.0, e));
+          vBaseNormal = normalize(vec3(hL - hR, 2.0 * e, hD - hU));
+
+          vec2 uv = fract(wp.xz / uTrailWorldSize);
+          vec2 delta = abs(wp.xz - uSkierPos.xz);
+          float maxD = max(delta.x, delta.y);
+          float mask = 1.0 - smoothstep(uTrailWorldSize * 0.36, uTrailWorldSize * 0.45, maxD);
+
+          vec4 tr = texture2D(uTrailTex, uv);
+          float depth = tr.r * mask;
+          float berm = tr.g * mask;
+
+          // Physical vertex depression for ski track + raised snow berm
+          wp.y += (berm * 0.12 - depth * 0.24) * uTrackDepthScale;
+
+          vWorldPos = wp.xyz;
+          vTrackDepth = depth;
+          vTrackBerm = berm;
+          vTrailMask = mask;
+          gl_Position = projectionMatrix * viewMatrix * wp;
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D uTrailTex;
+        uniform float uTrailWorldSize;
+        uniform float uTrackDepthScale;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunColor;
+        uniform vec3 uShadowTint;
+        uniform vec3 uSssColor;
+        uniform vec3 uTrackColor;
+        uniform vec3 uFogColor;
+        uniform float uFogDensity;
+        uniform float uGlitterStrength;
+        uniform float uGroomedPattern;
+        uniform vec3 uSkierPos;
+        uniform float uSkierAirHeight;
+
+        varying vec3 vWorldPos;
+        varying vec3 vBaseNormal;
+        varying float vTrackDepth;
+        varying float vTrackBerm;
+        varying float vTrailMask;
+
+        float hash21(vec2 p) {
+          p = fract(p * vec2(234.34, 435.345));
+          p += dot(p, p + 34.23);
+          return fract(p.x * p.y);
+        }
+
+        float valueNoise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash21(i);
+          float b = hash21(i + vec2(1.0, 0.0));
+          float c = hash21(i + vec2(0.0, 1.0));
+          float d = hash21(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+
+        void main() {
+          vec3 N = normalize(vBaseNormal);
+          vec3 V = normalize(cameraPosition - vWorldPos);
+          vec3 L = normalize(uSunDir);
+
+          // Fine normal perturbation from 1024x1024 ski-shaped heightmap
+          vec2 uv = fract(vWorldPos.xz / uTrailWorldSize);
+          float texel = 1.0 / 1024.0;
+          vec4 tL = texture2D(uTrailTex, uv - vec2(texel, 0.0));
+          vec4 tR = texture2D(uTrailTex, uv + vec2(texel, 0.0));
+          vec4 tD = texture2D(uTrailTex, uv - vec2(0.0, texel));
+          vec4 tU = texture2D(uTrailTex, uv + vec2(0.0, texel));
+
+          // Compute rock cliff mask strictly from base mountain normal (never from ski tracks!)
+          float n1 = valueNoise(vWorldPos.xz * 0.34);
+          float n2 = valueNoise(vWorldPos.xz * 1.55 + vec2(3.7, 2.1));
+          float baseSteepness = 1.0 - normalize(vBaseNormal).y;
+          float rockMask = smoothstep(0.27, 0.45, baseSteepness + (n1 - 0.5) * 0.14);
+
+          // Gentle, realistic normal tilt for sunlit carved track walls (clamped so it never turns dark)
+          float hL = (tL.g * 0.45 - tL.r) * vTrailMask;
+          float hR = (tR.g * 0.45 - tR.r) * vTrailMask;
+          float hD = (tD.g * 0.45 - tD.r) * vTrailMask;
+          float hU = (tU.g * 0.45 - tU.r) * vTrailMask;
+          vec2 trackGrad = clamp(vec2(hL - hR, hD - hU) * 1.35 * uTrackDepthScale, vec2(-0.55), vec2(0.55));
+          N = normalize(N + vec3(trackGrad.x, 0.0, trackGrad.y));
+
+          // Sastrugi wind ripples & crisp groomed corduroy piste ribs + snowcat lanes
+          float ripple = (n1 - 0.5) * 0.10 + (n2 - 0.5) * 0.045;
+          float pisteZone = 1.0 - smoothstep(13.0, 22.0, abs(vWorldPos.x));
+          float cordWave = sin(vWorldPos.x * 13.5);
+          float groomLane = smoothstep(0.92, 1.0, abs(sin(vWorldPos.x * 0.68)));
+          float corduroy = cordWave * 0.145 * uGroomedPattern * pisteZone;
+          N = normalize(N + vec3(ripple + corduroy, 0.0, ripple * 0.65));
+
+          float ndl = dot(N, L);
+          float wrapDiffuse = clamp((ndl + 0.30) / 1.30, 0.0, 1.0);
+          float backScatter = pow(clamp(dot(V, -L + N * 0.42), 0.0, 1.0), 3.0) * 0.20;
+          float fresnel = pow(1.0 - max(dot(N, V), 0.0), 3.2);
+
+          // Realistic snow shading with clear corduroy ridge/trough micro-contrast on groomed pistes
+          vec4 fineTrack = texture2D(uTrailTex,uv)*vTrailMask;
+          float depthAmt = clamp(fineTrack.r, 0.0, 1.0);
+          float bermAmt = clamp(fineTrack.g, 0.0, 1.0);
+          float cordShade = (1.0 - uGroomedPattern * pisteZone * (0.065 * (0.5 - 0.5 * cordWave) + groomLane * 0.045));
+          vec3 baseSnowCol = mix(vec3(0.95, 0.97, 1.0), vec3(0.88, 0.93, 0.98), uGroomedPattern * 0.65) * cordShade;
+          vec3 grooveCol = mix(baseSnowCol, uTrackColor, depthAmt * (0.58 + uGroomedPattern * 0.18));
+          float trackAO = 1.0 - depthAmt * (0.14 + uGroomedPattern * 0.08);
+
+          float sunGain = mix(0.82, 0.68, uGroomedPattern);
+          float ambGain = mix(0.46, 0.38, uGroomedPattern);
+          vec3 litSnow = grooveCol * (
+            uShadowTint * (ambGain + 0.12 * N.y) +
+            uSunColor * wrapDiffuse * sunGain +
+            uSssColor * (backScatter + fresnel * 0.14)
+          ) * trackAO;
+
+          // Bright rim highlight on displaced fresh snow berms
+          litSnow += uSunColor * bermAmt * 0.14;
+
+          vec3 H = normalize(L + V);
+          float rough = mix(0.56,0.34,uGroomedPattern);
+          float a2 = rough*rough*rough*rough;
+          float nh = max(dot(N,H),0.0);
+          float nv = max(dot(N,V),0.001);
+          float nl = max(ndl,0.001);
+          float D = a2 / (3.14159*pow(max(0.001,nh*nh*(a2-1.0)+1.0),2.0));
+          float k = (rough+1.0)*(rough+1.0)/8.0;
+          float G = nv/(nv*(1.0-k)+k)*nl/(nl*(1.0-k)+k);
+          float F = 0.025+0.975*pow(1.0-max(dot(V,H),0.0),5.0);
+          float spec = min(0.48,D*G*F/max(0.01,4.0*nv*nl))*nl;
+          litSnow += uSunColor * spec;
+
+          // Micro-crystal snow sparkle
+          vec2 cell = floor(vWorldPos.xz * 8.0);
+          float rnd = hash21(cell);
+          vec3 microN = normalize(vec3(hash21(cell + 13.7) - 0.5, 0.78, hash21(cell + 29.3) - 0.5));
+          float glint = pow(max(dot(microN, H), 0.0), 96.0) * step(0.84, rnd);
+          float distFade = 1.0 - smoothstep(7.0, 46.0, length(cameraPosition - vWorldPos));
+          litSnow += uSunColor * glint * uGlitterStrength * max(ndl, 0.0) * distFade * 1.35;
+
+          // Subtle contact shadow under skier (softens and fades naturally when airborne)
+          vec2 toSkier = vWorldPos.xz - uSkierPos.xz;
+          float airFade = clamp(1.0 - uSkierAirHeight * 0.22, 0.0, 1.0);
+          float shadowSpread = 0.65 / (1.0 + uSkierAirHeight * 0.35);
+          float skierShadow = exp(-dot(toSkier, toSkier) * shadowSpread) * 0.22 * airFade;
+          litSnow *= (1.0 - skierShadow);
+
+          vec3 rockCol = vec3(0.26, 0.29, 0.35) * (0.55 + 0.55 * max(ndl, 0.0));
+          vec3 finalCol = mix(litSnow, rockCol, rockMask);
+
+          float dist = length(cameraPosition - vWorldPos);
+          float fogFactor = 1.0 - exp(-pow(dist * uFogDensity, 1.75));
+          finalCol = mix(finalCol, uFogColor, clamp(fogFactor, 0.0, 1.0));
+
+          gl_FragColor = vec4(finalCol, 1.0);
+           #include <tonemapping_fragment>
+           #include <encodings_fragment>
+        }
+      `
+    });
+    const snowMesh = new THREE.Mesh(snowGeo, snowMat);
+    snowMesh.frustumCulled = false;
+    scene.add(snowMesh);
+
+    // Distant Alpine Peaks
+    const mountainGroup = new THREE.Group();
+    // Layered, eroded alpine silhouettes with continuous snowline and exposed rock ribs.
+    for (let i=0;i<18;i++){
+      const angle=-Math.PI*0.97+i/17*Math.PI*0.94;
+      const dist=210+(i%4)*58, h=76+(i*37%85), r=52+(i*23%36);
+      const geo=new THREE.PlaneGeometry(r*2.8,r*2.8,30,30);
+      geo.rotateX(-Math.PI/2);
+      const pos=geo.attributes.position, colors=[];
+      const rock=new THREE.Color(0x667381),snow=new THREE.Color(0xe9f2fa);
+      for(let k=0;k<pos.count;k++){
+        const x=pos.getX(k),z=pos.getZ(k), d=Math.hypot(x/r,z/r), a=Math.atan2(z,x);
+        const ridge=0.76+0.15*Math.cos(a*5+i)+0.09*Math.sin(a*9-i);
+        const y=h*Math.pow(Math.max(0,1-d/ridge),0.73)+Math.sin(x*0.24+i)*Math.cos(z*0.21)*3.6*Math.max(0,1-d);
+        pos.setY(k,y);
+        const mask=THREE.MathUtils.smoothstep(y/h+0.15*Math.sin(a*7+i),0.30,0.68);
+        const c=rock.clone().lerp(snow,mask);colors.push(c.r,c.g,c.b);
+      }
+      geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.computeVertexNormals();
+      const peak=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.92}));
+      peak.position.set(Math.cos(angle)*dist,-49,Math.sin(angle)*dist-100);
+      mountainGroup.add(peak);
+    }
+    scene.add(mountainGroup);
+
+    // =========================================================================
+    // 8. REALISTIC PARABOLIC SKI CONSTRUCTION + ARTICULATED SKIER RIG
+    // =========================================================================
+    // Builds an anatomically accurate parabolic sidecut ski with camber & upturned shovel!
+    function createParabolicSkiMesh(topMat, edgeMat) {
+      const group = new THREE.Group();
+      const segs = 16;
+      const halfL = PHYS.skiLength * 0.5;
+      const geom = new THREE.BufferGeometry();
+      const positions = [];
+      const indices = [];
+
+      for (let i = 0; i <= segs; i++) {
+        const t = i / segs; // 0 = tip (-Z), 1 = tail (+Z)
+        const z = -halfL + t * PHYS.skiLength;
+        // Parabolic sidecut width interpolation
+        let w;
+        if (t < 0.08) {
+          // Rounded tip nose
+          w = PHYS.wTip * Math.sin((t / 0.08) * Math.PI * 0.5);
+        } else if (t < 0.5) {
+          const u = (t - 0.08) / 0.42;
+          w = PHYS.wTip * (1 - u) * (1 - u) + PHYS.wWaist * (1 - (1 - u) * (1 - u));
+        } else {
+          const u = (t - 0.5) / 0.5;
+          w = PHYS.wWaist + (PHYS.wTail - PHYS.wWaist) * (u * u);
+        }
+        // Camber arch + upturned shovel tip rocker
+        let y = Math.sin(t * Math.PI) * PHYS.camberHeight;
+        if (t < 0.14) {
+          const r = (0.14 - t) / 0.14;
+          y += r * r * 0.085;
+        }
+        const halfW = Math.max(0.012, w * 0.5);
+        const thick = 0.016 - Math.abs(t - 0.5) * 0.012;
+
+        // Top-left, Top-right, Bottom-left, Bottom-right
+        positions.push(-halfW, y + thick, z);
+        positions.push(halfW, y + thick, z);
+        positions.push(-halfW, y, z);
+        positions.push(halfW, y, z);
+      }
+
+      for (let i = 0; i < segs; i++) {
+        const a = i * 4;
+        const b = (i + 1) * 4;
+        // Top face
+        indices.push(a, b, a + 1, a + 1, b, b + 1);
+        // Bottom face
+        indices.push(a + 2, a + 3, b + 2, a + 3, b + 3, b + 2);
+        // Left sidewall
+        indices.push(a, a + 2, b, a + 2, b + 2, b);
+        // Right sidewall
+        indices.push(a + 1, b + 1, a + 3, a + 3, b + 1, b + 3);
+      }
+
+      geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geom.setIndex(indices);
+      geom.computeVertexNormals();
+
+      const skiMesh = new THREE.Mesh(geom, topMat);
+      skiMesh.castShadow = true;
+      group.add(skiMesh);
+
+      // Binding plate + toe/heel clamps
+      const binding = new THREE.Mesh(new THREE.BoxGeometry(0.068, 0.026, 0.34), edgeMat);
+      binding.position.set(0, 0.024, 0.02);
+      group.add(binding);
+
+      return group;
+    }
+
+    function createSkierRig() {
+      const root = new THREE.Group();
+
+      // Calm Nordic / Alpine color palette for the skier
+      const jacketMat = new THREE.MeshStandardMaterial({ color: 0xc84b31, roughness: 0.52, metalness: 0.05 });
+      const accentMat = new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.58 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.65 });
+      const bootMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.35, metalness: 0.15 });
+      const skiTopMat = new THREE.MeshStandardMaterial({ color: 0x1d4e89, roughness: 0.28, metalness: 0.3 });
+      const bindingMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.65 });
+      const helmetMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.32, metalness: 0.2 });
+      const goggleMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.12, metalness: 0.85 });
+      const poleMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.3, metalness: 0.7 });
+
+      const pelvis = new THREE.Group();
+      pelvis.position.y = 0.96;
+      root.add(pelvis);
+
+      const hipMesh = new THREE.Mesh(new THREE.SphereGeometry(1,20,14), pantsMat);
+      hipMesh.scale.set(0.18,0.12,0.13);
+      hipMesh.castShadow = true;
+      pelvis.add(hipMesh);
+
+      const torso = new THREE.Group();
+      torso.position.y = 0.08;
+      pelvis.add(torso);
+
+      const chestMesh = new THREE.Mesh(new THREE.SphereGeometry(1,24,16), jacketMat);
+      chestMesh.scale.set(0.225,0.30,0.145);
+      chestMesh.position.y = 0.24;
+      chestMesh.castShadow = true;
+      torso.add(chestMesh);
+
+      const pack = new THREE.Mesh(new THREE.SphereGeometry(1,20,14), accentMat);
+      pack.scale.set(0.15,0.205,0.105);
+      pack.position.set(0, 0.25, 0.16);
+      pack.castShadow = true;
+      torso.add(pack);
+      for(const side of [-1,1]){
+        const strap=new THREE.Mesh(new THREE.BoxGeometry(0.035,0.39,0.023),accentMat);
+        strap.position.set(side*0.135,0.25,-0.13);strap.rotation.z=side*0.08;torso.add(strap);
+      }
+      const zipper=new THREE.Mesh(new THREE.BoxGeometry(0.008,0.37,0.008),bindingMat);
+      zipper.position.set(0,0.23,-0.145);torso.add(zipper);
+
+      const head = new THREE.Group();
+      head.position.set(0, 0.54, -0.02);
+      torso.add(head);
+
+      const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.142, 16, 14), helmetMat);
+      helmet.scale.set(1.0, 1.05, 1.1);
+      helmet.castShadow = true;
+      head.add(helmet);
+
+      const goggles = new THREE.Mesh(new THREE.SphereGeometry(1,24,12), goggleMat);
+      goggles.scale.set(0.115,0.047,0.065);
+      goggles.position.set(0, 0.01, -0.12);
+      head.add(goggles);
+
+      const scarf = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.036, 0.38), new THREE.MeshStandardMaterial({ color: 0xf3d58d, roughness: 0.72 }));
+      scarf.position.set(0.05, -0.08, 0.18);
+      head.add(scarf);
+
+      function buildArm(side) {
+        const shoulder = new THREE.Group();
+        shoulder.position.set(side * 0.24, 0.42, 0);
+        torso.add(shoulder);
+
+        const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.054, 0.048, 0.30, 10), jacketMat);
+        upperArm.position.y = -0.15;
+        upperArm.castShadow = true;
+        shoulder.add(upperArm);
+
+        const elbow = new THREE.Group();
+        elbow.position.y = -0.29;
+        shoulder.add(elbow);
+
+        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.04, 0.26, 10), accentMat);
+        forearm.position.y = -0.13;
+        forearm.castShadow = true;
+        elbow.add(forearm);
+        const joint=new THREE.Mesh(new THREE.SphereGeometry(0.048,10,8),jacketMat);elbow.add(joint);
+        const glove=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),helmetMat);
+        glove.scale.set(0.047,0.068,0.043);glove.position.y=-0.26;elbow.add(glove);
+
+        const polePivot = new THREE.Group();
+        polePivot.position.set(0, -0.26, 0);
+        elbow.add(polePivot);
+
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.007, 1.15, 6), poleMat);
+        shaft.position.set(0, -0.46, 0.22);
+        shaft.rotation.x = 0.42;
+        polePivot.add(shaft);
+
+        const basket = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.012, 10), helmetMat);
+        basket.position.set(0, -0.94, 0.44);
+        basket.rotation.x = 0.42;
+        polePivot.add(basket);
+
+        return { shoulder, elbow, polePivot };
+      }
+
+      const leftArm = buildArm(-1);
+      const rightArm = buildArm(1);
+
+      function buildLeg(side) {
+        const hip = new THREE.Group();
+        hip.position.set(side * PHYS.stanceHalfWidth, -0.04, 0);
+        pelvis.add(hip);
+
+        const thigh = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.06, 0.44, 10), pantsMat);
+        thigh.position.y = -0.22;
+        thigh.castShadow = true;
+        hip.add(thigh);
+
+        const knee = new THREE.Group();
+        knee.position.y = -0.44;
+        hip.add(knee);
+
+        const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.05, 0.44, 10), pantsMat);
+        shin.position.y = -0.22;
+        shin.castShadow = true;
+        knee.add(shin);
+        const kneePad=new THREE.Mesh(new THREE.SphereGeometry(1,12,10),pantsMat);
+        kneePad.scale.set(0.065,0.074,0.069);knee.add(kneePad);
+
+        const boot = new THREE.Mesh(new THREE.BoxGeometry(0.102, 0.145, 0.28), bootMat);
+        boot.position.set(0, -0.44, -0.03);
+        boot.castShadow = true;
+        knee.add(boot);
+        for(let b=0;b<3;b++){const buckle=new THREE.Mesh(new THREE.BoxGeometry(0.11,0.017,0.019),bindingMat);buckle.position.set(0,-0.39-b*0.035,-0.16);knee.add(buckle);}
+
+        const skiGroup = new THREE.Group();
+        skiGroup.position.set(0, -0.52, -0.03);
+        knee.add(skiGroup);
+
+        const skiMesh = createParabolicSkiMesh(skiTopMat, bindingMat);
+        skiGroup.add(skiMesh);
+
+        return { hip, knee, skiGroup, side };
+      }
+
+      const leftLeg = buildLeg(-1);
+      const rightLeg = buildLeg(1);
+
+      scene.add(root);
+      return { root, pelvis, torso, head, scarf, leftArm, rightArm, leftLeg, rightLeg };
+    }
+
+    const skierRig = createSkierRig();
+
+    // =========================================================================
+    // 9. POWDER SPRAY & PEACEFUL SNOWFALL PARTICLES
+    // =========================================================================
+    const MAX_SPRAY = 560;
+    const sprayPositions = new Float32Array(MAX_SPRAY * 3);
+    const sprayVel = new Float32Array(MAX_SPRAY * 3);
+    const sprayLife = new Float32Array(MAX_SPRAY);
+    const spraySizes = new Float32Array(MAX_SPRAY);
+    let sprayCursor = 0;
+
+    for (let i = 0; i < MAX_SPRAY; i++) {
+      sprayLife[i] = 0;
+      sprayPositions[i * 3 + 1] = -9999;
+      spraySizes[i] = 0;
+    }
+
+    const sprayGeo = new THREE.BufferGeometry();
+    sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPositions, 3));
+    sprayGeo.setAttribute('aSize', new THREE.BufferAttribute(spraySizes, 1));
+
+    const sprayMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      uniforms: { uColor: { value: new THREE.Color(0xf6fbff) } },
+      vertexShader: `
+        attribute float aSize;
+        varying float vAlpha;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = clamp(aSize * (280.0 / max(-mv.z, 1.0)), 1.0, 52.0);
+          vAlpha = clamp(aSize / 1.45, 0.0, 0.72);
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: `
+        uniform vec3 uColor;
+        varying float vAlpha;
+        void main() {
+          vec2 c = gl_PointCoord - vec2(0.5);
+          float r = length(c);
+          if (r > 0.5) discard;
+          float soft = pow(1.0 - r * 2.0, 1.7);
+          gl_FragColor = vec4(uColor, soft * vAlpha);
+        }
+      `
+    });
+    const sprayPoints = new THREE.Points(sprayGeo, sprayMat);
+    sprayPoints.frustumCulled = false;
+    scene.add(sprayPoints);
+
+    function emitPowder(wx, wy, wz, vx, vy, vz, size) {
+      const idx = sprayCursor;
+      sprayCursor = (sprayCursor + 1) % MAX_SPRAY;
+      sprayPositions[idx * 3] = wx + (Math.random() - 0.5) * 0.22;
+      sprayPositions[idx * 3 + 1] = wy + 0.06;
+      sprayPositions[idx * 3 + 2] = wz + (Math.random() - 0.5) * 0.22;
+      sprayVel[idx * 3] = vx + (Math.random() - 0.5) * 2.0;
+      sprayVel[idx * 3 + 1] = vy + Math.random() * 1.9;
+      sprayVel[idx * 3 + 2] = vz + (Math.random() - 0.5) * 1.6;
+      sprayLife[idx] = 0.55 + Math.random() * 0.45;
+      spraySizes[idx] = size;
+    }
+
+    const SNOW_COUNT = 820;
+    const snowFlakePos = new Float32Array(SNOW_COUNT * 3);
+    for (let i = 0; i < SNOW_COUNT; i++) {
+      snowFlakePos[i * 3] = (Math.random() - 0.5) * 76;
+      snowFlakePos[i * 3 + 1] = Math.random() * 36;
+      snowFlakePos[i * 3 + 2] = (Math.random() - 0.5) * 76;
+    }
+    const flakeGeo = new THREE.BufferGeometry();
+    flakeGeo.setAttribute('position', new THREE.BufferAttribute(snowFlakePos, 3));
+    const snowFlakes = new THREE.Points(flakeGeo, new THREE.PointsMaterial({
+      color: 0xffffff, size: 0.21, transparent: true, opacity: 0.72, depthWrite: false
+    }));
+    snowFlakes.frustumCulled = false;
+    scene.add(snowFlakes);
+
+    // =========================================================================
+    // 10. ALPINE TREES, BOULDERS & SLALOM GATES
+    // =========================================================================
+    const worldProps = [];
+    const slalomGates = [];
+
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3426, roughness: 0.95 });
+    const pineMat = new THREE.MeshStandardMaterial({ color: 0x1d4736, roughness: 0.85, flatShading: true });
+    const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xf4f9ff, roughness: 0.72, flatShading: true });
+    const rockMat = new THREE.MeshStandardMaterial({ color: 0x4b5a6e, roughness: 0.9, flatShading: true });
+    const gateRedMat = new THREE.MeshStandardMaterial({ color: 0xd94848, roughness: 0.45 });
+    const gateBlueMat = new THREE.MeshStandardMaterial({ color: 0x2b6cb0, roughness: 0.45 });
+    const pisteOrangeMat = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 });
+    const liftMetalMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5, metalness: 0.6 });
+
+    // Scenic Alpine Chairlift (Telesiyej) running along the right ridge
+    const skiLiftGroup = new THREE.Group();
+    const liftChairs = [];
+    for (let i = 0; i < 6; i++) {
+      const chair = new THREE.Group();
+      const hanger = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.2, 6), liftMetalMat);
+      hanger.position.y = -1.1;
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.14, 0.6), liftMetalMat);
+      seat.position.set(0, -2.2, 0);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.7, 0.12), gateBlueMat);
+      back.position.set(0, -1.85, 0.25);
+      chair.add(hanger, seat, back);
+      skiLiftGroup.add(chair);
+      liftChairs.push({ mesh: chair, offset: i * 24 });
+    }
+    scene.add(skiLiftGroup);
+
+    const jumpRamps = [];
+    function makeJumpRamp() {
+      const g = new THREE.Group();
+      const rampGeo = new THREE.BoxGeometry(4.4, 1.35, 5.2);
+      const rampSnow = new THREE.Mesh(rampGeo, snowCapMat);
+      rampSnow.rotation.x = 0.28;
+      rampSnow.position.set(0, 0.15, 0);
+      rampSnow.castShadow = true;
+      g.add(rampSnow);
+      [-2.15, 2.15].forEach(ox => {
+        const marker = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.8, 6), pisteOrangeMat);
+        marker.position.set(ox, 1.1, -2.2);
+        g.add(marker);
+      });
+      return g;
+    }
+
+    function makePineTree(scale) {
+      const g = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.28, 1.8, 6), trunkMat);
+      trunk.position.y = 0.9;
+      trunk.castShadow = true;
+      g.add(trunk);
+      [
+        { y: 2.1, r: 1.55, h: 2.4 },
+        { y: 3.4, r: 1.22, h: 2.1 },
+        { y: 4.5, r: 0.85, h: 1.7 }
+      ].forEach(t => {
+        const foliage = new THREE.Mesh(new THREE.ConeGeometry(t.r, t.h, 13), pineMat);
+        foliage.position.y = t.y;
+        foliage.castShadow = true;
+        g.add(foliage);
+        const cap = new THREE.Mesh(new THREE.ConeGeometry(t.r * 0.78, t.h * 0.46, 13), snowCapMat);
+        cap.position.y = t.y + t.h * 0.28;
+        g.add(cap);
+      });
+      g.scale.setScalar(scale);
+      return g;
+    }
+
+    function makeBoulder(scale) {
+      const m = new THREE.Mesh(new THREE.DodecahedronGeometry(1.0, 0), rockMat);
+      m.scale.set(scale * 1.2, scale * 0.72, scale);
+      m.rotation.set(Math.random() * 2, Math.random() * 3, 0);
+      m.castShadow = true;
+      return m;
+    }
+
+    function makeSlalomGate(isRed) {
+      const g = new THREE.Group();
+      const mat = isRed ? gateRedMat : gateBlueMat;
+      const halfW = 3.6;
+      [-halfW, halfW].forEach(ox => {
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.5, 8), mat);
+        pole.position.set(ox, 1.25, 0);
+        pole.castShadow = true;
+        g.add(pole);
+        const flag = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.42, 0.04), mat);
+        flag.position.set(ox + (ox < 0 ? 0.34 : -0.34), 2.12, 0);
+        g.add(flag);
+      });
+      return g;
+    }
+
+    let nextGateZ = -38;
+    let nextGateSide = 1;
+    let lastSpawnZ = -18;
+
+    let nextRampZ = -65;
+    function clearWorldObjects() {
+      worldProps.forEach(p => scene.remove(p.mesh));
+      worldProps.length = 0;
+      slalomGates.forEach(g => scene.remove(g.mesh));
+      slalomGates.length = 0;
+      jumpRamps.forEach(r => scene.remove(r.mesh));
+      jumpRamps.length = 0;
+      nextGateZ = -38;
+      nextGateSide = 1;
+      nextRampZ = -65;
+      lastSpawnZ = -18;
+    }
+
+    function spawnWorldAhead(skierZ) {
+      while (nextGateZ > skierZ - 155) {
+        const gx = nextGateSide * (4.5 + Math.random() * 6.0);
+        const gy = getTerrainHeight(gx, nextGateZ);
+        const mesh = makeSlalomGate(nextGateSide > 0);
+        mesh.position.set(gx, gy, nextGateZ);
+        scene.add(mesh);
+        slalomGates.push({ mesh, x: gx, z: nextGateZ, halfW: 3.8, passed: false });
+        nextGateSide *= -1;
+        nextGateZ -= 34 + Math.random() * 10;
+      }
+
+      // Spawn Snowpark Jump Kickers (Steep / Riders Republic style big-air ramps)
+      while (nextRampZ > skierZ - 155) {
+        const rx = (Math.random() - 0.5) * 14.0;
+        const ry = getTerrainHeight(rx, nextRampZ);
+        const rMesh = makeJumpRamp();
+        rMesh.position.set(rx, ry, nextRampZ);
+        scene.add(rMesh);
+        jumpRamps.push({ mesh: rMesh, x: rx, z: nextRampZ, launched: false });
+        nextRampZ -= 72 + Math.random() * 24;
+      }
+
+      while (lastSpawnZ > skierZ - 155) {
+        lastSpawnZ -= 5.0;
+        const z = lastSpawnZ;
+        [-1, 1].forEach(side => {
+          const flankX = side * (16 + Math.random() * 26);
+          const scale = 0.85 + Math.random() * 0.75;
+          const tree = makePineTree(scale);
+          tree.position.set(flankX, getTerrainHeight(flankX, z) - 0.15, z);
+          scene.add(tree);
+          worldProps.push({ mesh: tree, x: flankX, z, radius: 0.75 * scale, type: 'tree' });
+        });
+
+        if (Math.random() < 0.38) {
+          const ox = (Math.random() - 0.5) * 26;
+          const tooClose = slalomGates.some(g => Math.abs(g.z - z) < 8 && Math.abs(g.x - ox) < 6.5);
+          if (!tooClose && Math.abs(z) > 24) {
+            const isRock = Math.random() < 0.3;
+            const scale = isRock ? (0.8 + Math.random() * 0.65) : (0.8 + Math.random() * 0.55);
+            const mesh = isRock ? makeBoulder(scale) : makePineTree(scale);
+            mesh.position.set(ox, getTerrainHeight(ox, z) - (isRock ? 0.1 : 0.15), z);
+            scene.add(mesh);
+            worldProps.push({
+              mesh, x: ox, z,
+              radius: isRock ? scale * 0.92 : scale * 0.72,
+              type: isRock ? 'rock' : 'tree'
+            });
+          }
+        }
+      }
+
+      for (let i = worldProps.length - 1; i >= 0; i--) {
+        if (worldProps[i].z > skierZ + 28) {
+          scene.remove(worldProps[i].mesh);
+          worldProps.splice(i, 1);
+        }
+      }
+      for (let i = slalomGates.length - 1; i >= 0; i--) {
+        if (slalomGates[i].z > skierZ + 24) {
+          scene.remove(slalomGates[i].mesh);
+          slalomGates.splice(i, 1);
+        }
+      }
+      for (let i = jumpRamps.length - 1; i >= 0; i--) {
+        if (jumpRamps[i].z > skierZ + 24) {
+          scene.remove(jumpRamps[i].mesh);
+          jumpRamps.splice(i, 1);
+        }
+      }
+    }
+
+    // =========================================================================
+    // 11. MATHEMATICAL SKIING PHYSICS ENGINE
+    // =========================================================================
+    const input = { left: false, right: false, tuck: false, brake: false, jump: false, grab: false };
+    let zenMode = false;
+    const CAM_MODES = ['chase', 'close', 'fps'];
+    const CAM_LABELS = { chase: 'Takip', close: 'Aksiyon', fps: '1. Şahıs' };
+    let camModeIdx = 0;
+
+    const state = {
+      status: 'menu', // 'menu' | 'playing' | 'paused' | 'gameover'
+      x: 0,
+      y: getTerrainHeight(0, 0),
+      z: 0,
+      vx: 0,
+      vy: 0,
+      vz: 0,
+      heading: 0,        // Ski yaw angle relative to -Z fall line (rad)
+      edgeAngle: 0,      // Ski edging angle Psi (rad, -1.18..+1.18 ~ ±68°)
+      tuckAmount: 0,
+      brakeAmount: 0,
+      grounded: true,
+      airTime: 0,
+      landingSquash: 0,
+      landingImpulseN: 0,
+      polePlantTimer: 0,
+      polePlantSide: 1,
+      polePlantedThisSwing: false,
+      // Live computed physics quantities (exposed in telemetry HUD)
+      slopeAlphaRad: 0.24,
+      turnRadiusM: Infinity,
+      normalForceN: PHYS.mass * PHYS.g,
+      gForce: 1.0,
+      penetrationM: 0.015,
+      isSkidding: false,
+      // Tricks & Switch Stance (Steep / Riders Republic / SSX)
+      airSpinRad: 0,
+      airFlipRad: 0,
+      grabAmount: 0,
+      didGrab: false,
+      switchStance: false,
+      // Biomechanical movement cycle & Ragdoll Tumbling state
+      prevEdgeAngle: 0,
+      unweightPump: 0,
+      doublePolePhase: 0,
+      lastDoublePoleStamp: -1,
+      smoothSink: 0.02,
+      smoothSlopePitch: 0,
+      smoothLeanRoll: 0,
+      smoothCrouch: 0.15,
+      smoothLeftKnee: 0.55,
+      smoothRightKnee: 0.55,
+      tumbleTimer: 0,
+      tumbleReason: '',
+      tumbleFatal: false,
+      cleanRunTime: 0,
+      tumbleRotX: 0,
+      tumbleRotY: 0,
+      tumbleRotZ: 0,
+      tumbleVelRotX: 0,
+      tumbleVelRotZ: 0,
+      score: 0,
+      combo: 0,
+      maxSpeedKmh: 0,
+      distance: 0,
+      time: 0
+    };
+
+    const tmpNormal = new THREE.Vector3();
+    const tmpLeftNorm = new THREE.Vector3();
+    const tmpRightNorm = new THREE.Vector3();
+
+    // Computes physical snow penetration depth e (m) from Mössner et al. (2013):
+    //   Flat/stepping:  e_flat = F_n / (H_V * L_ski * w_avg)
+    //   Edged carving:  F_n = H_V * (L_ski * e^2) / (2 * tan|Psi|)
+    //                   => e_edge = sqrt( (2 * F_n * tan|Psi|) / (H_V * L_ski) )
+    function computeSnowPenetration(FnPerSki, absPsi, H_V) {
+      const flatE = FnPerSki / (H_V * PHYS.contactLen * PHYS.wAvg);
+      if (absPsi < 0.08) {
+        return Math.min(0.18, Math.max(0.004, flatE));
+      }
+      const edgeE = Math.sqrt((2.0 * FnPerSki * Math.tan(Math.min(1.22, absPsi))) / (H_V * PHYS.contactLen));
+      const blend = Math.min(1.0, (absPsi - 0.08) / 0.25);
+      return Math.min(0.22, Math.max(0.004, flatE * (1 - blend) + edgeE * blend));
+    }
+
+    // Stamps both skis at their exact world-space positions (used both while standing/stepping and moving!)
+    function stampBothSkisInSnow(FnTotal, yawSkidOffset) {
+      const mode = MODES[currentModeKey];
+      const cosH = Math.cos(state.heading);
+      const sinH = Math.sin(state.heading);
+      const skiYaw = state.heading - yawSkidOffset;
+      const absPsi = Math.abs(state.edgeAngle);
+
+      // Weight distribution: in a carve, outside ski carries up to 80% of normal load (Komissarov App. B)
+      const outerWeightShare = 0.5 + Math.min(0.32, absPsi * 0.38);
+      const leftShare = state.edgeAngle > 0 ? outerWeightShare : (1.0 - outerWeightShare);
+      const rightShare = 1.0 - leftShare;
+
+      const leftFn = FnTotal * leftShare;
+      const rightFn = FnTotal * rightShare;
+
+      const leftE = computeSnowPenetration(leftFn, absPsi, mode.H_V);
+      const rightE = computeSnowPenetration(rightFn, absPsi, mode.H_V);
+      state.penetrationM = Math.max(leftE, rightE);
+
+      // Convert physical penetration depth (m) to heightmap intensity (0..1)
+      const depthScale = 4.6;
+      const bermSide = state.edgeAngle >= 0 ? -1 : 1; // Snow piles on the outside/downhill edge
+
+      const lx = state.x - cosH * PHYS.stanceHalfWidth;
+      const lz = state.z - sinH * PHYS.stanceHalfWidth;
+      const rx = state.x + cosH * PHYS.stanceHalfWidth;
+      const rz = state.z + sinH * PHYS.stanceHalfWidth;
+
+      const skidBoost = state.isSkidding ? 0.25 : 0;
+      const brakeBoost = state.brakeAmount * 0.35;
+
+      stampSkiFootprint(
+        lx, lz, skiYaw, state.edgeAngle,
+        Math.min(0.85, leftE * depthScale + 0.08),
+        Math.min(0.65, leftE * depthScale * (0.45 + absPsi * 0.75 + skidBoost + brakeBoost)),
+        bermSide
+      );
+      stampSkiFootprint(
+        rx, rz, skiYaw, state.edgeAngle,
+        Math.min(0.85, rightE * depthScale + 0.08),
+        Math.min(0.65, rightE * depthScale * (0.45 + absPsi * 0.75 + skidBoost + brakeBoost)),
+        bermSide
+      );
+      trailTexture.needsUpdate = true;
+    }
+
+    function resetRun(withInitialSpeed = true) {
+      state.x = 0;
+      state.z = 0;
+      state.y = getTerrainHeight(0, 0);
+      state.vx = 0;
+      state.vy = 0;
+      state.vz = withInitialSpeed ? -6.5 : 0;
+      state.heading = 0;
+      state.edgeAngle = 0;
+      state.tuckAmount = 0;
+      state.brakeAmount = 0;
+      state.grounded = true;
+      state.airTime = 0;
+      state.landingSquash = 0;
+      state.landingImpulseN = 0;
+      state.normalForceN = PHYS.mass * PHYS.g;
+      state.gForce = 1.0;
+      state.turnRadiusM = Infinity;
+      state.isSkidding = false;
+      state.airSpinRad = 0;
+      state.airFlipRad = 0;
+      state.grabAmount = 0;
+      state.didGrab = false;
+      state.switchStance = false;
+      state.prevEdgeAngle = 0;
+      state.unweightPump = 0;
+      state.doublePolePhase = 0;
+      state.lastDoublePoleStamp = -1;
+      state.tumbleTimer = 0;
+      state.cleanRunTime = 0;
+      state.tumbleRotX = 0;
+      state.tumbleRotY = 0;
+      state.tumbleRotZ = 0;
+      state.score = 0;
+      state.combo = 0;
+      state.maxSpeedKmh = 0;
+      state.distance = 0;
+      state.time = 0;
+      resetTrailCanvas();
+      clearWorldObjects();
+      spawnWorldAhead(0);
+      // Immediately press both skis into the fresh snow under the skier's standing weight!
+      stampBothSkisInSnow(PHYS.mass * PHYS.g, 0);
+      updateHUD(0);
+    }
+
+    function stepPhysics(dt) {
+      const mode = MODES[currentModeKey];
+      state.time += dt;
+
+      const steerInput = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+      const targetTuck = (input.tuck && !input.brake && state.grounded) ? 1 : 0;
+      const targetBrake = (input.brake && state.grounded) ? 1 : 0;
+
+      state.tuckAmount += (targetTuck - state.tuckAmount) * Math.min(1, dt * 7.0);
+      state.brakeAmount += (targetBrake - state.brakeAmount) * Math.min(1, dt * 7.5);
+      state.landingImpulseN = Math.max(0, state.landingImpulseN - dt * 2800);
+
+      // Smooth edging angle Psi (max ~68° = 1.18 rad per Frontiers 2020 slalom data)
+      const maxPsi = state.grounded ? 1.15 : 0.42;
+      const targetPsi = steerInput * maxPsi;
+      state.edgeAngle += (targetPsi - state.edgeAngle) * Math.min(1, dt * 7.8);
+
+      // Local terrain normal & slope angle alpha
+      getTerrainNormal(state.x, state.z, tmpNormal);
+      const cosAlpha = Math.max(0.25, Math.min(1.0, tmpNormal.y));
+      const sinAlpha = Math.sqrt(Math.max(0, 1.0 - cosAlpha * cosAlpha));
+      state.slopeAlphaRad = Math.acos(cosAlpha);
+
+      const speedHoriz = Math.hypot(state.vx, state.vz);
+      const absPsi = Math.abs(state.edgeAngle);
+
+      // 1. Komissarov / Howe / Lind & Sanders Carving Turn Radius: R = R_sc * cos(Psi)
+      //    When Psi -> 0, straight glide (R -> Infinity).
+      let R_turn = Infinity;
+      let omegaTurn = 0;
+      if (absPsi > 0.025 && state.grounded) {
+        // Blend smoothly from infinite radius at Psi=0 into true geometric R = R_sc * cos(Psi)
+        const carveEngagement = Math.min(1.0, absPsi / 0.22);
+        const geoR = Math.max(2.6, PHYS.R_sc * Math.cos(Math.min(1.32, absPsi)));
+        R_turn = geoR / carveEngagement;
+        omegaTurn = (speedHoriz / R_turn) * Math.sign(state.edgeAngle);
+      } else if (!state.grounded) {
+        omegaTurn = state.edgeAngle * 0.4;
+      }
+      state.turnRadiusM = R_turn;
+
+      // 2. Normal Reaction Force & G-Force (Komissarov Eq. 23, 25, 27, 33)
+      const F_nk = PHYS.mass * PHYS.g * cosAlpha;
+      const F_centrip = isFinite(R_turn) ? (PHYS.mass * speedHoriz * speedHoriz) / R_turn : 0;
+      const F_nc = Math.max(0, F_centrip - PHYS.mass * PHYS.g * sinAlpha * Math.abs(Math.sin(state.heading)));
+      const FnTotal = Math.sqrt(F_nk * F_nk + F_nc * F_nc) + state.landingImpulseN;
+      state.normalForceN = state.grounded ? FnTotal : 0;
+      state.gForce = state.grounded ? (FnTotal / (PHYS.mass * PHYS.g)) : 0;
+
+      // 3. Snow Shear Fracture Check (Komissarov Eq. 36-39 & Mössner et al. 2013)
+      //    If shear stress S = F_nc / (L_ski * e) > S_c, snow edge shears -> micro-skidding!
+      const estE = computeSnowPenetration(FnTotal * 0.72, absPsi, mode.H_V);
+      const shearStress = F_nc / Math.max(0.005, PHYS.contactLen * estE);
+      const snowFractured = state.grounded && absPsi > 0.25 && shearStress > mode.S_c;
+      state.isSkidding = snowFractured || state.brakeAmount > 0.25;
+
+      // If snow fractures, reduce carving angular rate slightly (skidding widens arc)
+      const lateralLimit = (mode.S_c * PHYS.contactLen * Math.max(estE,0.002) + PHYS.mass * PHYS.g * 0.35) / PHYS.mass;
+      const effectiveOmega = Math.sign(omegaTurn) * Math.min(Math.abs(omegaTurn), lateralLimit / Math.max(speedHoriz,1));
+      state.turnRadiusM = Math.abs(effectiveOmega)>0.0001 ? speedHoriz/Math.abs(effectiveOmega) : Infinity;
+      state.heading += effectiveOmega * dt;
+      state.heading = Math.max(-1.26, Math.min(1.26, state.heading));
+
+      if (state.grounded) {
+        // Gravity projected onto slope tangent
+        const gSlopeX = tmpNormal.x * PHYS.g;
+        const gSlopeZ = tmpNormal.z * PHYS.g;
+
+        const fwdX = Math.sin(state.heading);
+        const fwdZ = -Math.cos(state.heading);
+
+        const vFwd = Math.max(0, state.vx * fwdX + state.vz * fwdZ);
+        const vLat = state.vx * (-fwdZ) + state.vz * fwdX;
+
+        // Progressive clean-run flow boost: skiing cleanly without crashing builds momentum up to +45% top speed!
+        state.cleanRunTime += dt;
+        const flowBoost = 1.0;
+
+        // Tangential gravity acceleration along ski direction (boosted smoothly by clean-run flow)
+        const aGrav = (gSlopeX * fwdX + gSlopeZ * fwdZ) * cosAlpha;
+
+        // Snow friction F_f = mu * F_n (Komissarov Eq. 3) + snow compaction drag
+        const aFriction = (mode.muDry * FnTotal) / PHYS.mass;
+        const aCompaction = mode.compactionDrag * (estE * 14.0) * vFwd;
+
+        // Aerodynamic drag F_d = 0.5 * C_d * A * rho * v^2 (Komissarov Eq. 5, slightly lower as flow builds)
+        const cdA = (PHYS.cdAreaUpright * (1 - state.tuckAmount) + PHYS.cdAreaTuck * state.tuckAmount) / flowBoost;
+        const aAero = (0.5 * cdA * PHYS.rhoAir * vFwd * vFwd) / PHYS.mass;
+
+        // Skidding / Snowploughing braking dissipation (Komissarov Eq. 74: sin^2(Delta beta))
+        const skidDrag = (snowFractured ? 0.11 : 0) * vFwd + state.brakeAmount * 0.82 * vFwd;
+
+        let nextFwd = vFwd + (aGrav - aFriction - aCompaction - aAero - skidDrag) * dt;
+        nextFwd = Math.max(0, Math.min(44.5, nextFwd));
+
+        // Lateral carving grip damps side-slip (less grip when snow fractures or braking)
+        const gripRate = state.isSkidding ? 2.6 : 6.8;
+        const dampedLat = vLat * Math.max(0, 1.0 - dt * gripRate);
+
+        state.vx = fwdX * nextFwd + (-fwdZ) * dampedLat;
+        state.vz = fwdZ * nextFwd + fwdX * dampedLat;
+
+        // Jump / Ollie
+        if (input.jump) {
+          state.grounded = false;
+          state.vy = 3.0 + Math.min(1.2, nextFwd * 0.055);
+          state.airTime = 0;
+          input.jump = false;
+          audio.playImpact(0.55);
+        }
+      } else {
+        state.airTime += dt;
+        state.vy -= PHYS.g * dt;
+        const airDrag = 0.5 * PHYS.rhoAir * PHYS.cdAreaUpright * Math.hypot(state.vx,state.vz,state.vy) / PHYS.mass;
+        state.vx *= Math.exp(-airDrag*dt); state.vz *= Math.exp(-airDrag*dt); state.vy *= Math.exp(-airDrag*dt);
+        // Mid-air Tricks: Spin (A/D), Flip (W/S after 0.18s air grace), Grab (Shift/G)
+        const spinInput = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+        const flipInput = state.airTime > 0.18 ? ((input.tuck ? 1 : 0) - (input.brake ? 1 : 0)) : 0;
+        state.airSpinRad += spinInput * 5.4 * dt;
+        if (flipInput !== 0) {
+          state.airFlipRad += flipInput * 5.2 * dt;
+        } else {
+          // Gentle auto-leveling assist toward nearest upright 2*PI when player releases flip keys
+          const nearestUpright = Math.round(state.airFlipRad / (Math.PI * 2)) * (Math.PI * 2);
+          state.airFlipRad += (nearestUpright - state.airFlipRad) * Math.min(1, dt * 4.5);
+        }
+        const targetGrab = input.grab ? 1 : 0;
+        state.grabAmount += (targetGrab - state.grabAmount) * Math.min(1, dt * 12);
+        if (input.grab && state.airTime > 0.15) state.didGrab = true;
+      }
+
+      // Advance world position
+      const prevX = state.x;
+      const prevY = state.y;
+      const prevZ = state.z;
+      state.x += state.vx * dt;
+      state.z += state.vz * dt;
+
+      if (state.x < -38) { state.x = -38; state.vx = Math.abs(state.vx) * 0.35; }
+      if (state.x > 38) { state.x = 38; state.vx = -Math.abs(state.vx) * 0.35; }
+
+      const groundY = getTerrainHeight(state.x, state.z);
+
+      // Check Snowpark Jump Ramp launch!
+      if (state.grounded) {
+        for (let i = 0; i < jumpRamps.length; i++) {
+          const r = jumpRamps[i];
+          if (!r.launched && Math.abs(state.x - r.x) < 2.4 && Math.abs(state.z - (r.z - 1.8)) < 2.2) {
+            r.launched = true;
+            state.grounded = false;
+            state.vy = Math.min(8.5, Math.max(3.0, speedHoriz * Math.sin(0.38)));
+            state.airTime = 0;
+            state.airSpinRad = 0;
+            state.airFlipRad = 0;
+            state.didGrab = false;
+            audio.playImpact(0.75);
+            showToast('RAMPA UÇUŞU!');
+          }
+        }
+      }
+
+      if (state.grounded) {
+        const naturalVy = (groundY - prevY) / Math.max(dt, 0.001);
+        if (naturalVy < state.vy - 7.2 && speedHoriz > 23.0) {
+          state.grounded = false;
+          state.airTime = 0;
+          state.airSpinRad = 0;
+          state.airFlipRad = 0;
+          state.didGrab = false;
+        } else {
+          state.y = groundY;
+          state.vy = state.vy * 0.65 + naturalVy * 0.35;
+          state.grabAmount += (0 - state.grabAmount) * Math.min(1, dt * 12);
+        }
+      } else {
+        state.y += state.vy * dt;
+        if (state.y <= groundY) {
+          getTerrainNormal(state.x,state.z,tmpNormal);
+          const impactSpeed = Math.max(0,-(state.vx*tmpNormal.x + state.vy*tmpNormal.y + state.vz*tmpNormal.z));
+          state.y = groundY;
+          state.grounded = true;
+          state.landingSquash = Math.min(1.0, impactSpeed * 0.09);
+          state.landingImpulseN = Math.min(2400, PHYS.mass * impactSpeed * 3.8);
+          audio.playImpact(Math.min(1.35, 0.65 + state.airTime * 0.55));
+          stampBothSkisInSnow(PHYS.mass * PHYS.g + state.landingImpulseN, 0);
+
+          for (let k = 0; k < 26; k++) {
+            const ang = (k / 26) * Math.PI * 2;
+            emitPowder(
+              state.x, state.y, state.z,
+              Math.cos(ang) * 4.2 + state.vx * 0.25,
+              1.4 + Math.random() * 2.4,
+              Math.sin(ang) * 4.2 + state.vz * 0.25,
+              0.9 + Math.random() * 0.75
+            );
+          }
+
+          // Check if skier landed upside-down or mid-flip! (>62° off upright triggers recoverable ground tumble!)
+          const flipError = Math.abs(Math.atan2(Math.sin(state.airFlipRad), Math.cos(state.airFlipRad)));
+          if (flipError > 1.08) {
+            const badFlip = state.airFlipRad;
+            state.airSpinRad = 0;
+            state.airFlipRad = 0;
+            state.didGrab = false;
+            state.grabAmount = 0;
+            state.airTime = 0;
+            startTumble('TERS İNİŞ — YUVARLANDIN!', badFlip, false);
+            return;
+          }
+
+          // Evaluate landed Tricks (Spins, Flips, Grabs, Switch Stance!)
+          const spinDeg = Math.round((Math.abs(state.airSpinRad) * 57.2958) / 180) * 180;
+          const flips = Math.round(Math.abs(state.airFlipRad) / (Math.PI * 1.7));
+          const trickParts = [];
+          let trickPts = 0;
+
+          if (spinDeg >= 180) {
+            trickParts.push(`${spinDeg}° SPIN`);
+            trickPts += spinDeg * 1.2;
+            if ((spinDeg / 180) % 2 === 1) state.switchStance = !state.switchStance;
+          }
+          if (flips >= 1) {
+            trickParts.push(state.airFlipRad > 0 ? `${flips > 1 ? flips + 'x ' : ''}FRONTFLIP` : `${flips > 1 ? flips + 'x ' : ''}BACKFLIP`);
+            trickPts += flips * 520;
+          }
+          if (state.didGrab) {
+            trickParts.push('SAFETY GRAB');
+            trickPts += 260;
+          }
+
+          if (trickPts > 0) {
+            const mult = state.switchStance ? 1.5 : 1.0;
+            const totalPts = Math.round(trickPts * mult);
+            state.score += totalPts;
+            audio.playChime(state.combo + 2);
+            showToast(`${state.switchStance ? 'SWITCH ' : ''}${trickParts.join(' + ')}  +${totalPts}`);
+          } else if (state.airTime > 0.55) {
+            const pts = Math.round(state.airTime * 180);
+            state.score += pts;
+            showToast(`HAVADA SÜZÜLÜŞ +${pts}`);
+          }
+
+          state.airSpinRad = 0;
+          state.airFlipRad = 0;
+          state.didGrab = false;
+          state.grabAmount = 0;
+          state.airTime = 0;
+        }
+      }
+
+      // Stamp oriented ski footprints ONLY when skis are truly touching the snow (never while airborne!)
+      clearAheadInTrail(state.z);
+      const heightAboveSnow = state.y - groundY;
+      const trulyOnSnow = state.grounded && heightAboveSnow <= 0.08 && state.airTime === 0;
+      if (trulyOnSnow) {
+        const skidYaw = state.brakeAmount * (state.edgeAngle >= 0 ? 0.78 : -0.78);
+        const curX = state.x, curZ = state.z;
+        state.x = (prevX + curX) * 0.5;
+        state.z = (prevZ + curZ) * 0.5;
+        stampBothSkisInSnow(FnTotal, skidYaw);
+        state.x = curX;
+        state.z = curZ;
+        stampBothSkisInSnow(FnTotal, skidYaw);
+
+        const sprayEnergy = (absPsi * 0.95 + (state.isSkidding ? 0.85 : 0) + state.brakeAmount * 1.4) * (speedHoriz / 18) * mode.sprayMult;
+        const emitCount = Math.floor(sprayEnergy * 5.8);
+        const cosH = Math.cos(state.heading);
+        const sinH = Math.sin(state.heading);
+        const outDir = state.edgeAngle >= 0 ? -1 : 1;
+        for (let i = 0; i < emitCount; i++) {
+          const sx = state.x + cosH * (outDir * PHYS.stanceHalfWidth);
+          const sz = state.z + sinH * (outDir * PHYS.stanceHalfWidth);
+          emitPowder(
+            sx, state.y, sz,
+            cosH * outDir * (2.4 + sprayEnergy * 1.6) + state.vx * 0.32,
+            0.9 + sprayEnergy * 1.25,
+            sinH * outDir * (2.4 + sprayEnergy * 1.6) + state.vz * 0.32,
+            0.5 + Math.random() * 0.8 * Math.min(1.5, sprayEnergy)
+          );
+        }
+      }
+
+      // Telemetry, score & slalom gates
+      const speedKmh = Math.round(Math.hypot(state.vx, state.vz) * 3.6);
+      if (speedKmh > state.maxSpeedKmh) state.maxSpeedKmh = speedKmh;
+      state.distance = Math.max(state.distance, Math.round(-state.z));
+      state.score += speedHoriz * dt * 1.3;
+      if(Math.floor(state.time)%5===0 && Math.floor(state.time-dt)%5!==0)saveRecord();
+
+      for (let i = 0; i < slalomGates.length; i++) {
+        const g = slalomGates[i];
+        if (!g.passed && state.z <= g.z) {
+          g.passed = true;
+          if (Math.abs(state.x - g.x) <= g.halfW) {
+            state.combo += 1;
+            const pts = 200 + state.combo * 50;
+            state.score += pts;
+            audio.playChime(state.combo);
+            showToast(`SLALOM x${state.combo}  +${pts}`);
+          } else {
+            state.combo = 0;
+          }
+        }
+      }
+
+      for (let i = 0; i < worldProps.length; i++) {
+        const p = worldProps[i];
+        const dx = state.x - p.x;
+        const dz = state.z - p.z;
+        const distSq = dx * dx + dz * dz;
+        const hitR = p.radius + 0.36;
+        if (distSq < hitR * hitR && state.y < getTerrainHeight(p.x, p.z) + 1.8) {
+          if (zenMode) {
+            const push = dx >= 0 ? 1 : -1;
+            state.x += push * 0.45;
+            state.vx = push * 4.5;
+          } else {
+            state.vx = (dx >= 0 ? 1 : -1) * 4.2;
+            state.vz *= 0.55;
+            startTumble(p.type === 'rock' ? 'KAYAYA ÇARPTIN!' : 'AĞACA ÇARPTIN!', 0.6, true);
+            break;
+          }
+        } else if (!p.nearMissed && distSq < (hitR + 1.35) * (hitR + 1.35) && state.z < p.z && speedHoriz > 14) {
+          p.nearMissed = true;
+          state.score += 150;
+          showToast('YAKIN GEÇİŞ +150');
+        }
+      }
+
+      spawnWorldAhead(state.z);
+      audio.update(speedKmh, Math.min(1, absPsi / 1.1), state.isSkidding ? 0.85 : 0, state.grounded, state.status === 'playing');
+      updateHUD(speedKmh);
+    }
+
+    // =========================================================================
+    // 12. BIOMECHANICAL SKIER ANIMATION & DUAL-SKI TERRAIN IK
+    // =========================================================================
+    function updateSkierAnimation(dt, speed) {
+      const steerDir = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+
+      // Rhythmic inside-hand pole plant on carving initiation + physical snow crater stamp!
+      if (state.status === 'playing' && state.grounded && Math.abs(steerDir) > 0 && Math.abs(state.edgeAngle) > 0.32 && state.polePlantTimer <= 0) {
+        state.polePlantTimer = 0.44;
+        state.polePlantSide = steerDir;
+        state.polePlantedThisSwing = false;
+      }
+      if (state.polePlantTimer > 0) {
+        state.polePlantTimer = Math.max(0, state.polePlantTimer - dt);
+        if (!state.polePlantedThisSwing && state.polePlantTimer < 0.24 && state.grounded && state.airTime === 0) {
+          state.polePlantedThisSwing = true;
+          const cosH = Math.cos(state.heading);
+          const sinH = Math.sin(state.heading);
+          const px = state.x + cosH * (state.polePlantSide * 0.55) + sinH * 0.45;
+          const pz = state.z + sinH * (state.polePlantSide * 0.55) - cosH * 0.45;
+          stampPoleImprint(px, pz);
+          trailTexture.needsUpdate = true;
+        }
+      }
+
+      state.landingSquash = Math.max(0, state.landingSquash - dt * 2.6);
+
+      // Smooth frame-rate-independent damping factor (eliminates micro-jitter completely)
+      const smoothFast = 1.0 - Math.exp(-14.0 * dt);
+      const smoothMed = 1.0 - Math.exp(-10.0 * dt);
+
+      const targetSink = state.grounded ? Math.min(0.12, state.penetrationM * 0.65) : 0;
+      state.smoothSink += (targetSink - state.smoothSink) * smoothMed;
+      skierRig.root.position.set(state.x, state.y - state.smoothSink, state.z);
+
+      const skidYaw = state.brakeAmount * (state.edgeAngle >= 0 ? 0.78 : -0.78);
+      const switchYaw = state.switchStance ? Math.PI : 0;
+      skierRig.root.rotation.set(state.airFlipRad, -state.heading + skidYaw + switchYaw - state.airSpinRad, 0);
+
+      getTerrainNormal(state.x, state.z, tmpNormal);
+      const targetSlopePitch = state.grounded
+        ? Math.atan2(tmpNormal.z, tmpNormal.y) * Math.cos(state.heading)
+        : Math.max(-0.32, Math.min(0.42, state.vy * 0.045));
+      state.smoothSlopePitch += (targetSlopePitch - state.smoothSlopePitch) * smoothMed;
+      const slopePitch = state.smoothSlopePitch;
+
+      // 1. Edge-to-Edge Vertical Unweighting Pump (real alpine carving transition biomechanics)
+      const edgeRate = Math.abs(state.edgeAngle - state.prevEdgeAngle) / Math.max(dt, 0.001);
+      state.prevEdgeAngle = state.edgeAngle;
+      const targetUnweight = (state.grounded && edgeRate > 0.6) ? Math.min(0.14, edgeRate * 0.045) : 0;
+      state.unweightPump += (targetUnweight - state.unweightPump) * Math.min(1, dt * 10);
+
+      // 2. Low-Speed Double-Poling Propulsion Cycle (PSIA / Frontiers 2022 double-pole kinematics)
+      const speedKmh = speed * 3.6;
+      const isDoublePoling = (state.status === 'playing' && state.grounded && speedKmh < 32 && state.tuckAmount < 0.25 && state.brakeAmount < 0.2 && Math.abs(state.edgeAngle) < 0.35);
+      let dpSwing = 0, dpTrunk = 0, dpKnee = 0;
+      if (isDoublePoling) {
+        state.doublePolePhase += dt * 4.4;
+        const cycle = Math.floor(state.doublePolePhase / (Math.PI * 2));
+        const p = Math.sin(state.doublePolePhase); // +1 = arms forward/high, -1 = arms pushed back
+        dpSwing = p * 0.68;
+        dpTrunk = Math.max(0, -p) * 0.28;
+        dpKnee = Math.max(0, -p) * 0.14;
+        // Stamp twin pole baskets into snow at pole-plant phase & give subtle push impulse
+        if (p < -0.2 && cycle !== state.lastDoublePoleStamp) {
+          state.lastDoublePoleStamp = cycle;
+          const cosH = Math.cos(state.heading), sinH = Math.sin(state.heading);
+          stampPoleImprint(state.x - cosH * 0.44, state.z - sinH * 0.44);
+          stampPoleImprint(state.x + cosH * 0.44, state.z + sinH * 0.44);
+          trailTexture.needsUpdate = true;
+        }
+      }
+
+      // 3. Smooth Fluid Balance Sway (no high-frequency vibration/jitter!)
+      const idleBreath = state.status === 'menu' ? Math.sin(state.time * 1.6) * 0.014 : 0;
+      const armBalance = (state.status === 'playing' && state.grounded)
+        ? Math.sin(state.time * 2.6 + state.heading * 1.5) * 0.055 : 0;
+      const airWindmill = !state.grounded ? Math.sin(state.time * 9.0) * 0.28 * (1 - state.grabAmount) : 0;
+
+      // Smoothly damped hip inclination & athletic crouch
+      const targetLeanRoll = -state.edgeAngle * 0.68;
+      state.smoothLeanRoll += (targetLeanRoll - state.smoothLeanRoll) * smoothFast;
+      const leanRoll = state.smoothLeanRoll;
+
+      const targetCrouch = Math.max(0.05,
+        0.15 + state.tuckAmount * 0.25 + state.landingSquash * 0.24 +
+        Math.abs(state.edgeAngle) * 0.09 + state.grabAmount * 0.34 +
+        dpKnee + idleBreath - state.unweightPump
+      );
+      state.smoothCrouch += (targetCrouch - state.smoothCrouch) * smoothFast;
+      const crouch = state.smoothCrouch;
+
+      skierRig.pelvis.position.y = 0.96 - crouch * 0.64;
+      skierRig.pelvis.rotation.z = leanRoll;
+      skierRig.pelvis.rotation.x = -slopePitch * 0.55 - 0.11 - state.tuckAmount * 0.38 - dpTrunk * 0.4;
+
+      // Counter-angulation keeps shoulders level & quiet downhill while hips & knees drive the carve
+      skierRig.torso.rotation.z = -leanRoll * 0.54;
+      skierRig.torso.rotation.x = -0.16 - state.tuckAmount * 0.55 - state.landingSquash * 0.24 - dpTrunk;
+      skierRig.torso.rotation.y = state.edgeAngle * 0.22;
+
+      skierRig.head.rotation.x = 0.20 + state.tuckAmount * 0.44 + dpTrunk * 0.5;
+      skierRig.head.rotation.y = -state.edgeAngle * 0.28 + (state.switchStance ? 0.85 : 0);
+      skierRig.scarf.rotation.x = 0.12 + Math.sin(state.time * (5 + speed * 0.4)) * 0.16;
+      skierRig.scarf.rotation.y = Math.cos(state.time * (4 + speed * 0.35)) * 0.20;
+
+      const tuck = state.tuckAmount;
+      const airSpread = state.grounded ? 0 : 0.48;
+      const plantPhase = state.polePlantTimer > 0 ? Math.sin((state.polePlantTimer / 0.44) * Math.PI) : 0;
+
+      // Active Left Arm & Pole (forward athletic hands, double-pole swing, carve pole plant, air balance)
+      const lPlant = state.polePlantSide < 0 ? plantPhase : 0;
+      skierRig.leftArm.shoulder.rotation.z = 0.34 - tuck * 0.22 + airSpread + Math.max(0, -state.edgeAngle) * 0.22 + armBalance;
+      skierRig.leftArm.shoulder.rotation.x = -0.38 - tuck * 0.62 - lPlant * 0.58 - dpSwing + airWindmill;
+      skierRig.leftArm.elbow.rotation.x = -0.64 - tuck * 0.68 + lPlant * 0.32 + Math.max(0, -dpSwing) * 0.45;
+      skierRig.leftArm.polePivot.rotation.x = lPlant * 0.48 - dpSwing * 0.35;
+
+      // Active Right Arm & Pole (plus Safety Grab reach in mid-air!)
+      const rPlant = state.polePlantSide > 0 ? plantPhase : 0;
+      const gAmt = state.grabAmount;
+      skierRig.rightArm.shoulder.rotation.z = -0.34 + tuck * 0.22 - airSpread * (1 - gAmt) - Math.max(0, state.edgeAngle) * 0.22 + gAmt * 0.38 - armBalance;
+      skierRig.rightArm.shoulder.rotation.x = -0.38 - tuck * 0.62 - rPlant * 0.58 - dpSwing * (1 - gAmt) - gAmt * 0.95 - airWindmill;
+      skierRig.rightArm.elbow.rotation.x = -0.64 - tuck * 0.68 + rPlant * 0.32 + Math.max(0, -dpSwing) * 0.45 + gAmt * 0.35;
+      skierRig.rightArm.polePivot.rotation.x = rPlant * 0.48 - dpSwing * 0.35;
+
+      // Dual-Ski Independent Terrain IK + Real Inside-Ski Fore-Aft Lead!
+      const cosH = Math.cos(state.heading);
+      const sinH = Math.sin(state.heading);
+      [skierRig.leftLeg, skierRig.rightLeg].forEach(leg => {
+        const sx = state.x + cosH * (leg.side * PHYS.stanceHalfWidth);
+        const sz = state.z + sinH * (leg.side * PHYS.stanceHalfWidth);
+        const groundY = getTerrainHeight(sx, sz);
+        const heightDelta = state.grounded ? Math.max(-0.22, Math.min(0.22, groundY - state.y)) : 0;
+
+        // Inside ski slides naturally ~18cm ahead of outside ski during carving (real alpine biomechanics!)
+        const isInsideLeg = (leg.side * state.edgeAngle > 0);
+        const foreAftLead = (isInsideLeg ? -0.18 : 0.04) * Math.min(1, Math.abs(state.edgeAngle) / 0.85);
+        leg.hip.position.z = foreAftLead;
+
+        // Inside leg flexes deeper while outside leg extends to bear centrifugal G-load
+        const carveFlex = (isInsideLeg ? 0.28 : 0.04) * Math.abs(state.edgeAngle);
+        const stridePump = isDoublePoling ? Math.sin(state.doublePolePhase + (leg.side > 0 ? 0 : Math.PI)) * 0.07 : 0;
+        const targetKnee = Math.max(0.18, Math.min(1.28, 0.38 + crouch * 1.44 + heightDelta * 1.35 + carveFlex + stridePump));
+        if (leg.side < 0) {
+          state.smoothLeftKnee += (targetKnee - state.smoothLeftKnee) * smoothFast;
+        } else {
+          state.smoothRightKnee += (targetKnee - state.smoothRightKnee) * smoothFast;
+        }
+        const kneeBend = leg.side < 0 ? state.smoothLeftKnee : state.smoothRightKnee;
+
+        leg.hip.rotation.x = kneeBend * 0.62 - foreAftLead * 0.6;
+        leg.knee.rotation.x = -kneeBend;
+
+        const norm = leg.side < 0 ? getTerrainNormal(sx, sz, tmpLeftNorm) : getTerrainNormal(sx, sz, tmpRightNorm);
+        const localPitch = state.grounded ? Math.atan2(norm.z, norm.y) * cosH : 0.16;
+        leg.skiGroup.rotation.x = kneeBend * 0.38 + localPitch * 0.55;
+        // True ski edge tilt Psi
+        leg.skiGroup.rotation.z = -state.edgeAngle * 0.42;
+      });
+    }
+
+    // =========================================================================
+    // 13. HUD, OVERLAYS & CAMERA
+    // =========================================================================
+    const elSpeed = document.getElementById('hud-speed');
+    const elDist = document.getElementById('hud-dist');
+    const elScore = document.getElementById('hud-score');
+    const elPhysRegime = document.getElementById('phys-regime');
+    const elPhysPsi = document.getElementById('phys-psi');
+    const elPhysRadius = document.getElementById('phys-radius');
+    const elPhysDepth = document.getElementById('phys-depth');
+    const elPhysFn = document.getElementById('phys-fn');
+    const elPhysG = document.getElementById('phys-g');
+    const elPhysSlope = document.getElementById('phys-slope');
+    const elCarveFill = document.getElementById('carve-fill');
+    const elStance = document.getElementById('hud-stance');
+    const elCombo = document.getElementById('hud-combo');
+    const toastEl = document.getElementById('toast-banner');
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 1450);
+    }
+
+    function updateHUD(speedKmh) {
+      elSpeed.textContent = speedKmh;
+      elDist.textContent = state.distance;
+      elScore.textContent = Math.floor(state.score).toLocaleString('tr-TR');
+
+      const psiDeg = Math.round(Math.abs(state.edgeAngle) * 57.2958);
+      elPhysPsi.textContent = `${psiDeg}°`;
+      elPhysRadius.textContent = isFinite(state.turnRadiusM) && state.turnRadiusM < 250
+        ? `${state.turnRadiusM.toFixed(1)} m` : '∞ m';
+      elPhysDepth.textContent = `${Math.round(state.penetrationM * 1000)} mm`;
+      elPhysFn.textContent = `${Math.round(state.normalForceN)} N`;
+      elPhysG.textContent = `${state.gForce.toFixed(2)} G`;
+      elPhysSlope.textContent = `${Math.round(state.slopeAlphaRad * 57.2958)}°`;
+
+      if (!state.grounded) elPhysRegime.textContent = 'UÇUŞ';
+      else if (state.brakeAmount > 0.25) elPhysRegime.textContent = 'FREN / SKID';
+      else if (state.isSkidding) elPhysRegime.textContent = 'MİKRO-SKID';
+      else if (psiDeg > 8) elPhysRegime.textContent = 'SAF CARVING';
+      else elPhysRegime.textContent = 'SÜZÜLÜŞ';
+
+      const pct = Math.min(50, (Math.abs(state.edgeAngle) / 1.15) * 50);
+      if (state.edgeAngle >= 0) {
+        elCarveFill.style.left = '50%';
+        elCarveFill.style.width = `${pct}%`;
+      } else {
+        elCarveFill.style.left = `${50 - pct}%`;
+        elCarveFill.style.width = `${pct}%`;
+      }
+
+      if (!state.grounded) elStance.textContent = 'Havada Süzülüş';
+      else if (state.brakeAmount > 0.3) elStance.textContent = 'Yan Kayma Freni';
+      else if (state.tuckAmount > 0.45) elStance.textContent = 'Aerodinamik Çömelme';
+      else if (psiDeg > 18) elStance.textContent = state.edgeAngle > 0 ? 'Sağa Carving' : 'Sola Carving';
+      else elStance.textContent = 'Dengeli İniş';
+
+      elCombo.textContent = state.combo > 0 ? `x${state.combo}` : '';
+    }
+
+    function applyMode(key) {
+      currentModeKey = key;
+      const m = MODES[key];
+      skyMat.uniforms.uTopColor.value.copy(m.skyTop);
+      skyMat.uniforms.uHorizonColor.value.copy(m.skyHorizon);
+      skyMat.uniforms.uSunDir.value.copy(m.sunDir);
+      skyMat.uniforms.uSunColor.value.copy(m.sunColor);
+
+      snowUniforms.uSunDir.value.copy(m.sunDir);
+      snowUniforms.uSunColor.value.copy(m.sunColor);
+      snowUniforms.uShadowTint.value.copy(m.shadowTint);
+      snowUniforms.uSssColor.value.copy(m.sssColor);
+      snowUniforms.uTrackColor.value.copy(m.trackColor);
+      snowUniforms.uFogColor.value.copy(m.fogColor);
+      snowUniforms.uGlitterStrength.value = m.glitterStrength;
+      snowUniforms.uTrackDepthScale.value = m.visualDepthGain;
+      snowUniforms.uGroomedPattern.value = key === 'groomed' ? 1.0 : 0.0;
+
+      scene.fog.color.copy(m.fogColor);
+      sunLight.color.copy(m.sunColor);
+      document.getElementById('btn-snow-mode').textContent = m.name;
+
+      document.querySelectorAll('.mode-pill').forEach(b => {
+        b.classList.toggle('selected', b.dataset.mode === key);
+      });
+    }
+
+    function startTumble(reason, initialFlipRad = 0, isFatal = false) {
+      if (state.status === 'tumbling') return;
+      state.status = 'tumbling';
+      state.tumbleTimer = 0;
+      state.tumbleReason = reason;
+      state.tumbleFatal = isFatal;
+      state.combo = 0;
+      state.cleanRunTime = 0;
+      state.tumbleRotX = initialFlipRad;
+      state.tumbleRotY = -state.heading;
+      state.tumbleRotZ = state.edgeAngle * 1.2;
+      const spd = Math.hypot(state.vx, state.vz);
+      state.tumbleVelRotX = -(5.5 + spd * 0.32);
+      state.tumbleVelRotZ = (Math.random() > 0.5 ? 1 : -1) * (3.2 + spd * 0.16);
+      state.vy = Math.max(3.6, Math.abs(state.vy) * 0.42);
+      state.grounded = false;
+      audio.playImpact(1.45);
+      showToast(reason);
+      // Heavy snow impact burst
+      for (let k = 0; k < 34; k++) {
+        const ang = (k / 34) * Math.PI * 2;
+        emitPowder(
+          state.x, state.y + 0.2, state.z,
+          Math.cos(ang) * 5.2 + state.vx * 0.35,
+          2.0 + Math.random() * 2.8,
+          Math.sin(ang) * 5.2 + state.vz * 0.35,
+          1.1 + Math.random() * 0.9
+        );
+      }
+    }
+
+    function stepTumbling(dt) {
+      state.time += dt;
+      state.tumbleTimer += dt;
+
+      // Gravity + terrain slope rolling momentum with snow friction
+      state.vy -= PHYS.g * 1.65 * dt;
+      state.vx *= Math.max(0, 1 - dt * 1.15);
+      state.vz *= Math.max(0, 1 - dt * 1.05);
+      state.x += state.vx * dt;
+      state.z += state.vz * dt;
+      state.y += state.vy * dt;
+
+      const groundY = getTerrainHeight(state.x, state.z);
+      const speedHoriz = Math.hypot(state.vx, state.vz);
+
+      if (state.y <= groundY + 0.32) {
+        state.y = groundY + 0.32;
+        if (state.vy < -2.0) {
+          state.vy = Math.abs(state.vy) * 0.36;
+          audio.playImpact(Math.min(1.0, Math.abs(state.vy) * 0.22));
+          // Erupt snow cloud on each ground bounce!
+          for (let k = 0; k < 14; k++) {
+            emitPowder(
+              state.x, groundY, state.z,
+              (Math.random() - 0.5) * 4.5 + state.vx * 0.3,
+              1.2 + Math.random() * 2.0,
+              (Math.random() - 0.5) * 4.5 + state.vz * 0.3,
+              0.85 + Math.random() * 0.7
+            );
+          }
+        } else {
+          state.vy = 0;
+        }
+        // Carve a wide tumbling body depression into the snow as the skier rolls
+        clearAheadInTrail(state.z);
+        stampSkiFootprint(state.x, state.z, state.tumbleRotY, 0, 0.55, 0.5, 1);
+        trailTexture.needsUpdate = true;
+
+        // Rolling angular velocity couples to downhill speed
+        state.tumbleVelRotX = -Math.max(1.2, speedHoriz * 0.42);
+        state.tumbleVelRotZ *= Math.max(0, 1 - dt * 1.4);
+      }
+
+      state.tumbleRotX += state.tumbleVelRotX * dt;
+      state.tumbleRotZ += state.tumbleVelRotZ * dt;
+      state.tumbleRotY += state.tumbleVelRotZ * 0.35 * dt;
+
+      // Ragdoll flailing limbs during the ground roll
+      const flail = state.tumbleTimer * 9.5;
+      skierRig.root.position.set(state.x, state.y, state.z);
+      skierRig.root.rotation.set(state.tumbleRotX, state.tumbleRotY, state.tumbleRotZ);
+      skierRig.pelvis.position.y = 0.28;
+      skierRig.pelvis.rotation.set(0.35 * Math.sin(flail), 0, 0.4 * Math.cos(flail * 0.8));
+      skierRig.torso.rotation.set(0.45 * Math.sin(flail * 0.9), 0.3 * Math.cos(flail), 0.35 * Math.sin(flail * 1.1));
+      skierRig.head.rotation.set(0.3 * Math.cos(flail), 0.4 * Math.sin(flail * 0.7), 0);
+
+      skierRig.leftArm.shoulder.rotation.set(-1.4 + Math.sin(flail) * 1.1, 0, 1.1 + Math.cos(flail * 0.9) * 0.6);
+      skierRig.leftArm.elbow.rotation.set(-0.9 - Math.abs(Math.sin(flail)) * 0.8, 0, 0);
+      skierRig.rightArm.shoulder.rotation.set(-1.4 + Math.cos(flail * 1.1) * 1.1, 0, -1.1 - Math.sin(flail * 0.8) * 0.6);
+      skierRig.rightArm.elbow.rotation.set(-0.9 - Math.abs(Math.cos(flail)) * 0.8, 0, 0);
+
+      skierRig.leftLeg.hip.position.z = 0;
+      skierRig.rightLeg.hip.position.z = 0;
+      skierRig.leftLeg.hip.rotation.set(0.6 + Math.sin(flail * 1.2) * 0.85, 0, 0.25);
+      skierRig.leftLeg.knee.rotation.set(-1.1 - Math.abs(Math.cos(flail)) * 0.7, 0, 0);
+      skierRig.rightLeg.hip.rotation.set(0.6 + Math.cos(flail * 1.2) * 0.85, 0, -0.25);
+      skierRig.rightLeg.knee.rotation.set(-1.1 - Math.abs(Math.sin(flail)) * 0.7, 0, 0);
+
+      audio.update(Math.round(speedHoriz * 3.6), 0.6, 0.9, true, true);
+      updateHUD(Math.round(speedHoriz * 3.6));
+
+      // Finish tumble after ~1.8s or once slowed down — stand back up and continue unless fatal obstacle crash!
+      if (state.tumbleTimer > 1.85 || (state.tumbleTimer > 1.0 && speedHoriz < 1.5)) {
+        if (!state.tumbleFatal || zenMode) {
+          state.status = 'playing';
+          state.grounded = true;
+          state.y = getTerrainHeight(state.x, state.z);
+          state.vx = 0;
+          state.vy = 0;
+          state.vz = -6.0;
+          state.heading = 0;
+          state.edgeAngle = 0;
+          state.airFlipRad = 0;
+          state.airSpinRad = 0;
+          state.didGrab = false;
+          state.grabAmount = 0;
+          state.landingSquash = 0.35;
+          showToast('TOPARLANDIN — DEVAM!');
+        } else {
+          triggerCrash(state.tumbleReason);
+        }
+      }
+    }
+
+    function triggerCrash(reason) {
+      saveRecord();
+      state.status = 'gameover';
+      audio.playImpact(1.4);
+      audio.update(0, 0, 0, false, false);
+      document.getElementById('crash-reason').textContent = reason + ' · REKOR '+bestScore;
+      document.getElementById('end-score').textContent = Math.floor(state.score).toLocaleString('tr-TR');
+      document.getElementById('end-dist').textContent = `${state.distance} m`;
+      document.getElementById('end-maxspd').textContent = `${state.maxSpeedKmh} km/h`;
+      document.getElementById('gameover-overlay').classList.remove('hidden');
+    }
+
+    const camPosSmooth = new THREE.Vector3(2.8, 3.8, 5.2);
+    const camLookSmooth = new THREE.Vector3(0, 0.8, -10);
+
+    function updateCamera(dt, speed) {
+      const targetPos = new THREE.Vector3();
+      const targetLook = new THREE.Vector3();
+      let targetFov = 58;
+
+      if (state.status === 'menu') {
+        // Serene slow cinematic orbit looking over the sunlit snowy ridge & skier's standing footprints
+        skierRig.head.visible = true;
+        const sway = Math.sin(state.time * 0.25) * 1.4;
+        targetPos.set(2.4 + sway, state.y + 2.3, state.z + 4.8);
+        targetLook.set(state.x - 0.5, state.y + 0.5, state.z - 12);
+        targetFov = 54;
+      } else {
+        const mode = CAM_MODES[camModeIdx];
+        const sinH = Math.sin(state.heading);
+        const cosH = Math.cos(state.heading);
+
+        if (mode === 'fps') {
+          skierRig.head.visible = false;
+          targetPos.set(state.x + sinH * 0.14, state.y + 1.50 - state.tuckAmount * 0.30, state.z - cosH * 0.14);
+          targetLook.set(state.x + sinH * 14, state.y - 2.1, state.z - cosH * 14);
+          targetFov = 72 + Math.min(12, speed * 0.34);
+        } else if (mode === 'close') {
+          skierRig.head.visible = true;
+          targetPos.set(state.x - sinH * 3.8 + state.edgeAngle * 0.9, state.y + 2.2, state.z + cosH * 3.8);
+          targetLook.set(state.x + sinH * 7, state.y + 0.45, state.z - cosH * 7);
+          targetFov = 62 + Math.min(10, speed * 0.28);
+        } else {
+          skierRig.head.visible = true;
+          targetPos.set(state.x - sinH * 6.4 + state.edgeAngle * 1.4, state.y + 3.4, state.z + cosH * 6.4);
+          targetLook.set(state.x + sinH * 9, state.y + 0.6, state.z - cosH * 9);
+          targetFov = 58 + Math.min(10, speed * 0.26);
+        }
+      }
+
+      const alphaPos = (state.status !== 'menu' && CAM_MODES[camModeIdx] === 'fps')
+        ? (1.0 - Math.exp(-22.0 * dt)) : (1.0 - Math.exp(-8.5 * dt));
+      const alphaLook = 1.0 - Math.exp(-11.0 * dt);
+      camPosSmooth.lerp(targetPos, alphaPos);
+      camLookSmooth.lerp(targetLook, alphaLook);
+
+      const camGround = getTerrainHeight(camPosSmooth.x, camPosSmooth.z) + 0.6;
+      if (camPosSmooth.y < camGround) camPosSmooth.y = camGround;
+
+      camera.position.copy(camPosSmooth);
+      camera.lookAt(camLookSmooth);
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 4.5);
+      camera.updateProjectionMatrix();
+    }
+
+    function updateParticles(dt) {
+      for (let i = 0; i < MAX_SPRAY; i++) {
+        if (sprayLife[i] > 0) {
+          sprayLife[i] -= dt;
+          if (sprayLife[i] <= 0) {
+            sprayPositions[i * 3 + 1] = -9999;
+            spraySizes[i] = 0;
+          } else {
+            sprayVel[i * 3 + 1] -= PHYS.g * dt;
+            sprayVel[i * 3] += 0.65*dt;
+            sprayVel[i * 3] *= (1 - dt * 1.4);
+            sprayVel[i * 3 + 2] *= (1 - dt * 1.4);
+            sprayPositions[i * 3] += sprayVel[i * 3] * dt;
+            sprayPositions[i * 3 + 1] += sprayVel[i * 3 + 1] * dt;
+            sprayPositions[i * 3 + 2] += sprayVel[i * 3 + 2] * dt;
+            spraySizes[i] *= (1 + dt * 0.35);
+            if(sprayPositions[i*3+1]<getTerrainHeight(sprayPositions[i*3],sprayPositions[i*3+2])){sprayLife[i]=0;spraySizes[i]=0;sprayPositions[i*3+1]=-9999;}
+          }
+        }
+      }
+      sprayGeo.attributes.position.needsUpdate = true;
+      sprayGeo.attributes.aSize.needsUpdate = true;
+
+      const cx = camera.position.x, cy = camera.position.y, cz = camera.position.z;
+      for (let i = 0; i < SNOW_COUNT; i++) {
+        let x = snowFlakePos[i * 3] + Math.sin(state.time * 0.8 + i) * 0.55 * dt;
+        let y = snowFlakePos[i * 3 + 1] - 2.6 * dt;
+        let z = snowFlakePos[i * 3 + 2];
+        if (y < cy - 16) y = cy + 18;
+        if (x < cx - 38) x += 76;
+        if (x > cx + 38) x -= 76;
+        if (z < cz - 38) z += 76;
+        if (z > cz + 38) z -= 76;
+        snowFlakePos[i * 3] = x;
+        snowFlakePos[i * 3 + 1] = y;
+        snowFlakePos[i * 3 + 2] = z;
+      }
+      flakeGeo.attributes.position.needsUpdate = true;
+    }
+
+    let rafId = null;
+    let lastTs = 0;
+    let accumulator=0, frameAvg=1/60, qualityClock=0;
+    const fixedDt=1/60;
+    let bestScore=0;
+    try{bestScore=Number(localStorage.getItem('baba.kar.best.v2'))||0;}catch(e){}
+    function saveRecord(){if(state.score>bestScore){bestScore=Math.floor(state.score);try{localStorage.setItem('baba.kar.best.v2',String(bestScore));}catch(e){}}}
+
+    function animate(ts) {
+      rafId = requestAnimationFrame(animate);
+      const dt = Math.max(0,Math.min(0.05, lastTs ? (ts - lastTs) / 1000 : 0.016));
+      lastTs = ts;
+
+      const speed = Math.hypot(state.vx, state.vz);
+      if (state.status === 'playing') {
+        accumulator=Math.min(0.10,accumulator+dt);
+        while(accumulator>=fixedDt && state.status==='playing'){stepPhysics(fixedDt);accumulator-=fixedDt;}
+        updateSkierAnimation(dt, speed);
+      } else if (state.status === 'tumbling') {
+        accumulator=0;stepTumbling(dt);
+      } else {
+        accumulator=0;
+        if(state.status==='menu'){state.time += dt;updateSkierAnimation(dt, speed);}
+      }
+
+      const snapX = Math.floor(state.x / GRID_STEP_X) * GRID_STEP_X;
+      const snapZ = Math.floor((state.z - 22) / GRID_STEP_Z) * GRID_STEP_Z;
+      snowMesh.position.set(snapX, 0, snapZ);
+      snowUniforms.uSkierPos.value.set(state.x, state.y, state.z);
+      snowUniforms.uSkierAirHeight.value = Math.max(0, state.y - getTerrainHeight(state.x, state.z));
+
+      skyDome.position.set(state.x, state.y, state.z);
+      mountainGroup.position.set(state.x * 0.6, state.y - 12, state.z);
+      for (let i = 0; i < liftChairs.length; i++) {
+        const lc = liftChairs[i];
+        const lz = state.z - 80 + ((lc.offset + state.time * 3.8) % 144);
+        const lx = 26.5;
+        lc.mesh.position.set(lx, getTerrainHeight(lx, lz) + 11.5, lz);
+      }
+      const sunDir = MODES[currentModeKey].sunDir;
+      sunLight.position.set(state.x + sunDir.x * 55, state.y + sunDir.y * 55, state.z + sunDir.z * 55);
+      sunLight.target.position.set(state.x, state.y, state.z - 10);
+
+      updateCamera(dt, speed);
+      if(state.status!=='paused') updateParticles(dt);
+      frameAvg=frameAvg*0.97+dt*0.03;qualityClock+=dt;
+      if(qualityClock>2){qualityClock=0;let target=renderDpr;
+        if(frameAvg>0.022)target=Math.max(0.75,renderDpr-0.15);
+        else if(frameAvg<0.0169)target=Math.min(maxDpr,renderDpr+0.05);
+        if(Math.abs(target-renderDpr)>0.02){renderDpr=target;renderer.setPixelRatio(renderDpr);}
+      }
+      renderer.render(scene, camera);
+    }
+
+    // =========================================================================
+    // 14. CONTROLS & UI WIRING
+    // =========================================================================
+    let showPhysicsPanel = false;
+
+    function startGame() {
+      saveRecord();accumulator=0;
+      audio.init();
+      resetRun(true);
+      state.status = 'playing';
+      document.getElementById('start-overlay').classList.add('hidden');
+      document.getElementById('gameover-overlay').classList.add('hidden');
+      document.getElementById('pause-overlay').classList.add('hidden');
+      document.getElementById('hud-top').classList.remove('menu-hidden');
+    }
+
+    function togglePause() {
+      if (state.status === 'playing') {
+        state.status = 'paused';
+        saveRecord();
+        audio.update(0, 0, 0, false, false);
+        document.getElementById('pause-overlay').classList.remove('hidden');
+      } else if (state.status === 'paused') {
+        state.status = 'playing';
+        document.getElementById('pause-overlay').classList.add('hidden');
+      }
+    }
+
+    function cycleCamera() {
+      camModeIdx = (camModeIdx + 1) % CAM_MODES.length;
+      document.getElementById('btn-camera').textContent = CAM_LABELS[CAM_MODES[camModeIdx]];
+    }
+
+    function cycleSnowMode() {
+      const idx = (MODE_ORDER.indexOf(currentModeKey) + 1) % MODE_ORDER.length;
+      applyMode(MODE_ORDER[idx]);
+    }
+
+    function toggleSound() {
+      audio.init();
+      audio.setEnabled(!audio.enabled);
+      document.getElementById('btn-sound').textContent = audio.enabled ? 'Ses' : 'Sessiz';
+    }
+
+    function togglePhysicsPanel() {
+      showPhysicsPanel = !showPhysicsPanel;
+      document.getElementById('physics-panel').classList.toggle('hidden', !showPhysicsPanel);
+      document.getElementById('btn-physics').classList.toggle('active', showPhysicsPanel);
+    }
+
+    document.getElementById('btn-start').addEventListener('click', startGame);
+    document.getElementById('btn-restart').addEventListener('click', startGame);
+    document.getElementById('btn-restart-pause').addEventListener('click', startGame);
+    document.getElementById('btn-resume').addEventListener('click', togglePause);
+    document.getElementById('btn-pause').addEventListener('click', togglePause);
+    document.getElementById('btn-camera').addEventListener('click', cycleCamera);
+    document.getElementById('btn-snow-mode').addEventListener('click', cycleSnowMode);
+    document.getElementById('btn-sound').addEventListener('click', toggleSound);
+    document.getElementById('btn-physics').addEventListener('click', togglePhysicsPanel);
+
+    document.getElementById('btn-toggle-controls').addEventListener('click', () => {
+      const d = document.getElementById('controls-drawer');
+      const hidden = d.classList.toggle('hidden');
+      document.getElementById('btn-toggle-controls').textContent = hidden ? 'Kontroller & Tuşlar ▾' : 'Kontroller & Tuşlar ▴';
+    });
+
+    document.querySelectorAll('#condition-selector .mode-pill').forEach(btn => {
+      btn.addEventListener('click', () => applyMode(btn.dataset.mode));
+    });
+    document.querySelectorAll('#playstyle-selector .mode-pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        zenMode = btn.dataset.play === 'zen';
+        document.querySelectorAll('#playstyle-selector .mode-pill').forEach(b => b.classList.toggle('selected', b === btn));
+      });
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') input.tuck = true;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') input.brake = true;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyG') input.grab = true;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (state.status === 'playing') input.jump = true;
+      }
+      if (e.code === 'KeyC') cycleCamera();
+      if (e.code === 'KeyM') toggleSound();
+      if (e.code === 'KeyF' && state.status === 'playing') togglePhysicsPanel();
+      if (e.code === 'Escape' || e.code === 'KeyP') togglePause();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
+      if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
+      if (e.code === 'ArrowUp' || e.code === 'KeyW') input.tuck = false;
+      if (e.code === 'ArrowDown' || e.code === 'KeyS') input.brake = false;
+      if (e.code === 'ShiftLeft' || e.code === 'ShiftRight' || e.code === 'KeyG') input.grab = false;
+      if (e.code === 'Space') input.jump = false;
+    });
+
+    function bindTouch(id, key, isTrigger = false) {
+      const el = document.getElementById(id);
+      const down = (e) => {
+        e.preventDefault();
+        el.classList.add('pressed');
+        if (isTrigger) { if (state.status === 'playing') input[key] = true; }
+        else input[key] = true;
+      };
+      const up = (e) => {
+        e.preventDefault();
+        el.classList.remove('pressed');
+        input[key] = false;
+      };
+      el.addEventListener('pointerdown', down);
+      el.addEventListener('pointerup', up);
+      el.addEventListener('pointerleave', up);
+      el.addEventListener('pointercancel', up);
+    }
+    bindTouch('touch-left', 'left');
+    bindTouch('touch-right', 'right');
+    bindTouch('touch-tuck', 'tuck');
+    bindTouch('touch-brake', 'brake');
+    bindTouch('touch-grab', 'grab');
+    bindTouch('touch-jump', 'jump', true);
+
+    window.addEventListener('resize', () => {
+      const w = container.clientWidth || window.innerWidth;
+      const h = container.clientHeight || window.innerHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    });
+
+    window.onload = function () {
+      applyMode('powder');
+      resetRun(false);
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(animate);
+    };
+  })();
+  </script>
+</body>
+</html>
