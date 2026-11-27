@@ -1,12 +1,12 @@
-# Modern Age: 2026 • V0.7
+# Modern Age: 2026 • V0.7.1
 
 Modern çağda geçen, altı ülkenin aynı temel istatistiklerle oynandığı tek oyunculu izometrik strateji oyunu. Bu sürüm, V0.6 üzerine kurulmuş oynanabilir geliştirme sürümüdür.
 
 ## Oyna
 
-ZIP'i bir klasöre çıkarıp **OYNA.html** dosyasını güncel Chrome veya Edge ile aç. İnternet, Python ve kurulum gerekmez. Maçı başlat, B ile işçileri seç ve soldaki malzeme yığınına sağ tıkla. İşçiler yükü teslim edince stok çubuğu güncellenir. Kışla için inşaat panelinden bir yer seç. Tamamlanınca binayı seçip piyadeleri sıraya koy. Savaş ilanı Diplomasi panelindedir.
+Çevrimdışı paket içeren ZIP’i bir klasöre çıkarıp **OYNA.html** dosyasını güncel Chrome veya Edge ile aç. İnternet, Python ve kurulum gerekmez. Maçı başlat, B ile işçileri seç ve soldaki malzeme yığınına sağ tıkla. İşçiler yükü teslim edince stok çubuğu güncellenir. Kışla için inşaat panelinden bir yer seç. Tamamlanınca binayı seçip piyadeleri sıraya koy. Savaş ilanı Diplomasi panelindedir.
 
-Web sunucusu kullanıyorsan giriş dosyası **index.html**. Windows'ta Python yüklüyse START-WINDOWS.bat, macOS/Linux'ta `sh start.sh` kullanılabilir. Yerel sunucu adresi [localhost:8080](http://localhost:8080). WebGL2 bulunmadığında oyun Canvas görünümüne geçer.
+Web sunucusu kullanıyorsan giriş dosyası **index.html**. Windows'ta Python yüklüyse START-WINDOWS.bat, macOS/Linux'ta `sh start.sh` kullanılabilir. Yerel sunucu adresi [localhost:8080](http://localhost:8080). Oyun dünyası Three.js ve WebGL 2 ile çizilir. Grafik ayarı aynı sahnenin çözünürlüğünü ve gölgelerini değiştirir. WebGL 2 açılamazsa başlangıç menüsü durumu gösterir.
 
 ## Maç kuralları
 
@@ -19,7 +19,7 @@ Web sunucusu kullanıyorsan giriş dosyası **index.html**. Windows'ta Python y�
 
 ## Geliştirme ve test
 
-Simülasyon ve arayüz index.html, Three.js çizimi renderer-three.js, paket GLB okuyucusu landmark.js içindedir. GLB kaynağı ve dönüştürme betiği pakettedir. Kaydetme anahtarı V0.6 ile ortaktır. Yeni JSON zarfı version=7, world, seq alanlarını içerir. Eski maçlara başlangıç binaları eklenmez. Ülke, stok, konum ve nesne kimlikleri yükleme öncesi kontrol edilir. Özel dosya oynatıcısının aynı kaynaklardan yeniden üretimi:
+Yakındaki işçiler ve piyadeler iskelet animasyonlu GLB modellerini kullanır. Uzak kamerada aynı hareketler daha az üçgenli 3D modellerle çizilir. Simülasyon ve arayüz index.html, Three.js çizimi renderer-three.js, paket GLB okuyucusu landmark.js içindedir. GLB kaynağı ve dönüştürme betiği pakettedir. Kaydetme anahtarı V0.6 ile ortaktır. Yeni JSON zarfı version=7, world, seq alanlarını içerir. Eski maçlara başlangıç binaları eklenmez. Ülke, stok, konum ve nesne kimlikleri yükleme öncesi kontrol edilir. Özel dosya oynatıcısının aynı kaynaklardan yeniden üretimi:
 
 ```sh
 python tools/build-offline.py

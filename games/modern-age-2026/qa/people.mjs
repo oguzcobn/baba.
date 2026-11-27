@@ -25,5 +25,19 @@ try{
  await p.mouse.move(box.x+pos.x,box.y+pos.y);await p.mouse.wheel(0,3200);
  await p.waitForFunction(()=>__MA.metrics.crowdPeople>0);
  assert.deepEqual(errors,[]);
+ await p.close();
+ const offline=await b.newPage(),requests=[];
+ offline.on('request',r=>{if(/^https?:/.test(r.url()))requests.push(r.url())});
+ await offline.goto(new URL('../OYNA.html',import.meta.url).href);await offline.click('#new');
+ await offline.waitForFunction(()=>window.__MA?.renderer?.drawCount>1);
+ assert.deepEqual(requests,[]);await offline.close();
+ const noGpu=await b.newPage();
+ await noGpu.addInitScript(()=>{
+   const original=HTMLCanvasElement.prototype.getContext;
+   HTMLCanvasElement.prototype.getContext=function(kind,...options){return kind==='webgl2'?null:original.call(this,kind,...options)}
+ });
+ await noGpu.goto('http://localhost:8080/index.html');
+ await noGpu.waitForFunction(()=>document.querySelector('#graphicsMessage')?.textContent.includes('3D sahne açılamadı'));
+ assert.equal(await noGpu.locator('#new').isDisabled(),true);await noGpu.close();
  console.log('Verified 6 rigged workers, infantry, carrying, close camera, single Three.js renderer and distant instanced 3D meshes.');
 }finally{await b.close()}
