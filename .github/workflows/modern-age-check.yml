@@ -28,6 +28,7 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.51.1
       - run: npx playwright install chromium
       - run: python3 tools/build-offline.py
+      - run: node qa/navigation.mjs
       - run: node --check renderer-three.js
       - run: node --check smoke.mjs
       - run: node smoke.mjs

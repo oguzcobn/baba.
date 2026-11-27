@@ -100,6 +100,7 @@ try {
  assert.equal(await page.locator('[data-build=farm]').isVisible(),false);
  await page.locator('[data-category=all]').click();
  await page.keyboard.press('Escape');await page.keyboard.press('b');
+ const mapBox=await page.locator('#map').boundingBox();await page.mouse.move(mapBox.x+mapBox.width/2,mapBox.y+mapBox.height/2);await page.mouse.wheel(0,1800);await page.waitForTimeout(150);
  const gather=await page.evaluate(()=>__MA.project(13.5,20.5));
  await page.locator('#map').click({position:gather,button:'right'});
  const before=await page.evaluate(()=>__MA.world.stock.mat);
