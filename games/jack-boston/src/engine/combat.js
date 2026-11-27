@@ -97,6 +97,7 @@ export class Combat {
       for (const p of [...g.peds, g.player]) { if (p === sh || p.dead || p.vehicle) continue; if (!sh.isPlayer && p.role === sh.role && p.role !== 'civ') continue; const t = rayCircle(mx, mz, ux, uz, p.x, p.z, p.down ? 0.7 : 0.45); if (t !== null && t < best) { best = t; hitP = p; hitV = null; } }
       const hx = mx + ux * best, hz = mz + uz * best;
       g.fx.tracer(mx, my, mz, hx, hitP ? 1.2 : 1.0, hz);
+      if (hitP && hitP.isPlayer && hitP.cover && Math.random() < 0.72) { g.fx.sparks(hitP.x - ux * 0.8, 1, hitP.z - uz * 0.8, 5, -ux, -uz); hitP = null; }
       if (hitP) this.damagePed(hitP, sh, W.dmg * (sh.isPlayer ? 1 : 0.45), ux, uz, 'bullet');
       else if (hitV) { hitV.impact(hx, hz, -ux, -uz, 6, g.env, { mult: 0.7 }); g.fx.sparks(hx, 0.9, hz, 6, -ux, -uz); if (sh.isPlayer && hitV.isPolice) g.police.crime('hitCop', sh.x, sh.z); if (hitV.ai?.type === 'traffic') hitV.ai.panic = 6; }
       else if (best < 69) { g.fx.sparks(hx, 1.0, hz, 5, -ux, -uz, [1, 0.9, 0.6]); g.fx.dust(hx, hz, 2); }

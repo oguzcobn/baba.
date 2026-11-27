@@ -4,7 +4,8 @@ import { UI } from './ui/ui.js';
 import { MissionRunner } from './missions/runner.js';
 import { chapter1 } from './missions/chapter1.js';
 import { chapter2 } from './missions/chapter2.js';
-const CHAPTERS = { 1: chapter1, 2: chapter2 };
+import { chapter3 } from './missions/chapter3.js';
+const CHAPTERS = { 1: chapter1, 2: chapter2, 3: chapter3 };
 
 const $ = (s) => document.querySelector(s);
 const SAVE_KEY = 'jack_boston_save_v1';
@@ -23,7 +24,7 @@ game.save = (o) => {
   const data = {
     version: '1.0.0',
     story: { act: o.chapter ?? game.story.chapter, missionIndex: o.mission ?? 0, missionId: CHAPTERS[o.chapter ?? game.story.chapter]?.missions[o.mission ?? 0]?.id, choices: game.story.choices },
-    player: { name: 'Jack', age: 16, money: game.money, hp: 100, peaceRep: game.story.peaceRep, streetRep: game.story.streetRep, wantedStars: 0, hasSimenaPhoto: !!game.story.hasSimenaPhoto, simenaPhotoInBox: false, weapons: Object.keys(game.owned), ammo: game.ammo },
+    player: { name: 'Jack', age: 16, money: game.money, hp: 100, peaceRep: game.story.peaceRep, streetRep: game.story.streetRep, wantedStars: 0, hasSimenaPhoto: !!game.story.hasSimenaPhoto, simenaPhotoInBox: false, weapons: Object.keys(game.owned), ammo: game.ammo, owned: game.owned }, world: game.worldName,
   };
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(data)); } catch { }
 };
@@ -44,6 +45,7 @@ $('#loading').style.display = 'none'; menu.style.display = 'flex';
 const save = loadSave();
 if (save?.story && (save.story.act > 1 || save.story.missionIndex > 0)) { const b = $('#btnContinue'); b.style.display = 'block'; b.textContent = CHAPTERS[save.story.act] ? `DEVAM ET — Bölüm ${save.story.act}, Görev ${save.story.missionIndex + 1}` : 'DEVAM ET — Serbest Dolaşım'; }
 const bc2 = document.createElement('button'); bc2.className = 'ghost'; bc2.textContent = 'BÖLÜM 2 — SİMENA'; $('#btnStory').after(bc2); bc2.onclick = () => startStory(2, 0);
+const bc3 = document.createElement('button'); bc3.className = 'ghost'; bc3.textContent = 'BÖLÜM 3 — BOSTON'; bc2.after(bc3); bc3.onclick = () => { game.money = Math.max(game.money, 400); startStory(3, 0); };
 
 function begin() { game.audio.init(); menu.style.display = 'none'; game.paused = false; game.clock.getDelta(); }
 
@@ -51,6 +53,7 @@ async function startStory(ch = 1, idx = 0) {
   begin(); const L = game.world.L;
   game.player.x = L.jackHome.x; game.player.z = L.jackHome.z + 1; game.camT.set(game.player.x, 0, game.player.z);
   if (save?.story?.choices) Object.assign(game.story.choices, save.story.choices);
+  if (save?.player?.owned && ch >= 3) { Object.assign(game.owned, save.player.owned); Object.assign(game.ammo, save.player.ammo || {}); game.money = save.player.money ?? game.money; }
   if (save?.player) { game.story.peaceRep = save.player.peaceRep ?? 50; game.story.streetRep = save.player.streetRep ?? 10; game.story.hasSimenaPhoto = !!save.player.hasSimenaPhoto; }
   await runChapter(ch, idx);
 }
@@ -76,12 +79,12 @@ function startFree() {
 }
 $('#btnStory').onclick = () => startStory(1, 0);
 $('#btnFree').onclick = startFree;
-$('#btnContinue').onclick = () => { if (CHAPTERS[save.story.act]) startStory(save.story.act, save.story.missionIndex); else { begin(); game.story.hasSimenaPhoto = !!save.player?.hasSimenaPhoto; game.story.chapter = save.story.act; startFreeRoam(); } };
+$('#btnContinue').onclick = () => { if (CHAPTERS[save.story.act]) startStory(save.story.act, save.story.missionIndex); else { begin(); game.story.hasSimenaPhoto = !!save.player?.hasSimenaPhoto; game.story.chapter = save.story.act; if (save.world === 'boston' || save.story.act >= 4) { game.loadWorld('boston'); Object.assign(game.owned, save.player?.owned || {}); Object.assign(game.ammo, save.player?.ammo || {}); game.money = save.player?.money ?? game.money; const L = game.world.L; game.player.x = L.dorm.x; game.player.z = L.dorm.z; game.camT.set(L.dorm.x, 0, L.dorm.z); } startFreeRoam(); } };
 $('#btnCtl').onclick = () => { game.paused = true; const m = $('#pausebox'); m.classList.add('show'); ui.controls(m); m.querySelector('#back').onclick = () => m.classList.remove('show'); };
 
 // boyahane: serbest dolaşımda aranmayı sıfırla
 setInterval(() => {
-  if (!game.playerCar || game.paused) return; const L = game.world.L; const v = game.playerCar;
+  if (!game.playerCar || game.paused || !game.world.L.spray) return; const L = game.world.L; const v = game.playerCar;
   if (Math.hypot(v.x - L.spray.x, v.z - L.spray.z) < 7 && v.speed < 3 && (game.police.stars > 0 || v.hp < 100) && !game._spraying) {
     if (game.money < 100) { ui.toast('Boyahane: $100 gerekli'); return; }
     game._spraying = true; game.money -= 100;

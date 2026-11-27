@@ -6,7 +6,8 @@ import { Post } from './engine/post.js';
 import { Audio } from './engine/audio.js';
 import { Input } from './engine/input.js';
 import { Combat, WEAPONS, WEAPON_KEYS } from './engine/combat.js';
-import { buildOakridge, VX, HZ, heightAt } from './world/oakridge.js';
+import { buildOakridge, VX, HZ } from './world/oakridge.js';
+import { buildBoston } from './world/boston.js';
 import { nightMats, lampMats, M } from './world/materials.js';
 import { Population, CHATTER, angDiff } from './world/population.js';
 import { Vehicle } from './entities/vehicle.js';
@@ -55,14 +56,14 @@ export class Game {
     this.fx = new FX(this.scene); this.audio = new Audio(); this.input = new Input(R.domElement);
     this.fx.onShellTink = (x, z) => this.audio.tink(x, z);
     this.combat = new Combat(this);
-    this.world = buildOakridge(this.scene);
+    this.world = buildOakridge(this.scene); this.worldName = 'oakridge';
     this.vehicles = []; this.peds = []; this.tokens = new Set(); this.markers = [];
     this.pop = new Population(this); this.police = new Police(this);
     this.time = 17.2; this.timeScale = 0; this.rain = 0; this.rainTarget = 0; this.wind = [0.8, 0.4];
     this.hitstop = 0; this.paused = true; this.mode = null; this.money = 150; this.godMode = false;
     this.owned = { fists: true }; this.ammo = { pistol9mm: 0, silenced9mm: 0, shotgun: 0 };
     this.env = {
-      fx: this.fx, audio: this.audio, heightAt, wet: false, night: false, wind: this.wind,
+      fx: this.fx, audio: this.audio, heightAt: (x, z) => this.world.heightAt(x, z), wet: false, night: false, wind: this.wind,
       surfaceAt: (x, z) => this.surfaceAt(x, z), meleeHit: (a) => this.combat.meleeHit(a), shake: (s) => this.shake(s),
       onCarBroken: (v) => { if (v === this.playerCar) this.ui.toast('Motor bozuldu! Araç yanıyor — hemen in! [F]', 'bad'); if (v.isPolice) this.police.takedown(v); },
       onExplosion: (x, z, src) => this.explosionDamage(x, z, src),
@@ -80,6 +81,19 @@ export class Game {
     this.aim = new THREE.Vector3(); this._v = new THREE.Vector3();
     this.setTime(this.time); this.loop = this.loop.bind(this); requestAnimationFrame(this.loop);
   }
+  loadWorld(name) {
+    if (this.worldName === name) return; this.worldName = name;
+    if (this.playerCar) this.exitVehicle();
+    for (const v of [...this.vehicles]) this.removeVehicle(v);
+    for (const p of [...this.peds]) this.removePed(p);
+    this.clearMarkers(); this.setBonfire(); this.police.clear(); this.police.units = []; this.police.foot = []; this.tokens.clear(); this.lastCar = null;
+    this.scene.remove(this.world.group);
+    this.world.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    this.world = name === 'boston' ? buildBoston(this.scene) : buildOakridge(this.scene);
+    this.pop = new Population(this);
+    for (const s of this.world.parkSpots) { const v = this.addVehicle({ x: s.x, z: s.z, a: s.a, kind: Math.random() < 0.3 ? 'hatch' : Math.random() < 0.2 ? 'coupe' : 'sedan', parked: true }); v.persistent = true; }
+    this.ui.buildMap(this.world); this.setTime(this.time);
+  }
   resize() { this.camera.aspect = innerWidth / innerHeight; this.camera.updateProjectionMatrix(); this.renderer.setSize(innerWidth, innerHeight); this.post?.resize(); }
   // ------------------------------------------------ yardımcılar
   addVehicle(o) { const v = new Vehicle(this, o); this.vehicles.push(v); return v; }
@@ -88,11 +102,13 @@ export class Game {
   playerPos() { return this.playerCar ? { x: this.playerCar.x, z: this.playerCar.z } : { x: this.player.x, z: this.player.z }; }
   shake(s) { this.shakeA = Math.min(1.6, this.shakeA + s); }
   onRoad(x, z) {
+    if (this.world.onRoad) return this.world.onRoad(x, z);
     for (const zr of HZ) { const x0 = zr === 240 ? -347 : -307, x1 = -x0; if (Math.abs(z - zr) < 7 && x > x0 && x < x1) return true; }
     for (const xr of VX) if (Math.abs(x - xr) < 7 && z > -307 && z < 247) return true;
     return false;
   }
   surfaceAt(x, z) {
+    if (this.world.surfaceAt) return this.world.surfaceAt(x, z);
     if (this.onRoad(x, z)) return 'road';
     if (z > 251 && !(x > 335 && z < 266)) return 'sand';
     if (Math.abs(x) > 311 || z < -311) return 'grass';
@@ -118,7 +134,7 @@ export class Game {
     for (const m of nightMats) m.emissiveIntensity = lamp * 0.95;
     for (const m of lampMats) m.emissiveIntensity = lamp * 2.2;
     M.lightPool.opacity = lamp * 0.55;
-    const lh = this.world.lighthouse.userData; lh.beam.material.opacity = lamp * 0.35; lh.lampRoom.material.emissiveIntensity = 0.3 + lamp * 1.5;
+    const lh = this.world.lighthouse?.userData; if (lh) lh.beam.material.opacity = lamp * 0.35; if (lh) lh.lampRoom.material.emissiveIntensity = 0.3 + lamp * 1.5;
   }
   setSeason(sn) {
     this.season = sn; this.snow = sn === 'winter';
@@ -160,7 +176,7 @@ export class Game {
   // ------------------------------------------------ görev işaretleri
   addMarker(x, z, color = 0xffd36a, label) {
     const mat = new THREE.MeshBasicMaterial({ map: (this._mt ||= (() => { const c = document.createElement('canvas'); c.width = 8; c.height = 64; const g = c.getContext('2d'); const gr = g.createLinearGradient(0, 64, 0, 0); gr.addColorStop(0, 'rgba(255,255,255,0.85)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 8, 64); const t = new THREE.CanvasTexture(c); return t; })()), color, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
-    const m = new THREE.Mesh(this.markerGeo, mat); m.position.set(x, heightAt(x, z) + 3, z); this.scene.add(m);
+    const m = new THREE.Mesh(this.markerGeo, mat); m.position.set(x, this.world.heightAt(x, z) + 3, z); this.scene.add(m);
     const mk = { x, z, color, mesh: m, label }; this.markers.push(mk); return mk;
   }
   removeMarker(mk) { if (!mk) return; this.scene.remove(mk.mesh); this.markers = this.markers.filter(m => m !== mk); }
@@ -243,7 +259,13 @@ export class Game {
     let prompt = '';
     if (car && !this.lockCar) prompt = car.driver ? '[F] Arabayı çal' : car.exploded ? '' : '[F] Bin';
     if (ped && ped.role !== 'police' && ped.state !== 'fight') prompt += (prompt ? '   ' : '') + '[E] Konuş';
+    if (!this.interact && this.world.L.gunShop && this.story?.chapter >= 3 && Math.hypot(this.world.L.gunShop.x - p.x, this.world.L.gunShop.z - p.z) < 3.5) this.interact = { x: this.world.L.gunShop.x, z: this.world.L.gunShop.z, r: 3.5, label: '[E] Rusty\'s Pawn & Guns — alışveriş', fn: () => this.ui.shop(), auto: true };
+    if (this.interact?.auto && Math.hypot(this.interact.x - p.x, this.interact.z - p.z) > 4) this.interact = null;
     if (this.interact && Math.hypot(this.interact.x - p.x, this.interact.z - p.z) < (this.interact.r || 2.5)) prompt = this.interact.label;
+    // siper (C)
+    if (I.hit('c')) { if (p.cover) p.cover = false; else { const near = this.world.statics.query(p.x, p.z, 2, []).some(s2 => s2.type === 'obb' ? Math.abs(p.x - s2.x) < s2.hx + 1.4 && Math.abs(p.z - s2.z) < s2.hz + 1.4 : Math.hypot(p.x - s2.x, p.z - s2.z) < s2.r + 1.4) || this.vehicles.some(v => Math.hypot(v.x - p.x, v.z - p.z) < 3.4); if (near) { p.cover = true; this.ui.toast('Siperdesin — mermilerin çoğu ıskalar (C: çık)'); } else this.ui.toast('Siper için bir duvar/araç yanına geç'); } }
+    if (p.cover && (Math.hypot(mx, mz) > 0 && sprint)) p.cover = false;
+    p.root.scale.y = (p.cover ? 0.68 : 1) * p.scale;
     this.ui.setPrompt(prompt);
     if (I.hit('e')) {
       if (this.interact && Math.hypot(this.interact.x - p.x, this.interact.z - p.z) < (this.interact.r || 2.5)) { const f = this.interact.fn; this.interact = null; f(); }
@@ -291,6 +313,11 @@ export class Game {
       if (night) return 'Yarın Boston. Ama bu fotoğraf cebimde olduğu sürece burası hep yanımda.';
       return 'Simena ve ben. Oakridge, ağustos. Hiç bitmesin istediğim iki ay.';
     }
+    if (!this.story.lastCall) return near('dorm') ? 'Bu akşam ona kampüsü anlatacağım. Kırmızı tuğlaları sever.' : 'Kış tatiline üç ay var. Fotoğraftaki ateş hâlâ sıcak.';
+    if (near('vinceBar') || near('gunShop') || near('fightClub')) return 'Burada bu fotoğrafı çıkarmak bile yanlış geliyor. O bu Jack\'i tanımazdı.';
+    if (near('bars')) return 'Neonlar, kahkahalar, kalabalık… ve ben yine cebimdeki kareye bakıyorum.';
+    if (near('stadium', 90)) return 'Herkes bir şeye bağırıyor. Ben bir sahildeki sessizliği özlüyorum.';
+    if (this.playerPos().x > 480) return 'Liman suyu karanlık. Oakridge\'in denizi daha maviydi. Ya da ben öyle hatırlıyorum.';
     if (rain) return 'Yağmur her şeyi ona benzetiyor. Neden hâlâ cebimde taşıyorum bunu?';
     if (night) return 'Şehrin ışıkları çok parlak. O sahildeki ateş kadar sıcak değil hiçbiri.';
     return 'Bir daha hiç konuşmadık. Ama gülüşü hâlâ burada, bu küçük karenin içinde.';
@@ -436,7 +463,7 @@ export class Game {
     for (const p of this.peds) {
       if (p.vehicle || p.dead || p.down || p.fly) continue;
       if (p.tokenT > 0) { p.tokenT -= dt; if (p.tokenT <= 0) this.tokens.delete(p); }
-      if (p.ai) p.ai(dt); else if (p.role === 'civ') this.pop.updateCivilian(p, dt); else if (p.role === 'gang') this.pop.updateFighter(p, dt, p.target || this.player);
+      if (p.ai) p.ai(dt); else if (p.role === 'civ') this.pop.updateCivilian(p, dt); else if (p.role === 'gang') { if (p.weapon === 'pistol' || p.weapon === 'shotgun') this.pop.updateShooter(p, dt, p.target || this.player); else this.pop.updateFighter(p, dt, p.target || this.player); }
     }
     for (const v of this.vehicles) { if (v.ai?.type === 'traffic') this.pop.updateTrafficCar(v, dt); else if (v.ai?.fn) v.ai.fn(dt); }
     this.police.update(dt);
@@ -454,7 +481,7 @@ export class Game {
     if (this.season === 'autumn' && Math.random() < dt * 14) { const cx = this.camT.x + (Math.random() - .5) * 70, cz = this.camT.z + (Math.random() - .5) * 45; const col = [[0.85, 0.45, 0.15], [0.9, 0.65, 0.2], [0.7, 0.3, 0.12]][(Math.random() * 3) | 0]; this.fx.smoke.emit({ x: cx, y: 9 + Math.random() * 4, z: cz, vx: this.wind[0] * 2 + (Math.random() - .5), vy: -1.2, vz: this.wind[1] * 2, life: 7, s0: 0.35, s1: 0.35, c0: col, a0: 0.95, a1: 0.8, drag: 0.1 }); }
     if (this.bonfire) { const b = this.bonfire; if (Math.random() < dt * 45) this.fx.fire(b.x, 0.3, b.z, 0.9); if (Math.random() < dt * 6) this.fx.glow.emit({ x: b.x, y: 1, z: b.z, vx: (Math.random() - .5), vy: 2.5 + Math.random() * 2, vz: (Math.random() - .5), life: 1.6, s0: 0.18, s1: 0.05, c0: [1, 0.7, 0.3], a0: 1, a1: 0, floor: false }); this.fireLight.position.set(b.x, 1.6, b.z); this.fireLight.intensity = 9 + Math.sin(performance.now() / 70) * 1.5 + Math.random() * 1.5; }
     // fener ışını
-    this.world.lighthouse.userData.pivot.rotation.y += dt * 0.7;
+    if (this.world.lighthouse) this.world.lighthouse.userData.pivot.rotation.y += dt * 0.7;
     this.world.water.material.map.offset.x += dt * 0.004; this.world.water.material.map.offset.y += dt * 0.006;
     // oyuncu farı
     const pc = this.playerCar;

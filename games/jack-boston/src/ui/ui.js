@@ -16,9 +16,9 @@ export class UI {
   }
   // ---------------------------------------------- harita ön-çizimi
   buildMap(world) {
-    const W = 860, H = 740, ox = 430, oz = 420; const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
+    const bd = world.bounds, ox = -bd.x0 + 20, oz = -bd.z0 + 20, W = Math.ceil(bd.x1 - bd.x0 + 40), H = Math.ceil(bd.z1 - bd.z0 + 240); const c = document.createElement('canvas'); c.width = W; c.height = H; const g = c.getContext('2d');
     g.fillStyle = '#6f9a58'; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#e2cfa2'; g.fillRect(0, 251 + oz, W, 60); g.fillStyle = '#5aa0b8'; g.fillRect(0, 300 + oz, W, 200);
+    if (world.paintMap) world.paintMap(g, ox, oz, W, H); else { g.fillStyle = '#e2cfa2'; g.fillRect(0, 251 + oz, W, 60); g.fillStyle = '#5aa0b8'; g.fillRect(0, 300 + oz, W, 200); }
     for (const s of world.statics.items) if (s.tag === 'bld') { g.save(); g.translate(s.x + ox, s.z + oz); g.rotate(-s.a); g.fillStyle = '#b9aea0'; g.fillRect(-s.hx, -s.hz, s.hx * 2, s.hz * 2); g.restore(); }
     g.strokeStyle = '#3a3d44'; g.lineWidth = 14; g.lineCap = 'square';
     for (const n of world.nodes) for (const m of n.links) { const b = world.nodes[m]; g.beginPath(); g.moveTo(n.x + ox, n.z + oz); g.lineTo(b.x + ox, b.z + oz); g.stroke(); }
@@ -172,6 +172,21 @@ export class UI {
   }
   letter(html) {
     return new Promise(res => { const G = this.game; G.cutscene = true; const b = $('#choicebox'); b.innerHTML = `<div class="letter">${html}</div><button class="choice" style="width:auto;text-align:center">Devam</button>`; b.classList.add('show'); b.querySelector('button').onclick = () => { b.classList.remove('show'); G.cutscene = false; res(); }; if (this.skipAll) b.querySelector('button').click(); });
+  }
+  shop() {
+    const G = this.game; G.cutscene = true; const b = $('#choicebox');
+    const items = [['bat', 'Beyzbol Sopası', 50], ['pistol', '9mm Tabanca', 850], ['silenced', 'Susturuculu Tabanca', 1600], ['shotgun', 'Pompalı Tüfek', 2400], ['a:pistol9mm:24', '9mm mermi ×24', 80], ['a:silenced9mm:24', 'Susturuculu mermi ×24', 80], ['a:shotgun:12', 'Pompalı fişek ×12', 80]];
+    const draw = () => {
+      b.innerHTML = `<h2>Rusty's Pawn &amp; Guns</h2><p style="margin:0 0 10px">Bakiye: <b style="color:#9fe39a">$${G.money.toLocaleString('tr-TR')}</b></p>` + items.map(([k, n, p], i) => { const own = !k.startsWith('a:') && G.owned[k]; return `<button class="choice" data-i="${i}" ${own ? 'disabled style="opacity:.45"' : ''}>${n} — $${p}${own ? ' (sende var)' : ''}</button>`; }).join('') + `<button class="choice" data-i="x" style="text-align:center">Çık</button>`;
+      b.querySelectorAll('.choice').forEach(x => x.onclick = () => {
+        if (x.dataset.i === 'x') { b.classList.remove('show'); G.cutscene = false; G.onShopClose?.(); return; }
+        const [k, n, p] = items[+x.dataset.i]; if (G.money < p) { this.toast('Yeterli paran yok.', 'bad'); return; }
+        G.money -= p; G.audio.pickup();
+        if (k.startsWith('a:')) { const [, key, q] = k.split(':'); G.ammo[key] = (G.ammo[key] || 0) + +q; } else { G.owned[k] = true; const ak = G.WEAPONS[k].ammoKey; if (ak) G.ammo[ak] = (G.ammo[ak] || 0) + 12; }
+        this.toast(n + ' alındı.', 'good'); G.onBuy?.(k); draw();
+      });
+    };
+    draw(); b.classList.add('show');
   }
   meter(v, label) { const m = $('#meter'); if (v === null) { m.style.opacity = 0; return; } m.style.opacity = 1; m.innerHTML = `<span>${label}</span><div><i style="width:${Math.round(v * 100)}%"></i></div>`; }
   // ---------------------------------------------- kartlar & menüler

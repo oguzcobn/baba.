@@ -736,7 +736,7 @@ const App = (() => {
 
   /* ==================== JACK. / BOSTON'A GİDEN YOL ==================== */
   function jackBoston() {
-    openEmbeddedGame({ title: T('JACK. — Boston\'a Giden Yol', 'JACK. — The Road to Boston'), url: 'games/jack-boston/index.html?v=2', tag: T('BABA. STORIES · 2.5D Açık Dünya', 'BABA. STORIES · 2.5D Open World'), lead: T('Paslı bir sedan, ilk aşk, ihanet ve Simena. Oakridge\'de GTA: Chinatown Wars tarzı hikâyeli açık dünya.', 'A rusty sedan, first love, betrayal and Simena. A story-driven open world in the style of GTA: Chinatown Wars.'), tip: T('Oyuna tıkla. WASD yürü/sür, F araca bin, E konuş, Sol tık vur, Boşluk el freni, P fotoğraf, Esc menü. İlerleme otomatik kaydedilir.', 'Click the game. WASD move/drive, F enter car, E talk, Left click attack, Space handbrake, P photo, Esc menu. Progress auto-saves.') });
+    openEmbeddedGame({ title: T('JACK. — Boston\'a Giden Yol', 'JACK. — The Road to Boston'), url: 'games/jack-boston/index.html?v=3', tag: T('BABA. STORIES · 2.5D Açık Dünya', 'BABA. STORIES · 2.5D Open World'), lead: T('Paslı bir sedan, ilk aşk, ihanet ve Simena. Oakridge\'de GTA: Chinatown Wars tarzı hikâyeli açık dünya.', 'A rusty sedan, first love, betrayal and Simena. A story-driven open world in the style of GTA: Chinatown Wars.'), tip: T('Oyuna tıkla. WASD yürü/sür, F araca bin, E konuş, Sol tık vur, Boşluk el freni, P fotoğraf, Esc menü. İlerleme otomatik kaydedilir.', 'Click the game. WASD move/drive, F enter car, E talk, Left click attack, Space handbrake, P photo, Esc menu. Progress auto-saves.') });
   }
 
   /* ==================== SİS HATTI. / STORY PIXEL ART ==================== */

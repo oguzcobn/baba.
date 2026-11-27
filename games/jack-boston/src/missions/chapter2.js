@@ -7,6 +7,7 @@ const SIMENA = { skin: '#f4d2b8', hair: '#3a2618', shirt: '#4f7a46', pants: '#3a
 const THUG = () => ({ skin: ['#f1c9a5', '#e0ac85', '#c68e64'][(Math.random() * 3) | 0], hair: '#1a1a1a', shirt: ['#3a3a40', '#4a3a30', '#2f3a40'][(Math.random() * 3) | 0], pants: '#23232a', shirtKind: 'hoodie' });
 
 function prep(R, G, o) {
+  G.loadWorld('oakridge');
   const S = R.S, L = G.world.L;
   G.setSeason(o.season); G.setRain(o.rain ?? 0, true); G.setTime(o.time); G.ui.day = o.day ?? 3; G.timeScale = 0;
   G.lockCar = false; G.police.enabled = true; G.setBonfire();
@@ -203,8 +204,8 @@ export const chapter2 = {
   ],
   async onComplete(R, G) {
     G.setBonfire();
-    await G.ui.chapterCard(2, 'Tamamlandı', 'Ertesi sabah Jack sedanın bagajına iki valiz koydu. Cebinde bir Polaroid vardı.<br><br><b>Bölüm 3: Boston — Yeni Harita, Kırık Kalp ve Yeraltı</b> — yakında');
+    await G.ui.chapterCard(2, 'Tamamlandı', 'Ertesi sabah Jack sedanın bagajına iki valiz koydu. Cebinde bir Polaroid vardı.');
     G.story.chapter = 3; G.save({ chapter: 3, mission: 0 });
-    R.cleanup([]); G.timeScale = 0.02; G.ui.toast('Serbest dolaşım açık. P ile fotoğrafa bakabilirsin.', 'good');
+    R.cleanup([]); G.startChapter?.(3, 0);
   },
 };

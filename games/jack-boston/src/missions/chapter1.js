@@ -14,6 +14,7 @@ export const LOOKS = {
 
 // --- ortak hazırlık: her görev bu fonksiyonla kendi başlangıç koşullarını garanti eder (başarısızlık sonrası tekrar için)
 function prep(R, G, o) {
+  G.loadWorld('oakridge');
   const S = R.S, L = G.world.L;
   if (o.time !== undefined) G.setTime(o.time);
   if (o.rain !== undefined) G.setRain(o.rain, true), G.setTime(G.time);

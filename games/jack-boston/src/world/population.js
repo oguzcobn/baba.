@@ -182,4 +182,15 @@ export class Population {
     }
   }
 }
+Population.prototype.updateShooter = function (p, dt, target) {
+  const g = this.game; if (!target || target.dead) { p.move(0, 0, 0, dt); return; }
+  const tx = target.vehicle ? target.vehicle.x : target.x, tz = target.vehicle ? target.vehicle.z : target.z; const dx = tx - p.x, dz = tz - p.z, d = Math.hypot(dx, dz);
+  p.strafe = p.strafe ?? (Math.random() < .5 ? 1 : -1); p.aiming = d < 22;
+  if (d > 16) p.move(dx, dz, 5.2, dt);
+  else if (d < 7) p.move(-dx, -dz, 3.5, dt, false);
+  else { if (Math.random() < dt * 0.4) p.strafe *= -1; p.move(-dz * p.strafe, dx * p.strafe, 2.2, dt, false); }
+  p.faceTo(Math.atan2(dx, dz), dt, 10);
+  p.shootT = (p.shootT ?? 1 + Math.random()) - dt;
+  if (d < 22 && p.shootT <= 0 && g.world.statics.raycast(p.x, p.z, dx / d, dz / d, d) >= d - 1) { p.shootT = 0.9 + Math.random() * 1.1; g.combat.fire(p, dx, dz, 0.06); }
+};
 export { ANGRY, FLEE, CAR_COLORS };
