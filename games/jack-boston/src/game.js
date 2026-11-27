@@ -8,6 +8,7 @@ import { Input } from './engine/input.js';
 import { Combat, WEAPONS, WEAPON_KEYS } from './engine/combat.js';
 import { buildOakridge, VX, HZ } from './world/oakridge.js';
 import { buildBoston } from './world/boston.js';
+import { buildAway, buildCamp } from './world/special.js';
 import { nightMats, lampMats, M } from './world/materials.js';
 import { Population, CHATTER, angDiff } from './world/population.js';
 import { Vehicle } from './entities/vehicle.js';
@@ -57,7 +58,7 @@ export class Game {
     this.fx.onShellTink = (x, z) => this.audio.tink(x, z);
     this.combat = new Combat(this);
     this.world = buildOakridge(this.scene); this.worldName = 'oakridge';
-    this.vehicles = []; this.peds = []; this.tokens = new Set(); this.markers = [];
+    this.vehicles = []; this.peds = []; this.tokens = new Set(); this.markers = []; this.staticInteracts = [];
     this.pop = new Population(this); this.police = new Police(this);
     this.time = 17.2; this.timeScale = 0; this.rain = 0; this.rainTarget = 0; this.wind = [0.8, 0.4];
     this.hitstop = 0; this.paused = true; this.mode = null; this.money = 150; this.godMode = false;
@@ -89,8 +90,9 @@ export class Game {
     this.clearMarkers(); this.setBonfire(); this.police.clear(); this.police.units = []; this.police.foot = []; this.tokens.clear(); this.lastCar = null;
     this.scene.remove(this.world.group);
     this.world.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-    this.world = name === 'boston' ? buildBoston(this.scene) : buildOakridge(this.scene);
-    this.pop = new Population(this);
+    this.world = name === 'boston' ? buildBoston(this.scene) : name === 'away' ? buildAway(this.scene) : name === 'camp' ? buildCamp(this.scene) : buildOakridge(this.scene);
+    this.pop && (this.pop.enabled = name !== 'camp');
+    this.pop = new Population(this); this.pop.enabled = name !== 'camp'; this.police.enabled = name !== 'camp';
     for (const s of this.world.parkSpots) { const v = this.addVehicle({ x: s.x, z: s.z, a: s.a, kind: Math.random() < 0.3 ? 'hatch' : Math.random() < 0.2 ? 'coupe' : 'sedan', parked: true }); v.persistent = true; }
     this.ui.buildMap(this.world); this.setTime(this.time);
   }
@@ -259,7 +261,7 @@ export class Game {
     let prompt = '';
     if (car && !this.lockCar) prompt = car.driver ? '[F] Arabayı çal' : car.exploded ? '' : '[F] Bin';
     if (ped && ped.role !== 'police' && ped.state !== 'fight') prompt += (prompt ? '   ' : '') + '[E] Konuş';
-    if (!this.interact && this.world.L.gunShop && this.story?.chapter >= 3 && Math.hypot(this.world.L.gunShop.x - p.x, this.world.L.gunShop.z - p.z) < 3.5) this.interact = { x: this.world.L.gunShop.x, z: this.world.L.gunShop.z, r: 3.5, label: '[E] Rusty\'s Pawn & Guns — alışveriş', fn: () => this.ui.shop(), auto: true };
+    if (!this.interact && !this.mission?.busy) for (const si of this.staticInteracts || []) { if (si.world !== this.worldName || (si.cond && !si.cond())) continue; const q = si.pos(); if (q && Math.hypot(q.x - p.x, q.z - p.z) < (si.r || 3)) { this.interact = { x: q.x, z: q.z, r: si.r || 3, label: si.label(), fn: si.fn, auto: true }; break; } }
     if (this.interact?.auto && Math.hypot(this.interact.x - p.x, this.interact.z - p.z) > 4) this.interact = null;
     if (this.interact && Math.hypot(this.interact.x - p.x, this.interact.z - p.z) < (this.interact.r || 2.5)) prompt = this.interact.label;
     // siper (C)
@@ -418,7 +420,7 @@ export class Game {
       const traffic = this.vehicles.filter(v => v.ai?.type === 'traffic').length;
       if (traffic < this.pop.trafficTarget) this.pop.spawnTraffic(pp.x, pp.z);
       const civs = this.peds.filter(p => p.role === 'civ' && !p.vehicle).length;
-      if (civs < this.pop.pedTarget) { this.pop.spawnPed(pp.x, pp.z); this.pop.spawnPed(pp.x, pp.z); }
+      if (civs < this.pop.pedTarget && this.world.sidewalkSegs.length) { this.pop.spawnPed(pp.x, pp.z); this.pop.spawnPed(pp.x, pp.z); }
     }
     for (const v of [...this.vehicles]) { if (v.persistent || v === this.playerCar || v === this.lastCar || this.police.units.includes(v)) continue; if (Math.hypot(v.x - pp.x, v.z - pp.z) > 210) this.removeVehicle(v); }
     for (const p of [...this.peds]) { if (p.persistent || p.vehicle) continue; const d = Math.hypot(p.x - pp.x, p.z - pp.z); if (d > 150 || (p.dead && d > 70)) this.removePed(p); }
@@ -444,8 +446,10 @@ export class Game {
   loop() {
     requestAnimationFrame(this.loop);
     let dt = Math.min(this.clock.getDelta(), 1 / 25);
-    if (!this.paused) this.step(dt);
-    if (this.post) this.post.render(this.scene, this.camera); else this.renderer.render(this.scene, this.camera);
+    if (!this.paused && !this.interiorMode) this.step(dt);
+    const scn = this.interiorMode ? this.interiorMode.scene : this.scene, cam = this.interiorMode ? this.interiorMode.camera : this.camera;
+    if (this.interiorMode && !this.paused) this.interiorMode.update(dt);
+    if (this.post) this.post.render(scn, cam); else this.renderer.render(scn, cam);
     this.ui.frame(dt);
     this.input.endFrame();
   }

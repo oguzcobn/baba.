@@ -10,6 +10,7 @@ export const KINDS = {
   pickup: { w: 2.0, l: 5.1, mass: 1800, maxV: 28, acc: 7.5, grip: 8, name: 'Pikap' },
   police: { w: 1.95, l: 4.8, mass: 1500, maxV: 38, acc: 12, grip: 10, name: 'Polis Aracı' },
   taxi: { w: 1.9, l: 4.7, mass: 1350, maxV: 31, acc: 9, grip: 8.5, name: 'Taksi' },
+  suv: { w: 2.05, l: 5.0, mass: 2000, maxV: 30, acc: 8, grip: 8.5, name: 'Kamp SUV' },
   muscle: { w: 1.95, l: 4.8, mass: 1500, maxV: 40, acc: 12, grip: 8, name: 'Klasik Muscle' },
 };
 export const CAR_COLORS = ['#27355B', '#8e2f2f', '#d9d4c7', '#2f5a4a', '#c9a646', '#5b6770', '#7a4a6b', '#3d6a8a', '#b86a3a', '#1f1f22', '#a8b8b0', '#6b2b2b'];

@@ -66,10 +66,10 @@ export class Audio {
   setRain(v) { if (this.ctx) { this.ambG.gain.setTargetAtTime(0.02 + v * 0.16, this.ctx.currentTime, 0.5); this.ambF.frequency.setTargetAtTime(v ? 2500 : 700, this.ctx.currentTime, 0.5); } }
   // Huzurlu lo-fi radyo: yumuşak akorlar + bas + ara sıra piyano notası
   startMusic() {
-    const ctx = this.ctx; const chords = [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]]; let bar = 0;
+    const ctx = this.ctx; const STY = { sunset_lofi: [[53, 57, 60, 64], [52, 55, 59, 62], [50, 53, 57, 60], [48, 52, 55, 59]], rainy_jazz: [[50, 53, 57, 60], [55, 59, 62, 65], [48, 52, 55, 59], [45, 48, 52, 55]], acoustic_evening: [[48, 52, 55, 60], [55, 59, 62, 67], [57, 60, 64, 69], [53, 57, 60, 65]] }; let bar = 0;
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
     const play = () => {
-      if (!this.ctx) return; const t = ctx.currentTime + 0.05; const ch = chords[bar % 4]; const dur = 3.2;
+      if (!this.ctx) return; const t = ctx.currentTime + 0.05; const chords = STY[this.style] || STY.sunset_lofi; const ch = chords[bar % 4]; const dur = this.style === 'rainy_jazz' ? 3.8 : 3.2;
       if (this.musicOn) {
         for (const n of ch) {
           const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = mtof(n); o.detune.value = (Math.random() - .5) * 12;

@@ -7,7 +7,7 @@ import { M, initMaterials, litMat, lambert } from './materials.js';
 
 export const BVX = [-480, -320, -160, 0, 160, 320, 480];
 export const BHZ = [-480, -320, -160, 0, 160, 320, 480];
-const zoneOf = (i, j) => (i <= 1 ? 'campus' : i <= 3 ? (j === 5 && i === 3 ? 'stadium' : 'downtown') : (j <= 1 ? 'alley' : 'harbor'));
+const bostonZone = (i, j) => (i <= 1 ? 'campus' : i <= 3 ? (j === 5 && i === 3 ? 'stadium' : 'downtown') : (j <= 1 ? 'alley' : 'harbor'));
 
 function signMat(text, bg = '#1f2a33', fg = '#f2e3bd') {
   return lambert('bsign' + text + bg, (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 48; const x = c.getContext('2d'); x.fillStyle = bg; x.fillRect(0, 0, 256, 48); x.strokeStyle = '#c9a646'; x.lineWidth = 3; x.strokeRect(3, 3, 250, 42); x.fillStyle = fg; x.font = 'bold 24px Georgia'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 128, 25); return T.toTex(c, { repeat: false }); })());
@@ -17,8 +17,9 @@ function neonMat(text, col) {
   m.emissive = new THREE.Color(0xffffff); m.emissiveMap = m.map; m.emissiveIntensity = 0.6; return m;
 }
 
-export function buildBoston(scene) {
+export function buildBoston(scene, cfg = {}) {
   initMaterials();
+  const BVX = cfg.vx || [-480, -320, -160, 0, 160, 320, 480], BHZ = cfg.hz || BVX, zoneOf = cfg.zone || bostonZone, kind = cfg.kind || 'boston', E = BVX[BVX.length - 1];
   const group = new THREE.Group(); scene.add(group);
   const statics = new StaticGrid(24); const chunks = new Map();
   const B = (x, z) => { const k = Math.floor(x / 200) + ',' + Math.floor(z / 200); if (!chunks.has(k)) chunks.set(k, new Batcher()); return chunks.get(k); };
@@ -28,8 +29,8 @@ export function buildBoston(scene) {
   const addCircle = (x, z, rad, tag) => statics.add({ type: 'circle', x, z, r: rad, tag });
   const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1), pv = new THREE.Vector3();
 
-  ground.plane(M.conc, 0, 0, 0, 1100, 1100, 10, 10);
-  const water = new THREE.Mesh(new THREE.PlaneGeometry(700, 1600), M.water); water.rotation.x = -Math.PI / 2; water.position.set(870, 0.06, 0); group.add(water);
+  ground.plane(M.conc, 0, 0, 0, E * 2 + 140, E * 2 + 140, 10, 10);
+  const water = new THREE.Mesh(new THREE.PlaneGeometry(700, 1600), M.water); water.rotation.x = -Math.PI / 2; water.position.set(kind === 'boston' ? 870 : 99999, 0.06, 0); group.add(water);
 
   // ---- yollar
   const nodes = [], nidx = new Map();
@@ -105,14 +106,14 @@ export function buildBoston(scene) {
     return { x0, x1, z0, z1, D };
   }
   // ---- BLOKLAR
-  for (let i = 0; i < 6; i++) for (let j = 0; j < 6; j++) {
+  for (let i = 0; i < BVX.length - 1; i++) for (let j = 0; j < BHZ.length - 1; j++) {
     const z = zoneOf(i, j), { x0, x1, z0, z1 } = lot(i, j), cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
     if (z === 'campus') {
       ground.plane(M.grass, cx, 0.01, cz, x1 - x0, z1 - z0, 10, 10);
-      if (i === 1 && j === 2) { // yurt
+      if (kind === 'boston' && i === 1 && j === 2) { // yurt
         shop(x0 + 4, x1 - 4, z1 - 26, z1, 'pz', { floors: 4, color: '#8e4a3a', name: 'DORM HALL', sign: 'Harlow Hall — Yurt', awning: '#7a2121' });
         L.dorm = { x: cx, z: z1 + 3, name: 'Harlow Hall (Yurt)' };
-      } else if (i === 0 && j === 3) {
+      } else if (kind === 'boston' && i === 0 && j === 3) {
         shop(x0 + 6, x0 + 40, z0, z0 + 22, 'nz', { floors: 2, color: '#9a6248', name: 'CAMPUS CAFE', sign: 'Elena\'s Corner Café', awning: '#2f6f5e' });
         L.elenaCafe = { x: x0 + 23, z: z0 - 4, name: 'Kampüs Kafesi' };
         ground.plane(M.plaza, cx + 10, 0.02, cz + 20, 70, 60, 6, 6);
@@ -123,11 +124,11 @@ export function buildBoston(scene) {
       for (let k = 0; k < 12; k++) { const tx = x0 + 8 + r() * (x1 - x0 - 16), tz = z0 + 8 + r() * (z1 - z0 - 50); tree(tx, tz, 1 + r() * .5); }
     } else if (z === 'downtown') {
       ground.plane(M.parking, cx, 0.01, cz, x1 - x0, z1 - z0, 6, 6);
-      if (j === 2) { // Barlar Sokağı: z=160 yolunun kuzeyi (blok güney sırası) neon
+      if (kind === 'boston' && j === 2) { // Barlar Sokağı: z=160 yolunun kuzeyi (blok güney sırası) neon
         const names = [['THE ANCHOR', '#4fd0ff'], ['RED LION', '#ff4f4f'], ['BLUE NOTE', '#4f7fff'], ['MCGEE\'S', '#4fff8f'], ['LUCKY 7', '#ffd04f']];
         ringRow(i, j, { floors: [2, 3], south: [{ from: x0, to: x0 + 22, o: { neon: names[i % 5][0], neonCol: names[i % 5][1], awning: '#1f1f22' } }, { from: x0 + 22, to: x0 + 44, o: { neon: names[(i + 2) % 5][0], neonCol: names[(i + 2) % 5][1], awning: '#1f1f22' } }, { from: x0 + 44, to: x0 + 66, o: { neon: names[(i + 3) % 5][0], neonCol: names[(i + 3) % 5][1], awning: '#1f1f22' } }] });
         if (i === 2) L.bars = { x: x0 + 33, z: z1 + 3, name: 'Barlar Sokağı' };
-      } else if (i === 2 && j === 1) {
+      } else if (kind === 'boston' && i === 2 && j === 1) {
         ringRow(i, j, { floors: [4, 6], south: [{ from: x0, to: x0 + 26, o: { floors: 5, name: 'STUDIO APTS', sign: 'Downtown Stüdyo', awning: '#2f4a7a' } }] });
         L.studio = { x: x0 + 13, z: z1 + 3, name: 'Downtown Stüdyo Daire' };
       } else ringRow(i, j, { floors: [3, 7], wMin: 18, wVar: 12, depth: 24 });
@@ -137,12 +138,12 @@ export function buildBoston(scene) {
       B(cx, cz).geom(sm, g, mtx.compose(pv.set(cx, 7, cz), q.identity(), sc));
       const pitch = new THREE.Mesh(new THREE.PlaneGeometry(70, 46), new THREE.MeshLambertMaterial({ map: T.grassTex(), color: 0x9fd08a })); pitch.rotation.x = -Math.PI / 2; pitch.position.set(cx, 0.05, cz); group.add(pitch);
       for (let a = 0; a < 40; a++) { const an = a / 40 * Math.PI * 2; addObb(cx + Math.cos(an) * 64, cz + Math.sin(an) * 64, 5.5, 1.5, -an + Math.PI / 2); }
-      L.stadium = { x: cx, z: z0 - 4, name: 'Stadyum' };
+      L.stadium = { x: cx, z: z0 - 4, name: 'Stadyum' }; L.stadiumC = { x: cx, z: cz };
     } else if (z === 'alley') {
       ground.plane(M.dirt, cx, 0.01, cz, x1 - x0, z1 - z0, 6, 6);
-      const ro = ringRow(i, j, { floors: [2, 4], depth: 22, o: { style: 'brick', awning: '#3a3a3a' }, north: i === 4 && j === 1 ? [{ from: x0 + 30, to: x0 + 56, o: { name: 'FIGHT CLUB', neon: 'THE PIT', neonCol: '#ff6a2a', floors: 2 } }] : [], south: i === 4 && j === 1 ? [{ from: x0 + 40, to: x0 + 62, o: { name: 'PAWN & GUNS', sign: 'Rusty\'s Pawn & Guns', signBg: '#3a1a1a', floors: 2 } }] : i === 5 && j === 1 ? [{ from: x0 + 20, to: x0 + 44, o: { name: 'THE CELLAR', neon: 'CELLAR', neonCol: '#c04fff', floors: 3 } }] : [] });
-      if (i === 4 && j === 1) { L.fightClub = { x: x0 + 43, z: z0 - 4, name: 'Yeraltı Dövüş Kulübü' }; L.gunShop = { x: x0 + 51, z: z1 + 3, name: 'Silah Satıcısı' }; }
-      if (i === 5 && j === 1) L.vinceBar = { x: x0 + 32, z: z1 + 3, name: 'The Cellar (Vince)' };
+      const ro = ringRow(i, j, { floors: [2, 4], depth: 22, o: { style: 'brick', awning: '#3a3a3a' }, north: kind === 'boston' && i === 4 && j === 1 ? [{ from: x0 + 30, to: x0 + 56, o: { name: 'FIGHT CLUB', neon: 'THE PIT', neonCol: '#ff6a2a', floors: 2 } }] : [], south: kind === 'boston' && i === 4 && j === 1 ? [{ from: x0 + 40, to: x0 + 62, o: { name: 'PAWN & GUNS', sign: 'Rusty\'s Pawn & Guns', signBg: '#3a1a1a', floors: 2 } }] : kind === 'boston' && i === 5 && j === 1 ? [{ from: x0 + 20, to: x0 + 44, o: { name: 'THE CELLAR', neon: 'CELLAR', neonCol: '#c04fff', floors: 3 } }] : [] });
+      if (kind === 'boston' && i === 4 && j === 1) { L.fightClub = { x: x0 + 43, z: z0 - 4, name: 'Yeraltı Dövüş Kulübü' }; L.gunShop = { x: x0 + 51, z: z1 + 3, name: 'Silah Satıcısı' }; }
+      if (kind === 'boston' && i === 5 && j === 1) L.vinceBar = { x: x0 + 32, z: z1 + 3, name: 'The Cellar (Vince)' };
       for (let k = 0; k < 6; k++) { const dx = x0 + 30 + r() * (x1 - x0 - 60), dz = z0 + 30 + r() * (z1 - z0 - 60); B(dx, dz).box(dx, 0, dz, 2.4, 1.4, 1.4, { side: lambert('dump', T.upperFacadeTex('metal', '#3f6a4a', 1)), top: M.darkMetal }, { mu: 2.4, mv: 1.4 }); addObb(dx, dz, 1.2, 0.7); }
     } else { // harbor
       ground.plane(M.conc, cx, 0.01, cz, x1 - x0, z1 - z0, 8, 8);
@@ -152,21 +153,24 @@ export function buildBoston(scene) {
       if (i === 5 && j === 4) L.harborDrop = { x: cx, z: cz, name: 'Liman Teslimat' };
     }
   }
+  if (kind === 'boston') {
   // iskele + vinçler (doğu kıyısı)
   ground.plane(M.conc, 512, 0.02, 0, 40, 980, 8, 8);
   for (let z = -440; z < 460; z += 110) { const b = B(520, z); const cm = lambert('crane', T.upperFacadeTex('metal', '#d9a03a', 0)); for (const [ox, oz] of [[-4, -4], [4, -4], [-4, 4], [4, 4]]) b.box(520 + ox, 0, z + oz, 0.8, 22, 0.8, { side: cm, top: cm }, { mu: 1, mv: 4 }); b.box(522, 22, z, 40, 2, 3, { side: cm, top: cm }, { mu: 4, mv: 2 }); addObb(520, z, 4.4, 4.4); }
   addObb(538, 0, 4, 600, 0, 'edge');
   for (const [x, z] of [[0, -520], [0, 520], [-520, 0]]) addObb(x, z, x ? 6 : 600, x ? 600 : 6, 0, 'edge');
+  } else for (const [x, z] of [[0, -E - 40], [0, E + 40], [-E - 40, 0], [E + 40, 0]]) addObb(x, z, x ? 6 : E + 60, x ? E + 60 : 6, 0, 'edge');
   // park yerleri
-  for (const z of BHZ) for (let x = -420; x < 440; x += 160) if (r() < .55) parkSpots.push({ x: x + (r() - .5) * 50, z: z - 5.2, a: Math.PI / 2 });
+  for (const z of BHZ) for (let x = -E + 60; x < E - 40; x += 160) if (r() < .55) parkSpots.push({ x: x + (r() - .5) * 50, z: z - 5.2, a: Math.PI / 2 });
+  if (kind === 'boston') { L.campusHouse = { x: -400, z: 312, name: 'Kampüs Bahçeli Ev' }; L.loft = { x: 210, z: 127.5, name: 'Liman Manzaralı Loft' }; }
   L.arrival = { x: -240, z: 163.5, name: 'Kampüs Girişi' };
   L.leoMeet = { x: -240, z: 172, name: 'Leo' };
 
   ground.build(group, { castShadow: false }); for (const b of chunks.values()) b.build(group);
   const pg = new THREE.Group(); poolB.build(pg, { castShadow: false }); pg.children.forEach(m => { m.castShadow = m.receiveShadow = false; m.renderOrder = 2; }); group.add(pg);
 
-  const onRoad = (x, z) => { for (const zr of BHZ) if (Math.abs(z - zr) < 7 && Math.abs(x) < 487) return true; for (const xr of BVX) if (Math.abs(x - xr) < 7 && Math.abs(z) < 487) return true; return false; };
-  const surfaceAt = (x, z) => { if (onRoad(x, z)) return 'road'; const i = Math.floor((x + 480) / 160), j = Math.floor((z + 480) / 160); const zn = zoneOf(i, j); return zn === 'campus' ? 'grass' : zn === 'alley' ? 'dirt' : 'conc'; };
-  const paintMap = (g, ox, oz, W, H) => { g.fillStyle = '#8d8e8c'; g.fillRect(0, 0, W, H); g.fillStyle = '#6f9a58'; g.fillRect(ox - 480, oz - 480, 320, 960); g.fillStyle = '#5aa0b8'; g.fillRect(ox + 540, 0, W, H); };
-  return { name: 'boston', group, statics, nodes, sidewalkSegs, lamps, L, parkSpots, heightAt: () => 0, onRoad, surfaceAt, paintMap, water, lighthouse: null, bounds: { x0: -500, x1: 560, z0: -500, z1: 500 } };
+  const onRoad = (x, z) => { for (const zr of BHZ) if (Math.abs(z - zr) < 7 && Math.abs(x) < E + 7) return true; for (const xr of BVX) if (Math.abs(x - xr) < 7 && Math.abs(z) < E + 7) return true; return false; };
+  const surfaceAt = (x, z) => { if (onRoad(x, z)) return 'road'; const i = Math.floor((x + E) / 160), j = Math.floor((z + E) / 160); const zn = zoneOf(i, j); return zn === 'campus' ? 'grass' : zn === 'alley' ? 'dirt' : 'conc'; };
+  const paintMap = (g, ox, oz, W, H) => { g.fillStyle = '#8d8e8c'; g.fillRect(0, 0, W, H); if (kind === 'boston') { g.fillStyle = '#6f9a58'; g.fillRect(ox - 480, oz - 480, 320, 960); g.fillStyle = '#5aa0b8'; g.fillRect(ox + 540, 0, W, H); } };
+  return { name: kind, group, statics, nodes, sidewalkSegs, lamps, L, parkSpots, heightAt: () => 0, onRoad, surfaceAt, paintMap, water, lighthouse: null, bounds: kind === 'boston' ? { x0: -500, x1: 560, z0: -500, z1: 500 } : { x0: -E - 30, x1: E + 30, z0: -E - 30, z1: E + 30 } };
 }

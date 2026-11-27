@@ -94,6 +94,15 @@
   #meter { top:78px; left:50%; transform:translateX(-50%); opacity:0; transition:opacity .2s; text-align:center; font-size:13px; letter-spacing:1px; }
   #meter div { width:220px; height:8px; margin-top:4px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.5); border-radius:5px; overflow:hidden; }
   #meter i { display:block; height:100%; background:linear-gradient(90deg,#ffd34d,#e2574c); }
+  #homehud { position:absolute; inset:0; pointer-events:none; display:none; }
+  #homehud .hh-top { position:absolute; top:22px; left:50%; transform:translateX(-50%); background:var(--bg); padding:10px 22px; border-radius:24px; font:700 17px Georgia; color:var(--gold); }
+  #homehud .hh-tip { position:absolute; bottom:24px; left:50%; transform:translateX(-50%); background:var(--bg); padding:8px 18px; border-radius:8px; font-size:14px; text-align:center; }
+  #homehud .hh-prompt { position:absolute; bottom:80px; left:50%; transform:translateX(-50%); font-size:17px; text-shadow:0 2px 4px #000; }
+  #homehud .hh-cat { position:absolute; right:16px; top:70px; bottom:90px; width:200px; overflow-y:auto; pointer-events:auto; display:flex; flex-direction:column; gap:6px; }
+  #homehud .hh-cat button { pointer-events:auto; text-align:left; padding:8px 10px; background:rgba(18,20,28,.85); color:var(--ink); border:1px solid rgba(231,199,122,.35); border-radius:8px; font:600 14px 'Trebuchet MS'; cursor:pointer; }
+  #homehud .hh-cat button:hover { background:rgba(231,199,122,.25); } #homehud .hh-cat small { display:block; opacity:.7; font-weight:400; }
+  .bar-rec span { display:inline-block; margin:4px; padding:6px 10px; border-radius:6px; background:rgba(255,255,255,.08); } .bar-rec .done { background:#3f7a4a; } .bar-rec .now { background:#e7c77a; color:#1d1a16; }
+  .bar-ing { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; width:min(560px,90vw); } .bar-ing .choice { margin:0; text-align:center; font-size:15px; }
   /* menü */
   #menu { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; padding-left:8vw; background-size:cover; background-position:center; }
   #menu:before { content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(8,8,14,.92) 0%, rgba(8,8,14,.6) 45%, rgba(8,8,14,.1)); }
@@ -150,7 +159,7 @@
   <button id="btnStory">HİKAYE — BÖLÜM 1</button>
   <button id="btnFree" class="ghost">SERBEST MOD (tüm mekanikler)</button>
   <button id="btnCtl" class="ghost">KONTROLLER</button>
-  <div class="foot">v0.3 · Bölüm 1-3 · Oakridge + Boston · Three.js</div>
+  <div class="foot">v0.4 · Bölüm 1-4 · Oakridge, Boston, deplasman, kamp · Three.js</div>
 </div>
 <script type="importmap">{ "imports": { "three": "./lib/three.module.js" } }</script>
 <script type="module" src="./src/main.js"></script>

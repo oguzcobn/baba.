@@ -38,6 +38,7 @@ export class MissionRunner {
   cleanup(keep = []) {
     for (const e of this.spawned) { if (keep.includes(e)) continue; if (e.passengers !== undefined) { if (e === this.game.playerCar) this.game.exitVehicle(); this.game.removeVehicle(e); } else this.game.removePed(e); }
     this.spawned = this.spawned.filter(e => keep.includes(e));
+    if (this.onCleanup) { try { this.onCleanup(); } catch (e) { } this.onCleanup = null; }
     this.game.clearMarkers(); this.failIfs = []; this.waiters = []; this.game.interact = null; this.game.ui.setObjective(''); this.game.camOverride = null;
   }
   async run(startIdx = 0) {

@@ -152,7 +152,12 @@ export const chapter3 = {
   ],
   async onComplete(R, G) {
     await G.ui.chapterCard(3, 'Tamamlandı', 'Boston\'da ilk yıl bitti. Jack artık şehrin sokaklarını biliyor — ve sokaklar da onu.<br><br><b>Bölüm 4: Özgürlük, Deplasmanlar ve Amerika Turu</b> — yakında');
-    G.story.chapter = 4; G.save({ chapter: 4, mission: 0 }); R.cleanup([]); G.timeScale = 0.02;
-    G.ui.toast('Serbest dolaşım: Boston senin. Silah dükkânı açık.', 'good');
+    G.story.chapter = 4; G.save({ chapter: 4, mission: 0 }); R.cleanup([]);
+    await G.ui.lines([['Leo', 'Kanka, artık kendi paranı kazanıyorsun. Barlar Sokağı\'nda barmenlik, arka mahallede dövüş kulübü… Bir ev bile alabilirsin!']]);
+    G.ui.toast('Serbest Boston: <b>barmenlik</b> (Barlar Sokağı), <b>dövüş kulübü</b> (arka mahalle), <b>emlak</b> (Downtown Stüdyo, Kampüs Evi, Liman Loft). Yurdunda <b>B</b> ile dizayn!', 'good');
+    G.mission = null; G.timeScale = 0.02;
+    const L = G.world.L; const mk = G.addMarker(L.dorm.x, L.dorm.z, 0x7bd389);
+    G.staticInteracts.push({ world: 'boston', r: 4, cond: () => G.story.chapter === 4 && !G.mission, pos: () => L.stadium, label: () => '[E] Bölüm 4\'e başla — Deplasman otobüsü', fn: () => { G.removeMarker(mk); G.removeMarker(m2); G.startChapter(4, 0); } });
+    const m2 = G.addMarker(L.stadium.x, L.stadium.z, 0xffd36a); G.ui.setObjective('Serbest zaman — hazır olunca <b>stadyuma</b> git (Bölüm 4)');
   },
 };

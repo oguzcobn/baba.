@@ -50,6 +50,7 @@ export class UI {
   // ---------------------------------------------- HUD
   frame(dt) {
     const G = this.game; if (!G || G.paused && !this.cineActive) { return; }
+    const inside = !!G.interiorMode; this.hud.style.display = this.mini.style.display = inside ? 'none' : ''; if (inside) { this.setPrompt(''); return; }
     const p = G.player; const h = G.time; const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
     const stars = G.police.stars; let starHtml = ''; for (let i = 0; i < 5; i++) starHtml += `<span class="star ${i < stars ? 'on' : ''} ${G.police.flash > 0 && i < stars ? 'blink' : ''}">★</span>`;
     const W = G.WEAPONS[p.weapon]; const ammo = W.ammoKey ? G.ammo[W.ammoKey] : '';
