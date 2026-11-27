@@ -23,7 +23,13 @@ export function createPeople(scene){
   const actions=rules.actions.map(name=>mixer.clipAction(m.high.animations.find(c=>c.name===name)));
   const crate=new T.Mesh(crateGeometry,crateMaterial);crate.position.set(0,1.04,.27);root.add(crate);
   root.traverse(n=>{if(n.isMesh){n.castShadow=true;n.frustumCulled=false}});
-  scene.add(root);return {root,mixer,actions,crate,last:-1}
+  const joints=[];
+  root.traverse(b=>{if(!b.isBone)return;
+    const name=b.name.replace(/[^a-z0-9]/gi,'').toLowerCase();
+    const bend=name.endsWith('calf')?.68:name.endsWith('thigh')?-.40:name.endsWith('spine1')?.30:0;
+    if(bend)joints.push({bone:b,base:b.quaternion.clone(),bend});
+  });
+  scene.add(root);return {root,mixer,actions,crate,joints,layered:false,last:-1}
  }
  function cachePose(m,a,frame){
   const key=a*8+frame;
@@ -54,15 +60,20 @@ export function createPeople(scene){
   mesh.setMatrixAt(index,matrix)
  }
  function begin(){nearCount=0;crowdCount=0;for(const m of models){m.used=0;for(const p of m.poses.values())p.count=0}}
+const tiltAxis=new T.Vector3(1,0,0),tilt=new T.Quaternion();
  function add(u,time,close){
   const m=models[rules.variant(u)],a=rules.pose(u),f=rules.phase(u,time,a),s=rules.scale(u),yaw=Math.PI/2-(u.angle||0);
+  const fall=Math.min(1,(u.fall||0)/.72),tiltAngle=1.51*fall*fall*(3-2*fall);
   if(close&&nearCount<24){
    const i=m.used++,n=m.pool[i]||(m.pool[i]=live(m));
+   if(n.layered)for(const joint of n.joints)joint.bone.quaternion.copy(joint.base);
    if(n.last!==a){if(n.last>=0)n.actions[n.last].stop();n.actions[a].reset().play();n.last=a}
    n.actions[a].time=n.actions[a].getClip().duration*f;n.mixer.update(0);
-   n.crate.visible=a===3||a===4;n.root.position.set(u.x,0,u.y);n.root.rotation.y=yaw;n.root.scale.setScalar(s);n.root.visible=true;nearCount++;return
+   n.layered=fall>0;
+   if(n.layered){const buckle=Math.sin(Math.PI*Math.min(1,fall*1.3))+.27*fall;for(const joint of n.joints){joint.base.copy(joint.bone.quaternion);joint.bone.rotateZ(joint.bend*buckle)}}
+   n.crate.visible=a===3||a===4;n.root.position.set(u.x,0,u.y);n.root.rotation.set(tiltAngle,yaw,0,'YXZ');n.root.position.y=.14*fall;n.root.scale.setScalar(s);n.root.visible=true;nearCount++;return
   }
-  const pose=cachePose(m,a,Math.floor(f*8));position.set(u.x,0,u.y);size.setScalar(s);rotation.setFromAxisAngle(up,yaw);matrix.compose(position,rotation,size);
+  const pose=cachePose(m,a,Math.floor(f*8));position.set(u.x,0,u.y);size.setScalar(s);rotation.setFromAxisAngle(up,yaw).multiply(tilt.setFromAxisAngle(tiltAxis,tiltAngle));position.y=.14*fall;matrix.compose(position,rotation,size);
   for(const part of pose.parts)append(part,pose.count);
   pose.count++;crowdCount++
  }
