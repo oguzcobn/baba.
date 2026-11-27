@@ -44,6 +44,21 @@ const App = (() => {
   const OWNER_ONLY = ['is', 'erisim', 'ts'];
   const OWNER_GAMES = [];   // yalnız sahibin görüp oynayabildiği oyunlar
   const visibleGames = () => isOwner() ? GAMES : GAMES.filter(g => !OWNER_GAMES.includes(g.id));
+  // Public links grant access to the games catalogue and listed games only.
+  // Never set the owner PIN session or create an invitation for anonymous players.
+  const publicGameRoute = r => r === 'oyunlar' || (GAMES.some(g => g.id === r) && !OWNER_GAMES.includes(r));
+  function publicGameChrome(active) {
+    document.body.classList.toggle('public-games', active);
+    const logo = document.querySelector('header.nav .logo');
+    if (logo) logo.setAttribute('href', active ? '#oyunlar' : '#');
+    if (active) {
+      document.getElementById('bbMobileNav')?.remove();
+      document.body.classList.remove('guest', 'hb-mode');
+    }
+  }
+  const publicStyle = document.createElement('style');
+  publicStyle.textContent = 'body.public-games header.nav .nav-links a:not([data-r="oyunlar"]),body.public-games #quickNavBtn,body.public-games #lockBtn,body.public-games #bbMobileNav,body.public-games a[href="#skor"],body.public-games .owner-only{display:none!important}';
+  document.head.appendChild(publicStyle);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const root = () => document.getElementById('view');
   let cleanup = [];
@@ -1004,9 +1019,11 @@ const App = (() => {
     leave(); if (typeof Draft !== 'undefined') Draft.stop();
     if (typeof CBN !== 'undefined') CBN.leave();
     document.querySelectorAll('.bb-pin-ov').forEach(e => e.remove());
-    if (!canIn()) return lockScreen();
-    document.body.classList.remove('locked');
-    let r = location.hash.slice(1); if (r.startsWith('davet=')) { r = ''; history.replaceState(null, '', location.pathname + location.search); }
+    let r = location.hash.slice(1);
+    const publicGames = !canIn() && publicGameRoute(r);
+    publicGameChrome(publicGames);
+    if (!canIn() && !publicGames) return lockScreen();
+    document.body.classList.remove('locked'); if (r.startsWith('davet=')) { r = ''; history.replaceState(null, '', location.pathname + location.search); }
     guestUrl();
     const isCbn = r === 'cbn' || r.startsWith('cbn/');
     if (OWNER_ONLY.includes(r) && !isOwner()) r = '';
@@ -1088,9 +1105,9 @@ const App = (() => {
     else if (r === 'foto' && typeof Foto !== 'undefined') { root().innerHTML = '<div id="ftRoot"></div>'; window.scrollTo(0, 0); Foto.open(root().querySelector('#ftRoot')); onLeave(() => Foto.leave()); }
     else hub();
     if (GAMES.some(g => g.id === r) && typeof BABALibrary !== 'undefined') BABALibrary.track(r);
-    if(typeof BABAEnhance!=='undefined') BABAEnhance.enhance();
+    if(!publicGames && typeof BABAEnhance!=='undefined') BABAEnhance.enhance();
     if(typeof BABADaily!=='undefined') BABADaily.refresh();
-    if(typeof BABAGroups!=='undefined') BABAGroups.refresh();
+    if(!publicGames && typeof BABAGroups!=='undefined') BABAGroups.refresh();
     // Animate each route once on entry; don't interrupt inputs or long-running widgets.
     const appRoot=root();
     appRoot.classList.remove('bb-route-enter');
