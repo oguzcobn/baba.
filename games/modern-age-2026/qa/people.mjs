@@ -7,6 +7,26 @@ try{
  p.on('console',m=>{if(m.type()==='error'&&!m.text().includes('404'))errors.push(m.text())});
  await p.goto('http://localhost:8080/index.html');await p.selectOption('#mode','sandbox');await p.click('#new');
  await p.waitForFunction(()=>__MA.metrics.skinnedPeople===6);
+ const lightSamples={};
+ for(const [label,hour,weather] of [['noon',12,'clear'],['sunset',18,'clear'],['night',0,'clear'],['rain',12,'rain']]){
+   await p.click('#climate');
+   await p.locator('#hours').fill(String(hour));await p.selectOption('#wchoice',weather);
+   await p.click('#weather > button');
+   await p.waitForTimeout(1200);
+   const region=await p.locator('#map').boundingBox();
+   const image=await p.screenshot({path:'lighting-'+label+'.png',clip:region});
+   lightSamples[label]=await p.evaluate(async b64=>{
+     const bitmap=await createImageBitmap(await (await fetch('data:image/png;base64,'+b64)).blob());
+     const canvas=document.createElement('canvas');canvas.width=100;canvas.height=64;
+     const context=canvas.getContext('2d');context.drawImage(bitmap,0,0,100,64);
+     const rgb=context.getImageData(0,0,100,64).data,mean=[0,0,0];
+     for(let i=0;i<rgb.length;i+=4)for(let c=0;c<3;c++)mean[c]+=rgb[i+c]/6400;
+     bitmap.close();return mean;
+   },image.toString('base64'));
+ }
+ console.log('Mean scene RGB (0–255)',lightSamples);
+ assert.ok(lightSamples.noon[1]>lightSamples.night[1]+8,'daylight and moonlight must differ');
+ assert.ok(lightSamples.sunset[0]/lightSamples.sunset[2]>lightSamples.night[0]/lightSamples.night[2],'warm sunset and cool night');
  const pos=await p.evaluate(()=>{
    const w=__MA.world,h=w.buildings.find(b=>b.type==='hq');
    __MA.spawnUnit('infantry',h,false,true);

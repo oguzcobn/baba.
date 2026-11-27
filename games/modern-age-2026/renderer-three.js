@@ -18,6 +18,13 @@ export async function createThreeRenderer(api) {
  const people=createPeople(scene);
  await people.load();
  const sky=new THREE.HemisphereLight(0xc9e0ff,0x73715a,1.65);scene.add(sky);
+ const palette=Object.fromEntries(Object.entries({
+   moon:0x91b7ef, sunset:0xffb170, noon:0xfff3df, overcast:0xd9e2f0,
+   nightSky:0x829ed6, daySky:0xbcd7f5, nightGround:0x474c66, dayGround:0xa39a80,
+   nightHaze:0x51647d, duskHaze:0xdec0a4, dayHaze:0xc5d4dd
+ }).map(([key,value])=>[key,new THREE.Color(value)]));
+ scene.fog=new THREE.Fog(palette.dayHaze,126,215);
+ const smooth=(lo,hi,x)=>THREE.MathUtils.smoothstep(x,lo,hi);
  const sun=new THREE.DirectionalLight(0xffecd0,2.6);scene.add(sun,sun.target);
  sun.castShadow=true;sun.shadow.mapSize.set(software?512:2048,software?512:2048);
  sun.shadow.camera.near=.1;sun.shadow.camera.far=100;
@@ -49,10 +56,11 @@ export async function createThreeRenderer(api) {
  const matrix=new THREE.Matrix4(),color=new THREE.Color(),position=new THREE.Vector3(),quat=new THREE.Quaternion(),euler=new THREE.Euler(),size=new THREE.Vector3();
  let world,defs,countries,debris,N,T,cam,W,H,zoom,hour,season,weather,tile,project,quality,metrics;
  let batch={},buildingStatic=false,staticKey='',buildingKey='',statWorld=null,scale=software?.65:1,baseDpr=1,lastAdapt=0,lastShadow=0,lastX=Infinity,lastZ=Infinity,lastZoom=0,lastClimate='',disposed=false,drawCount=0,lastQuality=null;
- function add(g,x,y,z,sx,sy,sz,c,m=0,r=.8,yaw=0,pitch=0){
-   const type=r===-1?'contact':g==='mansion'?'landmark':g==='plane'?(r<.2?'water':'earth'):m>.17?(r<.35?'glass':'metal'):'wall';
+ function add(g,x,y,z,sx,sy,sz,c,m=0,r=.8,yaw=0,pitch=0,override=null){
+   const type=override||(r===-1?'contact':g==='mansion'?'landmark':g==='plane'?(r<.2?'water':'earth'):m>.17?(r<.35?'glass':'metal'):'wall');
    const k=g+'|'+type+(buildingStatic?'|'+Math.floor(x/12)+','+Math.floor(z/12):''); (batch[k]??=[]).push([x,y,z,sx,sy,sz,c,yaw,pitch]);
  }
+ const windowPane=(x,y,z,w,h,d,color)=>add('box',x,y,z,w,h,d,color,.22,.21,0,0,'window');
  const box=(x,y,z,w,h,d,c,m=0,r=.8,ya=0,pi=0)=>add('box',x,y,z,w,h,d,c,m,r,ya,pi);
  function tree3(x,z,t){
    const h=.84+t.tone*.85;
@@ -74,7 +82,7 @@ export async function createThreeRenderer(api) {
    }
    return
  }
- if(kind==='landmark'&&country==='TR'){add('mansion',x,.02,z,.48,.48*p,.48,'#ffffff',0,.83);return}if(kind==='farm'){for(let i=0;i<6;i++){box(x-s*.38+i*s*.15,.04,z,s*.11,.07,s*.83,'#766044');for(let j=0;j<6;j++)add('low',x-s*.38+i*s*.15,.19*p,z-s*.35+j*s*.14,.18,.33*p,.18,'#a7b65e')}return}if(kind==='power'){for(let i=0;i<3;i++)for(let j=0;j<3;j++){let xx=x+(i-1)*.8,zz=z+(j-1)*.8;box(xx,.21*p,zz,.12,.4*p,.12,'#848e8f',.5);box(xx,.43*p,zz,.7,.06,.66,'#385c77',.35,.25,0,.26);for(let k=-1;k<=1;k++)box(xx+k*.21,.47*p,zz,.012,.012,.6,'#9db5c6',.4)}return}let h=(kind==='hq'?1.36:kind==='house'?1.15:kind==='hangar'?1.05:.87)*p,w=s*.82,d=s*.76;box(x,.09,z,w+.14,.18,d+.14,'#9a9e95');box(x,h*.5+.15,z,w,h,d,base);if(['house','barracks','hq'].includes(kind)&&!['IL','IR','US'].includes(country)){add('roof',x,h+.33*p+.15,z,w+.19,.45*p,d+.2,roofc,0,.79);for(let i=0;i<Math.floor(w/.23);i++){let xx=x-w/2+.13+i*.23;box(xx,h+.16*p+.15,z+d*.24,.025,.018,d*.51, '#bd8064',0,.8,0,-.28)}}else{box(x,h+.18,z,w+.12,.12,d+.12,'#8b9694',.3,.55);for(let j=0;j<2;j++)box(x-.45+j*.9,h+.36,z-.25,.46,.24,.48,'#a7afaa',.3,.65)}for(let j=0;j<Math.floor(w/.5);j++){let xx=x-w/2+.28+j*.5;for(let side of [-1,1]){box(xx,.15+h*.57,z+side*(d/2+.014),.33,h*.39,.035,'#deded0');box(xx,.15+h*.57,z+side*(d/2+.035),.25,h*.3,.025,'#416674',.22,.21);box(xx,.15+h*.57,z+side*(d/2+.052),.016,h*.3,.014,'#afc4c5')}}for(let j=0;j<Math.floor(d/.5);j++){let zz=z-d/2+.29+j*.5;box(x+w/2+.02,.15+h*.58,zz,.045,h*.38,.33,'#d2d6ca');box(x+w/2+.05,.15+h*.58,zz,.023,h*.29,.25,'#527580',.25,.2)}box(x,.15+h*.26,z+d/2+.065,.47,h*.52,.10,'#48564e',.13,.55);if(['factory','hangar','dock'].includes(kind))box(x,.15+h*.42,z+d/2+.09,w*.56,h*.8,.10,'#7b8c8b',.48,.6);if(kind==='hq'||kind==='research'){box(x+w*.42,h+.55,z-d*.36,.035,1.08,.035,'#d8dfdc',.4);box(x+w*.42+.18,h+.98,z-d*.36,.36,.22,.022,fc)}if(kind==='hq'||kind==='house'){
+ if(kind==='landmark'&&country==='TR'){add('mansion',x,.02,z,.48,.48*p,.48,'#ffffff',0,.83);return}if(kind==='farm'){for(let i=0;i<6;i++){box(x-s*.38+i*s*.15,.04,z,s*.11,.07,s*.83,'#766044');for(let j=0;j<6;j++)add('low',x-s*.38+i*s*.15,.19*p,z-s*.35+j*s*.14,.18,.33*p,.18,'#a7b65e')}return}if(kind==='power'){for(let i=0;i<3;i++)for(let j=0;j<3;j++){let xx=x+(i-1)*.8,zz=z+(j-1)*.8;box(xx,.21*p,zz,.12,.4*p,.12,'#848e8f',.5);box(xx,.43*p,zz,.7,.06,.66,'#385c77',.35,.25,0,.26);for(let k=-1;k<=1;k++)box(xx+k*.21,.47*p,zz,.012,.012,.6,'#9db5c6',.4)}return}let h=(kind==='hq'?1.36:kind==='house'?1.15:kind==='hangar'?1.05:.87)*p,w=s*.82,d=s*.76;box(x,.09,z,w+.14,.18,d+.14,'#9a9e95');box(x,h*.5+.15,z,w,h,d,base);if(['house','barracks','hq'].includes(kind)&&!['IL','IR','US'].includes(country)){add('roof',x,h+.33*p+.15,z,w+.19,.45*p,d+.2,roofc,0,.79);for(let i=0;i<Math.floor(w/.23);i++){let xx=x-w/2+.13+i*.23;box(xx,h+.16*p+.15,z+d*.24,.025,.018,d*.51, '#bd8064',0,.8,0,-.28)}}else{box(x,h+.18,z,w+.12,.12,d+.12,'#8b9694',.3,.55);for(let j=0;j<2;j++)box(x-.45+j*.9,h+.36,z-.25,.46,.24,.48,'#a7afaa',.3,.65)}for(let j=0;j<Math.floor(w/.5);j++){let xx=x-w/2+.28+j*.5;for(let side of [-1,1]){box(xx,.15+h*.57,z+side*(d/2+.014),.33,h*.39,.035,'#deded0');windowPane(xx,.15+h*.57,z+side*(d/2+.035),.25,h*.3,.025,'#416674');box(xx,.15+h*.57,z+side*(d/2+.052),.016,h*.3,.014,'#afc4c5')}}for(let j=0;j<Math.floor(d/.5);j++){let zz=z-d/2+.29+j*.5;box(x+w/2+.02,.15+h*.58,zz,.045,h*.38,.33,'#d2d6ca');windowPane(x+w/2+.05,.15+h*.58,zz,.023,h*.29,.25,'#527580')}box(x,.15+h*.26,z+d/2+.065,.47,h*.52,.10,'#48564e',.13,.55);if(['factory','hangar','dock'].includes(kind))box(x,.15+h*.42,z+d/2+.09,w*.56,h*.8,.10,'#7b8c8b',.48,.6);if(kind==='hq'||kind==='research'){box(x+w*.42,h+.55,z-d*.36,.035,1.08,.035,'#d8dfdc',.4);box(x+w*.42+.18,h+.98,z-d*.36,.36,.22,.022,fc)}if(kind==='hq'||kind==='house'){
    const front=z+d*.5,edge=x+w*.43;
    if(country==='TR'){box(x,h*.82,front,w*.65,.1,.48,'#efe5d3');for(const dir of [-1,1])box(x+dir*w*.28,h*.4,front+.12,.09,h*.8,.09,base)}
    if(country==='US'){for(const dir of [-1,1]){box(x+dir*w*.43,h*.36,z,w*.26,h*.7,d*.74,base);box(x+dir*w*.43,h*.73,z,w*.29,.09,d*.78,'#75818a')}}
@@ -109,6 +117,7 @@ export async function createThreeRenderer(api) {
    }
    const surf=surfaces[type==='earth'?'earth':type==='water'?'water':'wall'];
    const options={color:0xffffff,metalness:type==='metal'?.65:type==='glass'?.35:0,roughness:type==='water'?.18:type==='glass'?.21:type==='metal'?.55:type==='earth'?.96:.82,side:type==='landmark'?THREE.DoubleSide:THREE.FrontSide};
+   if(type==='window')Object.assign(options,{metalness:.24,roughness:.23,emissive:0xffaa5e,emissiveIntensity:0});
    if(type==='landmark')options.vertexColors=true;
    else {options.map=surf.map;options.normalMap=surf.normalMap;options.normalScale=new THREE.Vector2(type==='earth'?.8:.35,type==='earth'?.8:.35)}
    const m=new THREE.MeshStandardMaterial(options);materials.set(type,m);return m;
@@ -232,12 +241,24 @@ export async function createThreeRenderer(api) {
    updateMeshes('dynamic',batch);
    const halfW=W/(2*T*zoom),halfH=H/(2*T*zoom);
    camera.left=-halfW;camera.right=halfW;camera.top=halfH;camera.bottom=-halfH;camera.position.set(cam.x+80,80,cam.y+80);camera.lookAt(cam.x,0,cam.y);camera.updateProjectionMatrix();
-   const h=hour(),day=Math.max(.035,Math.sin((h-6)*Math.PI/12)),ang=(h-6)*Math.PI/12;
-   people.end(metrics);sun.intensity=2.8*day;sun.color.set(day<.35?'#ffb47f':'#fff0db');sky.intensity=.40+1.15*day;scene.environmentIntensity=.32+.40*day;
+   people.end(metrics);
+   const h=hour(),angle=(h-6)*Math.PI/12,altitude=Math.sin(angle);
+   const daylight=smooth(-.19,.16,altitude),highSun=smooth(.08,.72,altitude);
+   const cloud=weather()==='rain'?.78:weather()==='snow'?.55:0;
+   sun.color.copy(palette.sunset).lerp(palette.noon,highSun).lerp(palette.moon,1-daylight).lerp(palette.overcast,cloud);
+   sun.intensity=(.40*(1-daylight)+(1.30+1.65*highSun)*daylight)*(1-.70*cloud);
+   sky.color.copy(palette.nightSky).lerp(palette.daySky,daylight).lerp(palette.overcast,cloud);
+   sky.groundColor.copy(palette.nightGround).lerp(palette.dayGround,daylight);
+   sky.intensity=.58+daylight*(.65+.40*cloud);
+   scene.environmentIntensity=.21+.47*daylight;
+   renderer.toneMappingExposure=1.13+.08*(1-daylight);
+   scene.fog.color.copy(palette.duskHaze).lerp(palette.dayHaze,highSun).lerp(palette.nightHaze,1-daylight).lerp(palette.overcast,cloud*.55);
+   scene.fog.near=126-12*cloud;scene.fog.far=225-38*cloud;
+   material('window').emissiveIntensity=.76*(1-smooth(-.16,.21,altitude));
    const ckey=weather()+'|'+season();
    if(ckey!==lastClimate){lastClimate=ckey;let wet=weather()==='rain';material('earth').roughness=wet?.63:.96;material('wall').roughness=wet?.62:.82;if(ground){ground.material.roughness=wet?.63:.96;ground.material.color.set(season()==='Kış'?'#ccd6d9':'#ffffff')}material('earth').color.set(season()==='Kış'?'#c8d1d6':'#ffffff')}
    if(now-lastShadow>(software?1000:250)||Math.hypot(cam.x-lastX,cam.y-lastZ)>2||Math.abs(zoom-lastZoom)>.1){
-     lastShadow=now;lastX=cam.x;lastZ=cam.y;lastZoom=zoom;sun.target.position.set(cam.x,0,cam.y);sun.position.set(cam.x-25*Math.cos(ang),25+20*day,cam.y+23);const span=Math.max(14,Math.min(42,halfW+halfH+5));Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
+     lastShadow=now;lastX=cam.x;lastZ=cam.y;lastZoom=zoom;sun.target.position.set(cam.x,0,cam.y);sun.position.set(cam.x-34*Math.cos(angle),11+27*Math.abs(altitude),cam.y+19);const span=Math.max(14,Math.min(42,halfW+halfH+5));Object.assign(sun.shadow.camera,{left:-span,right:span,top:span,bottom:-span});sun.shadow.camera.updateProjectionMatrix();renderer.shadowMap.needsUpdate=true;
    }
    if(quality!==lastQuality||now-lastAdapt>2500){lastQuality=quality;lastAdapt=now;const f=metrics.frames.slice(-120).sort((a,b)=>a-b);const p90=f[Math.floor(f.length*.9)]||16.7;
      renderer.shadowMap.enabled=quality!=='low'&&!(software&&quality==='auto');let next=quality==='high'?1:quality==='low'?.55:scale;

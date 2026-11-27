@@ -44,6 +44,7 @@ jobs:
             games/modern-age-2026/modern-age-preview.png
             games/modern-age-2026/modern-age-menu.png
             games/modern-age-2026/people-*.png
+            games/modern-age-2026/lighting-*.png
       - uses: actions/upload-artifact@v4
         with:
           name: Modern-Age-2026-3D
