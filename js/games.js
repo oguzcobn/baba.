@@ -149,6 +149,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    {id:'kar',name:['KAR. — Alpin Kayak','KAR. — Alpine Skiing'],tags:[['Simülasyon','Simulation'],['Kayak','Skiing']],best:()=>T('3 kar koşulu · 3D','3 snow conditions · 3D')},
     { id:'modern-age-2026',name:['Modern Age: 2026','Modern Age: 2026'],tags:[['Strateji','Strategy'],['Gerçek zamanlı','Real-time']],best:()=>T('6 ülke','6 nations') },
     { id:'ambermere',name:['Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'],tags:[['Simülasyon','Simulation'],['Balıkçılık','Fishing']],best:()=>T('30 tür','30 species') },
     { id:'element',name:['ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'],tags:[['Simülasyon','Simulation'],['Sandbox','Sandbox'],['Fizik','Physics']],best:()=>T('37 madde','37 materials') },
@@ -251,6 +252,7 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
+    'kar':'img/library/kar-1280.svg',
     'modern-age-2026': 'img/library/modern-age-2026-1280.webp',
     'ambermere': 'img/library/ambermere-1280.svg',
     'element': 'img/library/element-1280.svg',
@@ -1064,6 +1066,7 @@ const App = (() => {
     else if (r === 'mudafi') mudafi();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'modern-age-2026') openEmbeddedGame({title:'Modern Age: 2026',url:'games/modern-age-2026/index.html',tag:T('BABA. · Strateji','BABA. · Strategy'),lead:T('Altı ülkeden birini seç, üssünü geliştir ve rakibinle ticaret yap veya savaş.','Lead one of six nations, build your base and trade or fight with your rival.'),tip:T('B ile işçileri seç, kaynaklara sağ tıkla. H ile karargâha dön.','Press B to select workers, right-click a resource and press H to return to headquarters.')});
+    else if (r === 'kar') openEmbeddedGame({title:T('KAR. — Alpin Kayak','KAR. — Alpine Skiing'),url:'games/kar/index.html?v=2',tag:'BABA. · Sim',lead:T('Alp yamaçlarında fizik tabanlı kayak ve serbest iniş.','Physics-based skiing and free runs on alpine slopes.'),tip:T('A/D dön, W eğil, S fren, boşluk zıpla; C kamera, F fizik.','A/D steer, W tuck, S brake, Space jump; C camera, F physics.')});
     else if (r === 'ambermere') openEmbeddedGame({title:T('Ambermere — Gün Batımında Balıkçılık','Ambermere — Sunset Fishing'),url:'games/ambermere/index.html',tag:'BABA. · Sim',lead:T('Gün batımında 30 balık türünü keşfet.','Discover 30 fish species at sunset.'),tip:T('Boşlukla oltayı at. Yakaladığın balığı sürükleyerek döndür.','Press Space to cast. Drag your catch to rotate it.')});
     else if (r === 'element') openEmbeddedGame({title:T('ELEMENT. — Fizik Laboratuvarı','ELEMENT. — Physics Lab'),url:'games/element/index.html?v=1',tag:'BABA. · Sandbox',lead:T('Madde, enerji ve doğayı kendi dünyanda keşfet.','Explore matter, energy and nature in your own world.'),tip:T('Fare veya dokunmatik ile çiz. Space: duraklat.','Draw with mouse or touch. Space: pause.')});
     else if (r === 'subterra') openEmbeddedGame({title:T('SUBTERRA. — Dev Solucan Saldırısı','SUBTERRA. — Giant Worm Attack'),url:'games/subterra/index.html?v=4',tag:T('BABA. SUBTERRA. · 2.5D aksiyon','BABA. SUBTERRA. · 2.5D action'),lead:T('Yerin altından fırla, kasabaları ve şehri yerle bir et: insanlar, inekler, arabalar, tanklar ve helikopterler menüde.','Burst from underground and wreck towns and cities: people, cows, cars, tanks and helicopters are on the menu.'),tip:T('Fareyi gezdir: solucan imlece doğru kazar. Sol tık basılı hızlanır; hızla yukarı çıkınca havaya fırlarsın, havadaki her av kombo verir. Binaları alttan hızla çarparak yık. Derinde can dolar. Dokunmatikte parmağını sürükle, HIZ düğmesine bas.','Move the mouse: the worm digs toward the cursor. Hold left click to speed up; rush upward to leap into the air, every catch in the air builds a combo. Smash buildings from below. Health regenerates deep underground. On touch, drag and press HIZ.')});
