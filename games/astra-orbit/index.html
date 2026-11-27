@@ -592,8 +592,13 @@
       .slot-btn { min-width: 44px; height: 42px; }
       .ship-grid, .upgrade-grid, .controls-grid { grid-template-columns: 1fr; }
     }
-  </style>
-</head>
+  
+.pol-card{border-top:2px solid var(--faction)!important}.pol-actions{display:flex;flex-wrap:wrap;gap:5px}.pol-card meter{width:100%;height:12px;accent-color:var(--faction)}.cloud-modal{max-width:660px!important}.cloud-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cloud-grid label{display:grid;gap:5px;color:#bacde0;font-size:12px}.cloud-grid input:not([type=checkbox]){width:100%;min-width:0;background:#081425;border:1px solid #40536c;color:#e5f4ff;border-radius:8px;padding:10px;box-sizing:border-box}.cloud-grid input[type=checkbox]{width:18px;height:18px}.cloud-grid div{grid-column:1/-1}#orbit-cloud{z-index:1000}.ge-modal{max-height:90vh;overflow:auto}.ge-tab{white-space:nowrap}.cloud-grid button{min-height:34px}@media(max-width:580px){.cloud-grid{grid-template-columns:1fr}.cloud-modal{padding:12px!important}}
+</style>
+<style>
+.ge-ship-art{width:100%;max-height:105px;object-fit:contain;display:block;margin:3px 0 9px;border-radius:7px}.ge-open{color:#9cecff!important;border-color:#287c99!important;font-size:11px!important;letter-spacing:.08em}.ge-modal{width:min(1040px,96vw)!important;max-width:1040px!important;max-height:90vh!important;overflow:auto!important;background:linear-gradient(145deg,#101e31,#070c17 65%)!important;text-align:left!important;border:1px solid #345569!important}.ge-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.ge-head h1{font-size:clamp(21px,4vw,34px)!important;letter-spacing:.06em}.ge-head button{width:auto!important;margin:0!important}.ge-eyebrow{letter-spacing:.24em;color:#7ad9ec;font-size:10px}.ge-tabs{display:flex;gap:6px;overflow:auto;margin:16px 0}.ge-tab{border:1px solid #33485d;border-radius:7px;background:#101a28;color:#b7c9dc;padding:10px;white-space:nowrap;cursor:pointer}.ge-tab.on{border-color:#66d9eb;color:#bdf5ff;background:#143c4c}.ge-tile{background:linear-gradient(145deg,#19283a,#101927);border:1px solid #32485c;border-radius:12px;padding:14px;min-width:0}.ge-tile h3{color:#dcebf6;font-size:15px;margin:0 0 8px}.ge-tile p,.ge-note{color:#a6bed0;font-size:12px;line-height:1.55;margin:5px 0 10px}.ge-tile button{margin-top:5px}.ge-tile button:disabled{opacity:.48}#ge-content{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:10px}#ge-stats{font-size:12px;color:#b3dbe9}#ge-notice{min-height:22px;color:#78e7ae;font-size:12px}.ge-map{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:7px;background:radial-gradient(ellipse at 30% 25%,#19324f,#07101f 72%);padding:12px;border:1px solid #345069;border-radius:12px}.ge-node{background:#101a2a;border:1px solid #34465f;border-radius:9px;padding:9px 4px;color:#d5e6f0;display:grid;justify-items:center;gap:4px;cursor:pointer}.ge-node i{width:15px;height:15px;background:var(--star);border-radius:50%;box-shadow:0 0 12px var(--star)}.ge-node span{font-size:9px;line-height:1.3}.ge-node.here{border:2px solid #7ee9ff}.ge-node.seen{background:#143045}.ge-node:disabled{opacity:.36}.ge-note{grid-column:1/-1}.ship-card{background:linear-gradient(140deg,#182d46,#0a1322)!important}#overlay-start .modal{background:radial-gradient(ellipse at top,#18344e,#080e1a 65%)!important}
+@media(max-width:600px){.ge-modal{padding:12px!important}#ge-content{grid-template-columns:1fr 1fr}.ge-tile{padding:9px}.ge-tile h3{font-size:13px}.ge-open{font-size:9px!important}.ge-head button{font-size:10px!important}.ge-map{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style></head>
 <body>
   <div id="game-wrap">
     <canvas id="game"></canvas>
@@ -656,6 +661,7 @@
         <button id="btn-touch" class="icon-btn" type="button" title="Dokunmatik kontroller">Pad</button>
         <button id="btn-mute" class="icon-btn" type="button" title="Ses efektleri">Ses Açık</button>
         <button id="btn-pause" class="icon-btn" type="button" title="Duraklat [P]">Duraklat</button>
+        <span id="orbit-save-error" role="status" style="display:none;color:#fca5a5;font-size:11px;">Kayıt hatası!</span>
       </div>
     </div>
 
@@ -764,12 +770,23 @@
     <!-- Start Overlay -->
     <div id="overlay-start" class="overlay">
       <div class="modal">
-        <div class="badge">2.5D Çoklu Sektör • Diroit &amp; P.E.T. • Otomatik Kayıt</div>
-        <h1>ASTRA ORBIT 2.5D</h1>
+        <div class="badge">Galactic Evolution • 40 Sektör • Kalıcı Kariyer</div>
+        <h1>ORBIT <span style="color:#8de9ff">// GALACTIC EVOLUTION</span></h1>
         <p class="subtitle">
-          4 farklı haritada ışınlanma kapılarından geç, 8 özgün 3B düşman gemisini avla, Flax/Iris diroitleri ve P.E.T. yoldaşınla filonu büyüt. İlerlemen otomatik kaydedilir.
+          40 sektörü keşfet, kendi hangarını, istasyonunu ve filonu kur. Savaş, keşif, üretim ve ticaret kariyerlerinde ilerle. Yerel pilot kaydın her uçuşta korunur.
         </p>
 
+        <div style="padding:12px;border:1px solid rgba(56,189,248,.3);border-radius:12px;margin:12px 0;text-align:left;">
+          <label for="pilot-name" style="font-size:12px;color:#7dd3fc;">YEREL PİLOT PROFİLİ</label>
+          <input id="pilot-name" maxlength="32" autocomplete="off" placeholder="Pilot adı" style="box-sizing:border-box;width:100%;padding:9px;margin:6px 0;background:#0b1729;color:white;border:1px solid #475569;border-radius:8px;">
+          <div id="save-summary" style="font-size:12px;color:#cbd5e1;line-height:1.5;" role="status">Yeni pilot</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+            <button id="btn-export-save" class="secondary-btn" type="button" style="flex:1;">Yedeği İndir</button>
+            <button id="btn-import-save" class="secondary-btn" type="button" style="flex:1;">Yedek Yükle</button>
+            <input id="orbit-import-file" type="file" accept=".json,application/json" hidden>
+          </div>
+          <small style="color:#94a3b8;">Kayıt bu tarayıcıdadır; cihaz değiştirirken JSON yedeği kullan.</small>
+        </div>
         <div id="ship-selector" class="ship-grid"></div>
 
         <div class="controls-grid">
@@ -826,8 +843,12 @@
       <div class="modal compact">
         <div class="badge">Uçuş Duraklatıldı</div>
         <h1>DURAKLATILDI</h1>
-        <p class="subtitle">İlerlemen otomatik olarak kaydedildi.</p>
+        <p class="subtitle">İlerlemen yerel olarak saklanır. İstersen yedeğini indir.</p>
         <button id="btn-resume" class="primary-btn" type="button">Devam Et</button>
+        <button id="btn-save-now" class="secondary-btn" type="button">Şimdi Kaydet</button>
+        <button id="btn-export-pause" class="secondary-btn" type="button">Yedeği İndir</button>
+        <button id="btn-save-exit" class="secondary-btn" type="button">Kaydet ve Ana Menüye Dön</button>
+        <p id="pause-save-status" role="status" style="font-size:12px;color:#7dd3fc;"></p>
         <button id="btn-restart-pause" class="secondary-btn" type="button">Sıfırdan Yeni Oyun</button>
       </div>
     </div>
@@ -962,7 +983,10 @@
       const btnTouch = document.getElementById('btn-touch');
       const touchControlsEl = document.getElementById('touch-controls');
 
-      const SAVE_KEY = 'astra_orbit_25d_save_v2';
+      const SAVE_KEY = 'astra_orbit_25d_save_v3';
+      const LEGACY_SAVE_KEY = 'astra_orbit_25d_save_v2';
+      const BACKUP_KEY = SAVE_KEY + '_backup';
+      let savedFlight = null;
       let highScore = 0;
       try { highScore = parseInt(localStorage.getItem('astra_orbit_25d_best') || '0', 10) || 0; } catch (e) {}
 
@@ -1410,6 +1434,7 @@
       }
 
       function renderMesh25D(mesh, worldX, worldY, yaw, pitch, roll, scale, palette, hitFlash = 0) {
+        if(drawGPU(mesh,worldX,worldY,yaw,pitch,roll,scale,palette,hitFlash))return;
         const cy = Math.cos(yaw), sy = Math.sin(yaw);
         const cp = Math.cos(pitch), sp = Math.sin(pitch);
         const cr = Math.cos(roll), sr = Math.sin(roll);
@@ -1457,6 +1482,7 @@
           else if (f.mat === 'rock') { fillStyle = rgbShade(palette.rock, diff, Math.pow(halfDot, 6) * 0.1, 0.24, 0); strokeStyle = 'rgba(148, 163, 184, 0.22)'; }
           else fillStyle = rgbShade(palette.hull, diff, Math.pow(halfDot, 12) * 0.32, 0.28, 0);
 
+          if(gfxMode==='pbr'&&hitFlash<=0){fillStyle=pbrFace(f.mat,palette,f.nx,f.ny,f.nz);strokeStyle='rgba(5,12,25,.17)';}
           ctx.beginPath();
           const p0 = pv[f.idx[0]];
           ctx.moveTo(p0[0], p0[1]);
@@ -1625,8 +1651,95 @@
       // =========================================================================
       // 5. GAME STATE & AUTO-SAVE
       // =========================================================================
+      // Galactic Evolution: deterministic content, original procedural meshes.
+      const REGION_NAMES = ['Sol','Luna','Mars','Jovian','Saturn','Eden','Andromeda','Void'];
+      const REGION_COLORS = ['#49c7ff','#b5c9ef','#f39170','#75e1a5','#ebcb82','#a7ef89','#c6a2ff','#f57bd5'];
+      const SECTOR_IDS = Object.keys(SECTORS);
+      const ORES = ['Demir','Titanyum','Altın','Kristal','Plazma','Antimadde','Karanlık madde','Alienium'];
+      const SKILLS = {combat:'Savaş',engineering:'Mühendislik',exploration:'Keşif',trade:'Ticaret'};
+      const MODULES = {command:'Komuta merkezi',refinery:'Rafineri',shipyard:'Tersane',lab:'Araştırma',defense:'Savunma',hangar:'Hangar',market:'Ticaret merkezi',energy:'Enerji',crew:'Mürettebat',drones:'Diroit fabrikası'};
+      const EQUIPMENT = {laser:{name:'Prizma topu',cost:400,ore:12},shield:{name:'Faz kalkanı',cost:420,ore:14},drive:{name:'İyon çekirdeği',cost:500,ore:16}};
+      const EXTRA_NAMES = ['Prospector','Nomad','Courier','Raven','Pioneer','Warden','Vesper','Orion','Sentinel','Atlas','Harrier','Cetus','Phantom','Tempest','Aegis','Aurora','Nautilus','Horizon','Helios','Eclipse','Odyssey','Specter','Nebula','Vortex','Monarch','Ascendant','Leviathan'];
+      function newMesh(i, role) {
+        const m={verts:[],faces:[]}, len=22+(i%5)*3, wing=8+(i%6)*2, depth=4+(i%3);
+        addBox(m,3,0,0,len,8+(role===1?5:0),depth,'hull',0.28,0.92);
+        addBox(m,4,0,depth*.65,8,4.2,3.2,'canopy',0.42,0.8);
+        addBox(m,-6,0,1,len*.5,9,depth+1,'hullDark',0.78,0.8);
+        for(const sign of [-1,1]) {
+          addBox(m,-2,sign*wing,0,len*(role===2?0.95:0.65),role===1?7:3.6,depth*.8,'hull',0.4,0.85);
+          addBox(m,-3,sign*(wing*.52),0,len*.55,wing*.8,1.5,'accent',0.5,0.9);
+          addBox(m,-len*.38,sign*wing,0,7,4.5,4.5,'hullDark',0.9,0.9);
+          addBox(m,-len*.38-4,sign*wing,0,2,3.6,3.6,'engine',1,1);
+          for(let j=0;j<2+(i%3);j++) addBox(m, -4+j*3,sign*(wing+1.8),depth*.35,1.5,1.4,1.2,'accent',1,1);
+        }
+        return m;
+      }
+      PLAYER_MODELS.forEach((m,i)=>Object.assign(m,{required:[1,5,12][i],price:[0,900,3200][i],ability:m.id}));
+      EXTRA_NAMES.forEach((name,i)=>{
+        const role=i%3, tier=1+Math.floor(i/3), id=name.toLowerCase(), base=PLAYER_MODELS[role];
+        PLAYER_MODELS.push({id,name,code:'GE-'+(100+i),role:['Avcı / keşif','Endüstri / lojistik','Ağır savaş'][role],desc:'Sınıf '+tier+' · '+['Çevik keşif platformu','Kargo ve endüstri platformu','Zırhlı muharebe platformu'][role],skillName:base.skillName,skillDesc:base.skillDesc,skillCd:base.skillCd,ability:base.id,required:Math.min(100,3+i*3),price:Math.round(850*Math.pow(1.22,i)),mesh:newMesh(i,role),stats:{...base.stats,hull:base.stats.hull+tier*18,shield:base.stats.shield+tier*15,damage:base.stats.damage+tier*2,speed:base.stats.speed+tier*5},bars:{...base.bars}});
+      });
+      const coreEnemyKeys=Object.keys(ENEMY_TYPES);
+      const enemyNames=['Raider','Corsair','Wraith','Arachne','Bastion','Reaper','Hydra'];
+      for(let i=0;i<42;i++){
+        const base=ENEMY_TYPES[coreEnemyKeys[i%8]], tier=1+Math.floor(i/7), boss=i%7===6;
+        const color=REGION_COLORS[(tier+1)%8], k='ge_enemy_'+i;
+        ENEMY_TYPES[k]={...base,name:enemyNames[i%7]+' '+['I','II','III','IV','V','VI'][tier-1],lvl:5+tier*5,hp:Math.round((boss?520:100)*Math.pow(1.36,tier)),shield:Math.round((boss?400:85)*Math.pow(1.34,tier)),radius:boss?38:19+tier,damage:base.dmg,dmg:Math.round(9+tier*3),xp:Math.round((boss?420:70)*tier),cr:Math.round((boss?340:60)*tier),uri:tier*(boss?15:3),score:tier*220,mesh:newMesh(i+30,boss?2:i%3),boss,bossStyle:boss?['barrier','salvo','drone','charge','gravity','overload'][tier-1]:null,spawner:boss&&tier===3,mapColor:color,palette:{...base.palette,engineCss:color}};
+      }
+      for(let a=0;a<8;a++){const def=ENEMY_TYPES['ge_enemy_'+Math.min(40,a*5)];ENEMY_TYPES['war_guard_'+a]={...def,name:REGION_NAMES[a]+' Muhafızı',boss:false,bossStyle:null,spawner:false,palette:{...def.palette,engineCss:REGION_COLORS[a]}};}
+      // 36 new sectors attached to the existing galaxy, with bidirectional gates.
+      const names=['Terminus','Relay','Foundry','Frontier','Citadel','Beacon','Caldera','Haven','Meridian','Perihelion','Aster','Obsidian','Zephyr','Kepler','Helix','Ring','Mosaic','Sundown','Titania','Arcadia','Verdant','Elysium','Genesis','Nacre','Lumen','Farpoint','Sapphire','Pulsar','Nova','Erebus','Singularity','Rift','Echo','Umbra','Abyss','Nexus'];
+      function connect(a,b,ax,ay,bx,by){const A=SECTORS[a],B=SECTORS[b];A.gates.push({x:ax,y:ay,target:b,label:B.name,color:B.color||'#7dd3fc'});B.gates.push({x:bx,y:by,target:a,label:A.name,color:A.color||'#7dd3fc'});}
+      names.forEach((n,i)=>{
+        const id='G-'+String(i+1).padStart(2,'0'), region=Math.floor(i/5)+1, color=REGION_COLORS[Math.min(region,7)], t=Math.min(5,Math.floor(i/6)), base=i%5===0;
+        SECTORS[id]={id,name:id+' '+n,color,region:Math.min(region,7),required:Math.min(90,3+i*2),bgInner:color+'24',bgOuter:'#03050c',planetA:color,planetB:'#111a36',hasBase:base,rewardMult:1.3+t*.25,asteroids:32+(i%5)*7,quotas:[{type:'ge_enemy_'+(t*7+i%6),count:10,minR:600,maxR:3100},{type:'ge_enemy_'+(t*7+(i+2)%6),count:8,minR:1000,maxR:3200},{type:'ge_enemy_'+(t*7+6),count:i%3===0?2:1,minR:1500,maxR:3150}],gates:[]};
+        SECTOR_IDS.push(id);
+        connect(i===0?'X-1':SECTOR_IDS[SECTOR_IDS.length-2],id,i===0?-2800:2800,i===0?-2400:-2400,-2800,2400);
+        if(i>=5&&i%5===0)connect(SECTOR_IDS[SECTOR_IDS.length-6],id,2800,2400,-2800,-2400);
+      });
+      // Repeatable and sequential contracts use the existing combat/pickup events.
+      for(let i=0;QUESTS.length<150;i++){
+        const id=SECTOR_IDS[4+i%36], sec=SECTORS[id], chapter=Math.floor(i/36), mode=chapter%4;
+        const q=mode===0?{kind:'sector',target:id,goal:1,title:'Keşif · '+sec.name}:mode===1?{kind:'kill',target:sec.quotas[0].type,goal:3+chapter,title:'Devriye · '+ENEMY_TYPES[sec.quotas[0].type].name}:mode===2?{kind:'ore',goal:6+chapter*2,title:'Endüstri sözleşmesi · '+id}:{kind:'kill',target:sec.quotas[2].type,goal:1,title:'Elit operasyon · '+ENEMY_TYPES[sec.quotas[2].type].name};
+        QUESTS.push({...q,cr:500+i*18,uri:18+Math.floor(i/3),x4:30+Math.floor(i/4)});
+      }
+      for(let i=7;i<100;i++) RANKS.push({xp:Math.round(6500+900*Math.pow(i-6,1.78)),title:i<20?'Yıldız Kaptanı':i<45?'Filo Amirali':i<75?'Galaksi Mareşali':'Galaktik Efsane'});
+      UPGRADE_DEFS.forEach(d=>d.max=20);
+      for(let i=0;i<56;i++){const hue=i*137.508%360, color=REGION_COLORS[i%8]; SHIP_SKINS.push({id:'ge_skin_'+i,name:'Spektrum '+(i+1),cost:130+i*12,cur:'CR',hull:[135+i%6*15,160+i%4*13,192+i%3*16],hullDark:[42,52+i%5*8,76],accent:[Math.round(120+100*Math.sin(hue*Math.PI/180)),Math.round(140+90*Math.cos(hue*Math.PI/180)),200],canopy:[138,220,250],engineCss:color});}
+      // V3: persistent simulated galactic politics. Time advances only during flight.
+      const FACTIONS=[...REGION_NAMES,'Bağımsız Pilot'];
+      const POL_COLORS=[...REGION_COLORS,'#e9f7ff'];
+      const PLAYER_FACTION=8;
+      const treatyNames={neutral:'Tarafsız',trade:'Ticaret',pact:'Saldırmazlık',alliance:'İttifak',war:'Savaş'};
+      const polKey=(a,b)=>[Math.min(a,b),Math.max(a,b)].join('-');
+      function freshPolitics(){const relations={},territory={};for(let a=0;a<9;a++)for(let b=a+1;b<9;b++)relations[polKey(a,b)]={score:a===8||b===8?0:((a+b)%5===0?-25:5),treaty:'neutral',cooldown:0};for(const id of SECTOR_IDS)territory[id]={owner:SECTORS[id].region||0,fort:1+(SECTORS[id].required||1)/30,unrest:0};return {relations,territory,treasury:Array(8).fill(2200),turn:0,clock:0,log:['Galaktik meclis toplandı.'],operation:null,victories:0,losses:0,tribute:0,policy:'balanced'};}
+      function restorePolitics(raw){const p=freshPolitics();if(!raw||typeof raw!=='object')return p;for(const [k,r] of Object.entries(p.relations)){const v=raw.relations?.[k];r.score=bounded(v?.score,r.score,-100,100);r.treaty=Object.hasOwn(treatyNames,v?.treaty)?v.treaty:'neutral';r.cooldown=bounded(v?.cooldown,0,0,8);}for(const [id,t] of Object.entries(p.territory)){const v=raw.territory?.[id];t.owner=id==='X-1'?0:Math.floor(bounded(v?.owner,t.owner,0,8));t.fort=bounded(v?.fort,t.fort,1,10);t.unrest=bounded(v?.unrest,0,0,100);}p.treasury=p.treasury.map((x,i)=>bounded(raw.treasury?.[i],x,0,1e7));for(const k of ['turn','victories','losses','tribute'])p[k]=Math.floor(bounded(raw[k],0,0,1e9));p.clock=bounded(raw.clock,0,0,60);p.policy=['balanced','commerce','military'].includes(raw.policy)?raw.policy:'balanced';p.log=Array.isArray(raw.log)?raw.log.filter(x=>typeof x==='string').slice(-24).map(x=>x.slice(0,180)):p.log;const o=raw.operation;if(o&&SECTOR_IDS.includes(o.id)&&o.id!=='X-1'&&['attack','defend'].includes(o.kind)){p.operation={id:o.id,kind:o.kind,foe:Math.floor(bounded(o.foe,0,0,7)),progress:bounded(o.progress,0,0,100),remaining:bounded(o.remaining,180,0,300),kills:Math.floor(bounded(o.kills,0,0,1000)),support:Math.floor(bounded(o.support,0,0,12))};}return p;}
+      const politics=()=>state.career.politics;
+      const relation=(a,b)=>politics().relations[polKey(a,b)];
+      function polLog(msg){const p=politics();p.log.push('T'+p.turn+' · '+msg);p.log=p.log.slice(-24);notify(msg);}
+      function ownedCount(a){return Object.values(politics().territory).filter(t=>t.owner===a).length;}
+      function adjacentOwner(id,a){return SECTORS[id].gates.some(g=>politics().territory[g.target].owner===a);}
+      function canAttack(id){const t=politics().territory[id];return id!=='X-1'&&t.owner!==8&&state.level>=Math.max(5,SECTORS[id].required||1)&&relation(8,t.owner).treaty==='war'&&state.sectorId===id&&!politics().operation&&state.credits>=250;}
+      function diplomacyAction(a,action){if(!Number.isInteger(a)||a<0||a>7)return false;const r=relation(8,a);if(r.cooldown>0&&action!=='war')return false;let msg='';if(action==='gift'&&state.credits>=250){state.credits-=250;r.score=clamp(r.score+18,-100,100);msg='Diplomatik yardım gönderildi';}else if(action==='trade'&&r.score>=15&&r.treaty==='neutral'){r.treaty='trade';msg='Ticaret antlaşması imzalandı';}else if(action==='pact'&&r.score>=35&&['neutral','trade'].includes(r.treaty)){r.treaty='pact';msg='Saldırmazlık antlaşması';}else if(action==='alliance'&&r.score>=65&&r.treaty==='pact'){r.treaty='alliance';msg='Savunma ittifakı kuruldu';}else if(action==='war'&&r.treaty!=='war'&&r.cooldown===0){r.treaty='war';r.score=-80;for(let b=0;b<8;b++)if(b!==a&&relation(a,b).treaty==='alliance'){const ally=relation(8,b);if(ally.treaty!=='alliance'&&b!==0){ally.treaty='war';ally.score=-65;}}msg='Savaş ilan edildi';}else if(action==='peace'&&r.treaty==='war'&&state.credits>=450){state.credits-=450;r.treaty='neutral';r.score=-15;if(politics().operation?.foe===a)politics().operation=null;msg='Ateşkes imzalandı';}else if(action==='cancel'&&['trade','pact','alliance'].includes(r.treaty)){r.treaty='neutral';r.score=clamp(r.score-15,-100,100);msg='Antlaşma feshedildi';}else return false;r.cooldown=action==='peace'?5:1;polLog(FACTIONS[a]+': '+msg);return true;}
+      function startOperation(id,kind='attack',foe=null){const p=politics();if(p.operation||!SECTORS[id])return false;if(kind==='attack'){if(!canAttack(id))return false;foe=p.territory[id].owner;state.credits-=250;}else if(p.territory[id].owner!==8||!Number.isInteger(foe)||foe<0||foe>7)return false;p.operation={id,kind,foe,progress:0,remaining:240,kills:0,support:0};polLog((kind==='attack'?'Taarruz':'Savunma')+' başladı: '+id);return true;}
+      function operationSupport(){const o=politics().operation;if(!o||o.support>=3||state.credits<350||!state.career.fleet.length)return false;state.credits-=350;o.support++;return true;}
+      function operationTick(dt){const p=politics(),o=p.operation;if(!o){if(state.enemies.some(e=>e.type.startsWith('war_guard_')))state.enemies=state.enemies.filter(e=>!e.type.startsWith('war_guard_'));return;}const t=p.territory[o.id];if(relation(8,o.foe).treaty!=='war'){p.operation=null;return;}o.remaining=Math.max(0,o.remaining-dt);const ship=state.player,near=ship&&state.sectorId===o.id&&Math.hypot(ship.x-850,ship.y)<260;if(state.sectorId===o.id&&o.kills<3){const type='war_guard_'+o.foe,alive=state.enemies.filter(e=>e.type===type).length;for(let i=alive;i<3-o.kills;i++){const angle=(i+o.kills)*2.094;state.enemies.push(createEnemy(type,850+Math.cos(angle)*210,Math.sin(angle)*210));}}const hostile=state.enemies.some(e=>e.type==='war_guard_'+o.foe&&Math.hypot(e.x-850,e.y)<260);if(near&&!hostile&&o.kills>=3)o.progress=Math.min(100,o.progress+dt*(2.4+o.support*.55)/(1+t.fort*.13));else if(near&&hostile)o.progress=Math.max(0,o.progress-dt*.25);if(o.progress>=100&&o.kills>=3){t.owner=8;t.fort=Math.max(1,t.fort*.6);t.unrest=10;p.victories++;state.credits+=600+Math.round((SECTORS[o.id].required||1)*45);gainXp(250+(SECTORS[o.id].required||1)*30);p.operation=null;polLog(o.id+' kontrol altına alındı');saveProgress();}else if(o.remaining<=0){if(o.kind==='defend'){t.owner=o.foe;t.fort=1;t.unrest=20;}p.losses++;p.operation=null;polLog(o.id+' operasyonu başarısız');saveProgress();}}
+      function politicsTick(dt){const p=politics();operationTick(dt);p.clock+=dt;if(p.clock<60)return;p.clock-=60;p.turn++;for(const r of Object.values(p.relations))r.cooldown=Math.max(0,r.cooldown-1);for(let a=0;a<8;a++){p.treasury[a]=Math.min(1e7,p.treasury[a]+ownedCount(a)*60);const r=relation(8,a);if(['trade','alliance'].includes(r.treaty)){const pay=35+ownedCount(a)*8;state.credits+=pay;p.tribute+=pay;r.score=Math.min(100,r.score+1);}}for(const [id,t] of Object.entries(p.territory)){if(t.owner===8){const pay=Math.round((20+t.fort*9)*(p.policy==='commerce'?1.4:1));state.credits+=pay;p.tribute+=pay;t.unrest=Math.max(0,t.unrest-2);}else if(t.owner<8&&p.treasury[t.owner]>500&&t.fort<10&&p.turn%3===0){t.fort+=.2;p.treasury[t.owner]-=50;}}
+        // AI treaty decisions are deterministic by turn and vary with territorial pressure.
+        const a=p.turn%8,b=(a+1+Math.floor(p.turn/8)%7)%8,r=relation(a,b);if(r.cooldown===0){if(r.treaty==='war'&&(ownedCount(a)<2||ownedCount(b)<2||p.turn%13===0)){r.treaty='neutral';r.score=-15;r.cooldown=4;polLog(FACTIONS[a]+' / '+FACTIONS[b]+' ateşkes');}else if(r.treaty==='neutral'){r.score=clamp(r.score+(p.turn%3===0?-16:9),-100,100);if(r.score<=-35){r.treaty='war';r.cooldown=2;polLog(FACTIONS[a]+' / '+FACTIONS[b]+' savaşa girdi');}else if(r.score>=20){r.treaty='trade';polLog(FACTIONS[a]+' / '+FACTIONS[b]+' ticaret anlaşması');}}else if(r.treaty==='trade'){r.score=Math.min(100,r.score+8);if(r.score>=40)r.treaty='pact';}else if(r.treaty==='pact'&&r.score>=40){r.score=Math.min(100,r.score+10);if(r.score>=70)r.treaty='alliance';}}
+        const candidates=SECTOR_IDS.filter(id=>id!=='X-1'&&p.territory[id].owner!==a&&relation(a,p.territory[id].owner).treaty==='war'&&adjacentOwner(id,a));if(candidates.length&&p.treasury[a]>=400){const id=candidates[p.turn%candidates.length],t=p.territory[id];p.treasury[a]-=400;if(t.owner===8){if(!p.operation)startOperation(id,'defend',a);}else if(t.owner!==8&&p.treasury[a]/(1+t.fort)>300){t.owner=a;t.fort=1;t.unrest=25;polLog(FACTIONS[a]+' '+id+' sektörünü ele geçirdi');}}saveProgress();}
+      function escapeOrbit(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+      function politicsUI(){const p=politics();return tile('Galaktik meclis',`Tur ${p.turn} · ${ownedCount(8)} sektör · gelir ${fmt(p.tribute)} CR`)+FACTIONS.slice(0,8).map((n,a)=>{const r=relation(8,a),cool=r.cooldown>0;return `<article class="ge-tile pol-card" style="--faction:${POL_COLORS[a]}"><h3>${n}</h3><p>${ownedCount(a)} sektör · İlişki ${r.score} · ${treatyNames[r.treaty]} · ${r.cooldown?'Bekleme '+r.cooldown+' tur':''}</p><meter min="-100" max="100" value="${r.score}"></meter><div class="pol-actions">${[['gift','Yardım · 250 CR',state.credits<250],['trade','Ticaret',r.score<15||r.treaty!=='neutral'],['pact','Saldırmazlık',r.score<35||!['neutral','trade'].includes(r.treaty)],['alliance','İttifak',r.score<65||r.treaty!=='pact'],['war','Savaş ilan et',r.treaty==='war'],['peace','Ateşkes · 450 CR',r.treaty!=='war'||state.credits<450],['cancel','Feshet',!['trade','pact','alliance'].includes(r.treaty)]].map(([k,l,d])=>`<button class="upg-buy" data-ge="dip:${a}:${k}" ${cool||d?'disabled':''}>${l}</button>`).join('')}</div></article>`;}).join('')+`<article class="ge-tile"><h3>AI diplomasi ağı</h3><p>${Object.entries(p.relations).filter(([k,r])=>!k.endsWith('-8')&&r.treaty!=='neutral').map(([k,r])=>k.split('-').map(a=>FACTIONS[+a]).join(' / ')+': '+treatyNames[r.treaty]).join(' · ')||'Henüz antlaşma yok'}</p></article>`+tile('Galaktik günlük',p.log.slice(-10).map(escapeOrbit).join('<br>'));}
+      function warUI(){const p=politics(),o=p.operation,t=p.territory[state.sectorId];return tile('Stratejik komuta',`${ownedCount(8)} sektör · ${p.victories} zafer · ${p.losses} yenilgi · tur ${p.turn}`)+tile('Doktrin: '+p.policy,'Ekonomi: gelir +%40 · Savunma: daha ucuz tahkimat.','Doktrin değiştir','policy')+(o?tile((o.kind==='attack'?'Taarruz':'Savunma')+' · '+o.id,`Kontrol %${Math.floor(o.progress)} · ${o.kills}/3 imha · ${Math.ceil(o.remaining)} sn · Hedef: (850, 0).`,'Hedefe rota','warroute')+tile('Filo desteği',`${o.support}/3 · 350 CR`,'Takviye iste','support',o.support>=3||state.credits<350||!state.career.fleet.length):tile('Mevcut sektör: '+state.sectorId,`${FACTIONS[t.owner]} · Tahkimat ${t.fort.toFixed(1)} · Taarruz için savaş ilanı, Lv.5 ve 250 CR gerekir.`,'Ele geçirme operasyonu','attack:'+state.sectorId,!canAttack(state.sectorId)))+tile('Tahkimat',`Mevcut sektör Lv.${t.fort.toFixed(1)} · ${p.policy==='military'?180:300} CR`,'Savunmayı güçlendir','fort',t.owner!==8||t.fort>=10||state.credits<(p.policy==='military'?180:300))+`<div class="ge-map">${SECTOR_IDS.map(id=>{const v=p.territory[id];return `<button class="ge-node ${id===state.sectorId?'here':''}" style="--star:${POL_COLORS[v.owner]}" data-ge="route:${id}" ${state.level<(SECTORS[id].required||1)?'disabled':''}><i></i><b>${id}</b><span>${FACTIONS[v.owner]} · ${v.fort.toFixed(1)}</span></button>`;}).join('')}</div>`+tile('Savaş günlüğü',p.log.slice(-10).map(escapeOrbit).join('<br>'));}
+      function drawWarBeacon(){const o=politics().operation;if(!o||state.sectorId!==o.id)return;ctx.save();ctx.strokeStyle='#ff9d70';ctx.fillStyle='rgba(255,120,70,.09)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(850,0,260,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.arc(850,0,265,-Math.PI/2,-Math.PI/2+Math.PI*2*o.progress/100);ctx.strokeStyle='#70ffbe';ctx.lineWidth=5;ctx.stroke();ctx.fillStyle='#ffe6ce';ctx.font='bold 15px Inter,sans-serif';ctx.textAlign='center';ctx.fillText(`OPERASYON ${Math.floor(o.progress)}% · ${o.kills}/3 · ${Math.ceil(o.remaining)}s`,850,-280);ctx.restore();}
+
+      function freshCareer(){return {owned:['falcon'],fits:{},skills:{combat:0,engineering:0,exploration:0,trade:0},materials:Object.fromEntries(ORES.map(o=>[o,0])),modules:Object.fromEntries(Object.keys(MODULES).map(k=>[k,0])),equipment:{laser:0,shield:0,drive:0},fleet:[],visited:['X-1'],stats:{kill:0,ore:0,box:0,trade:0,boss:0},reputation:Array(8).fill(0),contract:null,serial:0,route:[],lastEvent:0,politics:freshPolitics()};}
       const state = {
+        career:freshCareer(),
         mode: 'start',
+        pilotName: 'Pilot',
+        playedSeconds: 0,
+        savedAt: null,
         hangarTab: 'systems',
         sectorId: 'X-1',
         selectedModelId: 'falcon',
@@ -1675,60 +1788,108 @@
         saveTimer: 0
       };
 
+      function bounded(value, fallback, min = 0, max = Number.MAX_SAFE_INTEGER) {
+        return typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+      }
+      function pilotLabel(value) {
+        return typeof value === 'string' ? (value.trim().slice(0, 32) || 'Pilot') : 'Pilot';
+      }
+      function snapshot() {
+        state.career.fits[state.selectedModelId]={...state.upgrades};
+        const p = state.player;
+        const flight = p ? { x: p.x, y: p.y, angle: p.angle, hull: p.hull, shield: p.shield,
+          missiles: p.missiles, destroyed: p.hull <= 0 } : savedFlight;
+        return { version: 5, career: JSON.parse(JSON.stringify(state.career)), savedAt: new Date().toISOString(), pilotName: state.pilotName,
+          playedSeconds: state.playedSeconds, flight, sectorId: state.sectorId,
+          selectedModelId: state.selectedModelId, skinId: state.skinId, ownedSkins: [...state.ownedSkins],
+          score: state.score, credits: state.credits, uri: state.uri, ore: state.ore, xp: state.xp,
+          level: state.level, ammoType: state.ammoType, ammo: {...state.ammo}, minesCount: state.minesCount,
+          drones: [...state.drones], hasPet: state.hasPet, questIdx: state.questIdx, questProg: state.questProg,
+          upgrades: {...state.upgrades}, laserBoostTimer: state.laserBoostTimer, shieldBoostTimer: state.shieldBoostTimer };
+      }
+      function showSaveStatus(message) {
+        const el = document.getElementById('pause-save-status');
+        if (el) el.textContent = message;
+      }
+      function refreshProfile() {
+        const input = document.getElementById('pilot-name');
+        input.value = state.pilotName;
+        const minutes = Math.floor(state.playedSeconds / 60);
+        document.getElementById('save-summary').textContent = `${state.pilotName} • Lv.${state.level} • ${state.sectorId} • ${state.credits.toLocaleString()} CR • ${Math.floor(minutes / 60)} sa ${minutes % 60} dk` +
+          (state.savedAt ? ` • Son kayıt: ${new Date(state.savedAt).toLocaleString('tr-TR')}` : ' • Henüz kaydedilmedi');
+        btnStart.textContent = state.savedAt ? `Kariyerime Devam Et (${state.sectorId} • Lv.${state.level})` : 'Sektöre Çık';
+        btnResetSave.style.display = state.savedAt ? 'block' : 'none';
+      }
       function saveProgress() {
         try {
-          const data = {
-            sectorId: state.sectorId,
-            selectedModelId: state.selectedModelId,
-            skinId: state.skinId,
-            ownedSkins: state.ownedSkins,
-            score: state.score,
-            credits: state.credits,
-            uri: state.uri,
-            ore: state.ore,
-            xp: state.xp,
-            level: state.level,
-            ammo: state.ammo,
-            minesCount: state.minesCount,
-            drones: state.drones,
-            hasPet: state.hasPet,
-            questIdx: state.questIdx,
-            questProg: state.questProg,
-            upgrades: state.upgrades
-          };
+          const data = snapshot();
           localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-        } catch (e) {}
-      }
-
-      function loadProgress() {
-        try {
-          const raw = localStorage.getItem(SAVE_KEY);
-          if (!raw) return false;
-          const d = JSON.parse(raw);
-          if (!d || typeof d !== 'object') return false;
-          if (SECTORS[d.sectorId]) state.sectorId = d.sectorId;
-          if (PLAYER_MODELS.some(m => m.id === d.selectedModelId)) state.selectedModelId = d.selectedModelId;
-          if (SHIP_SKINS.some(sk => sk.id === d.skinId)) state.skinId = d.skinId;
-          if (Array.isArray(d.ownedSkins)) state.ownedSkins = d.ownedSkins;
-          state.score = Number(d.score) || 0;
-          state.credits = Number(d.credits) || 180;
-          state.uri = Number(d.uri) || 35;
-          state.ore = Number(d.ore) || 0;
-          state.xp = Number(d.xp) || 0;
-          state.level = Number(d.level) || 1;
-          if (d.ammo) state.ammo = { x2: Number(d.ammo.x2) || 0, x4: Number(d.ammo.x4) || 0, sab: Number(d.ammo.sab) || 0 };
-          state.minesCount = Number(d.minesCount) >= 0 ? Number(d.minesCount) : 3;
-          if (Array.isArray(d.drones)) state.drones = d.drones.slice(0, 4);
-          state.hasPet = !!d.hasPet;
-          state.questIdx = Number(d.questIdx) || 0;
-          state.questProg = Number(d.questProg) || 0;
-          if (d.upgrades) Object.assign(state.upgrades, d.upgrades);
+          state.savedAt = data.savedAt;
+          document.getElementById('orbit-save-error').style.display = 'none';
+          showSaveStatus('İlerlemen kaydedildi.');
           return true;
-        } catch (e) { return false; }
+        } catch (e) {
+          document.getElementById('orbit-save-error').style.display = 'inline';
+          showSaveStatus('Yerel kayıt başarısız. JSON yedeği indir.');
+          const el = document.getElementById('save-summary');
+          if (el) el.textContent = 'Yerel kayıt başarısız. JSON yedeği indir.';
+          return false;
+        }
+      }
+      function applySavedData(d) {
+        if (!d || typeof d !== 'object' || Array.isArray(d) || !SECTORS[d.sectorId] ||
+            !PLAYER_MODELS.some(m => m.id === d.selectedModelId) ||
+            !Number.isFinite(d.xp) || !Number.isFinite(d.credits) || !Number.isFinite(d.uri) ||
+            (d.version != null && ![2,3,4,5].includes(d.version))) return false;
+        state.sectorId = d.sectorId;
+        state.selectedModelId = d.selectedModelId;
+        state.career=restoreCareer(d.career,d.selectedModelId); activeEvent=null;
+        state.ownedSkins = [...new Set(['cyan', ...(Array.isArray(d.ownedSkins) ? d.ownedSkins.filter(id => SHIP_SKINS.some(sk => sk.id === id)) : [])])];
+        state.skinId = state.ownedSkins.includes(d.skinId) ? d.skinId : 'cyan';
+        for (const [key, def] of Object.entries({score:0,credits:180,uri:35,ore:0,xp:0,minesCount:3})) state[key] = Math.floor(bounded(d[key],def));
+        state.level = RANKS.reduce((level, rank, i) => state.xp >= rank.xp ? i+1 : level, 1);
+        state.ammo = Object.fromEntries(Object.entries({x2:120,x4:40,sab:60}).map(([k,v]) => [k,Math.floor(bounded(d.ammo?.[k],v))]));
+        state.ammoType = Object.hasOwn(AMMO_TYPES,d.ammoType) ? d.ammoType : 'x1';
+        state.drones = Array.isArray(d.drones) ? d.drones.filter(x => x === 'flax' || x === 'iris').slice(0,12) : [];
+        state.hasPet = d.hasPet === true;
+        state.questIdx = Math.floor(bounded(d.questIdx,0,0,QUESTS.length));
+        state.questProg = Math.floor(bounded(d.questProg,0,0,Math.max(0,(QUESTS[state.questIdx]?.goal || 1)-1)));
+        state.upgrades = Object.fromEntries(UPGRADE_DEFS.map(u => [u.id,Math.floor(bounded(d.upgrades?.[u.id],1,1,u.max))]));
+        state.career.fits[state.selectedModelId]={...state.upgrades};
+        state.pilotName = pilotLabel(d.pilotName);
+        state.playedSeconds = bounded(d.playedSeconds,0);
+        state.savedAt = typeof d.savedAt === 'string' && Number.isFinite(Date.parse(d.savedAt)) ? d.savedAt : new Date().toISOString();
+        state.laserBoostTimer = bounded(d.laserBoostTimer,0,0,60);
+        state.shieldBoostTimer = bounded(d.shieldBoostTimer,0,0,60);
+        const f = d.flight;
+        savedFlight = f && Number.isFinite(f.x) && Number.isFinite(f.y) ? {
+          x: bounded(f.x,0,-HALF_WORLD+30,HALF_WORLD-30), y: bounded(f.y,120,-HALF_WORLD+30,HALF_WORLD-30),
+          angle: bounded(f.angle,-Math.PI/2,-1e6,1e6), hull: bounded(f.hull,125), shield: bounded(f.shield,0),
+          missiles: bounded(f.missiles,0), destroyed: f.destroyed === true || f.hull <= 0 } : null;
+        state.player = null;
+        return true;
+      }
+      function loadProgress() {
+        for (const key of [SAVE_KEY, BACKUP_KEY, LEGACY_SAVE_KEY]) {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw && applySavedData(JSON.parse(raw))) {
+              if (key !== SAVE_KEY) saveProgress();
+              return true;
+            }
+          } catch(e) {}
+        }
+        return false;
+      }
+      function exportProgress() {
+        const blob = new Blob([JSON.stringify(snapshot(),null,2)],{type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'orbit-pilot-' + new Date().toISOString().slice(0,10) + '.json';
+        a.click(); setTimeout(() => URL.revokeObjectURL(url),1000);
       }
 
       function resetProgress() {
-        try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+        cloudAuto=false; cloudBound=false; savedFlight = null; activeEvent=null; state.career=freshCareer(); state.selectedModelId="falcon"; state.player = null; state.playedSeconds = 0; state.savedAt = null;
         state.sectorId = 'X-1';
         state.skinId = 'cyan';
         state.ownedSkins = ['cyan'];
@@ -1769,6 +1930,125 @@
       // =========================================================================
       // 6. QUEST TRACKER
       // =========================================================================
+      function restoreCareer(raw,selected){
+        const c=freshCareer(), d=raw&&typeof raw==='object'?raw:{};
+        const valid=id=>PLAYER_MODELS.some(m=>m.id===id);
+        c.owned=[...new Set(['falcon',selected,...(Array.isArray(d.owned)?d.owned.filter(valid):[])])];
+        for(const id of c.owned)if(d.fits?.[id])c.fits[id]=Object.fromEntries(UPGRADE_DEFS.map(u=>[u.id,Math.floor(bounded(d.fits[id][u.id],1,1,u.max))]));
+        for(const key of ['skills','materials','modules','equipment','stats'])for(const k of Object.keys(c[key]))c[key][k]=Math.floor(bounded(d[key]?.[k],0,0,key==='skills'?25:key==='modules'?10:key==='equipment'?10:1e9));
+        c.visited=[...new Set(['X-1',...(Array.isArray(d.visited)?d.visited.filter(id=>SECTOR_IDS.includes(id)):[])])];
+        c.reputation=c.reputation.map((_,i)=>Math.floor(bounded(d.reputation?.[i],0,0,1e9)));
+        c.serial=Math.floor(bounded(d.serial,0,0,1e9));
+        c.lastEvent=bounded(d.lastEvent,0,0,1e9);
+        c.route=Array.isArray(d.route)?d.route.filter(id=>SECTOR_IDS.includes(id)).slice(0,40):[];
+        c.fleet=Array.isArray(d.fleet)?d.fleet.slice(0,12).filter(f=>f&&valid(f.model)).map(f=>({model:f.model,mission:['idle','mine','trade','patrol'].includes(f.mission)?f.mission:'idle',remaining:bounded(f.remaining,0,0,180),level:Math.floor(bounded(f.level,1,1,50)),runs:Math.floor(bounded(f.runs,0,0,1e9))})):[];
+        if(d.contract&&['kill','ore','box','sector'].includes(d.contract.kind)){const q=d.contract;c.contract={kind:q.kind,goal:Math.floor(bounded(q.goal,5,1,100)),progress:Math.floor(bounded(q.progress,0,0,100)),reward:Math.floor(bounded(q.reward,150,1,100000)),target:SECTOR_IDS.includes(q.target)?q.target:null};}
+        c.politics=restorePolitics(d.politics);
+        return c;
+      }
+      function switchCareerShip(id){state.career.fits[state.selectedModelId]={...state.upgrades};state.selectedModelId=id;state.upgrades={...Object.fromEntries(UPGRADE_DEFS.map(d=>[d.id,1])),...state.career.fits[id]};}
+      function droneLimit(){return Math.min(12,4+state.career.modules.drones);}
+      function notify(message){const el=document.getElementById('ge-notice');if(el)el.textContent=message;if(state.player)addPopup(state.player.x,state.player.y-50,message,'#8de9ff');}
+      function careerEvent(kind,payload){const c=state.career;
+        if(kind in c.stats)c.stats[kind]++;
+        if(activeEvent?.kind===kind){state.credits+=Math.round(25+state.level*3);if(kind==='ore')state.ore++;}
+        if(kind==='sector'&&!c.visited.includes(payload)){c.visited.push(payload);gainXp(120+Math.floor(c.skills.exploration*10));}
+        if(kind==='ore'){const index=Math.min(7,getCurrentSector().region||0);c.materials[ORES[index]]+=1+(Math.random()<c.skills.exploration*.025?1:0);}
+        if(kind==='kill'){const o=politics().operation;if(o&&o.id===state.sectorId&&payload==='war_guard_'+o.foe)o.kills++;c.reputation[getCurrentSector().region||0]++;if(ENEMY_TYPES[payload]?.boss){c.stats.boss++;c.materials[ORES[7]]+=2;}}
+        const q=c.contract;if(q&&q.progress<q.goal&&q.kind===kind&&(kind!=='sector'||q.target===payload)){q.progress++;}
+      }
+      let geClock=0, activeEvent=null;
+      function careerTick(dt){const c=state.career;
+        if(activeEvent){activeEvent.remaining-=dt;if(activeEvent.remaining<=0){activeEvent=null;notify('Galaktik etkinlik sona erdi');}}
+        if(!activeEvent&&state.playedSeconds-c.lastEvent>180){c.lastEvent=state.playedSeconds;const i=Math.floor(state.playedSeconds/180)%3;activeEvent={kind:['ore','kill','box'][i],name:['Asteroit fırtınası','Korsan avı','Kayıp kargo'][i],remaining:75};notify(activeEvent.name+' · bonus ödül 75 sn');}
+        for(const f of c.fleet){if(f.mission==='idle'||f.remaining<=0)continue;f.remaining=Math.max(0,f.remaining-dt);if(f.remaining===0){const bonus=1+f.level*.12+c.modules.crew*.05+c.modules.command*.03;if(f.mission==='mine'){state.ore+=Math.floor(8*bonus*(1+c.modules.refinery*.04));c.materials.Demir+=Math.floor(4*bonus);}else if(f.mission==='trade'){state.credits+=Math.floor(170*bonus*(1+c.modules.market*.03));c.stats.trade++;}else{state.credits+=Math.floor(110*bonus);gainXp(Math.floor(90*bonus));}f.runs++;f.level=Math.min(50,1+Math.floor(f.runs/3));f.mission='idle';notify('Filo seferi tamamlandı');saveProgress();}}
+        politicsTick(dt);cloudTick(dt);
+        geClock+=dt;if(geClock>=1){geClock=0;const p=state.player;if(c.route.length&&p){const next=c.route[0],gate=getCurrentSector().gates.find(g=>g.target===next);if(!gate){c.route=[];}else if(Math.hypot(p.x-gate.x,p.y-gate.y)<125){c.route.shift();jumpThroughGate(gate);}else state.waypoint={x:gate.x,y:gate.y};}}
+      }
+      function pathTo(dest){const seen=new Set([state.sectorId]),q=[[state.sectorId,[]]];while(q.length){const [id,path]=q.shift();if(id===dest)return path;for(const g of SECTORS[id].gates){if(!seen.has(g.target)&&state.level>=(SECTORS[g.target].required||1)){seen.add(g.target);q.push([g.target,[...path,g.target]]);}}}return null;}
+      function marketPrice(ore){const idx=ORES.indexOf(ore),reg=getCurrentSector().region||0;const owner=politics().territory[state.sectorId].owner,t=owner===8?'alliance':relation(8,owner).treaty,factor=t==='war'?.82:t==='trade'||t==='alliance'?1.1:1;return Math.round((12+idx*8)*(reg===idx?.65:1.30)*(1+state.career.skills.trade*.012+state.career.modules.market*.015)*factor);}
+      let geTab='overview';
+      const ge=document.createElement('div');ge.id='ge-panel';ge.className='overlay hidden';ge.innerHTML=`<div class="modal ge-modal"><div class="ge-eyebrow">ORBIT / GALACTIC NETWORK</div><div class="ge-head"><h1>KARİYER MERKEZİ</h1><button class="secondary-btn" id="ge-close">Uçuşa dön ×</button></div><div id="ge-stats"></div><div id="ge-tabs" class="ge-tabs"></div><div id="ge-notice" role="status"></div><div id="ge-content"></div></div>`;
+      document.getElementById('overlay-hangar').parentNode.appendChild(ge);
+      const geButton=document.createElement('button');geButton.id='ge-open';geButton.className='icon-btn ge-open';geButton.textContent='Kariyer [G]';document.getElementById('btn-hangar').parentNode.appendChild(geButton);
+      function openCareer(){if(state.mode!=='playing')return;state.mode='career';mouseFire=false;ge.classList.remove('hidden');renderCareer();}
+      function closeCareer(){if(state.mode!=='career')return;ge.classList.add('hidden');state.mode='playing';saveProgress();}
+      geButton.onclick=openCareer;document.getElementById('ge-close').onclick=closeCareer;
+      window.addEventListener('keydown',e=>{if(e.code==='KeyG'&&state.mode==='playing')openCareer();else if(state.mode==='career'&&(e.code==='Escape'||e.code==='KeyG'))closeCareer();});
+      const tile=(name,sub,button='',action='',disabled=false)=>`<article class="ge-tile"><h3>${name}</h3><p>${sub}</p>${button?`<button class="upg-buy" data-ge="${action}" ${disabled?'disabled':''}>${button}</button>`:''}</article>`;
+      const fmt=n=>Math.floor(n).toLocaleString('tr-TR');
+      function renderCareer(){const c=state.career, dock=inSafeZone(state.player.x,state.player.y), points=Math.max(0,state.level-1-Object.values(c.skills).reduce((a,b)=>a+b,0));
+        document.getElementById('ge-stats').textContent=`Lv.${state.level} · ${fmt(state.credits)} CR · ${fmt(state.uri)} URI · ${state.ore} ORE · ${c.visited.length}/40 keşif`;
+        document.getElementById('ge-tabs').innerHTML=Object.entries({overview:'Pilot',map:'Galaksi',skills:'Yetenekler',market:'Pazar',station:'İstasyon',fleet:'Filo',contracts:'Sözleşme',gear:'Ekipman',diplomacy:'Diplomasi',war:'Bölge savaşı',graphics:'Grafik',cloud:'Bulut hesabı'}).map(([id,name])=>`<button class="ge-tab ${id===geTab?'on':''}" data-ge="tab:${id}">${name}</button>`).join('');
+        let html='';
+        if(geTab==='overview'){html=tile('Galaktik yayın',activeEvent?activeEvent.name+' · '+Math.ceil(activeEvent.remaining)+' sn bonus':'Yeni yerel etkinlikler uçuş sırasında başlar.')+tile('Kariyer günlüğü',`Seviye ${state.level}/100 · ${fmt(state.xp)} XP · ${Math.floor(state.playedSeconds/60)} dakika`) + tile('Hangar',`${c.owned.length}/30 gemi · ${state.ownedSkins.length}/60 kaplama · ${state.drones.length}/${droneLimit()} diroit`)+tile('Savaş sicili',`${c.stats.kill} imha · ${c.stats.boss} elit · ${c.stats.ore} maden toplama · ${c.stats.box} kargo`)+tile('Medeniyet itibarı',c.reputation.map((r,i)=>`${REGION_NAMES[i]} ${r}`).join(' · '))+tile('Ana kampanya',`${state.questIdx}/150 görev · ${QUESTS[state.questIdx]?.title||'Tamamlandı'}`)+tile('Güvenli kayıt','Bu tarayıcıya otomatik kayıt ve JSON aktarımı.','Şimdi kaydet','save');}
+        if(geTab==='map'){html='<div class="ge-map">'+SECTOR_IDS.map((id,i)=>{const sec=SECTORS[id], locked=state.level<(sec.required||1);return `<button class="ge-node ${id===state.sectorId?'here':''} ${c.visited.includes(id)?'seen':''}" style="--star:${POL_COLORS[politics().territory[id].owner]}" data-ge="route:${id}" ${locked?'disabled':''}><i></i><b>${id}</b><span>${sec.name.replace(id,'').trim()} · Lv.${sec.required||1} · ${FACTIONS[politics().territory[id].owner]}</span></button>`;}).join('')+'</div><p class="ge-note">Sektörü seç: açık kapılardan otomatik rota oluşturulur. '+(c.route.length?'Rota: '+c.route.join(' → '):'Rota yok')+'</p>'+tile('Rota kontrolü','Seyir sırasında tehlikelere dikkat et.','Rotayı iptal et','cancelroute');}
+        if(geTab==='skills'){html=tile('Yetenek puanı',`${points} kullanılabilir · seviye başına 1 puan`)+Object.entries(SKILLS).map(([k,n])=>tile(n,`Seviye ${c.skills[k]}/25 · ${ {combat:'Lazer gücü +%3,5',engineering:'Gövde +%2,5',exploration:'Keşif XP ve maden şansı',trade:'Satış geliri +%2'}[k]} / puan`,'Geliştir','skill:'+k,points<=0||c.skills[k]>=25)).join('');}
+        if(geTab==='market'){html=tile('Yerel pazar',dock?'İstasyona bağlı ticaret açık.':'Ticaret için güvenli bölgeye dön.')+ORES.map(o=>tile(o,`${c.materials[o]} adet · satış ${marketPrice(o)} CR`,'1 adet sat','sell:'+o,!dock||c.materials[o]<1)+tile(o+' · tedarik',`Alış ${Math.ceil(marketPrice(o)*1.14)} CR`,'1 adet al','buy:'+o,!dock||state.credits<Math.ceil(marketPrice(o)*1.14))).join('')+tile('Ham maden',`${state.ore} ORE · 10 adet / 100 CR`,'10 ORE sat','sellore',!dock||state.ore<10);}
+        if(geTab==='station'){html=tile('Yörünge imparatorluğu','Modül seviyesi arttıkça kapasite ve üretim açılır. Yalnız güvenli bölgede inşa edilir.')+Object.entries(MODULES).map(([k,n])=>{const l=c.modules[k], cost=250*(l+1)*(l+1),ore=5*(l+1);return tile(n,`Lv.${l}/10 · ${cost} CR + ${ore} ORE`,'İnşa / yükselt','module:'+k,!dock||l>=10||state.credits<cost||state.ore<ore);}).join('');}
+        if(geTab==='fleet'){html=tile('Sefer filosu',`${c.fleet.length}/${Math.min(12,1+c.modules.hangar)} kaptan · seferler aktif oyun süresinde ilerler.`,'Kaptan al · 700 CR','hire',!dock||state.credits<700||c.fleet.length>=Math.min(12,1+c.modules.hangar))+c.fleet.map((f,i)=>`<article class="ge-tile"><h3>Filo ${i+1} · ${PLAYER_MODELS.find(m=>m.id===f.model).name}</h3><p>Lv.${f.level} · ${f.mission==='idle'?'Hazır':f.mission+' · '+Math.ceil(f.remaining)+' sn'}</p>${['mine','trade','patrol'].map(m=>`<button class="upg-buy" data-ge="fleet:${i}:${m}" ${f.mission!=='idle'?'disabled':''}>${{mine:'Maden',trade:'Ticaret',patrol:'Devriye'}[m]}</button>`).join('')}</article>`).join('');}
+        if(geTab==='contracts'){const q=c.contract;html=tile('Dinamik görev ağı',q?`${{kill:'Düşman imha',ore:'Maden topla',box:'Kargo topla',sector:'Sektör keşfet'}[q.kind]} ${q.target||''} · ${q.progress}/${q.goal} · ${q.reward} CR`:'Yeni sözleşme seç. Görevler sona ermez.',q?'Ödülü al':'Sözleşme oluştur',q?'claim':'contract',!!q&&q.progress<q.goal)+tile('Operasyonlar','Elit düşmanlar Alienium verir. Kampanya görevleri ve yan sözleşmeler birlikte ilerler.')+(q?tile('Sözleşme değiştir','Mevcut ilerleme bırakılır.','Vazgeç','abandon'):'');}
+        if(geTab==='gear'){html=tile('Üretim tezgâhı','Rafineri ve araştırma modülleri, ekipman üretimi için gereklidir.')+Object.entries(EQUIPMENT).map(([k,d])=>{const l=c.equipment[k], cost=d.cost*(l+1),ore=d.ore*(l+1);return tile(d.name,`Lv.${l}/10 · ${cost} CR + ${ore} ORE · laboratuvar Lv.${Math.ceil((l+1)/2)}`,'Üret / geliştir','gear:'+k,!dock||l>=10||c.modules.refinery<1||c.modules.lab<Math.ceil((l+1)/2)||state.credits<cost||state.ore<ore);}).join('')+tile('Tersane', 'Hangar sekmesinden gemi satın al. Tersane 1+ ise inşa bonusu olarak 30 x2 cephane üretilebilir.','Cephane üret · 3 ORE','craft',!dock||c.modules.shipyard<1||state.ore<3);}
+        if(geTab==='diplomacy')html=politicsUI();if(geTab==='war')html=warUI();if(geTab==='graphics')html=gfxUI();if(geTab==='cloud')html=tile('Bulut hesabı',escapeOrbit(cloudStatus),'Hesabı yönet','cloudopen');
+        document.getElementById('ge-content').innerHTML=html;
+      }
+      ge.addEventListener('click',e=>{const btn=e.target.closest('[data-ge]');if(!btn||btn.disabled)return;const [action,k,v]=btn.dataset.ge.split(':'),c=state.career,dock=inSafeZone(state.player.x,state.player.y);let ok=false;
+        if(action==='tab'){geTab=k;renderCareer();return;}
+        if(action==='save'){ok=saveProgress();}
+        if(action==='dip')ok=diplomacyAction(Number(k),v);
+        if(action==='attack')ok=startOperation(k);
+        if(action==='support')ok=operationSupport();
+        if(action==='warroute'){const o=politics().operation;if(o){if(o.id===state.sectorId){closeCareer();state.waypoint={x:850,y:0};return;}const route=pathTo(o.id);if(route){c.route=route;closeCareer();return;}}}
+        if(action==='policy'){const p=politics();p.policy=['balanced','commerce','military'][(['balanced','commerce','military'].indexOf(p.policy)+1)%3];ok=true;}
+        if(action==='fort'){const p=politics(),t=p.territory[state.sectorId],cost=p.policy==='military'?180:300;if(t.owner===8&&t.fort<10&&state.credits>=cost){state.credits-=cost;t.fort=Math.min(10,t.fort+1);ok=true;}}
+        if(action==='graphics'){gfxMode=gfxMode==='pbr'?'classic':'pbr';planetCache.clear();try{localStorage.setItem('orbit-gfx-mode',gfxMode);}catch{}renderCareer();return;}
+        if(action==='cloudopen'){cloudDialog();return;}
+
+        if(action==='route'){const path=pathTo(k);if(path){c.route=path;closeCareer();notify('Rota hazır');return;}notify('Ulaşılabilir rota bulunamadı');return;}
+        if(action==='cancelroute'){c.route=[];state.waypoint=null;ok=true;}
+        if(action==='skill'&&Object.hasOwn(SKILLS,k)&&c.skills[k]<25&&Object.values(c.skills).reduce((a,b)=>a+b,0)<state.level-1){c.skills[k]++;applyUpgradesToPlayer();ok=true;}
+        if(action==='sell'&&dock&&ORES.includes(k)&&c.materials[k]>0){c.materials[k]--;state.credits+=marketPrice(k);c.stats.trade++;gainXp(5);ok=true;}
+        if(action==='buy'&&dock&&ORES.includes(k)&&state.credits>=Math.ceil(marketPrice(k)*1.14)){state.credits-=Math.ceil(marketPrice(k)*1.14);c.materials[k]++;ok=true;}
+        if(action==='sellore'&&dock&&state.ore>=10){state.ore-=10;state.credits+=100;c.stats.trade++;ok=true;}
+        if(action==='module'&&dock&&Object.hasOwn(MODULES,k)){const l=c.modules[k],cost=250*(l+1)**2,ore=5*(l+1);if(l<10&&state.credits>=cost&&state.ore>=ore){state.credits-=cost;state.ore-=ore;c.modules[k]++;applyUpgradesToPlayer();ok=true;}}
+        if(action==='gear'&&dock&&Object.hasOwn(EQUIPMENT,k)){const l=c.equipment[k],d=EQUIPMENT[k],cost=d.cost*(l+1),ore=d.ore*(l+1);if(l<10&&c.modules.refinery>=1&&c.modules.lab>=Math.ceil((l+1)/2)&&state.credits>=cost&&state.ore>=ore){state.credits-=cost;state.ore-=ore;c.equipment[k]++;applyUpgradesToPlayer();ok=true;}}
+        if(action==='craft'&&dock&&c.modules.shipyard>=1&&state.ore>=3){state.ore-=3;state.ammo.x2+=30;ok=true;}
+        if(action==='hire'&&dock&&state.credits>=700&&c.fleet.length<Math.min(12,1+c.modules.hangar)){state.credits-=700;c.fleet.push({model:state.selectedModelId,level:1,runs:0,remaining:0,mission:'idle'});ok=true;}
+        if(action==='fleet'&&['mine','trade','patrol'].includes(v)&&c.fleet[Number(k)]?.mission==='idle'){const f=c.fleet[Number(k)];f.mission=v;f.remaining=Math.max(40,100-c.modules.energy*5);ok=true;}
+        if(action==='contract'&&!c.contract){const i=c.serial++,kind=['kill','ore','box','sector'][i%4],goal=kind==='sector'?1:3+i%8;const choices=SECTOR_IDS.filter(id=>id!==state.sectorId&&pathTo(id));c.contract={kind:kind==='sector'&&!choices.length?'kill':kind,goal,progress:0,reward:180+state.level*30+i%10*20,target:kind==='sector'&&choices.length?choices[i%choices.length]:null};ok=true;}
+        if(action==='claim'&&c.contract&&c.contract.progress>=c.contract.goal){state.credits+=c.contract.reward;gainXp(c.contract.reward/2);state.uri+=10;c.contract=null;ok=true;}
+        if(action==='abandon'){c.contract=null;ok=true;}
+        if(ok){saveProgress();updateHudBars();renderCareer();notify('İşlem tamamlandı');}
+      });
+      // Cloud account: publishable key only, authenticated RLS + optimistic concurrency.
+      const CLOUD_CONFIG='orbit-cloud-config-v1';let cloudConfig={url:'',key:''}, cloudSession=null,cloudRevision=null,cloudRemote=null,cloudBusy=false,cloudAuto=false,cloudBound=false,cloudTimer=0,cloudStatus='Yerel kariyer aktif. Bulut yapılandırılmadı.';
+      try{const cfg=JSON.parse(localStorage.getItem(CLOUD_CONFIG)||'null');if(cfg&&typeof cfg.url==='string'&&typeof cfg.key==='string')cloudConfig=cfg;}catch{}
+      function cloudConfigured(){return /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(cloudConfig.url)&&typeof cloudConfig.key==='string'&&(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(cloudConfig.key)||cloudConfig.key.startsWith('sb_publishable_'));}
+      function cloudMessage(s){cloudStatus=s;const el=document.getElementById('cloud-status');if(el)el.textContent=s;}
+      async function cloudRequest(path,{method='GET',body,auth=false,headers={}}={}){if(!cloudConfigured())throw Error('Geçerli Supabase proje URL ve publishable key gerekli.');if(auth&&cloudSession?.expires_at&&Date.now()/1000>cloudSession.expires_at-45){const d=await cloudRequest('/auth/v1/token?grant_type=refresh_token',{method:'POST',body:{refresh_token:cloudSession.refresh_token}});cloudSession=d;}if(auth&&!cloudSession?.access_token)throw Error('Önce giriş yapın.');const res=await fetch(cloudConfig.url+path,{method,headers:{apikey:cloudConfig.key,'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+cloudSession.access_token}:{}),...headers},...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(15000)});const txt=await res.text();let data;try{data=txt?JSON.parse(txt):null;}catch{data=null;}if(!res.ok)throw Error(res.status===409?'Kayıt çakışması: bulut kaydını yeniden okuyun.':data?.msg||data?.message||data?.error_description||'HTTP '+res.status);return data;}
+      async function cloudRead(){const rows=await cloudRequest('/rest/v1/orbit_saves?select=revision,payload,updated_at&limit=1',{auth:true});cloudRemote=rows?.[0]||null;cloudRevision=cloudRemote?.revision??0;return cloudRemote;}
+      async function cloudPush(){if(cloudRevision===null)throw Error('Önce bulut kaydını kontrol edin.');const expected=cloudRevision,payload=snapshot();const rows=await cloudRequest('/rest/v1/rpc/orbit_save_cas',{method:'POST',body:{expected_revision:expected,save_payload:payload},auth:true});const result=Array.isArray(rows)?rows[0]:rows;if(!result||!Number.isInteger(result.revision)||result.revision!==expected+1){cloudAuto=false;cloudRevision=null;throw Error('Başka cihazda daha yeni kayıt var. Otomatik eşitleme durduruldu.');}cloudRevision=result.revision;cloudBound=true;cloudRemote={revision:cloudRevision,payload,updated_at:result.updated_at};cloudMessage('Buluta kaydedildi · revizyon '+cloudRevision);return true;}
+      function cloudDialog(){const d=document.getElementById('orbit-cloud');d.classList.remove('hidden');document.getElementById('cloud-url').value=cloudConfig.url;document.getElementById('cloud-key').value=cloudConfig.key;cloudRefreshUI();}
+      function cloudRefreshUI(){cloudMessage(cloudStatus);const el=document.getElementById('cloud-user');if(el)el.textContent=cloudSession?.user?.email||'Oturum kapalı';const au=document.getElementById('cloud-auto');if(au)au.checked=cloudAuto;}
+      async function cloudAction(action){if(cloudBusy)return;cloudBusy=true;try{if(action==='configure'){const url=document.getElementById('cloud-url').value.trim().replace(/\/$/,''),key=document.getElementById('cloud-key').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)||!key||key.startsWith('sb_secret_'))throw Error('Supabase proje URL ve public/publishable key kullanın.');if(key.split('.').length===3){let claims;try{claims=JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));}catch{}if(claims?.role!=='anon')throw Error('Yalnız anon/public anahtar kullanılabilir.');}cloudConfig={url,key};localStorage.setItem(CLOUD_CONFIG,JSON.stringify(cloudConfig));cloudSession=null;cloudRevision=null;cloudRemote=null;cloudAuto=false;cloudBound=false;cloudMessage('Yapılandırma kaydedildi.');}else if(action==='signin'||action==='signup'){const email=document.getElementById('cloud-email').value.trim(),pw=document.getElementById('cloud-password').value;if(!email||pw.length<8)throw Error('E-posta ve en az 8 karakter parola gerekli.');const data=await cloudRequest(action==='signup'?'/auth/v1/signup':'/auth/v1/token?grant_type=password',{method:'POST',body:{email,password:pw}});document.getElementById('cloud-password').value='';cloudSession=data?.access_token?data:null;cloudAuto=false;cloudBound=false;cloudRevision=null;cloudRemote=null;if(cloudSession){await cloudRead();cloudMessage(cloudRemote?'Bulut kaydı bulundu (rev. '+cloudRevision+'). Yükle veya açıkça yerel kaydı gönder.':'Bulutta kayıt yok. İlk kaydı gönderin.');}else cloudMessage('E-posta doğrulaması gerekiyorsa bağlantıyı açıp giriş yapın.');}else if(action==='read'){await cloudRead();cloudAuto=false;cloudBound=false;cloudMessage(cloudRemote?'Bulut: rev. '+cloudRevision+' · '+cloudRemote.updated_at:'Bulutta kayıt yok.');}else if(action==='push'){if(!cloudSession)throw Error('Önce giriş yapın.');if(!window.confirm('Mevcut yerel kariyer bulut kaydına gönderilsin mi?'))return;await cloudPush();}else if(action==='pull'){if(state.mode!=='menu'&&state.mode!=='start'&&state.mode!=='select'&&state.mode!=='title')throw Error('Bulut kaydını ana menüden yükleyin (sayfayı yenileyin).');await cloudRead();if(state.mode!=='start')throw Error('Yükleme için ana menüye dönün.');if(!cloudRemote)throw Error('Bulutta kayıt yok.');if(!window.confirm('Bulut kaydı yüklensin mi? Yerel kayıt yedeklenecek.'))return;const backup=snapshot();localStorage.setItem(SAVE_KEY+'_precloud',JSON.stringify(backup));localStorage.setItem(BACKUP_KEY,JSON.stringify(backup));if(!applySavedData(cloudRemote.payload))throw Error('Bulut kayıt biçimi geçersiz.');saveProgress();refreshProfile();renderShipSelector();renderQuestUI();cloudBound=true;cloudMessage('Bulut kaydı yüklendi · rev. '+cloudRevision);}else if(action==='logout'){if(cloudSession)try{await cloudRequest('/auth/v1/logout',{method:'POST',auth:true});}catch{}cloudSession=null;cloudRevision=null;cloudRemote=null;cloudAuto=false;cloudBound=false;cloudMessage('Oturum kapatıldı. Yerel kariyer korunuyor.');}}catch(e){cloudAuto=false;cloudMessage('Bulut: '+String(e.message||e).slice(0,250));}finally{cloudBusy=false;cloudRefreshUI();}}
+      function cloudTick(dt){if(!cloudAuto||!cloudSession||cloudRevision===null||cloudBusy)return;cloudTimer+=dt;if(cloudTimer<60)return;cloudTimer=0;cloudBusy=true;cloudPush().catch(e=>{cloudAuto=false;cloudMessage('Eşitleme durdu: '+e.message);}).finally(()=>{cloudBusy=false;cloudRefreshUI();});}
+      const cloudEl=document.createElement('div');cloudEl.id='orbit-cloud';cloudEl.className='overlay hidden';cloudEl.innerHTML=`<div class="modal ge-modal cloud-modal"><div class="ge-head"><h1>BULUT HESABI</h1><button id="cloud-close" class="secondary-btn">Kapat ×</button></div><p id="cloud-status" role="status"></p><p id="cloud-user"></p><div class="cloud-grid"><label>Supabase proje URL<input id="cloud-url" placeholder="https://proje.supabase.co" autocomplete="off"></label><label>Publishable / anon key<input id="cloud-key" placeholder="sb_publishable_..." autocomplete="off"></label><button data-cloud="configure" class="upg-buy">Bağlantıyı kaydet</button><label>E-posta<input id="cloud-email" type="email" autocomplete="username"></label><label>Parola<input id="cloud-password" type="password" autocomplete="current-password"></label><div><button data-cloud="signup" class="upg-buy">Hesap oluştur</button> <button data-cloud="signin" class="upg-buy">Giriş yap</button></div><div><button data-cloud="read" class="upg-buy">Bulutu kontrol et</button> <button data-cloud="push" class="upg-buy">Yerel kaydı gönder</button> <button data-cloud="pull" class="upg-buy">Buluttan yükle</button></div><label><input type="checkbox" id="cloud-auto"> Uçuş sırasında 60 sn arayla otomatik eşitle</label><button data-cloud="logout" class="secondary-btn">Oturumu kapat</button></div><p class="ge-note">İlk eşitleme manuel yapılır. Çakışmada yazma durur. Oturum bu sayfa açıkken tutulur; parola saklanmaz. Sunucu kurulumu için paket README dosyasını kullan.</p></div>`;document.getElementById('overlay-hangar').parentNode.appendChild(cloudEl);document.getElementById('cloud-close').onclick=()=>cloudEl.classList.add('hidden');cloudEl.addEventListener('click',e=>{const b=e.target.closest('[data-cloud]');if(b)cloudAction(b.dataset.cloud);});document.getElementById('cloud-auto').onchange=e=>{cloudAuto=!!e.target.checked&&!!cloudSession&&cloudRevision!==null&&cloudRemote!==null&&cloudBound;if(!cloudAuto&&e.target.checked)cloudMessage('Önce giriş yapın ve ilk bulut kaydını gönderin/yükleyin.');cloudTimer=0;cloudRefreshUI();};
+      const cloudStart=document.createElement('button');cloudStart.className='secondary-btn';cloudStart.textContent='Bulut hesabı / senkronizasyon';cloudStart.onclick=cloudDialog;document.getElementById('save-summary').parentNode.appendChild(cloudStart);
+
+      // GPU mesh renderer. Offscreen depth-buffered rasterization, GGX/Smith/Schlick BRDF.
+      // Quantized pose cache keeps the original canvas gameplay/HUD and avoids per-object GPU readback every frame.
+      let gfxMode='pbr';try{gfxMode=localStorage.getItem('orbit-gfx-mode')==='classic'?'classic':'pbr';}catch{}
+      let gpu=null,gpuFailed=false,gpuBudget=4,gpuHits=0,gpuMiss=0;const gpuCache=new Map(),gpuMeshIds=new WeakMap();let gpuNextId=1;
+      const PBR_VERT=`attribute vec3 aPos;attribute vec3 aNormal;attribute vec3 aColor;attribute vec3 aMat;varying vec3 vN,vC,vM;void main(){gl_Position=vec4(aPos,1.);vN=aNormal;vC=aColor;vM=aMat;}`;
+      const PBR_FRAG=`precision mediump float;varying vec3 vN,vC,vM;const float PI=3.14159265;vec3 tone(vec3 x){return clamp((x*(2.51*x+.03))/(x*(2.43*x+.59)+.14),0.,1.);}void main(){vec3 n=normalize(vN),v=normalize(vec3(0.,.24,.97)),l=normalize(vec3(-.52,-.43,.74)),h=normalize(v+l);float nv=max(dot(n,v),.001),nl=max(dot(n,l),0.),nh=max(dot(n,h),0.),lh=max(dot(l,h),0.);vec3 c=pow(clamp(vC,0.,1.),vec3(2.2));float met=vM.x,rough=max(.12,vM.y),a=rough*rough,a2=a*a,d=nh*nh*(a2-1.)+1.;float D=a2/(PI*d*d+.00001);float G=.5/(nv*sqrt(nl*nl*(1.-a2)+a2)+nl*sqrt(nv*nv*(1.-a2)+a2)+.0001);vec3 F0=mix(vec3(.04),c,met),F=F0+(1.-F0)*pow(1.-lh,5.);vec3 direct=((1.-F)*(1.-met)*c/PI+D*G*F)*nl*vec3(3.6,3.45,3.25);vec3 r=reflect(-v,n);float env=.28+.48*max(0.,r.z)+.55*pow(max(0.,dot(r,normalize(vec3(.7,.2,.65)))),12.);vec3 fill=c*(1.-met)*(.11+.12*max(0.,n.z))+F0*env*vec3(.54,.74,1.);vec3 rim=F0*pow(1.-nv,3.)*.4;vec3 hdr=direct+fill+rim+c*vM.z*4.;gl_FragColor=vec4(pow(tone(hdr),vec3(1./2.2)),1.);}`;
+      function initGPU(){if(gpu||gpuFailed)return gpu;try{const cvs=document.createElement('canvas');cvs.width=cvs.height=256;const gl=cvs.getContext('webgl',{alpha:true,antialias:true,premultipliedAlpha:true,preserveDrawingBuffer:true});if(!gl||typeof gl.createShader!=='function')throw Error('WebGL unavailable');function shader(type,source){const s=gl.createShader(type);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}const program=gl.createProgram();gl.attachShader(program,shader(gl.VERTEX_SHADER,PBR_VERT));gl.attachShader(program,shader(gl.FRAGMENT_SHADER,PBR_FRAG));gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(program));const buf=gl.createBuffer();gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buf);for(const [i,n] of ['aPos','aNormal','aColor','aMat'].entries()){const loc=gl.getAttribLocation(program,n);gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,3,gl.FLOAT,false,48,i*12);}gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(0,0,0,0);cvs.addEventListener('webglcontextlost',e=>{e.preventDefault();gpu=null;gpuCache.clear();gpuFailed=true;});gpu={cvs,gl,program,buf};return gpu;}catch(e){gpuFailed=true;return null;}}
+      function materialPBR(mat,pal){const base=pal[mat]||pal.hull||pal.rock||[150,165,180];const params={hull:[.82,.34,0],hullDark:[.66,.48,0],accent:[.52,.39,0],canopy:[.24,.13,.14],engine:[.05,.28,1.9],rock:[.02,.83,0],crater:[.0,.96,0]}[mat]||[.5,.5,0];let c=Array.isArray(base)?base:[150,165,180];if(mat==='engine'&&/^#[0-9a-f]{6}$/i.test(pal.engineCss||''))c=[1,3,5].map(i=>parseInt(pal.engineCss.slice(i,i+2),16));return [...c.map(n=>n/255),...params];}
+      function drawGPU(mesh,x,y,yaw,pitch,roll,scale,pal,hit){if(gfxMode!=='pbr'||hit>0||!initGPU())return false;let id=gpuMeshIds.get(mesh);if(!id){id=gpuNextId++;gpuMeshIds.set(mesh,id);}const quant=(n,step)=>Math.round(n/step)*step;const a=quant(((yaw%(2*Math.PI))+2*Math.PI)%(2*Math.PI),Math.PI/18),p=quant(pitch,.15),r=quant(roll,.15),size=quant(scale,.1)||.1;const key=[id,a.toFixed(3),p.toFixed(2),r.toFixed(2),size.toFixed(1),pal.engineCss,...(pal.hull||pal.rock||[]),...(pal.accent||[])].join('|');let sprite=gpuCache.get(key);if(sprite){gpuHits++;gpuCache.delete(key);gpuCache.set(key,sprite);}else{if(gpuBudget<=0)return false;gpuBudget--;gpuMiss++;const cy=Math.cos(a),sy=Math.sin(a),cp=Math.cos(p),sp=Math.sin(p),cr=Math.cos(r),sr=Math.sin(r);const tv=mesh.verts.map(([x,y,z])=>{x*=size;y*=size;z*=size;const y1=y*cr-z*sr,z1=y*sr+z*cr,x2=x*cp+z1*sp,z2=-x*sp+z1*cp;return [x2*cy-y1*sy,x2*sy+y1*cy,z2];});const pv=tv.map(([x,y,z])=>{const f=1/Math.max(.25,1-z*.0021);return [x*f,(y*.94-z*.34)*f,z];});const extent=Math.max(6,...pv.flatMap(v=>[Math.abs(v[0]),Math.abs(v[1])]))+3;const depth=Math.max(1,...tv.map(v=>Math.abs(v[2])))*1.1;const data=[];for(const face of mesh.faces){const [i,j,k]=face.idx;const A=tv[i],B=tv[j],C=tv[k];const u=B.map((v,n)=>v-A[n]),v=C.map((v,n)=>v-A[n]),normal=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],len=Math.hypot(...normal)||1,n=normal.map(v=>v/len);if(n[1]*.24+n[2]*.97<-.08)continue;const mat=materialPBR(face.mat,pal);for(let t=1;t<face.idx.length-1;t++)for(const ix of [i,face.idx[t],face.idx[t+1]]){const q=pv[ix];data.push(q[0]/extent,-q[1]/extent,-q[2]/depth,...n,...mat);}}if(!data.length)return false;try{const {gl,cvs,buf,program}=gpu;gl.viewport(0,0,256,256);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.DYNAMIC_DRAW);gl.drawArrays(gl.TRIANGLES,0,data.length/12);const image=document.createElement('canvas');image.width=image.height=256;image.getContext('2d').drawImage(cvs,0,0);sprite={image,extent};gpuCache.set(key,sprite);if(gpuCache.size>192)gpuCache.delete(gpuCache.keys().next().value);}catch{gpuFailed=true;return false;}}const ratio=scale/size,e=sprite.extent*ratio;ctx.drawImage(sprite.image,x-e,y-e,2*e,2*e);return true;}
+      function gfxUI(){return tile('Grafik motoru',gfxMode==='pbr'?(gpuFailed?'PBR yazılımsal yedek · WebGL erişilemiyor':'WebGL PBR · GGX, ACES eğrisi, derinlik tamponu, poz önbelleği'):'Klasik 2.5D · düşük güç tüketimi','Grafik modunu değiştir','graphics')+tile('GPU önbelleği',`${gpuCache.size}/192 görsel · ${gpuHits} tekrar kullanım · ${gpuMiss} yeni GPU çizimi`)+tile('Grafik hedefi','Özgün parametrik gemiler · fizik tabanlı materyaller · prosedürel gezegen · otomatik Canvas yedeği. Fotogerçekçilik referanslarla henüz kalibre edilmedi.');}
+      // CPU BRDF fallback with physically motivated direct/specular response.
+      function pbrFace(mat,pal,nx,ny,nz){const m=materialPBR(mat,pal),c=m.slice(0,3).map(x=>Math.pow(x,2.2)),met=m[3],rough=m[4],em=m[5],nl=Math.max(0,nx*LIGHT_DIR.x+ny*LIGHT_DIR.y+nz*LIGHT_DIR.z),nv=Math.max(.001,ny*.24+nz*.97),nh=Math.max(0,nx*HALF_VEC.x+ny*HALF_VEC.y+nz*HALF_VEC.z),a=rough*rough,a2=a*a,d=nh*nh*(a2-1)+1,D=a2/(Math.PI*d*d+1e-5),G=.5/(nv*Math.sqrt(nl*nl*(1-a2)+a2)+nl*Math.sqrt(nv*nv*(1-a2)+a2)+.0001);return 'rgb('+c.map((x,i)=>{const f0=.04*(1-met)+x*met,F=f0+(1-f0)*.035,hdr=((1-F)*(1-met)*x/Math.PI+D*G*F)*nl*3.4+x*(1-met)*.18+f0*(.28+.55*Math.max(0,nz))*(.75+i*.15)+x*em*4;const t=clamp((hdr*(2.51*hdr+.03))/(hdr*(2.43*hdr+.59)+.14),0,1);return Math.round(Math.pow(t,1/2.2)*255);}).join(',')+')';}
+      function planetPBR(art,sec){const c=art.getContext('2d');if(typeof c.createImageData!=='function')return false;const N=300,R=112,im=c.createImageData(N,N);if(!im?.data)return false;const pix=im.data,seed=SECTOR_IDS.indexOf(sec.id)*12.731;const hash=(x,y)=>{let s=Math.sin(x*127.1+y*311.7+seed)*43758.5453;return s-Math.floor(s);};const noise=(x,y)=>{const ix=Math.floor(x),iy=Math.floor(y),u=x-ix,v=y-iy,s=u*u*(3-2*u),t=v*v*(3-2*v);return (hash(ix,iy)*(1-s)+hash(ix+1,iy)*s)*(1-t)+(hash(ix,iy+1)*(1-s)+hash(ix+1,iy+1)*s)*t;};const fbm=(x,y)=>noise(x,y)*.56+noise(x*2.1,y*2.1)*.27+noise(x*4.2,y*4.2)*.12+noise(x*8.4,y*8.4)*.05;const gas=(sec.region||0)===3||(sec.region||0)===4;for(let y=0;y<N;y++)for(let x=0;x<N;x++){let nx=(x-150)/R,ny=(y-150)/R,r2=nx*nx+ny*ny,o=(y*N+x)*4;if(r2>1.14)continue;if(r2>1){const halo=Math.max(0,1-(Math.sqrt(r2)-1)/.068),sun=Math.max(0,-nx*.65-ny*.45+.2);pix[o]=65;pix[o+1]=140;pix[o+2]=245;pix[o+3]=Math.round(halo*halo*sun*100);continue;}let nz=Math.sqrt(1-r2),lon=Math.atan2(nx,nz)*3,lat=Math.asin(ny)*3,h=fbm(lon*3+10,lat*3+10),cloud=fbm(lon*5+seed,lat*5+12),land=h>.51;let base=gas?[.46+.22*Math.sin(lat*12+h*5),.31+.16*Math.sin(lat*12+h*5),.19+.11*Math.sin(lat*12+h*5)]:land?[.22+h*.18,.20+h*.23,.12+h*.10]:[.025,.085+h*.08,.19+h*.12];const cl=clamp((cloud-.53)*3,0,.8),nl=Math.max(0,-nx*.58-ny*.44+nz*.68),rim=Math.pow(1-nz,3)*nl;for(let j=0;j<3;j++){const linear=(base[j]*(1-cl)+cl*.65)*(.018+1.7*nl)+rim*[.07,.24,.64][j];pix[o+j]=Math.round(255*Math.pow(linear/(1+linear),1/2.2));}pix[o+3]=255;}c.putImageData(im,0,0);return true;}
+
       function renderQuestUI() {
         const q = QUESTS[state.questIdx];
         if (!q) {
@@ -1785,6 +2065,7 @@
       }
 
       function advanceQuest(eventKind, payload) {
+        careerEvent(eventKind,payload);
         const q = QUESTS[state.questIdx];
         if (!q) return;
         let matched = false;
@@ -1814,10 +2095,12 @@
       // =========================================================================
       // 7. HANGAR, DRONES, PET, REFINERY & SKINS UI
       // =========================================================================
+      const shipArtCache=new Map();
+      function shipArt(m){if(shipArtCache.has(m.id))return shipArtCache.get(m.id);const rot=-.55,co=Math.cos(rot),si=Math.sin(rot),verts=m.mesh.verts.map(([x,y,z])=>[x*co-y*si,(x*si+y*co)*.68-z*.8,z+(x*si+y*co)*.3]);const extent=Math.max(...verts.flatMap(v=>[Math.abs(v[0]),Math.abs(v[1])]),1),scale=46/extent;const faces=m.mesh.faces.map(f=>{const pts=f.idx.map(i=>verts[i]),[a,b,c]=pts,nz=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);return{pts,mat:f.mat,z:pts.reduce((sum,p)=>sum+p[2],0)/pts.length,nz};}).filter(f=>f.nz>0).sort((a,b)=>a.z-b.z);const col={hull:'#9db5ca',hullDark:'#344c64',accent:'#3f9cb7',canopy:'#a9f2ff',engine:'#6de5ff'};const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 110"><defs><radialGradient id="g"><stop stop-color="#173e58"/><stop offset="1" stop-color="#071421"/></radialGradient></defs><rect width="140" height="110" rx="9" fill="url(#g)"/><ellipse cx="70" cy="66" rx="44" ry="17" fill="#000" opacity=".3"/>${faces.map(f=>`<polygon points="${f.pts.map(p=>`${(70+p[0]*scale).toFixed(1)},${(54+p[1]*scale).toFixed(1)}`).join(' ')}" fill="${col[f.mat]||col.hull}" stroke="#182c41" stroke-width=".6"/>`).join('')}</svg>`;const img='data:image/svg+xml,'+encodeURIComponent(svg);shipArtCache.set(m.id,img);return img;}
       function renderShipSelector() {
-        shipSelectorEl.innerHTML = PLAYER_MODELS.map(m => `
+        shipSelectorEl.innerHTML = PLAYER_MODELS.filter(m=>state.career.owned.includes(m.id)).map(m => `
           <div class="ship-card${m.id === state.selectedModelId ? ' selected' : ''}" data-ship-id="${m.id}">
-            <div class="ship-tag">${m.code} • ${m.role}</div>
+            <img class="ge-ship-art" alt="${m.name} model önizlemesi" src="${shipArt(m)}"><div class="ship-tag">${m.code} • ${m.role}</div>
             <div class="ship-name">${m.name}</div>
             <div class="ship-desc">${m.desc}</div>
             <div class="ship-skill">⚡ Q: ${m.skillName} — ${m.skillDesc}</div>
@@ -1832,12 +2115,12 @@
         const card = e.target.closest('.ship-card');
         if (!card) return;
         Sound.init();
-        state.selectedModelId = card.dataset.shipId;
+        if(!state.career.owned.includes(card.dataset.shipId))return; switchCareerShip(card.dataset.shipId);
         Sound.playLockChirp();
         renderShipSelector();
       });
 
-      function getUpgradeCost(def, lvl) { return def.baseCost + (lvl - 1) * def.step; }
+      function getUpgradeCost(def, lvl) { return Math.round((def.baseCost + (lvl - 1) * def.step)*Math.pow(1.13,Math.max(0,lvl-5))); }
       function canAffordAnyUpgrade() {
         for (const def of UPGRADE_DEFS) {
           const lvl = state.upgrades[def.id];
@@ -1883,20 +2166,20 @@
           const dCount = state.drones.length;
           const flaxCount = state.drones.filter(d => d === 'flax').length;
           const irisCount = state.drones.filter(d => d === 'iris').length;
-          const full = dCount >= 4;
+          const full = dCount >= droneLimit();
           upgradeGridEl.innerHTML = `
             <div class="upg-card">
-              <div class="upg-top"><span class="upg-title">Flax Diroiti (3B)</span><span class="upg-lvl">${flaxCount} Adet (${dCount}/4)</span></div>
+              <div class="upg-top"><span class="upg-title">Flax Diroiti (3B)</span><span class="upg-lvl">${flaxCount} Adet (${dCount}/${droneLimit()})</span></div>
               <div class="upg-desc">Etrafında formasyonda uçar, hedefine ekstra lazer sıkar (+%12 hasar, +18 kalkan).</div>
               <button class="upg-buy" type="button" data-drone="flax" ${(!full && state.credits >= 180) ? '' : 'disabled'}>
-                ${full ? 'FİLO DOLU (4/4)' : 'Flax Satın Al — 180 CR'}
+                ${full ? 'FİLO DOLU' : 'Flax Satın Al — 180 CR'}
               </button>
             </div>
             <div class="upg-card">
-              <div class="upg-top"><span class="upg-title">Iris Elit Diroiti (3B)</span><span class="upg-lvl">${irisCount} Adet (${dCount}/4)</span></div>
+              <div class="upg-top"><span class="upg-title">Iris Elit Diroiti (3B)</span><span class="upg-lvl">${irisCount} Adet (${dCount}/${droneLimit()})</span></div>
               <div class="upg-desc">Altın elit diroit; yüksek ateş desteği ve ağır kalkan (+%24 hasar, +40 kalkan).</div>
               <button class="upg-buy" type="button" data-drone="iris" ${(!full && state.uri >= 55) ? '' : 'disabled'}>
-                ${full ? 'FİLO DOLU (4/4)' : 'Iris Satın Al — 55 URI'}
+                ${full ? 'FİLO DOLU' : 'Iris Satın Al — 55 URI'}
               </button>
             </div>
             <div class="upg-card">
@@ -1949,13 +2232,13 @@
           `;
         } else {
           const shipsHtml = PLAYER_MODELS.map(m => {
-            const active = m.id === state.selectedModelId;
+            const active = m.id === state.selectedModelId, owned=state.career.owned.includes(m.id), locked=!owned&&(state.level<m.required||state.credits<m.price);
             return `
               <div class="upg-card" style="border-color:${active ? 'var(--cyan)' : 'rgba(148,163,184,0.2)'}">
                 <div class="upg-top"><span class="upg-title">${m.code} ${m.name}</span><span class="upg-lvl">Q: ${m.skillName}</span></div>
-                <div class="upg-desc">${m.desc}</div>
-                <button class="upg-buy" type="button" data-switch-ship="${m.id}" ${active ? 'disabled' : ''}>
-                  ${active ? 'AKTİF GEMİ' : 'Bu Gemiye Geç (Ücretsiz)'}
+                <img class="ge-ship-art" alt="${m.name} model önizlemesi" src="${shipArt(m)}"><div class="upg-desc">${m.desc}</div>
+                <button class="upg-buy" type="button" data-switch-ship="${m.id}" ${active||locked ? 'disabled' : ''}>
+                  ${active ? 'AKTİF GEMİ' : owned ? 'Hangardan Seç' : `Lv.${m.required} · ${m.price.toLocaleString()} CR`}
                 </button>
               </div>
             `;
@@ -1993,7 +2276,7 @@
           Sound.playUpgrade();
         } else if (btn.dataset.drone) {
           const dt = btn.dataset.drone;
-          if (state.drones.length >= 4) return;
+          if (state.drones.length >= droneLimit()) return;
           if (dt === 'flax' && state.credits >= 180) { state.credits -= 180; state.drones.push('flax'); }
           else if (dt === 'iris' && state.uri >= 55) { state.uri -= 55; state.drones.push('iris'); }
           else return;
@@ -2023,9 +2306,11 @@
           else if (sid === 'buy_mine' && state.credits >= 80) { state.credits -= 80; state.minesCount += 3; }
           Sound.playPickup();
         } else if (btn.dataset.switchShip) {
-          state.selectedModelId = btn.dataset.switchShip;
+          const m=PLAYER_MODELS.find(x=>x.id===btn.dataset.switchShip); if(!m)return;
+          if(!state.career.owned.includes(m.id)){if(state.level<m.required||state.credits<m.price)return;state.credits-=m.price;state.career.owned.push(m.id);}
+          switchCareerShip(m.id);
           applyUpgradesToPlayer(false);
-          if (state.player) { state.player.hull = state.player.maxHull; state.player.shield = state.player.maxShield; }
+          if (state.player) { state.player.hull = Math.min(state.player.hull,state.player.maxHull); state.player.shield = Math.min(state.player.shield,state.player.maxShield); }
           Sound.playUpgrade();
         } else if (btn.dataset.skin) {
           const sk = SHIP_SKINS.find(x => x.id === btn.dataset.skin);
@@ -2054,12 +2339,12 @@
         const droneShieldBonus = state.drones.reduce((s, d) => s + (d === 'iris' ? 40 : 18), 0);
 
         p.modelId = state.selectedModelId;
-        p.maxHull = Math.round(base.hull + (u.hull - 1) * 35);
-        p.maxShield = Math.round(base.shield + (u.shields - 1) * 35 + droneShieldBonus);
-        p.shieldRegen = 15 + (u.shields - 1) * 5;
+        p.maxHull = Math.round((base.hull + (u.hull - 1) * 35)*(1+state.career.skills.engineering*.025));
+        p.maxShield = Math.round((base.shield + (u.shields - 1) * 35 + droneShieldBonus)*(1+state.career.equipment.shield*.06));
+        p.shieldRegen = (15 + (u.shields - 1) * 5)*(1+state.career.modules.energy*.025);
         p.maxMissiles = base.missiles + (u.missiles - 1);
         p.missileReloadTime = Math.max(2.2, 4.8 - (u.missiles - 1) * 0.55);
-        p.maxSpeed = base.speed + (u.engines - 1) * 34;
+        p.maxSpeed = (base.speed + (u.engines - 1) * 22)*(1+state.career.equipment.drive*.035);
         p.accel = base.accel + (u.engines - 1) * 48;
         p.turnSpeed = 8.6 + (u.engines - 1) * 0.9;
         p.flareMaxCd = Math.max(3.0, 6.0 - (u.flares - 1) * 0.65);
@@ -2140,7 +2425,7 @@
           id: state.nextEntityId++, type: typeKey, name: def.name, lvl: def.lvl,
           x, y, homeX: x, homeY: y, vx: 0, vy: 0, angle: rand(0, Math.PI * 2), roll: 0,
           radius: def.radius, hp: def.hp, maxHp: def.hp, shield: def.shield, maxShield: def.shield,
-          shieldDelay: 0, speed: def.speed, turnRate: def.turnRate,
+          shieldDelay: 0, speed: def.speed, turnRate: def.turnRate, bossClock:4, bossWarning:0,
           fireCd: rand(0.6, 1.5), missileCd: def.missile ? rand(3.0, def.missileCd) : 999,
           spawnCd: def.spawner ? 5.0 : 999, strafeDir: Math.random() < 0.5 ? 1 : -1, strafeTimer: rand(1.6, 3.6),
           aggro: false, patrolAngle: rand(0, Math.PI * 2), hitFlash: 0, shieldFlash: 0
@@ -2212,6 +2497,7 @@
         Sound.playWarp();
         state.warpFlash = 1.0;
         const destSec = SECTORS[gate.target];
+        if(state.level<(destSec.required||1)){notify(`Bu sektör için seviye ${destSec.required} gerekli.`);return;}
         const returnGate = destSec.gates.find(g => g.target === state.sectorId);
         const sx = destSec.hasBase ? 0 : (returnGate ? returnGate.x * 0.88 : 0);
         const sy = destSec.hasBase ? 130 : (returnGate ? returnGate.y * 0.88 : 0);
@@ -2265,14 +2551,14 @@
         const model = getSelectedModel();
         p.skillCd = model.skillCd;
 
-        if (model.id === 'falcon') {
+        if ((model.ability||model.id) === 'falcon') {
           p.cloakTimer = 4.2;
           p.boostTimer = 2.0;
           for (const e of state.enemies) e.aggro = false;
           for (const m of state.missiles) if (m.owner === 'enemy') m.targetId = null;
           addPopup(p.x, p.y - 30, 'HAYALET MODU AKTİF!', '#38bdf8');
           Sound.playWarp();
-        } else if (model.id === 'valkyrie') {
+        } else if ((model.ability||model.id) === 'valkyrie') {
           const targets = [...state.enemies].sort((a, b) => distSq(p.x, p.y, a.x, a.y) - distSq(p.x, p.y, b.x, b.y));
           const locked = state.enemies.find(e => e.id === state.selectedTargetId);
           for (let i = 0; i < 4; i++) {
@@ -2333,7 +2619,7 @@
 
         const droneMult = 1 + state.drones.reduce((s, d) => s + (d === 'iris' ? 0.24 : 0.12), 0);
         const boostMult = state.laserBoostTimer > 0 ? 1.35 : 1.0;
-        const dmg = Math.round((base.damage + (wLvl - 1) * 5) * ammoDef.mult * droneMult * boostMult);
+        const dmg = Math.round((base.damage + (wLvl - 1) * 5) * ammoDef.mult * droneMult * boostMult*(1+state.career.skills.combat*.035+state.career.equipment.laser*.06));
         const barrels = base.barrels + (wLvl >= 3 ? 1 : 0) + (wLvl >= 5 ? 1 : 0);
 
         let fireAngle = p.angle;
@@ -2436,6 +2722,7 @@
       function damagePlayer(amount, causeText) {
         const p = state.player;
         if (!p || p.invuln > 0 || state.mode !== 'playing' || inSafeZone(p.x, p.y)) return;
+        amount*=1-state.career.modules.defense*.015;
         if (p.fortressTimer > 0) amount *= 0.25; // Titan Fortress 75% dmg reduction!
         p.shieldDelay = 3.4; p.combatTimer = 4.5; state.repairBotOn = false;
         state.shake = Math.min(16, state.shake + Math.min(10, amount * 0.28));
@@ -2543,11 +2830,25 @@
       function startGame(isFreshReset = false) {
         Sound.init();
         if (isFreshReset) resetProgress();
+        state.pilotName = pilotLabel(document.getElementById('pilot-name').value);
+        const resume = savedFlight;
         state.mode = 'playing';
         state.autoAttack = false; state.repairBotOn = false; state.waypoint = null; state.selectedTargetId = null;
         state.player = createPlayer();
         applyUpgradesToPlayer(false);
-        loadSector(state.sectorId, 0, 120);
+        if (resume && !resume.destroyed) {
+          const p = state.player;
+          p.hull = bounded(resume.hull,p.maxHull,1,p.maxHull);
+          p.shield = bounded(resume.shield,p.maxShield,0,p.maxShield);
+          p.missiles = Math.floor(bounded(resume.missiles,p.maxMissiles,0,p.maxMissiles));
+          p.angle = resume.angle;
+          loadSector(state.sectorId,resume.x,resume.y);
+        } else {
+          state.player.hull = state.player.maxHull; state.player.shield = state.player.maxShield;
+          state.player.missiles = state.player.maxMissiles;
+          loadSector(resume?.destroyed ? 'X-1' : state.sectorId,0,120);
+        }
+        savedFlight = null;
 
         overlayStart.classList.add('hidden');
         overlayHangar.classList.add('hidden');
@@ -2656,7 +2957,7 @@
         btnHangar.classList.toggle('glow', canAffordAnyUpgrade());
 
         let pills = '';
-        if (state.drones.length > 0) pills += `<span class="boost-pill" style="color:#38bdf8;border-color:#38bdf8;">DİROİT ${state.drones.length}/4</span>`;
+        if (state.drones.length > 0) pills += `<span class="boost-pill" style="color:#38bdf8;border-color:#38bdf8;">DİROİT ${state.drones.length}/${droneLimit()}</span>`;
         if (state.hasPet) pills += `<span class="boost-pill" style="color:#34d399;border-color:#34d399;">P.E.T.</span>`;
         if (state.laserBoostTimer > 0) pills += `<span class="boost-pill">SEPROM ${Math.ceil(state.laserBoostTimer)}s</span>`;
         if (state.shieldBoostTimer > 0) pills += `<span class="boost-pill" style="color:#a78bfa;border-color:#a78bfa;">PROMERIUM ${Math.ceil(state.shieldBoostTimer)}s</span>`;
@@ -2698,6 +2999,8 @@
         state.laserBoostTimer = Math.max(0, state.laserBoostTimer - dt);
         state.shieldBoostTimer = Math.max(0, state.shieldBoostTimer - dt);
 
+        state.playedSeconds += dt;
+        careerTick(dt);
         state.saveTimer += dt;
         if (state.saveTimer >= 12) { state.saveTimer = 0; saveProgress(); }
 
@@ -2956,6 +3259,17 @@
               else if (distToPlayer < 400) desiredAngle += e.strafeDir * 0.35;
               if (distToPlayer < 190) targetSpeed = e.speed * 0.7;
             }
+            if(def.bossStyle){
+              e.bossClock-=dt;
+              if(e.bossClock<=0){e.bossClock=7; e.bossWarning=1.1;addPopup(e.x,e.y-48,({barrier:'FAZ KALKANI',salvo:'PLAZMA SALVOSU',drone:'SÜRÜ KOMUTU',charge:'HÜCUM',gravity:'KÜTLE ANOMALİSİ',overload:'AŞIRI YÜK'})[def.bossStyle],'#fbbf24');}
+              if(e.bossWarning>0){e.bossWarning-=dt;if(e.bossWarning<=0){
+                if(def.bossStyle==='barrier')e.shield=Math.min(e.maxShield,e.shield+e.maxShield*.22);
+                else if(def.bossStyle==='charge'){e.vx=dx/distToPlayer*e.speed*3;e.vy=dy/distToPlayer*e.speed*3;}
+                else if(def.bossStyle==='gravity'&&distToPlayer<450){p.vx-=dx/distToPlayer*260;p.vy-=dy/distToPlayer*260;}
+                else if(def.bossStyle==='drone'&&state.enemies.length<45){const dr=createEnemy('protegit',e.x+65,e.y);dr.aggro=true;state.enemies.push(dr);}
+                else if(['salvo','overload'].includes(def.bossStyle)){const aim=Math.atan2(dy,dx),n=def.bossStyle==='overload'?7:3;for(let k=0;k<n;k++){const a=aim+(k-(n-1)/2)*.22;state.lasers.push({x:e.x,y:e.y,vx:Math.cos(a)*560,vy:Math.sin(a)*560,angle:a,owner:'enemy',damage:def.dmg,color:'#ffb56b',life:1.2});}}
+              }}
+            }
             if (def.spawner) {
               e.spawnCd -= dt;
               const nearbyP = state.enemies.filter(o => o.type === 'protegit' && distSq(o.x, o.y, e.x, e.y) < 900 * 900).length;
@@ -3155,6 +3469,7 @@
       // 12. 2.5D RENDERING PIPELINE
       // =========================================================================
       function render() {
+        gpuBudget=4;
         const sec = getCurrentSector();
         ctx.clearRect(0, 0, viewW, viewH);
 
@@ -3188,7 +3503,8 @@
           ctx.fillStyle = g; ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fill();
         }
 
-        drawSpaceGrid(camX, camY);
+        if(gfxMode==='classic')drawSpaceGrid(camX, camY);
+        drawWarBeacon();
 
         // Safe Zone & Sector Border
         ctx.save();
@@ -3198,7 +3514,8 @@
           ctx.lineWidth = 2.5;
           ctx.beginPath(); ctx.arc(0, 0, SAFE_RADIUS, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
           if (Math.hypot(camX, camY) < viewW + 450) {
-            renderMesh25D(MESHES.station, 0, 0, state.time * 0.14, 0, 0, 1.35, STATION_PALETTE, 0);
+            renderMesh25D(MESHES.station, 0, 0, state.time * 0.14, 0, 0, 1.35+Math.min(1.1,Object.values(state.career.modules).reduce((a,b)=>a+b,0)*.035), STATION_PALETTE, 0);
+            Object.entries(state.career.modules).forEach(([k,l],i)=>{if(l<=0)return;const a=i*Math.PI*2/10+state.time*.025,rx=Math.cos(a)*(125+l*3),ry=Math.sin(a)*(125+l*3);ctx.strokeStyle='#52788d';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(Math.cos(a)*65,Math.sin(a)*65);ctx.lineTo(rx,ry);ctx.stroke();renderMesh25D(PLAYER_MODELS[3+i].mesh,rx,ry,a,0,0,.75+l*.035,STATION_PALETTE,0);});
           }
         }
         ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)'; ctx.lineWidth = 4;
@@ -3322,7 +3639,7 @@
           ctx.fillRect(0, 0, viewW, viewH);
         }
 
-        if (state.mode === 'playing' || state.mode === 'paused' || state.mode === 'hangar') drawMinimap();
+        if (['playing','paused','hangar','career'].includes(state.mode)) drawMinimap();
         if (state.mode === 'playing' && mouse.active && touchControlsEl.classList.contains('hidden')) {
           const mm = getMinimapRect();
           const overMap = mouse.x >= mm.x && mouse.x <= mm.x + mm.size && mouse.y >= mm.y && mouse.y <= mm.y + mm.size;
@@ -3383,18 +3700,16 @@
         }
       }
 
-      function drawDistantPlanet(camX, camY, sec) {
-        const px = viewW * 0.78 - camX * 0.025, py = viewH * 0.24 - camY * 0.025;
-        ctx.save();
-        const g = ctx.createRadialGradient(px - 28, py - 24, 12, px, py, 94);
-        g.addColorStop(0, sec.planetA); g.addColorStop(0.55, sec.planetB); g.addColorStop(1, 'rgba(2, 6, 23, 0)');
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 94, 0, Math.PI * 2); ctx.fill();
-        ctx.translate(px, py); ctx.rotate(-0.32);
-        ctx.strokeStyle = sec.planetA; ctx.lineWidth = 6;
-        ctx.beginPath(); ctx.ellipse(0, 0, 148, 28, 0, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
+      const planetCache=new Map();
+      function drawDistantPlanet(camX,camY,sec){
+        let art=planetCache.get(sec.id);
+        if(!art){art=document.createElement('canvas');art.width=art.height=300;const c=art.getContext('2d'),r=112,x=150,y=150;let seed=SECTOR_IDS.indexOf(sec.id)+41;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+          const halo=c.createRadialGradient(x,y,r*.86,x,y,r*1.27);halo.addColorStop(0,'#00000000');halo.addColorStop(.45,(sec.color||'#72bbff')+'55');halo.addColorStop(1,'#00000000');c.fillStyle=halo;c.fillRect(0,0,300,300);
+          c.save();c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.clip();c.fillStyle=sec.color||'#5685b9';c.fillRect(0,0,300,300);
+          for(let j=0;j<270;j++){const xx=random()*230+35,yy=random()*230+35,rx=10+random()*48,ry=1+random()*12;c.globalAlpha=.04+random()*.17;c.fillStyle=j%3===0?'#e0f5ff':j%3===1?'#1c2545':'#88765f';c.beginPath();c.ellipse(xx,yy,rx,ry,-.27,0,Math.PI*2);c.fill();}
+          c.globalAlpha=1;const shade=c.createRadialGradient(96,85,12,180,180,172);shade.addColorStop(0,'#f5faff70');shade.addColorStop(.38,'#00000005');shade.addColorStop(.68,'#03071470');shade.addColorStop(1,'#01030bef');c.fillStyle=shade;c.fillRect(0,0,300,300);c.restore();c.strokeStyle=(sec.color||'#88caff')+'70';c.lineWidth=1.5;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.stroke();if(gfxMode==='pbr')planetPBR(art,sec);planetCache.set(sec.id,art);if(planetCache.size>12)planetCache.delete(planetCache.keys().next().value);}
+        const size=Math.min(360,Math.max(175,viewW*.31));const x=viewW*.79-camX*.013,y=viewH*.24-camY*.013;ctx.globalAlpha=.7;ctx.drawImage(art,x-size/2,y-size/2,size,size);ctx.globalAlpha=1;
       }
-
       function drawSpaceGrid(camX, camY) {
         const step = 240;
         const startX = Math.floor((camX - viewW * 0.6) / step) * step, endX = camX + viewW * 0.6;
@@ -3568,7 +3883,7 @@
         ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(px, py, 2.8, 0, Math.PI * 2); ctx.fill();
 
         ctx.fillStyle = 'rgba(226, 232, 240, 0.9)'; ctx.font = '800 9px Inter, sans-serif';
-        ctx.fillText(sec.name, x + 5, y + 11);
+        ctx.fillText(sec.id+' · '+FACTIONS[politics().territory[sec.id].owner], x + 5, y + 11);
         ctx.restore();
       }
 
@@ -3712,16 +4027,50 @@
       bindHoldButton('tc-flare', 'flare', () => triggerFlareAndBoost());
 
       btnStart.addEventListener('click', () => startGame(false));
+      function backupBeforeReset() {
+        try { localStorage.setItem(BACKUP_KEY,JSON.stringify(snapshot())); } catch(e) {}
+      }
+      function confirmReset() {
+        if (!window.confirm('Bu pilotun mevcut kariyeri sıfırlanacak. Devam edilsin mi?')) return false;
+        backupBeforeReset(); return true;
+      }
       btnResetSave.addEventListener('click', () => {
-        resetProgress();
-        btnResetSave.style.display = 'none';
-        btnStart.textContent = 'Sektöre Çık';
-        renderShipSelector();
+        if (!confirmReset()) return;
+        resetProgress(); saveProgress(); refreshProfile(); renderShipSelector();
       });
+      document.getElementById('pilot-name').addEventListener('change', e => {
+        state.pilotName = pilotLabel(e.target.value); saveProgress(); refreshProfile();
+      });
+      document.getElementById('btn-export-save').addEventListener('click', () => { state.pilotName = pilotLabel(document.getElementById('pilot-name').value); exportProgress(); });
+      document.getElementById('btn-export-pause').addEventListener('click',exportProgress);
+      document.getElementById('btn-save-now').addEventListener('click',saveProgress);
+      document.getElementById('btn-save-exit').addEventListener('click', () => {
+        if (!saveProgress()) return;
+        savedFlight = snapshot().flight; state.player = null; state.mode = 'start';
+        overlayPause.classList.add('hidden'); overlayStart.classList.remove('hidden');
+        refreshProfile(); renderShipSelector(); renderQuestUI();
+      });
+      const importInput = document.getElementById('orbit-import-file');
+      document.getElementById('btn-import-save').addEventListener('click', () => importInput.click());
+      importInput.addEventListener('change', async () => {
+        const f = importInput.files[0]; importInput.value = '';
+        if (!f) return;
+        try {
+          if (f.size > 1024*1024) throw Error('size');
+          const d = JSON.parse(await f.text());
+          if (!window.confirm('Yedek, mevcut yerel pilot kaydının yerine geçecek. Devam edilsin mi?')) return;
+          backupBeforeReset();
+          if (!applySavedData(d)) throw Error('invalid');
+          const ok = saveProgress(); refreshProfile(); renderShipSelector(); renderQuestUI();
+          if (!ok) document.getElementById('save-summary').textContent = 'Yedek açıldı ancak tarayıcıya kaydedilemedi.';
+        } catch(e) { document.getElementById('save-summary').textContent = 'Geçersiz ORBIT yedeği; mevcut kariyer korunuyor.'; }
+      });
+      window.addEventListener('pagehide', () => { if (state.player) saveProgress(); });
+      document.addEventListener('visibilitychange', () => { if (document.hidden && state.player) saveProgress(); });
       btnResume.addEventListener('click', togglePause);
       btnRespawnBase.addEventListener('click', respawnAtBase);
-      btnRestart.addEventListener('click', () => startGame(true));
-      btnRestartPause.addEventListener('click', () => startGame(true));
+      btnRestart.addEventListener('click', () => { if (confirmReset()) startGame(true); });
+      btnRestartPause.addEventListener('click', () => { if (confirmReset()) startGame(true); });
       btnHangar.addEventListener('click', () => {
         if (state.mode === 'playing') openHangar();
         else if (state.mode === 'hangar') closeHangar();
@@ -3749,13 +4098,11 @@
       });
 
       window.addEventListener('resize', resizeCanvas);
+      if(new URLSearchParams(location.search).has('orbit-test')) window.__orbitTest={state,SECTORS,PLAYER_MODELS,ENEMY_TYPES,QUESTS,RANKS,snapshot,applySavedData,saveProgress,resetProgress,loadSector,careerEvent,careerTick,pathTo,renderCareer,openCareer,closeCareer,gainXp,startGame,switchCareerShip,update,render,freshPolitics,restorePolitics,politicsTick,diplomacyAction,startOperation,operationSupport,operationTick,cloudRequest,cloudPush,cloudRead,cloudAction,cloudState:()=>({revision:cloudRevision,auto:cloudAuto,bound:cloudBound,status:cloudStatus}),initGPU,gfxStats:()=>({mode:gfxMode,gpu:!!gpu,failed:gpuFailed,hits:gpuHits,misses:gpuMiss})};
       window.onload = () => {
         initBackdrop();
-        const hadSave = loadProgress();
-        if (hadSave) {
-          btnStart.textContent = `Kayıttan Devam Et (${state.sectorId} • Lv.${state.level})`;
-          btnResetSave.style.display = 'block';
-        }
+        loadProgress();
+        refreshProfile();
         renderShipSelector();
         renderQuestUI();
         for (let i = 0; i < 18; i++) {
