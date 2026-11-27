@@ -1,0 +1,3292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Solstice Swell — Realistic 3D Ocean Surfing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --glass-bg: rgba(12, 20, 34, 0.40);
+      --glass-border: rgba(255, 255, 255, 0.18);
+      --glass-hover: rgba(255, 255, 255, 0.16);
+      --text-main: rgba(255, 255, 255, 0.96);
+      --text-soft: rgba(255, 255, 255, 0.74);
+      --accent: #ffd79e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0d1626;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-main);
+    }
+
+    #game-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #ocean-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    /* Top HUD Bar */
+    .hud-top {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .hud-hidden .hud-top,
+    .hud-hidden .hud-bottom-controls,
+    .hud-hidden .trick-banner,
+    .hud-hidden .quest-card {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-8px);
+    }
+
+    /* Story & Quest Tracker Card */
+    .quest-card {
+      position: absolute;
+      top: 62px;
+      left: 16px;
+      width: 248px;
+      padding: 13px 15px;
+      border-radius: 18px;
+      background: rgba(12, 20, 34, 0.44);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
+      z-index: 19;
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .quest-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+
+    .quest-chapter {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .quest-shrines {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.78);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .quest-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .quest-whisper {
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.74);
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    .quest-goals {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .quest-goal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .quest-goal.done {
+      color: #a8f5d8;
+      text-decoration: line-through;
+      opacity: 0.78;
+    }
+
+    .quest-goal-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .goal-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255, 215, 158, 0.75);
+      flex-shrink: 0;
+    }
+
+    .quest-goal.done .goal-dot {
+      background: #8ff0cc;
+      border-color: #8ff0cc;
+    }
+
+    .quest-goal-count {
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text-soft);
+    }
+
+    /* Chapter Complete / Story Modal */
+    #story-modal {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(8, 14, 26, 0.56);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 45;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.4s ease, visibility 0.4s ease;
+    }
+
+    #story-modal.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .story-card {
+      max-width: 460px;
+      width: 100%;
+      padding: 32px 28px 26px;
+      border-radius: 26px;
+      background: rgba(14, 22, 38, 0.80);
+      border: 1px solid rgba(255, 224, 180, 0.32);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.48);
+      text-align: center;
+    }
+
+    .story-card h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+
+    .story-card p {
+      font-size: 14px;
+      line-height: 1.65;
+      color: rgba(255, 255, 255, 0.84);
+      margin-bottom: 20px;
+      font-weight: 300;
+    }
+
+    .story-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .story-stat-box {
+      padding: 10px 8px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .story-stat-num {
+      font-size: 17px;
+      font-weight: 600;
+      color: #fff;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .story-stat-lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-soft);
+      margin-top: 2px;
+    }
+
+    .story-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .secondary-btn {
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.10);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .secondary-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    @media (max-width: 780px) {
+      .quest-card {
+        top: 56px;
+        left: 10px;
+        width: 215px;
+        padding: 10px 12px;
+      }
+      .quest-whisper {
+        display: none;
+      }
+    }
+
+    .hud-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: auto;
+      flex-wrap: nowrap;
+    }
+
+    .glass-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .stat-pair {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    .stat-value {
+      font-size: 15px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+
+    .divider-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .flow-bar-wrap {
+      width: 56px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.18);
+      overflow: hidden;
+    }
+
+    .flow-bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #ffd79e, #ff9fb2, #9bf0e1);
+      transition: width 0.2s ease;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 36px;
+      padding: 0 12px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.15s ease, border-color 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .icon-btn:hover {
+      background: var(--glass-hover);
+      border-color: rgba(255, 255, 255, 0.34);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.96);
+    }
+
+    .icon-btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    .icon-only {
+      width: 36px;
+      padding: 0;
+    }
+
+    /* Settings Popover */
+    .settings-popover {
+      position: absolute;
+      top: 58px;
+      right: 16px;
+      width: 296px;
+      max-height: calc(100vh - 84px);
+      overflow-y: auto;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(12, 19, 32, 0.84);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+      z-index: 30;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      pointer-events: none;
+      transition: opacity 0.24s ease, transform 0.24s ease;
+    }
+
+    .settings-popover.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .popover-section {
+      margin-bottom: 14px;
+    }
+
+    .popover-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .popover-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-soft);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .chip-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+    }
+
+    .chip-grid-3 {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .chip-btn {
+      padding: 7px 8px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.86);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .chip-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .chip-btn.selected {
+      background: rgba(255, 215, 158, 0.24);
+      border-color: rgba(255, 215, 158, 0.65);
+      color: #fff;
+    }
+
+    #zen-restore-btn {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      z-index: 25;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .hud-hidden #zen-restore-btn {
+      opacity: 0.55;
+      pointer-events: auto;
+    }
+
+    .hud-hidden #zen-restore-btn:hover {
+      opacity: 1;
+    }
+
+    /* Center Trick Banner */
+    .trick-banner {
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 18;
+      text-align: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .trick-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-style: italic;
+      font-size: 23px;
+      font-weight: 500;
+      color: #fffaf0;
+      text-shadow: 0 3px 18px rgba(0, 0, 0, 0.42);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .trick-text.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .trick-sub {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-top: 2px;
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    .trick-sub.visible {
+      opacity: 0.94;
+    }
+
+    /* Bottom Controls */
+    .hud-bottom-controls {
+      position: absolute;
+      bottom: 18px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.45s ease;
+    }
+
+    .control-hint {
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 12px;
+      color: var(--text-soft);
+      pointer-events: auto;
+      transition: opacity 0.5s ease;
+    }
+
+    .control-hint kbd {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: #fff;
+      font-family: inherit;
+      font-size: 11px;
+      margin: 0 2px;
+    }
+
+    .touch-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .air-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 20px;
+      border-radius: 999px;
+      background: rgba(255, 220, 172, 0.24);
+      border: 1px solid rgba(255, 224, 180, 0.48);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #fffaf2;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+    .air-btn:hover {
+      background: rgba(255, 220, 172, 0.36);
+    }
+
+    .air-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Title Overlay */
+    #title-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: radial-gradient(circle at 50% 45%, rgba(12, 20, 36, 0.16) 0%, rgba(8, 14, 26, 0.50) 100%);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 40;
+      transition: opacity 0.7s ease, visibility 0.7s ease;
+    }
+
+    #title-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .title-card {
+      max-width: 470px;
+      width: 100%;
+      text-align: center;
+      padding: 34px 26px 28px;
+      border-radius: 28px;
+      background: rgba(14, 22, 38, 0.52);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.40);
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .game-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(32px, 6vw, 46px);
+      font-weight: 600;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+      margin-bottom: 10px;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.28);
+    }
+
+    .game-subtitle {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.84);
+      margin-bottom: 18px;
+      font-weight: 300;
+    }
+
+    .title-map-picker {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      margin-bottom: 20px;
+    }
+
+    .title-map-btn {
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: rgba(255, 255, 255, 0.86);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .title-map-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .title-map-btn.selected {
+      background: rgba(255, 215, 158, 0.26);
+      border-color: rgba(255, 215, 158, 0.7);
+      color: #fff;
+    }
+
+    .start-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 232, 198, 0.65);
+      background: linear-gradient(135deg, rgba(255, 206, 146, 0.94), rgba(255, 165, 138, 0.9));
+      color: #1f1722;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 12px 30px rgba(255, 174, 130, 0.36);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .start-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(255, 174, 130, 0.48);
+      filter: brightness(1.04);
+    }
+
+    .start-btn:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .mini-controls-preview {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    /* Pause Overlay */
+    #pause-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 16, 28, 0.38);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      z-index: 35;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #pause-overlay.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .pause-card {
+      padding: 28px 34px;
+      border-radius: 24px;
+      background: rgba(14, 22, 38, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.38);
+    }
+
+    .pause-card h2 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 28px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .pause-card p {
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 780px) {
+      .hud-top {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+      }
+      .glass-pill {
+        padding: 6px 10px;
+        gap: 7px;
+      }
+      .stat-value {
+        font-size: 13px;
+      }
+      .flow-bar-wrap {
+        width: 34px;
+      }
+      .hide-xs {
+        display: none;
+      }
+      .control-hint {
+        display: none;
+      }
+      .hud-bottom-controls {
+        justify-content: flex-end;
+      }
+      .title-card {
+        padding: 26px 18px 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrap">
+    <canvas id="ocean-canvas"></canvas>
+
+    <!-- Top Minimal HUD -->
+    <div class="hud-top">
+      <div class="hud-group">
+        <div class="glass-pill" aria-label="Surfing Telemetry and Harmony">
+          <div class="stat-pair">
+            <span class="stat-label">Harmony</span>
+            <span class="stat-value" id="hud-score">0</span>
+          </div>
+          <span class="divider-dot"></span>
+          <div class="stat-pair">
+            <span class="stat-label">Glide</span>
+            <span class="stat-value" id="hud-dist">0m</span>
+          </div>
+          <span class="divider-dot hide-xs"></span>
+          <div class="stat-pair hide-xs" title="Hydrodynamic Planing Speed">
+            <span class="stat-label">Speed</span>
+            <span class="stat-value" id="hud-speed">15 kt</span>
+          </div>
+          <span class="divider-dot hide-xs"></span>
+          <div class="stat-pair hide-xs" title="Wave Face Slope Angle">
+            <span class="stat-label">Face</span>
+            <span class="stat-value" id="hud-slope">18&deg;</span>
+          </div>
+          <span class="divider-dot hide-xs"></span>
+          <div class="stat-pair hide-xs" title="Wave Flow">
+            <span class="stat-label">Flow</span>
+            <div class="flow-bar-wrap">
+              <div class="flow-bar-fill" id="hud-flow-bar"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-group">
+        <button class="icon-btn" id="btn-atmosphere" type="button" title="Maps, Atmosphere, Swell &amp; Camera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>
+          <span class="hide-xs" id="label-map">Pacific Cove</span>
+          <span class="hide-xs" style="opacity:0.45;">&middot;</span>
+          <span class="hide-xs" id="label-theme">Golden Hour</span>
+        </button>
+
+        <button class="icon-btn icon-only" id="btn-sound" type="button" title="Toggle Ocean Sound (M)" aria-label="Toggle Sound">
+          <svg id="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+          </svg>
+          <svg id="icon-sound-off" style="display:none;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <line x1="23" y1="9" x2="17" y2="15"></line>
+            <line x1="17" y1="9" x2="23" y2="15"></line>
+          </svg>
+        </button>
+
+        <button class="icon-btn icon-only" id="btn-zen" type="button" title="Hide HUD / Zen View (H)" aria-label="Toggle Zen View">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+
+        <button class="icon-btn icon-only" id="btn-pause" type="button" title="Pause (P)" aria-label="Pause">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="6" y="4" width="4" height="16"></rect>
+            <rect x="14" y="4" width="4" height="16"></rect>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Restore HUD Button in Zen Mode -->
+    <button class="icon-btn" id="zen-restore-btn" type="button" title="Show HUD (H)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+      <span>Show HUD</span>
+    </button>
+
+    <!-- Maps, Atmosphere, Swell & Camera Settings Popover -->
+    <div class="settings-popover" id="settings-popover" role="dialog" aria-label="Ocean Settings">
+      <div class="popover-section">
+        <div class="popover-title">Surf Locations (Maps)</div>
+        <div class="chip-grid" id="map-chips">
+          <button class="chip-btn selected" data-map="pacific" type="button">Pacific Cove</button>
+          <button class="chip-btn" data-map="mediterranean" type="button">Turquoise Cliffs</button>
+          <button class="chip-btn" data-map="fjord" type="button">Nordic Fjord</button>
+          <button class="chip-btn" data-map="biolum" type="button">Biolum Atoll</button>
+        </div>
+      </div>
+      <div class="popover-section">
+        <div class="popover-title">Sky &amp; Light</div>
+        <div class="chip-grid" id="theme-chips">
+          <button class="chip-btn selected" data-theme="sunset" type="button">Golden Hour</button>
+          <button class="chip-btn" data-theme="dawn" type="button">Rose Dawn</button>
+          <button class="chip-btn" data-theme="noon" type="button">Turquoise Noon</button>
+          <button class="chip-btn" data-theme="night" type="button">Moonlit Tide</button>
+          <button class="chip-btn" data-theme="auto" type="button" style="grid-column: span 2;">Slow Day-to-Night Drift</button>
+        </div>
+      </div>
+      <div class="popover-section">
+        <div class="popover-title">3D Swell Energy</div>
+        <div class="chip-grid chip-grid-3" id="swell-chips">
+          <button class="chip-btn" data-swell="calm" type="button">Glass</button>
+          <button class="chip-btn selected" data-swell="rolling" type="button">Rolling</button>
+          <button class="chip-btn" data-swell="barrel" type="button">Dream Curl</button>
+        </div>
+      </div>
+      <div class="popover-section">
+        <div class="popover-title">Camera Perspective</div>
+        <div class="chip-grid chip-grid-3" id="camera-chips">
+          <button class="chip-btn selected" data-cam="side" type="button">2.5D Angle</button>
+          <button class="chip-btn" data-cam="chase" type="button">3D Chase</button>
+          <button class="chip-btn" data-cam="low" type="button">Low Water</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Story & Chapter Objectives Card -->
+    <aside class="quest-card" id="quest-card" aria-label="Story Objectives">
+      <div class="quest-header">
+        <span class="quest-chapter" id="quest-chapter">Chapter I</span>
+        <span class="quest-shrines" id="quest-shrines">0 / 4 Shrines</span>
+      </div>
+      <div class="quest-title" id="quest-title">The Ember Swell</div>
+      <div class="quest-whisper" id="quest-whisper">Gather the drifting amber light and feel the rhythm of the reef.</div>
+      <div class="quest-goals" id="quest-goals"></div>
+    </aside>
+
+    <!-- Chapter Complete / Finale Story Modal -->
+    <div id="story-modal" role="dialog" aria-modal="true" aria-label="Story Chapter">
+      <div class="story-card">
+        <div class="eyebrow" id="story-modal-eyebrow">Shrine Rekindled</div>
+        <h2 id="story-modal-title">The Ember Swell</h2>
+        <p id="story-modal-text"></p>
+        <div class="story-stats" id="story-modal-stats" style="display:none;">
+          <div class="story-stat-box">
+            <div class="story-stat-num" id="stat-total-dist">0m</div>
+            <div class="story-stat-lbl">Glided</div>
+          </div>
+          <div class="story-stat-box">
+            <div class="story-stat-num" id="stat-total-motes">0</div>
+            <div class="story-stat-lbl">Tide Motes</div>
+          </div>
+          <div class="story-stat-box">
+            <div class="story-stat-num" id="stat-total-harmony">0</div>
+            <div class="story-stat-lbl">Harmony</div>
+          </div>
+        </div>
+        <div class="story-actions">
+          <button class="secondary-btn" id="btn-story-stay" type="button">Stay &amp; Relax</button>
+          <button class="start-btn" id="btn-story-next" type="button">Sail to Next Coast &rarr;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Serene Trick / Pocket Feedback -->
+    <div class="trick-banner">
+      <div class="trick-text" id="trick-text">Sunset Glide</div>
+      <div class="trick-sub" id="trick-sub">+120 Harmony</div>
+    </div>
+
+    <!-- Bottom Controls & Hints -->
+    <div class="hud-bottom-controls">
+      <div class="control-hint" id="control-hint">
+        <kbd>W</kbd><kbd>S</kbd> / <kbd>&uarr;</kbd><kbd>&darr;</kbd> Pump &amp; Trim &middot; <kbd>A</kbd><kbd>D</kbd> / <kbd>&larr;</kbd><kbd>&rarr;</kbd> Rail Carve &middot; <kbd>Space</kbd> Lip Launch
+      </div>
+      <div class="touch-actions">
+        <button class="air-btn" id="btn-air" type="button">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5"></path>
+            <polyline points="5 12 12 5 19 12"></polyline>
+          </svg>
+          <span>Catch Air</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Start / Title Screen -->
+    <div id="title-overlay">
+      <div class="title-card">
+        <div class="eyebrow">The Four Tides of the Solstice</div>
+        <h1 class="game-title">Solstice Swell</h1>
+        <p class="game-subtitle">
+          Four ancient coastal lanterns have drifted into the swells as glowing Tide Motes. Surf across four coastlines to rekindle every shrine and awaken the Solstice Beacon.
+        </p>
+        <div class="title-map-picker" id="title-map-picker">
+          <button class="title-map-btn selected" data-map="pacific" type="button">Pacific Cove</button>
+          <button class="title-map-btn" data-map="mediterranean" type="button">Turquoise Cliffs</button>
+          <button class="title-map-btn" data-map="fjord" type="button">Nordic Fjord</button>
+          <button class="title-map-btn" data-map="biolum" type="button">Biolum Atoll</button>
+        </div>
+        <button class="start-btn" id="btn-start" type="button">
+          <span>Paddle Out</span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </button>
+        <div class="mini-controls-preview">
+          <span>Carve &amp; Trim: WASD / Arrows / Drag</span>
+          <span>&bull;</span>
+          <span>Lip Air &amp; Spin: Space</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pause-overlay">
+      <div class="pause-card">
+        <h2>Floating Still</h2>
+        <p>Take a breath. The ocean swell will wait for you.</p>
+        <button class="start-btn" id="btn-resume" type="button">Resume Surfing</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      if (typeof THREE === 'undefined') {
+        return;
+      }
+
+      // ============================================================
+      // 1. MAPS, ATMOSPHERE PALETTES & SWELL PROFILES
+      // ============================================================
+      const MAPS = {
+        pacific: {
+          name: 'Pacific Cove',
+          defaultTheme: 'sunset',
+          waterDeepTint: new THREE.Color(0x082c42),
+          waterShallowTint: new THREE.Color(0x167887),
+          waterSSSTint: new THREE.Color(0x3ad6b8),
+          foamTint: new THREE.Color(0xfff4ea),
+          biolum: 0.0,
+          waveWidthScale: 1.0,
+          meanderAmp: 2.5
+        },
+        mediterranean: {
+          name: 'Turquoise Cliffs',
+          defaultTheme: 'noon',
+          waterDeepTint: new THREE.Color(0x053a6e),
+          waterShallowTint: new THREE.Color(0x0ca6ba),
+          waterSSSTint: new THREE.Color(0x52f2de),
+          foamTint: new THREE.Color(0xf7ffff),
+          biolum: 0.0,
+          waveWidthScale: 0.94,
+          meanderAmp: 2.1
+        },
+        fjord: {
+          name: 'Nordic Fjord',
+          defaultTheme: 'dawn',
+          waterDeepTint: new THREE.Color(0x0a2138),
+          waterShallowTint: new THREE.Color(0x215d73),
+          waterSSSTint: new THREE.Color(0x7fd4de),
+          foamTint: new THREE.Color(0xedf7ff),
+          biolum: 0.0,
+          waveWidthScale: 1.12,
+          meanderAmp: 1.8
+        },
+        biolum: {
+          name: 'Biolum Atoll',
+          defaultTheme: 'night',
+          waterDeepTint: new THREE.Color(0x030e24),
+          waterShallowTint: new THREE.Color(0x0b345c),
+          waterSSSTint: new THREE.Color(0x24e6ff),
+          foamTint: new THREE.Color(0xb8f6ff),
+          biolum: 1.0,
+          waveWidthScale: 1.02,
+          meanderAmp: 2.8
+        }
+      };
+
+      const THEMES = {
+        sunset: {
+          name: 'Golden Hour',
+          skyTop: new THREE.Color(0x1f2b52),
+          skyMid: new THREE.Color(0xb25c72),
+          skyLow: new THREE.Color(0xfcb272),
+          sunColor: new THREE.Color(0xfff0c8),
+          sunDir: new THREE.Vector3(0.56, 0.22, -0.80).normalize(),
+          fogColor: new THREE.Color(0xd9907c),
+          ambientInt: 0.76,
+          sunInt: 1.48,
+          stars: 0.16
+        },
+        dawn: {
+          name: 'Rose Dawn',
+          skyTop: new THREE.Color(0x2f4878),
+          skyMid: new THREE.Color(0xc285a4),
+          skyLow: new THREE.Color(0xffd2c4),
+          sunColor: new THREE.Color(0xfff5e8),
+          sunDir: new THREE.Vector3(0.42, 0.26, -0.87).normalize(),
+          fogColor: new THREE.Color(0xe6b5bc),
+          ambientInt: 0.82,
+          sunInt: 1.32,
+          stars: 0.08
+        },
+        noon: {
+          name: 'Turquoise Noon',
+          skyTop: new THREE.Color(0x1b6ec2),
+          skyMid: new THREE.Color(0x63bae8),
+          skyLow: new THREE.Color(0xc8f0f7),
+          sunColor: new THREE.Color(0xfffff2),
+          sunDir: new THREE.Vector3(0.32, 0.64, -0.70).normalize(),
+          fogColor: new THREE.Color(0xa9e0ed),
+          ambientInt: 0.94,
+          sunInt: 1.56,
+          stars: 0.0
+        },
+        night: {
+          name: 'Moonlit Tide',
+          skyTop: new THREE.Color(0x060d1e),
+          skyMid: new THREE.Color(0x112246),
+          skyLow: new THREE.Color(0x223e68),
+          sunColor: new THREE.Color(0xdcebff),
+          sunDir: new THREE.Vector3(0.48, 0.34, -0.81).normalize(),
+          fogColor: new THREE.Color(0x152a4c),
+          ambientInt: 0.48,
+          sunInt: 0.96,
+          stars: 1.0
+        }
+      };
+
+      const THEME_ORDER = ['sunset', 'night', 'dawn', 'noon'];
+
+      const SWELL_MODES = {
+        calm:    { waveHeight: 2.35, swellAmp: 0.55, speedScale: 0.88, steepness: 0.78 },
+        rolling: { waveHeight: 3.55, swellAmp: 1.00, speedScale: 1.00, steepness: 1.00 },
+        barrel:  { waveHeight: 4.65, swellAmp: 1.28, speedScale: 1.12, steepness: 1.24 }
+      };
+
+      function lerp(a, b, t) { return a + (b - a) * t; }
+      function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+      // ============================================================
+      // 2. PROCEDURAL WEB AUDIO ENGINE
+      // ============================================================
+      class PeacefulAudio {
+        constructor() {
+          this.ctx = null;
+          this.master = null;
+          this.oceanFilter = null;
+          this.oceanGain = null;
+          this.sprayGain = null;
+          this.sprayFilter = null;
+          this.muted = false;
+          this.started = false;
+          this.scale = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33, 659.25, 783.99];
+          this.lastAmbientChord = 0;
+        }
+
+        init() {
+          if (this.started) {
+            if (this.ctx && this.ctx.state === 'suspended') {
+              this.ctx.resume().catch(function () {});
+            }
+            return;
+          }
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return;
+            this.ctx = new AudioCtx();
+            this.master = this.ctx.createGain();
+            this.master.gain.value = this.muted ? 0 : 0.72;
+            this.master.connect(this.ctx.destination);
+
+            const sampleRate = this.ctx.sampleRate;
+            const length = sampleRate * 4;
+            const buffer = this.ctx.createBuffer(1, length, sampleRate);
+            const data = buffer.getChannelData(0);
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+            for (let i = 0; i < length; i++) {
+              const white = Math.random() * 2 - 1;
+              b0 = 0.99886 * b0 + white * 0.0555179;
+              b1 = 0.99332 * b1 + white * 0.0750759;
+              b2 = 0.96900 * b2 + white * 0.1538520;
+              b3 = 0.86650 * b3 + white * 0.3104856;
+              b4 = 0.55000 * b4 + white * 0.5329522;
+              b5 = -0.7616 * b5 - white * 0.0168980;
+              data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.045;
+              b6 = white * 0.115926;
+            }
+
+            const oceanSrc = this.ctx.createBufferSource();
+            oceanSrc.buffer = buffer;
+            oceanSrc.loop = true;
+
+            this.oceanFilter = this.ctx.createBiquadFilter();
+            this.oceanFilter.type = 'lowpass';
+            this.oceanFilter.frequency.value = 340;
+            this.oceanFilter.Q.value = 0.75;
+
+            this.oceanGain = this.ctx.createGain();
+            this.oceanGain.gain.value = 0.34;
+
+            oceanSrc.connect(this.oceanFilter);
+            this.oceanFilter.connect(this.oceanGain);
+            this.oceanGain.connect(this.master);
+            oceanSrc.start();
+
+            const spraySrc = this.ctx.createBufferSource();
+            spraySrc.buffer = buffer;
+            spraySrc.loop = true;
+
+            this.sprayFilter = this.ctx.createBiquadFilter();
+            this.sprayFilter.type = 'bandpass';
+            this.sprayFilter.frequency.value = 1900;
+            this.sprayFilter.Q.value = 1.1;
+
+            this.sprayGain = this.ctx.createGain();
+            this.sprayGain.gain.value = 0.0;
+
+            spraySrc.connect(this.sprayFilter);
+            this.sprayFilter.connect(this.sprayGain);
+            this.sprayGain.connect(this.master);
+            spraySrc.start();
+
+            this.started = true;
+          } catch (e) {
+            // Audio unavailable
+          }
+        }
+
+        setMuted(m) {
+          this.muted = m;
+          if (this.master && this.ctx) {
+            this.master.gain.setTargetAtTime(m ? 0 : 0.72, this.ctx.currentTime, 0.08);
+          }
+        }
+
+        updateOcean(waveEnergy, carveIntensity, inPocket, timeSec) {
+          if (!this.started || !this.ctx || this.muted) return;
+          const now = this.ctx.currentTime;
+          const targetFreq = 250 + waveEnergy * 260 + (inPocket ? 220 : 0);
+          const targetGain = 0.25 + waveEnergy * 0.14 + (inPocket ? 0.08 : 0);
+          this.oceanFilter.frequency.setTargetAtTime(targetFreq, now, 0.22);
+          this.oceanGain.gain.setTargetAtTime(targetGain, now, 0.22);
+
+          const sprayTarget = clamp(carveIntensity * 0.24, 0, 0.26);
+          this.sprayGain.gain.setTargetAtTime(sprayTarget, now, 0.08);
+
+          if (timeSec - this.lastAmbientChord > 9.5) {
+            this.lastAmbientChord = timeSec;
+            this.playWarmPad();
+          }
+        }
+
+        playWarmPad() {
+          if (!this.started || !this.ctx || this.muted) return;
+          const now = this.ctx.currentTime;
+          const chords = [
+            [174.61, 220.0, 261.63, 329.63],
+            [146.83, 220.0, 261.63, 329.63],
+            [130.81, 196.0, 246.94, 293.66],
+            [196.0, 246.94, 293.66, 392.0]
+          ];
+          const chord = chords[Math.floor(Math.random() * chords.length)];
+          chord.forEach((freq) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.value = freq;
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.02, now + 2.2);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 6.8);
+            osc.connect(gain);
+            gain.connect(this.master);
+            osc.start(now);
+            osc.stop(now + 7.0);
+          });
+        }
+
+        playChime(stepIndex, volume) {
+          if (!this.started || !this.ctx || this.muted) return;
+          const now = this.ctx.currentTime;
+          const freq = this.scale[Math.abs(stepIndex) % this.scale.length];
+          const osc = this.ctx.createOscillator();
+          const osc2 = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc2.type = 'triangle';
+          osc.frequency.value = freq;
+          osc2.frequency.value = freq * 2;
+          const v = volume || 0.11;
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(v, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.45);
+          const subGain = this.ctx.createGain();
+          subGain.gain.value = 0.22;
+          osc.connect(gain);
+          osc2.connect(subGain);
+          subGain.connect(gain);
+          gain.connect(this.master);
+          osc.start(now);
+          osc2.start(now);
+          osc.stop(now + 1.5);
+          osc2.stop(now + 1.5);
+        }
+
+        playSplash(soft) {
+          if (!this.started || !this.ctx || this.muted) return;
+          const now = this.ctx.currentTime;
+          const dur = soft ? 0.35 : 0.65;
+          const bufSize = Math.floor(this.ctx.sampleRate * dur);
+          const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufSize, 1.8);
+          }
+          const src = this.ctx.createBufferSource();
+          src.buffer = buf;
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.setValueAtTime(soft ? 1300 : 750, now);
+          filter.frequency.exponentialRampToValueAtTime(280, now + dur);
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(soft ? 0.18 : 0.28, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.master);
+          src.start(now);
+        }
+      }
+
+      // ============================================================
+      // 3. EXACT CLOSED-FORM 3D SURFABLE WAVE MODEL (6 STOKES SWELLS + SHOALING WALL)
+      // ============================================================
+      function getWaveCrestX(z, t, meanderAmp) {
+        const m = meanderAmp !== undefined ? meanderAmp : 2.5;
+        return -5.5 + Math.sin(z * 0.032 + t * 0.55) * m + Math.sin(z * 0.075 - t * 0.35) * 0.9;
+      }
+
+      function evaluateOceanSurface(wx, wz, t, waveH, swellAmp, steepness, widthScale, meanderAmp) {
+        const mAmp = meanderAmp !== undefined ? meanderAmp : 2.5;
+        const wScale = widthScale !== undefined ? widthScale : 1.0;
+
+        const crestX = getWaveCrestX(wz, t, mAmp);
+        const dCrestDz = Math.cos(wz * 0.032 + t * 0.55) * mAmp * 0.032
+                       + Math.cos(wz * 0.075 - t * 0.35) * 0.9 * 0.075;
+
+        const dx = wx - crestX;
+        const frontWidth = (10.2 * wScale) / Math.sqrt(Math.max(steepness, 0.2));
+        const backWidth = 17.8 * wScale;
+        const w = dx >= 0 ? frontWidth : backWidth;
+        const u = dx / w;
+
+        const expTerm = Math.exp(-u * u);
+        // Subtle sharper shoaling crest shoulder
+        const crestSharp = Math.exp(-u * u * 3.2);
+        const wallY = waveH * (0.86 * expTerm + 0.16 * crestSharp);
+
+        // Concave trough draw-down just ahead of the green wall
+        const troughU = (dx - frontWidth * 1.12) / (frontWidth * 0.82);
+        const troughExp = Math.exp(-troughU * troughU);
+        const troughY = -waveH * 0.19 * troughExp;
+
+        let dHdx = waveH * (0.86 * expTerm * (-2.0 * u / w) + 0.16 * crestSharp * (-6.4 * u / w))
+                 - waveH * 0.19 * troughExp * (-2.0 * troughU / (frontWidth * 0.82));
+        let dHdz = -dHdx * dCrestDz;
+
+        // 6 Layered Stokes 2nd-order ocean swells (sharp crests, flatter glassy troughs)
+        let swellY = 0;
+        const swells = [
+          [ 0.075,  0.135, 1.32, 0.32 * swellAmp],
+          [-0.115,  0.185, 1.72, 0.21 * swellAmp],
+          [ 0.195, -0.155, 2.15, 0.13 * swellAmp],
+          [-0.270,  0.245, 2.68, 0.08 * swellAmp],
+          [ 0.380,  0.190, 3.25, 0.045 * swellAmp],
+          [-0.420, -0.290, 3.80, 0.03 * swellAmp]
+        ];
+
+        for (let i = 0; i < swells.length; i++) {
+          const sw = swells[i];
+          const kx = sw[0], kz = sw[1], om = sw[2], A = sw[3];
+          const ph = kx * wx + kz * wz - om * t;
+          const sp = Math.sin(ph);
+          const cp = Math.cos(ph);
+          const kMag = Math.hypot(kx, kz);
+          const stokes = 0.38 * kMag * A;
+          swellY += A * sp - stokes * Math.cos(2.0 * ph);
+          const dPhi = A * cp + 2.0 * stokes * Math.sin(2.0 * ph);
+          dHdx += dPhi * kx;
+          dHdz += dPhi * kz;
+        }
+
+        const y = wallY + troughY + swellY;
+
+        let nx = -dHdx;
+        let ny = 1.0;
+        let nz = -dHdz;
+        const nLen = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1.0;
+        nx /= nLen;
+        ny /= nLen;
+        nz /= nLen;
+
+        const faceMask = dx > 0 ? expTerm * Math.min(1.0, dx / 2.2) : 0.0;
+        const slopeMag = Math.sqrt(dHdx * dHdx + dHdz * dHdz);
+        const faceFlowSpeed = faceMask * (3.2 + waveH * 1.18);
+        const orbVx = -faceFlowSpeed * 0.85;
+        const orbVy = faceFlowSpeed * Math.min(0.85, Math.abs(dHdx));
+        const orbVz = -faceMask * 1.85;
+        const inPocket = (dx > 0.4 && dx < frontWidth * 0.95 && expTerm > 0.35);
+
+        return {
+          y: y,
+          nx: nx,
+          ny: ny,
+          nz: nz,
+          slopeDeg: Math.atan(slopeMag) * (180 / Math.PI),
+          orbVx: orbVx,
+          orbVy: orbVy,
+          orbVz: orbVz,
+          crest: expTerm,
+          faceMask: faceMask,
+          dxFromCrest: dx,
+          inPocket: inPocket
+        };
+      }
+
+      // ============================================================
+      // 4. THREE.JS SCENE, PHOTOREALISTIC WATER & CELLULAR FOAM SHADER
+      // ============================================================
+      const canvas = document.getElementById('ocean-canvas');
+      const gameWrap = document.getElementById('game-wrap');
+      const audio = new PeacefulAudio();
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+        powerPreference: 'high-performance'
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.10;
+
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0xd9907c, 0.0050);
+
+      const camera = new THREE.PerspectiveCamera(50, 16 / 9, 0.2, 600);
+
+      const hemiLight = new THREE.HemisphereLight(0xffe6cc, 0x164a5e, 0.78);
+      scene.add(hemiLight);
+
+      const sunLight = new THREE.DirectionalLight(0xfff0c8, 1.48);
+      sunLight.position.set(56, 22, -80);
+      scene.add(sunLight);
+
+      // --- 3D Atmospheric Sky Dome ---
+      const skyUniforms = {
+        uSkyTop: { value: THEMES.sunset.skyTop.clone() },
+        uSkyMid: { value: THEMES.sunset.skyMid.clone() },
+        uSkyLow: { value: THEMES.sunset.skyLow.clone() },
+        uSunColor: { value: THEMES.sunset.sunColor.clone() },
+        uSunDir: { value: THEMES.sunset.sunDir.clone() },
+        uStars: { value: THEMES.sunset.stars },
+        uTime: { value: 0 }
+      };
+
+      const skyGeo = new THREE.SphereGeometry(420, 36, 22);
+      const skyMat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: skyUniforms,
+        vertexShader: [
+          'varying vec3 vWorldDir;',
+          'void main() {',
+          '  vWorldDir = normalize(position);',
+          '  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
+          '}'
+        ].join('\n'),
+        fragmentShader: [
+          'uniform vec3 uSkyTop;',
+          'uniform vec3 uSkyMid;',
+          'uniform vec3 uSkyLow;',
+          'uniform vec3 uSunColor;',
+          'uniform vec3 uSunDir;',
+          'uniform float uStars;',
+          'uniform float uTime;',
+          'varying vec3 vWorldDir;',
+          '',
+          'float hash(vec2 p) {',
+          '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);',
+          '}',
+          'float noise(vec2 p) {',
+          '  vec2 i = floor(p); vec2 f = fract(p);',
+          '  vec2 u = f * f * (3.0 - 2.0 * f);',
+          '  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),',
+          '             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);',
+          '}',
+          'float fbm(vec2 p) {',
+          '  float v = 0.0; float a = 0.5;',
+          '  for (int i = 0; i < 4; i++) {',
+          '    v += a * noise(p); p *= 2.05; a *= 0.5;',
+          '  }',
+          '  return v;',
+          '}',
+          'void main() {',
+          '  vec3 d = normalize(vWorldDir);',
+          '  float h = clamp(d.y, 0.0, 1.0);',
+          '  vec3 col = mix(uSkyLow, uSkyMid, smoothstep(0.0, 0.28, h));',
+          '  col = mix(col, uSkyTop, smoothstep(0.24, 0.85, h));',
+          '',
+          '  if (d.y > 0.02) {',
+          '    vec2 cloudUV = d.xz / (d.y + 0.18) * 1.15 + vec2(uTime * 0.008, uTime * 0.004);',
+          '    float c = fbm(cloudUV);',
+          '    float cloudMask = smoothstep(0.48, 0.78, c) * smoothstep(0.02, 0.16, d.y) * smoothstep(0.85, 0.25, d.y);',
+          '    vec3 cloudCol = mix(uSkyLow * 1.15, uSunColor, 0.45);',
+          '    col = mix(col, cloudCol, cloudMask * 0.48);',
+          '  }',
+          '',
+          '  if (uStars > 0.01 && d.y > 0.05) {',
+          '    vec2 starUV = floor(d.xz / (d.y + 0.25) * 95.0);',
+          '    float s = hash(starUV);',
+          '    if (s > 0.992) {',
+          '      float twinkle = 0.65 + 0.35 * sin(uTime * 2.5 + s * 60.0);',
+          '      col += vec3(1.0, 0.98, 0.94) * uStars * twinkle * smoothstep(0.05, 0.25, d.y);',
+          '    }',
+          '  }',
+          '',
+          '  float sunDot = max(dot(d, normalize(uSunDir)), 0.0001);',
+          '  col += uSunColor * pow(sunDot, 10.0) * 0.34;',
+          '  col += uSunColor * pow(sunDot, 120.0) * 0.75;',
+          '  col += uSunColor * smoothstep(0.9978, 0.9992, sunDot) * 1.6;',
+          '',
+          '  gl_FragColor = vec4(col, 1.0);',
+          '}'
+        ].join('\n')
+      });
+      const skyDome = new THREE.Mesh(skyGeo, skyMat);
+      scene.add(skyDome);
+
+      // --- Realistic 3D Ocean Mesh + Cellular Lacy Foam Shader ---
+      const oceanUniforms = {
+        uTime: { value: 0 },
+        uWaveHeight: { value: 3.55 },
+        uSwellAmp: { value: 1.0 },
+        uSteepness: { value: 1.0 },
+        uWidthScale: { value: 1.0 },
+        uMeanderAmp: { value: 2.5 },
+        uBiolum: { value: 0.0 },
+        uSunDir: { value: THEMES.sunset.sunDir.clone() },
+        uSunColor: { value: THEMES.sunset.sunColor.clone() },
+        uSkyMid: { value: THEMES.sunset.skyMid.clone() },
+        uSkyLow: { value: THEMES.sunset.skyLow.clone() },
+        uWaterDeep: { value: MAPS.pacific.waterDeepTint.clone() },
+        uWaterShallow: { value: MAPS.pacific.waterShallowTint.clone() },
+        uWaterSSS: { value: MAPS.pacific.waterSSSTint.clone() },
+        uFoamColor: { value: MAPS.pacific.foamTint.clone() },
+        uFogColor: { value: THEMES.sunset.fogColor.clone() },
+        uFogDensity: { value: 0.0048 },
+        uSurferPos: { value: new THREE.Vector3(0, 0, 0) }
+      };
+
+      const oceanGeo = new THREE.PlaneGeometry(240, 240, 150, 140);
+      oceanGeo.rotateX(-Math.PI / 2);
+
+      const oceanMat = new THREE.ShaderMaterial({
+        uniforms: oceanUniforms,
+        vertexShader: [
+          'uniform float uTime;',
+          'uniform float uWaveHeight;',
+          'uniform float uSwellAmp;',
+          'uniform float uSteepness;',
+          'uniform float uWidthScale;',
+          'uniform float uMeanderAmp;',
+          'varying vec3 vWorldPos;',
+          'varying vec3 vNormal;',
+          'varying float vCrest;',
+          'varying float vWhitewater;',
+          'varying float vFaceSlope;',
+          '',
+          'void main() {',
+          '  vec4 worldBase = modelMatrix * vec4(position, 1.0);',
+          '  float wx = worldBase.x;',
+          '  float wz = worldBase.z;',
+          '',
+          '  float crestX = -5.5 + sin(wz * 0.032 + uTime * 0.55) * uMeanderAmp + sin(wz * 0.075 - uTime * 0.35) * 0.9;',
+          '  float dCrestDz = cos(wz * 0.032 + uTime * 0.55) * uMeanderAmp * 0.032 + cos(wz * 0.075 - uTime * 0.35) * 0.9 * 0.075;',
+          '  float dx = wx - crestX;',
+          '  float frontWidth = (10.2 * uWidthScale) / sqrt(max(uSteepness, 0.2));',
+          '  float backWidth = 17.8 * uWidthScale;',
+          '  float w = dx >= 0.0 ? frontWidth : backWidth;',
+          '  float u = dx / w;',
+          '  float expTerm = exp(-u * u);',
+          '  float crestSharp = exp(-u * u * 3.2);',
+          '  float wallY = uWaveHeight * (0.86 * expTerm + 0.16 * crestSharp);',
+          '',
+          '  float troughU = (dx - frontWidth * 1.12) / (frontWidth * 0.82);',
+          '  float troughExp = exp(-troughU * troughU);',
+          '  float troughY = -uWaveHeight * 0.19 * troughExp;',
+          '',
+          '  float dHdx = uWaveHeight * (0.86 * expTerm * (-2.0 * u / w) + 0.16 * crestSharp * (-6.4 * u / w))',
+          '             - uWaveHeight * 0.19 * troughExp * (-2.0 * troughU / (frontWidth * 0.82));',
+          '  float dHdz = -dHdx * dCrestDz;',
+          '',
+          '  // 6 Layered Stokes 2nd-order swells matching CPU physics to 1mm',
+          '  float swellY = 0.0;',
+          '  vec4 swList[6];',
+          '  swList[0] = vec4( 0.075,  0.135, 1.32, 0.32 * uSwellAmp);',
+          '  swList[1] = vec4(-0.115,  0.185, 1.72, 0.21 * uSwellAmp);',
+          '  swList[2] = vec4( 0.195, -0.155, 2.15, 0.13 * uSwellAmp);',
+          '  swList[3] = vec4(-0.270,  0.245, 2.68, 0.08 * uSwellAmp);',
+          '  swList[4] = vec4( 0.380,  0.190, 3.25, 0.045 * uSwellAmp);',
+          '  swList[5] = vec4(-0.420, -0.290, 3.80, 0.03 * uSwellAmp);',
+          '',
+          '  for (int i = 0; i < 6; i++) {',
+          '    vec4 sw = swList[i];',
+          '    float ph = sw.x * wx + sw.y * wz - sw.z * uTime;',
+          '    float kMag = length(sw.xy);',
+          '    float st = 0.38 * kMag * sw.w;',
+          '    swellY += sw.w * sin(ph) - st * cos(2.0 * ph);',
+          '    float dPhi = sw.w * cos(ph) + 2.0 * st * sin(2.0 * ph);',
+          '    dHdx += dPhi * sw.x;',
+          '    dHdz += dPhi * sw.y;',
+          '  }',
+          '',
+          '  float finalY = wallY + troughY + swellY;',
+          '  vec3 finalPos = vec3(wx, finalY, wz);',
+          '  vWorldPos = finalPos;',
+          '  vNormal = normalize(vec3(-dHdx, 1.0, -dHdz));',
+          '  vCrest = expTerm;',
+          '  vFaceSlope = clamp(length(vec2(dHdx, dHdz)), 0.0, 1.2);',
+          '  // Rich whitewater lip + trailing bubbly foam wash behind the crest',
+          '  float lipBand = smoothstep(0.62, 0.98, expTerm);',
+          '  float backWash = smoothstep(2.4, -7.5, dx) * expTerm * 0.92;',
+          '  vWhitewater = clamp(lipBand + backWash, 0.0, 1.35);',
+          '  gl_Position = projectionMatrix * viewMatrix * vec4(finalPos, 1.0);',
+          '}'
+        ].join('\n'),
+        fragmentShader: [
+          'uniform float uTime;',
+          'uniform float uBiolum;',
+          'uniform vec3 uSunDir;',
+          'uniform vec3 uSunColor;',
+          'uniform vec3 uSkyMid;',
+          'uniform vec3 uSkyLow;',
+          'uniform vec3 uWaterDeep;',
+          'uniform vec3 uWaterShallow;',
+          'uniform vec3 uWaterSSS;',
+          'uniform vec3 uFoamColor;',
+          'uniform vec3 uFogColor;',
+          'uniform float uFogDensity;',
+          'uniform vec3 uSurferPos;',
+          'varying vec3 vWorldPos;',
+          'varying vec3 vNormal;',
+          'varying float vCrest;',
+          'varying float vWhitewater;',
+          'varying float vFaceSlope;',
+          '',
+          'vec2 hash2(vec2 p) {',
+          '  p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));',
+          '  return fract(sin(p) * 43758.5453);',
+          '}',
+          'float hash(vec2 p) {',
+          '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);',
+          '}',
+          'float noise(vec2 p) {',
+          '  vec2 i = floor(p); vec2 f = fract(p);',
+          '  vec2 u = f * f * (3.0 - 2.0 * f);',
+          '  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),',
+          '             mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);',
+          '}',
+          '// Cellular Voronoi edge distance for authentic lacy ocean foam webs!',
+          'float voronoiWeb(vec2 x) {',
+          '  vec2 n = floor(x);',
+          '  vec2 f = fract(x);',
+          '  float md1 = 8.0;',
+          '  float md2 = 8.0;',
+          '  for (int j = -1; j <= 1; j++) {',
+          '    for (int i = -1; i <= 1; i++) {',
+          '      vec2 g = vec2(float(i), float(j));',
+          '      vec2 o = hash2(n + g);',
+          '      o = 0.5 + 0.42 * sin(uTime * 0.75 + 6.2831 * o);',
+          '      vec2 r = g + o - f;',
+          '      float d = dot(r, r);',
+          '      if (d < md1) { md2 = md1; md1 = d; }',
+          '      else if (d < md2) { md2 = d; }',
+          '    }',
+          '  }',
+          '  return clamp(sqrt(md2) - sqrt(md1), 0.0, 1.0);',
+          '}',
+          '',
+          'void main() {',
+          '  vec3 V = normalize(cameraPosition - vWorldPos);',
+          '  vec3 L = normalize(uSunDir);',
+          '  float camDist = length(cameraPosition - vWorldPos);',
+          '  float distFade = exp(-camDist * 0.011);',
+          '',
+          '  // 4-Octave dual-scrolling capillary normal perturbation for lifelike water texture',
+          '  vec2 p1 = vWorldPos.xz * 0.36 + vec2(uTime * 0.72, -uTime * 0.28);',
+          '  vec2 p2 = vWorldPos.xz * 0.92 + vec2(-uTime * 0.65, uTime * 0.54);',
+          '  vec2 p3 = vWorldPos.xz * 2.15 + vec2(uTime * 1.15, uTime * 0.78);',
+          '  vec2 p4 = vWorldPos.xz * 4.40 + vec2(-uTime * 1.40, -uTime * 0.95);',
+          '  float e = 0.08;',
+          '  float hC = noise(p1)*0.50 + noise(p2)*0.28 + noise(p3)*0.14 + noise(p4)*0.08;',
+          '  float hX = noise(p1+vec2(e,0.0))*0.50 + noise(p2+vec2(e,0.0))*0.28 + noise(p3+vec2(e,0.0))*0.14 + noise(p4+vec2(e,0.0))*0.08;',
+          '  float hZ = noise(p1+vec2(0.0,e))*0.50 + noise(p2+vec2(0.0,e))*0.28 + noise(p3+vec2(0.0,e))*0.14 + noise(p4+vec2(0.0,e))*0.08;',
+          '  vec3 microGrad = vec3((hC - hX) * 2.1, 0.0, (hC - hZ) * 2.1) * distFade;',
+          '  vec3 N = normalize(vNormal + microGrad);',
+          '',
+          '  // Schlick Fresnel reflection',
+          '  float cosTheta = clamp(dot(N, V), 0.0, 0.9999);',
+          '  float fresnel = 0.025 + 0.975 * pow(max(1.0 - cosTheta, 0.0001), 4.8);',
+          '',
+          '  // Beer-Lambert optical water depth + translucent green wave wall color',
+          '  float heightMix = smoothstep(-0.9, 3.6, vWorldPos.y);',
+          '  vec3 waterBase = mix(uWaterDeep, uWaterShallow, heightMix * 0.85 + 0.10);',
+          '',
+          '  // Subtle caustic light lattice shimmering inside the translucent wave face',
+          '  float caust = smoothstep(0.18, 0.02, voronoiWeb(vWorldPos.xz * 0.55 + vec2(uTime * 0.45, -uTime * 0.25)));',
+          '  waterBase += uWaterSSS * caust * heightMix * 0.16 * distFade;',
+          '',
+          '  // Strong realistic Subsurface Scattering (sunlight glowing through thin upper wave crest)',
+          '  float sssBack = pow(clamp(dot(V, -L + N * 0.45), 0.0001, 1.0), 2.5);',
+          '  float sssTop = smoothstep(0.22, 0.94, vCrest) * (0.42 + 0.58 * sssBack);',
+          '  waterBase = mix(waterBase, uWaterSSS, clamp(sssTop * 0.68, 0.0, 0.82));',
+          '',
+          '  // Sky environment reflection',
+          '  vec3 R = reflect(-V, N);',
+          '  vec3 skyRefl = mix(uSkyLow, uSkyMid, clamp(R.y * 1.45, 0.0, 1.0));',
+          '  vec3 col = mix(waterBase, skyRefl, clamp(fresnel * 0.88, 0.0, 0.92));',
+          '',
+          '  // Multi-lobe GGX-inspired specular sun sparkles on capillary ripples',
+          '  vec3 H = normalize(L + V);',
+          '  float ndh = max(dot(N, H), 0.0001);',
+          '  float specSheen = pow(ndh, 48.0) * 0.35;',
+          '  float specGlint = pow(ndh, 360.0) * 2.4;',
+          '  float specSparkle = pow(ndh, 1100.0) * 4.5 * distFade;',
+          '  col += uSunColor * (specSheen + specGlint + specSparkle);',
+          '',
+          '  // === REALISTIC CELLULAR LACY SEA FOAM ===',
+          '  // Stretched along the wave flow direction with Voronoi foam webs & aerated bubbles',
+          '  vec2 foamUV = vec2(vWorldPos.x * 0.85 + uTime * 0.75, vWorldPos.z * 0.52 - uTime * 0.35);',
+          '  float web1 = 1.0 - smoothstep(0.02, 0.24, voronoiWeb(foamUV));',
+          '  float web2 = 1.0 - smoothstep(0.03, 0.28, voronoiWeb(foamUV * 2.15 + vec2(3.1, 1.7)));',
+          '  float bubblyNoise = noise(foamUV * 2.6) * 0.6 + noise(foamUV * 6.2) * 0.4;',
+          '  float lacyWeb = clamp(web1 * 0.75 + web2 * 0.45 + bubblyNoise * 0.25, 0.0, 1.0);',
+          '',
+          '  // Solid aerated whitewater at the breaking crest + delicate lacy streaks trailing down the face',
+          '  float denseCrest = smoothstep(0.72, 1.12, vWhitewater + bubblyNoise * 0.30);',
+          '  float lacyStreaks = smoothstep(0.32, 0.82, vWhitewater * 0.85 + vFaceSlope * 0.28) * lacyWeb;',
+          '  float totalFoam = clamp(denseCrest * 0.95 + lacyStreaks * 0.78, 0.0, 0.96);',
+          '',
+          '  // Planing surfboard hull contact & carving rail foam',
+          '  float sDist = length(vWorldPos.xz - uSurferPos.xz);',
+          '  float hullFoam = exp(-sDist * 0.78) * smoothstep(1.2, 0.0, abs(uSurferPos.y - vWorldPos.y)) * (0.48 + 0.52 * lacyWeb);',
+          '  totalFoam = clamp(totalFoam + hullFoam * 0.85, 0.0, 0.98);',
+          '',
+          '  // Shade foam with sun & sky ambient so it looks 3D and foamy rather than flat white',
+          '  float foamLit = 0.68 + 0.32 * max(dot(N, L), 0.0);',
+          '  vec3 shadedFoam = uFoamColor * foamLit;',
+          '  col = mix(col, shadedFoam, totalFoam);',
+          '',
+          '  // Electric cyan-aqua bioluminescent plankton glow on Biolum Atoll map',
+          '  if (uBiolum > 0.01) {',
+          '    float bioMask = clamp(totalFoam * 0.95 + hullFoam * 1.4, 0.0, 1.0);',
+          '    vec3 bioColor = vec3(0.08, 0.88, 1.0) * (0.75 + 0.25 * sin(uTime * 3.0 + vWorldPos.z * 0.4));',
+          '    col += bioColor * bioMask * uBiolum * 0.85;',
+          '  }',
+          '',
+          '  // Seamless atmospheric horizon fog',
+          '  float fogFactor = 1.0 - exp(-pow(max(camDist * uFogDensity, 0.0001), 1.65));',
+          '  col = mix(col, uFogColor, clamp(fogFactor, 0.0, 1.0));',
+          '',
+          '  gl_FragColor = vec4(col, 1.0);',
+          '}'
+        ].join('\n')
+      });
+
+      const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
+      scene.add(oceanMesh);
+
+      // ============================================================
+      // 5. FOUR DISTINCT 3D MAP ENVIRONMENTS (SWAPPED DYNAMICALLY)
+      // ============================================================
+      const envRoot = new THREE.Group();
+      scene.add(envRoot);
+
+      const mapEnvs = {};
+      let lighthouseBeam = null;
+
+      // Map 1: Pacific Cove (Volcanic emerald peaks + palm silhouettes)
+      (function buildPacificMap() {
+        const g = new THREE.Group();
+        const peakMat = new THREE.MeshStandardMaterial({ color: 0x344a42, roughness: 0.92, flatShading: true });
+        const sandMat = new THREE.MeshStandardMaterial({ color: 0xd9b88c, roughness: 0.95 });
+        const specs = [
+          { x: -135, z: -165, rx: 52, ry: 26, rz: 30 },
+          { x: -48,  z: -195, rx: 70, ry: 34, rz: 36 },
+          { x: 92,   z: -185, rx: 56, ry: 25, rz: 32 },
+          { x: 168,  z: -155, rx: 40, ry: 18, rz: 26 }
+        ];
+        specs.forEach(function (sp) {
+          const geo = new THREE.ConeGeometry(1, 1, 7, 1);
+          geo.scale(sp.rx, sp.ry, sp.rz);
+          const m = new THREE.Mesh(geo, peakMat);
+          m.position.set(sp.x, sp.ry * 0.36 - 3.0, sp.z);
+          g.add(m);
+        });
+        // Low sandy reef spit on distant left
+        const spit = new THREE.Mesh(new THREE.CylinderGeometry(18, 34, 4, 9), sandMat);
+        spit.position.set(-105, -0.5, -138);
+        g.add(spit);
+        envRoot.add(g);
+        mapEnvs.pacific = { group: g, mat: peakMat };
+      })();
+
+      // Map 2: Mediterranean Turquoise Cliffs (Sun-bleached limestone cliffs & sea stacks)
+      (function buildMedMap() {
+        const g = new THREE.Group();
+        const cliffMat = new THREE.MeshStandardMaterial({ color: 0xd4c8b4, roughness: 0.88, flatShading: true });
+        const pineMat = new THREE.MeshStandardMaterial({ color: 0x2c4f3e, roughness: 0.92, flatShading: true });
+        const cliffs = [
+          { x: -125, z: -175, w: 68, h: 32, d: 34 },
+          { x: -30,  z: -195, w: 85, h: 38, d: 36 },
+          { x: 85,   z: -182, w: 62, h: 28, d: 30 },
+          { x: -95,  z: -130, w: 14, h: 18, d: 14 } // Dramatic sea stack!
+        ];
+        cliffs.forEach(function (cl) {
+          const box = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 0), cliffMat);
+          box.scale.set(cl.w * 0.55, cl.h * 0.65, cl.d * 0.55);
+          box.position.set(cl.x, cl.h * 0.28 - 2.0, cl.z);
+          g.add(box);
+          if (cl.w > 20) {
+            const cap = new THREE.Mesh(new THREE.CylinderGeometry(cl.w * 0.38, cl.w * 0.45, 5, 7), pineMat);
+            cap.position.set(cl.x, cl.h * 0.62, cl.z);
+            g.add(cap);
+          }
+        });
+        g.visible = false;
+        envRoot.add(g);
+        mapEnvs.mediterranean = { group: g, mat: cliffMat };
+      })();
+
+      // Map 3: Nordic Fjord (Towering snow-dusted granite peaks & drifting ice floes)
+      (function buildFjordMap() {
+        const g = new THREE.Group();
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x2b3648, roughness: 0.9, flatShading: true });
+        const snowMat = new THREE.MeshStandardMaterial({ color: 0xeaf4ff, roughness: 0.72, flatShading: true });
+        const peaks = [
+          { x: -145, z: -170, r: 44, h: 52 },
+          { x: -65,  z: -195, r: 58, h: 66 },
+          { x: 45,   z: -190, r: 52, h: 58 },
+          { x: 140,  z: -165, r: 46, h: 48 }
+        ];
+        peaks.forEach(function (pk) {
+          const m = new THREE.Mesh(new THREE.ConeGeometry(pk.r, pk.h, 6), rockMat);
+          m.position.set(pk.x, pk.h * 0.42 - 3.0, pk.z);
+          g.add(m);
+          const cap = new THREE.Mesh(new THREE.ConeGeometry(pk.r * 0.48, pk.h * 0.46, 6), snowMat);
+          cap.position.set(pk.x, pk.h * 0.69 - 3.0, pk.z);
+          g.add(cap);
+        });
+        // Distant serene glacial ice floes
+        for (let i = 0; i < 6; i++) {
+          const floe = new THREE.Mesh(new THREE.CylinderGeometry(4 + i * 1.2, 5 + i * 1.2, 1.2, 6), snowMat);
+          floe.position.set(-80 + i * 38, 0.2, -110 - (i % 3) * 22);
+          g.add(floe);
+        }
+        g.visible = false;
+        envRoot.add(g);
+        mapEnvs.fjord = { group: g, mat: rockMat };
+      })();
+
+      // Map 4: Bioluminescent Atoll (Low coral atoll + glowing coastal lighthouse)
+      (function buildBiolumMap() {
+        const g = new THREE.Group();
+        const atollMat = new THREE.MeshStandardMaterial({ color: 0x13223b, roughness: 0.92, flatShading: true });
+        const reef1 = new THREE.Mesh(new THREE.ConeGeometry(48, 12, 8), atollMat);
+        reef1.position.set(-95, 2.5, -165);
+        g.add(reef1);
+        const reef2 = new THREE.Mesh(new THREE.ConeGeometry(42, 10, 8), atollMat);
+        reef2.position.set(110, 2.0, -172);
+        g.add(reef2);
+
+        // Lighthouse tower on the distant left headland
+        const tower = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.6, 2.8, 16, 10),
+          new THREE.MeshStandardMaterial({ color: 0xd8e8ff, roughness: 0.6 })
+        );
+        tower.position.set(-95, 13.5, -165);
+        g.add(tower);
+
+        const lantern = new THREE.Mesh(
+          new THREE.SphereGeometry(2.1, 12, 10),
+          new THREE.MeshBasicMaterial({ color: 0x8ef7ff })
+        );
+        lantern.position.set(-95, 22.0, -165);
+        g.add(lantern);
+
+        const beamGeo = new THREE.ConeGeometry(16, 85, 12, 1, true);
+        beamGeo.rotateZ(Math.PI / 2);
+        beamGeo.translate(42.5, 0, 0);
+        const beamMat = new THREE.MeshBasicMaterial({
+          color: 0x74f2ff,
+          transparent: true,
+          opacity: 0.16,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        lighthouseBeam = new THREE.Mesh(beamGeo, beamMat);
+        lighthouseBeam.position.set(-95, 22.0, -165);
+        g.add(lighthouseBeam);
+
+        g.visible = false;
+        envRoot.add(g);
+        mapEnvs.biolum = { group: g, mat: atollMat };
+      })();
+
+      // ============================================================
+      // 6. 3D SURFER, SURFBOARD (FORWARD = -Z), WAKE, SPRAY & CREST MIST
+      // ============================================================
+      const surferGroup = new THREE.Group();
+      scene.add(surferGroup);
+
+      const boardLocalGroup = new THREE.Group();
+      surferGroup.add(boardLocalGroup);
+
+      // Sculpted Glossy 3D Surfboard (Pointed nose at -Z forward, flat tail at +Z)
+      const boardShape = new THREE.Shape();
+      boardShape.moveTo(0, 1.48);
+      boardShape.quadraticCurveTo(0.42, 0.9, 0.38, 0.0);
+      boardShape.quadraticCurveTo(0.34, -0.95, 0.16, -1.32);
+      boardShape.lineTo(-0.16, -1.32);
+      boardShape.quadraticCurveTo(-0.34, -0.95, -0.38, 0.0);
+      boardShape.quadraticCurveTo(-0.42, 0.9, 0, 1.48);
+
+      const boardGeo = new THREE.ExtrudeGeometry(boardShape, {
+        depth: 0.08,
+        bevelEnabled: true,
+        bevelThickness: 0.035,
+        bevelSize: 0.03,
+        bevelSegments: 3
+      });
+      boardGeo.rotateX(-Math.PI / 2);
+      boardGeo.translate(0, 0.04, 0);
+
+      const boardMat = new THREE.MeshStandardMaterial({ color: 0xfff4e2, roughness: 0.22, metalness: 0.08 });
+      boardLocalGroup.add(new THREE.Mesh(boardGeo, boardMat));
+
+      const stripeMat = new THREE.MeshStandardMaterial({ color: 0xe3845b, roughness: 0.3 });
+      const stripeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 2.42), stripeMat);
+      stripeMesh.position.set(0, 0.155, -0.02);
+      boardLocalGroup.add(stripeMesh);
+
+      const finMesh = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.22, 0.26), stripeMat);
+      finMesh.position.set(0, -0.06, 1.0);
+      boardLocalGroup.add(finMesh);
+
+      // Articulated 3D Surfer Rider facing forward (-Z)
+      const riderGroup = new THREE.Group();
+      riderGroup.position.y = 0.14;
+      boardLocalGroup.add(riderGroup);
+
+      const suitMat = new THREE.MeshStandardMaterial({ color: 0x1a2436, roughness: 0.65 });
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xd9a07b, roughness: 0.55 });
+      const scarfMat = new THREE.MeshStandardMaterial({ color: 0xff8a6b, roughness: 0.5, side: THREE.DoubleSide });
+
+      const legGeo = new THREE.CylinderGeometry(0.075, 0.065, 0.62, 8);
+      const frontLeg = new THREE.Mesh(legGeo, suitMat);
+      frontLeg.position.set(-0.07, 0.31, -0.32);
+      frontLeg.rotation.x = 0.26;
+      riderGroup.add(frontLeg);
+
+      const backLeg = new THREE.Mesh(legGeo, suitMat);
+      backLeg.position.set(0.07, 0.31, 0.34);
+      backLeg.rotation.x = -0.28;
+      riderGroup.add(backLeg);
+
+      const torsoPivot = new THREE.Group();
+      torsoPivot.position.set(0, 0.58, 0);
+      riderGroup.add(torsoPivot);
+
+      const torsoMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.11, 0.54, 10), suitMat);
+      torsoMesh.position.set(0, 0.26, 0);
+      torsoPivot.add(torsoMesh);
+
+      const headMesh = new THREE.Mesh(new THREE.SphereGeometry(0.145, 14, 12), skinMat);
+      headMesh.position.set(0, 0.65, -0.04);
+      torsoPivot.add(headMesh);
+
+      const hairMesh = new THREE.Mesh(new THREE.SphereGeometry(0.152, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.58), suitMat);
+      hairMesh.position.set(0, 0.67, -0.03);
+      torsoPivot.add(hairMesh);
+
+      const armGeo = new THREE.CylinderGeometry(0.05, 0.042, 0.54, 8);
+      const frontArm = new THREE.Mesh(armGeo, suitMat);
+      frontArm.position.set(-0.18, 0.46, -0.24);
+      frontArm.rotation.set(-0.95, 0, 0.52);
+      torsoPivot.add(frontArm);
+
+      const backArm = new THREE.Mesh(armGeo, suitMat);
+      backArm.position.set(0.18, 0.44, 0.24);
+      backArm.rotation.set(0.95, 0, -0.52);
+      torsoPivot.add(backArm);
+
+      const scarfGeo = new THREE.PlaneGeometry(0.12, 0.95, 1, 8);
+      const scarfMesh = new THREE.Mesh(scarfGeo, scarfMat);
+      scarfMesh.position.set(0, 0.54, 0.52);
+      scarfMesh.rotation.x = Math.PI / 2;
+      torsoPivot.add(scarfMesh);
+
+      // --- 3D Wake Trail Ribbon Hugging the Exact 3D Wave Surface ---
+      const WAKE_COUNT = 58;
+      const wakePoints = [];
+      for (let i = 0; i < WAKE_COUNT; i++) {
+        wakePoints.push({ x: 0, z: 0, active: false });
+      }
+      const wakePositions = new Float32Array(WAKE_COUNT * 2 * 3);
+      const wakeColors = new Float32Array(WAKE_COUNT * 2 * 3);
+      const wakeIndices = [];
+      for (let i = 0; i < WAKE_COUNT - 1; i++) {
+        const a = i * 2, b = i * 2 + 1, c = (i + 1) * 2, d = (i + 1) * 2 + 1;
+        wakeIndices.push(a, b, c, b, d, c);
+      }
+      const wakeGeo = new THREE.BufferGeometry();
+      wakeGeo.setAttribute('position', new THREE.BufferAttribute(wakePositions, 3));
+      wakeGeo.setAttribute('color', new THREE.BufferAttribute(wakeColors, 3));
+      wakeGeo.setIndex(wakeIndices);
+      const wakeMat = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.72,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const wakeMesh = new THREE.Mesh(wakeGeo, wakeMat);
+      wakeMesh.frustumCulled = false;
+      scene.add(wakeMesh);
+
+      // --- 3D Ballistic Water Spray + Low Crest Sea-Mist (True Alpha Fade, Never Black!) ---
+      const MAX_SPRAY = 380;
+      const sprayPool = [];
+      const sprayPosArr = new Float32Array(MAX_SPRAY * 3);
+      const sprayColArr = new Float32Array(MAX_SPRAY * 3);
+      const sprayAlphaArr = new Float32Array(MAX_SPRAY);
+      const spraySizeArr = new Float32Array(MAX_SPRAY);
+      for (let i = 0; i < MAX_SPRAY; i++) {
+        sprayPool.push({ active: false, x: 0, y: -50, z: 0, vx: 0, vy: 0, vz: 0, life: 0, maxLife: 1, golden: false, mist: false, baseSize: 10 });
+        sprayPosArr[i * 3 + 1] = -50;
+        sprayAlphaArr[i] = 0;
+        spraySizeArr[i] = 1;
+      }
+      const sprayGeo = new THREE.BufferGeometry();
+      sprayGeo.setAttribute('position', new THREE.BufferAttribute(sprayPosArr, 3));
+      sprayGeo.setAttribute('aColor', new THREE.BufferAttribute(sprayColArr, 3));
+      sprayGeo.setAttribute('aAlpha', new THREE.BufferAttribute(sprayAlphaArr, 1));
+      sprayGeo.setAttribute('aSize', new THREE.BufferAttribute(spraySizeArr, 1));
+
+      const sprayMat = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        uniforms: {
+          uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) }
+        },
+        vertexShader: [
+          'attribute vec3 aColor;',
+          'attribute float aAlpha;',
+          'attribute float aSize;',
+          'uniform float uPixelRatio;',
+          'varying vec3 vColor;',
+          'varying float vAlpha;',
+          'void main() {',
+          '  vColor = aColor;',
+          '  vAlpha = aAlpha;',
+          '  vec4 mvPos = modelViewMatrix * vec4(position, 1.0);',
+          '  gl_PointSize = clamp(aSize * uPixelRatio * (18.0 / max(-mvPos.z, 1.0)), 1.5, 22.0);',
+          '  gl_Position = projectionMatrix * mvPos;',
+          '}'
+        ].join('\n'),
+        fragmentShader: [
+          'varying vec3 vColor;',
+          'varying float vAlpha;',
+          'void main() {',
+          '  if (vAlpha <= 0.005) discard;',
+          '  float d = length(gl_PointCoord - vec2(0.5));',
+          '  if (d > 0.5) discard;',
+          '  float soft = smoothstep(0.5, 0.12, d);',
+          '  gl_FragColor = vec4(vColor, soft * vAlpha);',
+          '}'
+        ].join('\n')
+      });
+      const sprayPoints = new THREE.Points(sprayGeo, sprayMat);
+      sprayPoints.frustumCulled = false;
+      scene.add(sprayPoints);
+
+      function emitSpray3D(x, y, z, vx, vy, vz, count, golden, isMist) {
+        let spawned = 0;
+        for (let i = 0; i < MAX_SPRAY && spawned < count; i++) {
+          const p = sprayPool[i];
+          if (!p.active) {
+            p.active = true;
+            p.x = x + (Math.random() - 0.5) * (isMist ? 1.2 : 0.32);
+            p.y = y + Math.random() * 0.08;
+            p.z = z + (Math.random() - 0.5) * (isMist ? 2.2 : 0.32);
+            p.vx = vx + (Math.random() - 0.5) * (isMist ? 1.4 : 2.1);
+            // Keep spray and mist realistically low & sleek near the water surface
+            p.vy = clamp(vy, 0, 1.8) + (isMist ? (0.35 + Math.random() * 0.55) : (0.55 + Math.random() * 1.15));
+            p.vz = vz + (Math.random() - 0.5) * (isMist ? 1.4 : 2.1);
+            p.maxLife = isMist ? (0.42 + Math.random() * 0.36) : (0.32 + Math.random() * 0.34);
+            p.life = p.maxLife;
+            p.golden = !!golden;
+            p.mist = !!isMist;
+            p.baseSize = isMist ? (7.5 + Math.random() * 4.5) : (4.2 + Math.random() * 3.5);
+            spawned++;
+          }
+        }
+      }
+
+      // --- 3D Glowing Sun-Motes Placed Along the Green Wave Face ---
+      const motes = [];
+      const moteGeo = new THREE.OctahedronGeometry(0.42, 1);
+      const moteMat = new THREE.MeshBasicMaterial({ color: 0xffe4a0 });
+      const haloGeo = new THREE.SphereGeometry(0.95, 12, 10);
+      const haloMat = new THREE.MeshBasicMaterial({ color: 0xffc470, transparent: true, opacity: 0.28, depthWrite: false });
+
+      function createMote(offsetFromCrest, zPos) {
+        const grp = new THREE.Group();
+        grp.add(new THREE.Mesh(moteGeo, moteMat));
+        grp.add(new THREE.Mesh(haloGeo, haloMat));
+        scene.add(grp);
+        return { mesh: grp, dx: offsetFromCrest, z: zPos, bob: Math.random() * Math.PI * 2 };
+      }
+
+      for (let i = 0; i < 6; i++) {
+        motes.push(createMote(2.0 + Math.random() * 9.5, -16 - i * 18));
+      }
+
+      // --- 3D Leaping Dolphin ---
+      const dolphinGroup = new THREE.Group();
+      const dolphinMat = new THREE.MeshStandardMaterial({ color: 0x2f435a, roughness: 0.35, metalness: 0.15 });
+      const dBody = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 10), dolphinMat);
+      dBody.scale.set(0.65, 0.75, 2.6);
+      dolphinGroup.add(dBody);
+      const dFin = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.48, 5), dolphinMat);
+      dFin.position.set(0, 0.38, -0.1);
+      dFin.rotation.x = -0.45;
+      dolphinGroup.add(dFin);
+      dolphinGroup.visible = false;
+      scene.add(dolphinGroup);
+
+      const dolphinState = { active: false, cooldown: 5.0, progress: 0, baseX: 0, baseZ: 0 };
+
+      // ============================================================
+      // 7. NON-SINKING PLANING HYDRODYNAMICS & REAL SURF PHYSICS ENGINE
+      // ============================================================
+      const state = {
+        started: false,
+        paused: false,
+        hudHidden: false,
+        mapKey: 'pacific',
+        themeKey: 'sunset',
+        targetThemeKey: 'sunset',
+        prevThemeObj: THEMES.sunset,
+        themeTransition: 1,
+        autoCycleTime: 0,
+        swellKey: 'rolling',
+        cameraMode: 'side',
+        waveHeight: 3.55,
+        swellAmp: 1.0,
+        speedScale: 1.0,
+        steepness: 1.0,
+        widthScale: 1.0,
+        meanderAmp: 2.5,
+        biolum: 0.0,
+        time: 0,
+        waveTime: 0,
+        distance: 0,
+        harmony: 0,
+        flow: 0.32,
+        pocketTime: 0,
+        chimeCounter: 0,
+        hintDismissed: false,
+        chapterIdx: 0,
+        completedChapters: {},
+        storyModalOpen: false,
+        endlessZen: false,
+        totalMotes: 0,
+        totalAirs: 0,
+        chapterProgress: {
+          motes: 0,
+          distStart: 0,
+          pockets: 0,
+          airs: 0,
+          maxSpeed: 0,
+          spins: 0,
+          harmonyStart: 0
+        }
+      };
+
+      const CHAPTERS = [
+        {
+          id: 'pacific',
+          roman: 'Chapter I',
+          shrine: 'Sunstone Lantern',
+          title: 'The Ember Swell',
+          whisper: 'At golden hour, gather drifting amber Tide Motes and feel the reef pocket.',
+          outro: 'The Sunstone Lantern glows warmly above Pacific Cove. Ahead, the noon winds rise over towering limestone cliffs.',
+          goals: [
+            { id: 'motes', label: 'Gather Tide Motes', target: 5, get: function () { return state.chapterProgress.motes; } },
+            { id: 'dist', label: 'Glide along the reef', target: 250, unit: 'm', get: function () { return Math.floor(state.distance - state.chapterProgress.distStart); } },
+            { id: 'pockets', label: 'Ride Green Wall Pocket', target: 1, get: function () { return state.chapterProgress.pockets; } }
+          ]
+        },
+        {
+          id: 'mediterranean',
+          roman: 'Chapter II',
+          shrine: 'Windglass Lantern',
+          title: 'The Limestone Wind',
+          whisper: 'Drop down the steep turquoise face for speed and launch off the sunlit lip.',
+          outro: 'Wind chimes echo off the Turquoise Cliffs as the Windglass Lantern awakens. Northward, rose dawn awaits the silent fjords.',
+          goals: [
+            { id: 'motes', label: 'Gather Tide Motes', target: 6, get: function () { return state.chapterProgress.motes; } },
+            { id: 'airs', label: 'Land Lip Airs (Space)', target: 2, get: function () { return state.chapterProgress.airs; } },
+            { id: 'speed', label: 'Reach 20 kt on a drop', target: 20, unit: ' kt', get: function () { return Math.floor(state.chapterProgress.maxSpeed); } }
+          ]
+        },
+        {
+          id: 'fjord',
+          roman: 'Chapter III',
+          shrine: 'Frostlight Lantern',
+          title: 'The Glacial Mirror',
+          whisper: 'Carve smoothly past snow-dusted peaks and weave a 360 spin above the glass.',
+          outro: 'A soft aurora ripples over Nordic Fjord as the Frostlight Lantern ignites. One final beacon sleeps under the starlight tide.',
+          goals: [
+            { id: 'motes', label: 'Gather Tide Motes', target: 7, get: function () { return state.chapterProgress.motes; } },
+            { id: 'airs', label: 'Land Lip Airs / Spins', target: 2, get: function () { return state.chapterProgress.airs + state.chapterProgress.spins; } },
+            { id: 'dist', label: 'Glide through the fjord', target: 400, unit: 'm', get: function () { return Math.floor(state.distance - state.chapterProgress.distStart); } }
+          ]
+        },
+        {
+          id: 'biolum',
+          roman: 'Chapter IV',
+          shrine: 'Solstice Beacon',
+          title: 'The Starlight Lighthouse',
+          whisper: 'Awaken the glowing plankton waves and restore the final Solstice Beacon.',
+          outro: 'A brilliant beam sweeps across the starlit ocean. All four shrines shine in harmony, guiding every traveler home across the endless swell.',
+          goals: [
+            { id: 'motes', label: 'Gather Biolum Motes', target: 8, get: function () { return state.chapterProgress.motes; } },
+            { id: 'pockets', label: 'Ride Glowing Pocket', target: 2, get: function () { return state.chapterProgress.pockets; } },
+            { id: 'harmony', label: 'Build Chapter Harmony', target: 900, get: function () { return Math.floor(state.harmony - state.chapterProgress.harmonyStart); } }
+          ]
+        }
+      ];
+
+      const input = {
+        left: false,
+        right: false,
+        up: false,
+        down: false,
+        pointerActive: false,
+        pointerSteer: 0,
+        pointerTrim: 0
+      };
+
+      const board = {
+        x: 0.0,
+        y: 1.8,
+        z: 0.0,
+        vx: 0.0,
+        vy: 0.0,
+        vz: -10.5,
+        yaw: 0.0,
+        yawVel: 0.0,
+        railBank: 0.0,
+        pitchTrim: 0.0,
+        airborne: false,
+        airTime: 0.0,
+        airSpin: 0.0,
+        trickDone: false,
+        trickName: '',
+        carveG: 0.0,
+        inPocket: false,
+        crouch: 0.0,
+        speedKnots: 15,
+        slopeDeg: 18,
+        smoothNormal: new THREE.Vector3(0, 1, 0)
+      };
+
+      const trickTextEl = document.getElementById('trick-text');
+      const trickSubEl = document.getElementById('trick-sub');
+      let trickTimer = null;
+
+      function showBanner(title, subtitle) {
+        trickTextEl.textContent = title;
+        trickSubEl.textContent = subtitle || '';
+        trickTextEl.classList.add('visible');
+        trickSubEl.classList.add('visible');
+        if (trickTimer) clearTimeout(trickTimer);
+        trickTimer = setTimeout(function () {
+          trickTextEl.classList.remove('visible');
+          trickSubEl.classList.remove('visible');
+        }, 2100);
+      }
+
+      function triggerAirLaunch() {
+        if (!state.started || state.paused || board.airborne) return;
+        audio.init();
+        const speed = Math.hypot(board.vx, board.vz);
+        board.airborne = true;
+        board.airTime = 0;
+        board.airSpin = 0;
+        board.trickDone = false;
+        board.trickName = 'Lip Float';
+        board.vy = 6.4 + clamp(speed * 0.20, 0, 3.6);
+        board.y += 0.25;
+        emitSpray3D(board.x, board.y, board.z, -board.vx * 0.3, 3.8, -board.vz * 0.3, 24, false, false);
+        audio.playSplash(true);
+        audio.playChime(state.chimeCounter++, 0.09);
+      }
+
+      const tmpUp = new THREE.Vector3();
+      const tmpFwd = new THREE.Vector3();
+      const tmpRight = new THREE.Vector3();
+      const tmpMat = new THREE.Matrix4();
+      const tmpQuat = new THREE.Quaternion();
+
+      function stepSurfPhysics(dt) {
+        const t = state.waveTime;
+        const wH = state.waveHeight;
+        const sAmp = state.swellAmp;
+        const stp = state.steepness;
+        const wSc = state.widthScale;
+        const mAmp = state.meanderAmp;
+
+        const fwdX = -Math.sin(board.yaw);
+        const fwdZ = -Math.cos(board.yaw);
+        const rightX = Math.cos(board.yaw);
+        const rightZ = -Math.sin(board.yaw);
+
+        const cSurf = evaluateOceanSurface(board.x, board.z, t, wH, sAmp, stp, wSc, mAmp);
+
+        let steerIn = 0;
+        let trimIn = 0;
+        if (!state.started) {
+          const idealX = getWaveCrestX(board.z, t, mAmp) + 5.2 + Math.sin(state.time * 0.7) * 2.8;
+          steerIn = clamp((board.x - idealX) * 0.22, -0.75, 0.75);
+          trimIn = 0.25;
+        } else {
+          if (input.left) steerIn += 1;
+          if (input.right) steerIn -= 1;
+          if (input.up) trimIn += 1;
+          if (input.down) trimIn -= 1;
+          if (input.pointerActive && steerIn === 0 && trimIn === 0) {
+            steerIn = input.pointerSteer;
+            trimIn = input.pointerTrim;
+          }
+          if ((steerIn !== 0 || trimIn !== 0) && !state.hintDismissed && state.distance > 45) {
+            state.hintDismissed = true;
+            const hintEl = document.getElementById('control-hint');
+            if (hintEl) hintEl.style.opacity = '0.45';
+          }
+        }
+
+        const GRAVITY = 14.8;
+        board.slopeDeg = lerp(board.slopeDeg, cSurf.slopeDeg, dt * 6.0);
+
+        if (board.airborne) {
+          board.airTime += dt;
+          board.vy -= GRAVITY * dt;
+          board.vx *= Math.exp(-0.20 * dt);
+          board.vz *= Math.exp(-0.16 * dt);
+
+          if (Math.abs(steerIn) > 0.1) {
+            board.airSpin += steerIn * 5.2 * dt;
+          }
+          if (!board.trickDone && Math.abs(board.airSpin) >= Math.PI * 1.55) {
+            board.trickDone = true;
+            board.trickName = 'Ocean 360';
+            audio.playChime(state.chimeCounter + 3, 0.12);
+          } else if (!board.trickDone && board.airTime > 0.72) {
+            board.trickName = 'Soul Arch Glide';
+          }
+
+          board.railBank = lerp(board.railBank, steerIn * 0.30, dt * 6);
+          board.pitchTrim = lerp(board.pitchTrim, clamp(board.vy * 0.055, -0.35, 0.42), dt * 6);
+          board.crouch = lerp(board.crouch, 0.22, dt * 6);
+
+          board.x += board.vx * dt;
+          board.y += board.vy * dt;
+          board.z += board.vz * dt;
+
+          board.smoothNormal.lerp(new THREE.Vector3(0, 1, 0), dt * 3.5).normalize();
+
+          const landSurf = evaluateOceanSurface(board.x, board.z, t, wH, sAmp, stp, wSc, mAmp);
+          if (board.y <= landSurf.y + 0.06 && board.vy < 0) {
+            board.airborne = false;
+            board.y = landSurf.y + 0.06;
+            board.vy = 0;
+            board.crouch = 0.82;
+            emitSpray3D(board.x, landSurf.y + 0.08, board.z, -board.vx * 0.35, 3.8, -board.vz * 0.35, 32, true, false);
+            audio.playSplash(false);
+
+            if (state.started) {
+              const bonus = board.trickDone ? 200 : 100;
+              state.harmony += bonus;
+              state.totalAirs += 1;
+              state.chapterProgress.airs += 1;
+              if (board.trickDone) state.chapterProgress.spins += 1;
+              state.flow = clamp(state.flow + (board.trickDone ? 0.24 : 0.14), 0, 1);
+              showBanner(board.trickName || 'Clean Touchdown', '+' + bonus + ' Harmony');
+              audio.playChime(state.chimeCounter++, 0.11);
+              audio.playChime(state.chimeCounter + 2, 0.08);
+            }
+            board.airSpin = 0;
+          }
+        } else {
+          // Real rail banking INTO the turn
+          const targetBank = steerIn * 0.52;
+          board.railBank = lerp(board.railBank, targetBank, dt * 8.0);
+          board.pitchTrim = lerp(board.pitchTrim, trimIn * 0.10, dt * 7.0);
+
+          const fwdSpeed = board.vx * fwdX + board.vz * fwdZ;
+          const latSpeed = board.vx * rightX + board.vz * rightZ;
+
+          const gDotN = -GRAVITY * cSurf.ny;
+          const slopeAccX = -gDotN * cSurf.nx;
+          const slopeAccZ = -gDotN * cSurf.nz;
+
+          const relativeSpeed = Math.hypot(board.vx - cSurf.orbVx, board.vz - cSurf.orbVz);
+          const planingDrive = 5.4 + trimIn * 3.8 + cSurf.faceMask * 6.2;
+
+          const speedRatio = clamp(fwdSpeed / 11.5, 0.45, 1.65);
+          const headingSoftCenter = -board.yaw * 0.55;
+          const targetYawVel = steerIn * 1.95 * speedRatio + headingSoftCenter;
+          board.yawVel = lerp(board.yawVel, targetYawVel, dt * 6.5);
+          board.yaw = clamp(board.yaw + board.yawVel * dt, -1.05, 1.05);
+
+          const crestX = getWaveCrestX(board.z, t, mAmp);
+          let zonePullX = 0;
+          if (board.x < crestX - 2.0) {
+            zonePullX = (crestX - 2.0 - board.x) * 4.5;
+          } else if (board.x > crestX + 22.0) {
+            zonePullX = (crestX + 22.0 - board.x) * 3.0;
+          }
+
+          const forwardDrag = -fwdSpeed * (0.44 - trimIn * 0.06);
+          const lateralFinGrip = -latSpeed * 6.8;
+
+          const accX = slopeAccX * 1.25 + fwdX * (planingDrive + forwardDrag) + rightX * lateralFinGrip + cSurf.orbVx * 0.55 + zonePullX;
+          const accZ = slopeAccZ * 1.25 + fwdZ * (planingDrive + forwardDrag) + rightZ * lateralFinGrip + cSurf.orbVz * 0.55;
+
+          board.vx += accX * dt;
+          board.vz += accZ * dt;
+
+          const curFwd = board.vx * fwdX + board.vz * fwdZ;
+          if (curFwd < 7.5) {
+            board.vx += fwdX * (7.5 - curFwd) * dt * 4.5;
+            board.vz += fwdZ * (7.5 - curFwd) * dt * 4.5;
+          }
+
+          board.x += board.vx * dt;
+          board.z += board.vz * dt;
+
+          // EXACT 4-POINT NON-SINKING SURFACE LOCK
+          const nextSurf = evaluateOceanSurface(board.x, board.z, t, wH, sAmp, stp, wSc, mAmp);
+          const nextN = evaluateOceanSurface(board.x + fwdX * 1.1, board.z + fwdZ * 1.1, t, wH, sAmp, stp, wSc, mAmp);
+          const nextT = evaluateOceanSurface(board.x - fwdX * 1.1, board.z - fwdZ * 1.1, t, wH, sAmp, stp, wSc, mAmp);
+          const nextL = evaluateOceanSurface(board.x - rightX * 0.36, board.z - rightZ * 0.36, t, wH, sAmp, stp, wSc, mAmp);
+          const nextR = evaluateOceanSurface(board.x + rightX * 0.36, board.z + rightZ * 0.36, t, wH, sAmp, stp, wSc, mAmp);
+
+          const exactHullY = Math.max(nextSurf.y, (nextN.y + nextT.y) * 0.5, (nextL.y + nextR.y) * 0.5) + 0.06;
+          const prevY = board.y;
+          board.y = exactHullY;
+          board.vy = (board.y - prevY) / Math.max(dt, 0.001);
+
+          if (state.started && nextSurf.dxFromCrest < 0.8 && nextSurf.dxFromCrest > -1.2 && board.vx < -4.2 && curFwd > 11.5) {
+            triggerAirLaunch();
+          }
+
+          board.smoothNormal.lerp(new THREE.Vector3(nextSurf.nx, nextSurf.ny, nextSurf.nz), 1 - Math.exp(-dt * 14.0)).normalize();
+
+          board.carveG = Math.abs(board.railBank) * clamp(relativeSpeed / 12.0, 0.4, 1.9);
+          board.crouch = lerp(board.crouch, clamp(board.carveG * 0.65, 0, 0.72), dt * 7);
+
+          // Rooster-tail spray off the engaged rail during carves
+          if (board.carveG > 0.22 && Math.random() < board.carveG * 0.9) {
+            const sideSign = board.railBank > 0 ? -1 : 1;
+            const sprayX = board.x + rightX * sideSign * 0.42 - fwdX * 0.7;
+            const sprayZ = board.z + rightZ * sideSign * 0.42 - fwdZ * 0.7;
+            emitSpray3D(
+              sprayX, board.y + 0.03, sprayZ,
+              rightX * sideSign * (1.8 + board.carveG * 2.2) - board.vx * 0.18,
+              0.55 + board.carveG * 0.85,
+              rightZ * sideSign * (1.8 + board.carveG * 2.2) - board.vz * 0.18,
+              3,
+              false,
+              false
+            );
+          }
+
+          board.inPocket = nextSurf.inPocket && curFwd > 9.5;
+          if (state.started) {
+            if (board.inPocket) {
+              state.pocketTime += dt;
+              state.harmony += dt * 40;
+              state.flow = clamp(state.flow + dt * 0.08, 0, 1);
+              if (state.pocketTime > 2.4) {
+                state.pocketTime = 0;
+                state.harmony += 95;
+                state.chapterProgress.pockets += 1;
+                showBanner('Green Wall Pocket', '+95 Harmony');
+                audio.playChime(state.chimeCounter++, 0.1);
+              }
+            } else {
+              state.pocketTime = Math.max(0, state.pocketTime - dt * 0.5);
+              state.harmony += dt * (4 + board.carveG * 14);
+              state.flow = clamp(state.flow - dt * 0.014 + board.carveG * dt * 0.04, 0.15, 1);
+            }
+          }
+        }
+
+        const totalSpd = Math.hypot(board.vx, board.vz);
+        board.speedKnots = lerp(board.speedKnots, totalSpd * 1.45, dt * 4.5);
+        if (!Number.isFinite(board.speedKnots)) board.speedKnots = 15;
+        if (state.started) {
+          state.distance += totalSpd * dt * 0.9;
+        }
+
+        audio.updateOcean(
+          clamp(0.4 + cSurf.crest * 0.6, 0.3, 1.0),
+          board.airborne ? 0 : board.carveG * 0.85,
+          board.inPocket,
+          state.time
+        );
+      }
+
+      // ============================================================
+      // 8. SCENE UPDATE & RENDER LOOP
+      // ============================================================
+      function updateThemeAndMapColors(dt) {
+        let cur;
+        if (state.themeKey === 'auto') {
+          state.autoCycleTime += dt * 0.024;
+          const idx = Math.floor(state.autoCycleTime) % THEME_ORDER.length;
+          const nextIdx = (idx + 1) % THEME_ORDER.length;
+          const f = state.autoCycleTime - Math.floor(state.autoCycleTime);
+          const k = f * f * (3 - 2 * f);
+          const A = THEMES[THEME_ORDER[idx]];
+          const B = THEMES[THEME_ORDER[nextIdx]];
+          cur = {
+            skyTop: A.skyTop.clone().lerp(B.skyTop, k),
+            skyMid: A.skyMid.clone().lerp(B.skyMid, k),
+            skyLow: A.skyLow.clone().lerp(B.skyLow, k),
+            sunColor: A.sunColor.clone().lerp(B.sunColor, k),
+            sunDir: A.sunDir.clone().lerp(B.sunDir, k).normalize(),
+            fogColor: A.fogColor.clone().lerp(B.fogColor, k),
+            ambientInt: lerp(A.ambientInt, B.ambientInt, k),
+            sunInt: lerp(A.sunInt, B.sunInt, k),
+            stars: lerp(A.stars, B.stars, k)
+          };
+        } else {
+          if (state.themeTransition < 1) {
+            state.themeTransition = Math.min(1, state.themeTransition + dt * 1.4);
+          }
+          const k = state.themeTransition * state.themeTransition * (3 - 2 * state.themeTransition);
+          const A = state.prevThemeObj;
+          const B = THEMES[state.targetThemeKey];
+          cur = {
+            skyTop: A.skyTop.clone().lerp(B.skyTop, k),
+            skyMid: A.skyMid.clone().lerp(B.skyMid, k),
+            skyLow: A.skyLow.clone().lerp(B.skyLow, k),
+            sunColor: A.sunColor.clone().lerp(B.sunColor, k),
+            sunDir: A.sunDir.clone().lerp(B.sunDir, k).normalize(),
+            fogColor: A.fogColor.clone().lerp(B.fogColor, k),
+            ambientInt: lerp(A.ambientInt, B.ambientInt, k),
+            sunInt: lerp(A.sunInt, B.sunInt, k),
+            stars: lerp(A.stars, B.stars, k)
+          };
+        }
+
+        const mp = MAPS[state.mapKey] || MAPS.pacific;
+        oceanUniforms.uWaterDeep.value.lerp(mp.waterDeepTint, dt * 2.5);
+        oceanUniforms.uWaterShallow.value.lerp(mp.waterShallowTint, dt * 2.5);
+        oceanUniforms.uWaterSSS.value.lerp(mp.waterSSSTint, dt * 2.5);
+        oceanUniforms.uFoamColor.value.lerp(mp.foamTint, dt * 2.5);
+        state.biolum = lerp(state.biolum, mp.biolum, dt * 2.5);
+        state.widthScale = lerp(state.widthScale, mp.waveWidthScale, dt * 2.0);
+        state.meanderAmp = lerp(state.meanderAmp, mp.meanderAmp, dt * 2.0);
+
+        skyUniforms.uSkyTop.value.copy(cur.skyTop);
+        skyUniforms.uSkyMid.value.copy(cur.skyMid);
+        skyUniforms.uSkyLow.value.copy(cur.skyLow);
+        skyUniforms.uSunColor.value.copy(cur.sunColor);
+        skyUniforms.uSunDir.value.copy(cur.sunDir);
+        skyUniforms.uStars.value = cur.stars;
+
+        oceanUniforms.uSunDir.value.copy(cur.sunDir);
+        oceanUniforms.uSunColor.value.copy(cur.sunColor);
+        oceanUniforms.uSkyMid.value.copy(cur.skyMid);
+        oceanUniforms.uSkyLow.value.copy(cur.skyLow);
+        oceanUniforms.uFogColor.value.copy(cur.fogColor);
+        oceanUniforms.uBiolum.value = state.biolum;
+
+        scene.fog.color.copy(cur.fogColor);
+        sunLight.color.copy(cur.sunColor);
+        sunLight.intensity = cur.sunInt;
+        sunLight.position.copy(cur.sunDir).multiplyScalar(100);
+        hemiLight.intensity = cur.ambientInt;
+      }
+
+      const camTargetPos = new THREE.Vector3();
+      const camLookPos = new THREE.Vector3();
+      let wakeTick = 0;
+      let mistTick = 0;
+
+      function updateVisuals(dt) {
+        const sw = SWELL_MODES[state.swellKey] || SWELL_MODES.rolling;
+        state.waveHeight = lerp(state.waveHeight, sw.waveHeight, dt * 2.0);
+        state.swellAmp = lerp(state.swellAmp, sw.swellAmp, dt * 2.0);
+        state.speedScale = lerp(state.speedScale, sw.speedScale, dt * 2.0);
+        state.steepness = lerp(state.steepness, sw.steepness, dt * 2.0);
+
+        updateThemeAndMapColors(dt);
+        if (state.paused) return;
+
+        state.time += dt;
+        state.waveTime += dt * state.speedScale;
+
+        const subDt = dt * 0.5;
+        stepSurfPhysics(subDt);
+        stepSurfPhysics(subDt);
+
+        const gridStepX = 240 / 150;
+        const gridStepZ = 240 / 140;
+        oceanMesh.position.x = Math.round(board.x / gridStepX) * gridStepX;
+        oceanMesh.position.z = Math.round((board.z - 22) / gridStepZ) * gridStepZ;
+        skyDome.position.set(board.x, 0, board.z);
+        envRoot.position.set(board.x, 0, board.z);
+
+        if (lighthouseBeam && state.mapKey === 'biolum') {
+          lighthouseBeam.rotation.y = state.time * 0.55;
+        }
+
+        oceanUniforms.uTime.value = state.waveTime;
+        oceanUniforms.uWaveHeight.value = state.waveHeight;
+        oceanUniforms.uSwellAmp.value = state.swellAmp;
+        oceanUniforms.uSteepness.value = state.steepness;
+        oceanUniforms.uWidthScale.value = state.widthScale;
+        oceanUniforms.uMeanderAmp.value = state.meanderAmp;
+        oceanUniforms.uSurferPos.value.set(board.x, board.y, board.z);
+        skyUniforms.uTime.value = state.time;
+
+        // Continuously emit tumbling whitewater foam mist along the breaking wave crest!
+        mistTick += dt;
+        if (mistTick > 0.055) {
+          mistTick = 0;
+          const mistZ = board.z - 28 + Math.random() * 44;
+          const mistX = getWaveCrestX(mistZ, state.waveTime, state.meanderAmp) - 0.6 + Math.random() * 1.4;
+          const mSurf = evaluateOceanSurface(mistX, mistZ, state.waveTime, state.waveHeight, state.swellAmp, state.steepness, state.widthScale, state.meanderAmp);
+          emitSpray3D(mistX, mSurf.y + 0.06, mistZ, 0.9, 0.45, 0.3, 2, false, true);
+        }
+
+        // Orthonormal basis aligned to the 3D Wave Surface Normal + Forward (-Z) Heading
+        tmpUp.copy(board.smoothNormal);
+        tmpFwd.set(-Math.sin(board.yaw), 0, -Math.cos(board.yaw));
+        tmpFwd.addScaledVector(tmpUp, -tmpFwd.dot(tmpUp)).normalize();
+        tmpRight.crossVectors(tmpFwd, tmpUp).normalize();
+        tmpFwd.crossVectors(tmpUp, tmpRight).normalize();
+
+        tmpMat.makeBasis(tmpRight, tmpUp, tmpFwd.clone().negate());
+        tmpQuat.setFromRotationMatrix(tmpMat);
+
+        surferGroup.position.set(board.x, board.y, board.z);
+        surferGroup.quaternion.copy(tmpQuat);
+
+        boardLocalGroup.rotation.order = 'YXZ';
+        boardLocalGroup.rotation.y = board.airSpin;
+        boardLocalGroup.rotation.z = board.railBank;
+        boardLocalGroup.rotation.x = board.pitchTrim;
+
+        riderGroup.position.y = 0.14 - board.crouch * 0.12;
+        torsoPivot.rotation.z = board.railBank * 0.55;
+        torsoPivot.rotation.x = -(0.12 + board.crouch * 0.25);
+
+        const sAttr = scarfGeo.attributes.position;
+        for (let i = 0; i < sAttr.count; i++) {
+          const yCoord = sAttr.getY(i);
+          const distFromNeck = Math.max(0, yCoord + 0.475);
+          const flutter = Math.sin(state.time * 11.0 - distFromNeck * 7.5) * 0.12 * distFromNeck;
+          sAttr.setZ(i, flutter);
+        }
+        sAttr.needsUpdate = true;
+
+        // Update 3D Wake Trail Ribbon
+        wakeTick += dt;
+        if (wakeTick > 0.022) {
+          wakeTick = 0;
+          wakePoints.pop();
+          const fX = -Math.sin(board.yaw);
+          const fZ = -Math.cos(board.yaw);
+          wakePoints.unshift({
+            x: board.x - fX * 1.15,
+            z: board.z - fZ * 1.15,
+            active: !board.airborne
+          });
+        }
+        const wPos = wakeGeo.attributes.position.array;
+        const wCol = wakeGeo.attributes.color.array;
+        const foamC = oceanUniforms.uFoamColor.value;
+        for (let i = 0; i < WAKE_COUNT; i++) {
+          const wp = wakePoints[i];
+          const frac = 1 - i / (WAKE_COUNT - 1);
+          const halfW = wp.active ? (0.30 + (1 - frac) * 1.35) : 0.001;
+          const srf = evaluateOceanSurface(wp.x, wp.z, state.waveTime, state.waveHeight, state.swellAmp, state.steepness, state.widthScale, state.meanderAmp);
+          const wy = srf.y + 0.09;
+          const idx = i * 6;
+          wPos[idx]     = wp.x - halfW;
+          wPos[idx + 1] = wy;
+          wPos[idx + 2] = wp.z;
+          wPos[idx + 3] = wp.x + halfW;
+          wPos[idx + 4] = wy;
+          wPos[idx + 5] = wp.z;
+
+          const bright = wp.active ? frac * 0.96 : 0;
+          const bioR = lerp(foamC.r, 0.15, state.biolum * 0.7);
+          const bioG = lerp(foamC.g, 0.95, state.biolum * 0.7);
+          const bioB = lerp(foamC.b, 1.00, state.biolum * 0.7);
+          wCol[idx]     = bioR * bright;
+          wCol[idx + 1] = bioG * bright;
+          wCol[idx + 2] = bioB * bright;
+          wCol[idx + 3] = bioR * bright;
+          wCol[idx + 4] = bioG * bright;
+          wCol[idx + 5] = bioB * bright;
+        }
+        wakeGeo.attributes.position.needsUpdate = true;
+        wakeGeo.attributes.color.needsUpdate = true;
+
+        // Update 3D Spray & Crest Mist Particles (pure bright sunlit color + smooth alpha fade)
+        const pArr = sprayGeo.attributes.position.array;
+        const cArr = sprayGeo.attributes.aColor.array;
+        const aArr = sprayGeo.attributes.aAlpha.array;
+        const szArr = sprayGeo.attributes.aSize.array;
+        for (let i = 0; i < MAX_SPRAY; i++) {
+          const p = sprayPool[i];
+          if (!p.active) {
+            pArr[i * 3 + 1] = -999;
+            aArr[i] = 0;
+            continue;
+          }
+          p.life -= dt;
+          if (p.life <= 0) {
+            p.active = false;
+            pArr[i * 3 + 1] = -999;
+            aArr[i] = 0;
+            continue;
+          }
+          p.vy -= (p.mist ? 4.8 : 11.5) * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.z += p.vz * dt;
+          pArr[i * 3]     = p.x;
+          pArr[i * 3 + 1] = p.y;
+          pArr[i * 3 + 2] = p.z;
+
+          const fade = clamp(p.life / p.maxLife, 0, 1);
+          aArr[i] = p.mist ? (fade * 0.42) : (fade * 0.78);
+          szArr[i] = p.baseSize * (0.45 + 0.55 * fade);
+
+          if (p.golden) {
+            cArr[i * 3]     = 1.0;
+            cArr[i * 3 + 1] = 0.90;
+            cArr[i * 3 + 2] = 0.62;
+          } else if (state.biolum > 0.35 && !p.mist) {
+            cArr[i * 3]     = 0.32;
+            cArr[i * 3 + 1] = 0.96;
+            cArr[i * 3 + 2] = 1.0;
+          } else {
+            cArr[i * 3]     = Math.min(1.0, foamC.r * 1.04);
+            cArr[i * 3 + 1] = Math.min(1.0, foamC.g * 1.04);
+            cArr[i * 3 + 2] = Math.min(1.0, foamC.b * 1.04);
+          }
+        }
+        sprayGeo.attributes.position.needsUpdate = true;
+        sprayGeo.attributes.aColor.needsUpdate = true;
+        sprayGeo.attributes.aAlpha.needsUpdate = true;
+        sprayGeo.attributes.aSize.needsUpdate = true;
+
+        // Update 3D Golden Sun-Motes
+        for (let i = 0; i < motes.length; i++) {
+          const m = motes[i];
+          m.bob += dt * 2.5;
+          const mx = getWaveCrestX(m.z, state.waveTime, state.meanderAmp) + m.dx;
+          const mSurf = evaluateOceanSurface(mx, m.z, state.waveTime, state.waveHeight, state.swellAmp, state.steepness, state.widthScale, state.meanderAmp);
+          m.mesh.position.set(mx, mSurf.y + 1.05 + Math.sin(m.bob) * 0.22, m.z);
+          m.mesh.rotation.y += dt * 1.4;
+
+          const dx = mx - board.x;
+          const dz = m.z - board.z;
+          if (state.started && dx * dx + dz * dz < 6.8) {
+            state.harmony += 55;
+            state.totalMotes += 1;
+            state.chapterProgress.motes += 1;
+            state.flow = clamp(state.flow + 0.14, 0, 1);
+            emitSpray3D(mx, mSurf.y + 0.8, m.z, 0, 3.2, 0, 18, true, false);
+            audio.playChime(state.chimeCounter++, 0.11);
+            m.dx = 1.8 + Math.random() * 10.0;
+            m.z = board.z - 55 - Math.random() * 45;
+          } else if (m.z > board.z + 18) {
+            m.dx = 1.8 + Math.random() * 10.0;
+            m.z = board.z - 55 - Math.random() * 45;
+          }
+        }
+
+        // Update 3D Leaping Dolphin
+        if (!dolphinState.active) {
+          dolphinState.cooldown -= dt;
+          if (dolphinState.cooldown <= 0) {
+            dolphinState.active = true;
+            dolphinState.progress = 0;
+            dolphinState.baseX = getWaveCrestX(board.z - 28, state.waveTime, state.meanderAmp) + 16;
+            dolphinState.baseZ = board.z - 28;
+            dolphinGroup.visible = true;
+          }
+        } else {
+          dolphinState.progress += dt * 0.55;
+          const p = dolphinState.progress;
+          const dz = dolphinState.baseZ - p * 16;
+          const dSurf = evaluateOceanSurface(dolphinState.baseX, dz, state.waveTime, state.waveHeight, state.swellAmp, state.steepness, state.widthScale, state.meanderAmp);
+          const arcY = dSurf.y - 0.8 + Math.sin(p * Math.PI) * 5.2;
+          dolphinGroup.position.set(dolphinState.baseX, arcY, dz);
+          dolphinGroup.rotation.x = Math.cos(p * Math.PI) * 0.85;
+          if (p >= 1) {
+            dolphinState.active = false;
+            dolphinState.cooldown = 7 + Math.random() * 9;
+            dolphinGroup.visible = false;
+            emitSpray3D(dolphinState.baseX, dSurf.y, dz, 0, 3.0, 0, 16, false, false);
+          }
+        }
+
+        // Smooth Spring-Damped 2.5D / 3D Cinematic Camera
+        const spdPull = clamp((board.speedKnots - 14) * 0.12, 0, 2.2);
+        if (state.cameraMode === 'side') {
+          camTargetPos.set(board.x + 12.2 + spdPull * 0.5, Math.max(board.y + 3.8, 4.0), board.z + 10.0 + spdPull);
+          camLookPos.set(board.x - 2.6, board.y + 0.9, board.z - 7.5);
+        } else if (state.cameraMode === 'chase') {
+          camTargetPos.set(board.x + 2.8 + Math.sin(board.yaw) * 4.0, Math.max(board.y + 3.9, 3.8), board.z + 11.5 + spdPull);
+          camLookPos.set(board.x - 1.5 - Math.sin(board.yaw) * 3.5, board.y + 0.9, board.z - 12.0);
+        } else {
+          camTargetPos.set(board.x + 7.2, Math.max(board.y + 1.9, 2.1), board.z + 6.8 + spdPull * 0.5);
+          camLookPos.set(board.x - 2.0, board.y + 1.0, board.z - 8.5);
+        }
+
+        camera.position.lerp(camTargetPos, 1 - Math.exp(-dt * 4.5));
+        camera.lookAt(camLookPos);
+
+        if (state.started && board.speedKnots > state.chapterProgress.maxSpeed) {
+          state.chapterProgress.maxSpeed = board.speedKnots;
+        }
+        document.getElementById('hud-score').textContent = Math.floor(state.harmony).toLocaleString();
+        document.getElementById('hud-dist').textContent = Math.floor(state.distance) + 'm';
+        document.getElementById('hud-speed').textContent = Math.round(board.speedKnots) + ' kt';
+        document.getElementById('hud-slope').textContent = Math.round(board.slopeDeg) + '\u00B0';
+        document.getElementById('hud-flow-bar').style.width = Math.round(state.flow * 100) + '%';
+        updateStoryProgress();
+      }
+
+      // ============================================================
+      // 9. RESIZE & ANIMATION LOOP
+      // ============================================================
+      function resizeCanvas() {
+        const rect = gameWrap.getBoundingClientRect();
+        const w = Math.max(320, Math.floor(rect.width));
+        const h = Math.max(240, Math.floor(rect.height));
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.render(scene, camera);
+      }
+
+      let rafId = null;
+      let lastTime = 0;
+
+      function frame(now) {
+        const safeNow = (typeof now === 'number' && Number.isFinite(now)) ? now : performance.now();
+        if (!lastTime) lastTime = safeNow;
+        let dt = (safeNow - lastTime) / 1000;
+        if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
+        dt = Math.min(0.05, dt);
+        lastTime = safeNow;
+
+        updateVisuals(dt);
+        renderer.render(scene, camera);
+
+        rafId = requestAnimationFrame(frame);
+      }
+
+      // ============================================================
+      // 10. UI & INPUT WIRING
+      // ============================================================
+      const titleOverlay = document.getElementById('title-overlay');
+      const pauseOverlay = document.getElementById('pause-overlay');
+      const settingsPopover = document.getElementById('settings-popover');
+      const btnStart = document.getElementById('btn-start');
+      const btnResume = document.getElementById('btn-resume');
+      const btnPause = document.getElementById('btn-pause');
+      const btnSound = document.getElementById('btn-sound');
+      const btnZen = document.getElementById('btn-zen');
+      const btnZenRestore = document.getElementById('zen-restore-btn');
+      const btnAtmosphere = document.getElementById('btn-atmosphere');
+      const btnAir = document.getElementById('btn-air');
+      const labelMap = document.getElementById('label-map');
+      const labelTheme = document.getElementById('label-theme');
+      const iconSoundOn = document.getElementById('icon-sound-on');
+      const iconSoundOff = document.getElementById('icon-sound-off');
+
+      function startGame() {
+        state.started = true;
+        state.paused = false;
+        titleOverlay.classList.add('hidden');
+        audio.init();
+        audio.playChime(2, 0.1);
+        audio.playWarmPad();
+      }
+
+      function togglePause() {
+        if (!state.started) return;
+        state.paused = !state.paused;
+        pauseOverlay.classList.toggle('open', state.paused);
+        if (state.paused) settingsPopover.classList.remove('open');
+      }
+
+      function toggleSound() {
+        audio.init();
+        const nextMuted = !audio.muted;
+        audio.setMuted(nextMuted);
+        iconSoundOn.style.display = nextMuted ? 'none' : 'block';
+        iconSoundOff.style.display = nextMuted ? 'block' : 'none';
+      }
+
+      function toggleZenHud() {
+        state.hudHidden = !state.hudHidden;
+        gameWrap.classList.toggle('hud-hidden', state.hudHidden);
+        if (state.hudHidden) settingsPopover.classList.remove('open');
+      }
+
+      function selectTheme(key) {
+        state.themeKey = key;
+        if (key !== 'auto' && THEMES[key]) {
+          state.prevThemeObj = THEMES[state.targetThemeKey] || THEMES.sunset;
+          state.targetThemeKey = key;
+          state.themeTransition = 0;
+          labelTheme.textContent = THEMES[key].name;
+        } else {
+          labelTheme.textContent = 'Auto Drift';
+        }
+        document.querySelectorAll('#theme-chips .chip-btn').forEach(function (btn) {
+          btn.classList.toggle('selected', btn.getAttribute('data-theme') === key);
+        });
+      }
+
+      function selectMap(mapKey, applyDefaultTheme) {
+        const mp = MAPS[mapKey];
+        if (!mp) return;
+        state.mapKey = mapKey;
+        labelMap.textContent = mp.name;
+
+        Object.keys(mapEnvs).forEach(function (k) {
+          mapEnvs[k].group.visible = (k === mapKey);
+        });
+
+        document.querySelectorAll('#map-chips .chip-btn, #title-map-picker .title-map-btn').forEach(function (btn) {
+          btn.classList.toggle('selected', btn.getAttribute('data-map') === mapKey);
+        });
+
+        if (applyDefaultTheme && mp.defaultTheme) {
+          selectTheme(mp.defaultTheme);
+        }
+        const chIdx = CHAPTERS.findIndex(function (c) { return c.id === mapKey; });
+        if (chIdx >= 0 && chIdx !== state.chapterIdx) {
+          setChapter(chIdx);
+        }
+        if (state.started) {
+          showBanner(mp.name, CHAPTERS[state.chapterIdx].title);
+          audio.playChime(state.chimeCounter++, 0.1);
+        }
+      }
+
+      const storyModal = document.getElementById('story-modal');
+      const storyModalEyebrow = document.getElementById('story-modal-eyebrow');
+      const storyModalTitle = document.getElementById('story-modal-title');
+      const storyModalText = document.getElementById('story-modal-text');
+      const storyModalStats = document.getElementById('story-modal-stats');
+      const btnStoryStay = document.getElementById('btn-story-stay');
+      const btnStoryNext = document.getElementById('btn-story-next');
+      const questChapterEl = document.getElementById('quest-chapter');
+      const questShrinesEl = document.getElementById('quest-shrines');
+      const questTitleEl = document.getElementById('quest-title');
+      const questWhisperEl = document.getElementById('quest-whisper');
+      const questGoalsEl = document.getElementById('quest-goals');
+
+      function setChapter(idx) {
+        state.chapterIdx = clamp(idx, 0, CHAPTERS.length - 1);
+        state.chapterProgress = {
+          motes: 0,
+          distStart: state.distance,
+          pockets: 0,
+          airs: 0,
+          maxSpeed: 0,
+          spins: 0,
+          harmonyStart: state.harmony
+        };
+        renderQuestCard();
+      }
+
+      function renderQuestCard() {
+        const ch = CHAPTERS[state.chapterIdx];
+        const doneCount = Object.keys(state.completedChapters).length;
+        questChapterEl.textContent = state.endlessZen ? 'Endless Zen' : (ch.roman + ' · ' + MAPS[ch.id].name);
+        questShrinesEl.textContent = doneCount + ' / ' + CHAPTERS.length + ' Shrines';
+        questTitleEl.textContent = state.endlessZen ? 'Solstice Awakened' : ch.title;
+        questWhisperEl.textContent = state.endlessZen
+          ? 'All four coastal lanterns shine bright. Drift freely across any coastline.'
+          : ch.whisper;
+
+        if (state.endlessZen) {
+          questGoalsEl.innerHTML = '<div class="quest-goal done"><span class="quest-goal-left"><span class="goal-dot"></span><span>Solstice Voyage Complete</span></span><span class="quest-goal-count">4/4</span></div>';
+          return;
+        }
+
+        let html = '';
+        for (let i = 0; i < ch.goals.length; i++) {
+          const g = ch.goals[i];
+          const val = Math.min(g.target, Math.max(0, g.get()));
+          const isDone = val >= g.target || !!state.completedChapters[ch.id];
+          const unit = g.unit || '';
+          html += '<div class="quest-goal' + (isDone ? ' done' : '') + '">' +
+            '<span class="quest-goal-left"><span class="goal-dot"></span><span>' + g.label + '</span></span>' +
+            '<span class="quest-goal-count">' + val + '/' + g.target + unit + '</span></div>';
+        }
+        questGoalsEl.innerHTML = html;
+      }
+
+      let lastQuestRender = 0;
+      function updateStoryProgress() {
+        if (!state.started) return;
+        if (state.time - lastQuestRender > 0.2) {
+          lastQuestRender = state.time;
+          renderQuestCard();
+        }
+        if (state.endlessZen || state.storyModalOpen) return;
+
+        const ch = CHAPTERS[state.chapterIdx];
+        if (state.completedChapters[ch.id]) return;
+
+        const allMet = ch.goals.every(function (g) { return g.get() >= g.target; });
+        if (allMet) {
+          state.completedChapters[ch.id] = true;
+          state.harmony += 300;
+          emitSpray3D(board.x, board.y + 0.5, board.z, 0, 2.2, 0, 36, true, false);
+          audio.playChime(0, 0.12);
+          audio.playChime(2, 0.11);
+          audio.playChime(4, 0.10);
+          renderQuestCard();
+          openChapterModal(ch);
+        }
+      }
+
+      function openChapterModal(ch) {
+        state.storyModalOpen = true;
+        state.paused = true;
+        const doneCount = Object.keys(state.completedChapters).length;
+        const isFinale = doneCount >= CHAPTERS.length;
+
+        if (isFinale) {
+          storyModalEyebrow.textContent = 'Voyage Complete · 4 / 4 Shrines Lit';
+          storyModalTitle.textContent = 'The Solstice Beacon Shines';
+          storyModalText.textContent = ch.outro;
+          storyModalStats.style.display = 'grid';
+          document.getElementById('stat-total-dist').textContent = Math.floor(state.distance) + 'm';
+          document.getElementById('stat-total-motes').textContent = String(state.totalMotes);
+          document.getElementById('stat-total-harmony').textContent = Math.floor(state.harmony).toLocaleString();
+          btnStoryStay.textContent = 'Replay Voyage';
+          btnStoryNext.textContent = 'Continue Endless Zen';
+        } else {
+          const nextIdx = (state.chapterIdx + 1) % CHAPTERS.length;
+          storyModalEyebrow.textContent = ch.shrine + ' Rekindled (' + doneCount + '/4)';
+          storyModalTitle.textContent = ch.title + ' Complete';
+          storyModalText.textContent = ch.outro;
+          storyModalStats.style.display = 'none';
+          btnStoryStay.textContent = 'Stay on This Coast';
+          btnStoryNext.textContent = 'Sail to ' + MAPS[CHAPTERS[nextIdx].id].name + ' →';
+        }
+        storyModal.classList.add('open');
+      }
+
+      btnStoryStay.addEventListener('click', function () {
+        const isFinale = Object.keys(state.completedChapters).length >= CHAPTERS.length;
+        storyModal.classList.remove('open');
+        state.storyModalOpen = false;
+        state.paused = false;
+        if (isFinale) {
+          state.completedChapters = {};
+          state.endlessZen = false;
+          selectMap('pacific', true);
+          setChapter(0);
+        }
+      });
+
+      btnStoryNext.addEventListener('click', function () {
+        const isFinale = Object.keys(state.completedChapters).length >= CHAPTERS.length;
+        storyModal.classList.remove('open');
+        state.storyModalOpen = false;
+        state.paused = false;
+        if (isFinale) {
+          state.endlessZen = true;
+          renderQuestCard();
+        } else {
+          let nextIdx = (state.chapterIdx + 1) % CHAPTERS.length;
+          for (let i = 0; i < CHAPTERS.length; i++) {
+            const candidate = (state.chapterIdx + 1 + i) % CHAPTERS.length;
+            if (!state.completedChapters[CHAPTERS[candidate].id]) {
+              nextIdx = candidate;
+              break;
+            }
+          }
+          selectMap(CHAPTERS[nextIdx].id, true);
+        }
+      });
+
+      function selectSwell(key) {
+        if (!SWELL_MODES[key]) return;
+        state.swellKey = key;
+        document.querySelectorAll('#swell-chips .chip-btn').forEach(function (btn) {
+          btn.classList.toggle('selected', btn.getAttribute('data-swell') === key);
+        });
+      }
+
+      function selectCamera(mode) {
+        state.cameraMode = mode;
+        document.querySelectorAll('#camera-chips .chip-btn').forEach(function (btn) {
+          btn.classList.toggle('selected', btn.getAttribute('data-cam') === mode);
+        });
+      }
+
+      btnStart.addEventListener('click', startGame);
+      btnResume.addEventListener('click', togglePause);
+      btnPause.addEventListener('click', togglePause);
+      btnSound.addEventListener('click', toggleSound);
+      btnZen.addEventListener('click', toggleZenHud);
+      btnZenRestore.addEventListener('click', toggleZenHud);
+      btnAir.addEventListener('click', triggerAirLaunch);
+
+      btnAtmosphere.addEventListener('click', function (e) {
+        e.stopPropagation();
+        settingsPopover.classList.toggle('open');
+      });
+
+      document.querySelectorAll('#map-chips .chip-btn, #title-map-picker .title-map-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectMap(btn.getAttribute('data-map'), true);
+        });
+      });
+
+      document.querySelectorAll('#theme-chips .chip-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectTheme(btn.getAttribute('data-theme'));
+        });
+      });
+
+      document.querySelectorAll('#swell-chips .chip-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectSwell(btn.getAttribute('data-swell'));
+        });
+      });
+
+      document.querySelectorAll('#camera-chips .chip-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          selectCamera(btn.getAttribute('data-cam'));
+        });
+      });
+
+      document.addEventListener('click', function (e) {
+        if (settingsPopover.classList.contains('open') &&
+            !settingsPopover.contains(e.target) &&
+            !btnAtmosphere.contains(e.target)) {
+          settingsPopover.classList.remove('open');
+        }
+      });
+
+      window.addEventListener('keydown', function (e) {
+        const code = e.code;
+        if (code === 'ArrowUp' || code === 'KeyW') {
+          input.up = true; input.pointerActive = false; e.preventDefault();
+        } else if (code === 'ArrowDown' || code === 'KeyS') {
+          input.down = true; input.pointerActive = false; e.preventDefault();
+        } else if (code === 'ArrowLeft' || code === 'KeyA') {
+          input.left = true; input.pointerActive = false; e.preventDefault();
+        } else if (code === 'ArrowRight' || code === 'KeyD') {
+          input.right = true; input.pointerActive = false; e.preventDefault();
+        } else if (code === 'Space') {
+          e.preventDefault();
+          if (!state.started) startGame();
+          else triggerAirLaunch();
+        } else if (code === 'KeyP' || code === 'Escape') {
+          if (settingsPopover.classList.contains('open')) settingsPopover.classList.remove('open');
+          else togglePause();
+        } else if (code === 'KeyM') {
+          toggleSound();
+        } else if (code === 'KeyH') {
+          toggleZenHud();
+        }
+      });
+
+      window.addEventListener('keyup', function (e) {
+        const code = e.code;
+        if (code === 'ArrowUp' || code === 'KeyW') input.up = false;
+        else if (code === 'ArrowDown' || code === 'KeyS') input.down = false;
+        else if (code === 'ArrowLeft' || code === 'KeyA') input.left = false;
+        else if (code === 'ArrowRight' || code === 'KeyD') input.right = false;
+      });
+
+      function updatePointer(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        const nx = ((clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+        const ny = ((clientY - rect.top) / Math.max(1, rect.height)) * 2 - 1;
+        input.pointerSteer = clamp(-nx * 1.4, -1, 1);
+        input.pointerTrim = clamp(-ny * 1.2, -1, 1);
+        input.pointerActive = true;
+      }
+
+      canvas.addEventListener('pointerdown', function (e) {
+        if (!state.started || state.paused) return;
+        audio.init();
+        settingsPopover.classList.remove('open');
+        updatePointer(e.clientX, e.clientY);
+      });
+
+      canvas.addEventListener('pointermove', function (e) {
+        if (!state.started || state.paused) return;
+        if (e.buttons > 0 || e.pointerType === 'touch') {
+          updatePointer(e.clientX, e.clientY);
+        }
+      });
+
+      canvas.addEventListener('pointerup', function () { input.pointerActive = false; });
+      canvas.addEventListener('pointercancel', function () { input.pointerActive = false; });
+
+      window.addEventListener('resize', resizeCanvas);
+
+      window.addEventListener('load', function () {
+        const initSurf = evaluateOceanSurface(board.x, board.z, 0, state.waveHeight, state.swellAmp, state.steepness, state.widthScale, state.meanderAmp);
+        board.y = initSurf.y + 0.06;
+        board.smoothNormal.set(initSurf.nx, initSurf.ny, initSurf.nz);
+        camera.position.set(board.x + 12.2, Math.max(board.y + 3.8, 4.0), board.z + 10.0);
+        camera.lookAt(board.x - 2.6, board.y + 0.9, board.z - 7.5);
+        setChapter(0);
+        resizeCanvas();
+        updateVisuals(0.016);
+        renderer.render(scene, camera);
+        if (rafId) cancelAnimationFrame(rafId);
+        lastTime = 0;
+        rafId = requestAnimationFrame(frame);
+      });
+    })();
+  </script>
+</body>
+</html>
