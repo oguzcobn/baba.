@@ -106,7 +106,7 @@ export async function createThreeRenderer(api) {
      p('box',side*.422,radius,along,.02,radius*1.39,.027,'#a0a591',.36,.57,(u.travel||0)/radius)
    }
  }
- p('sphere',0,.46,-.05,.53,.27,.62,'#8b9b7e');p('box',0,.40,.42,.11,.10,.66,'#66745f',.5);p('box',.18,.40,.21,.11,.07,.14,team)}}
+ p('sphere',0,.46,-.05,.53,.27,.62,'#8b9b7e');p('box',0,.40,.42-.14*Math.max(0,((u.cool||0)-1.01)/.24),.11,.10,.66,'#66745f',.5);p('box',.18,.40,.21,.11,.07,.14,team)}}
  function material(type){
    if(materials.has(type))return materials.get(type);
    if(type==='smoke'||type==='fire'){
@@ -294,7 +294,7 @@ export async function createThreeRenderer(api) {
    if(changed||staticKey!==footprint){staticKey=footprint;rebuildTerrain()}
    if(changed||buildingKey!==stages){buildingKey=stages;rebuildBuildings()}
    statWorld=world;
-   people.begin();batch={};for(const unit of world.units){if(unit.enemy&&!state.seen(unit.x,unit.y))continue;const u=state.renderUnit(unit);let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=1.30&&world.units.length<=40);people.add(u,world.time,close);if(u.kindUnit==='infantry'){const a=u.angle||0;add('box',u.x+.20*Math.cos(a),.65,u.y+.20*Math.sin(a),.055,.065,.36,'#454843',.4,.6,Math.PI/2-a)}add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
+   people.begin();batch={};for(const unit of world.units){if(unit.enemy&&!state.seen(unit.x,unit.y))continue;const u=state.renderUnit(unit);let q=project(u.x,u.y);if(q.x<-100||q.x>W+100||q.y<-150||q.y>H+150)continue;if(u.kindUnit&&u.kindUnit!=='worker'&&u.kindUnit!=='infantry')vehicle(u);else {const close=zoom>=1.8||(zoom>=1.30&&world.units.length<=40);people.add(u,world.time,close);if(u.kindUnit==='infantry'){const a=u.angle||0,reach=.20-.065*Math.max(0,((u.cool||0)-1.06)/.19);add('box',u.x+reach*Math.cos(a),.65,u.y+reach*Math.sin(a),.055,.065,.36,'#454843',.4,.6,Math.PI/2-a)}add('plane',u.x,.012,u.y,.32,1,.28,'#ffffff',0,-1)}}
    atmosphere(world.time);
    for(const fx of state.effects)combatEffect(fx,state);
    fogOfWar(state);
