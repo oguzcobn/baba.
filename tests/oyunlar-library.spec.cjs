@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
-const IDS=['hayat-oyunu','futbol','career','draft','istiklal1919','vadi','koy','yelken','pelagos','serpentia','akvaryum','dune','mudafi','mete-cubugu','kartal','astra-orbit','operasyon-hatti','simitci','yayla-savunmasi','amsterdam-coffeeshop','kafa-topu','age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','yilan-arenasi','gta-vice-city','tekken-3','hungry-shark','dsan-shipyard','rota-conference','2048','sudoku','mines','blocks'];
-const SVG = new Set(['age-of-war','gunblood','warfare-1917','the-waitress','fancy-pants-3','territory-war','electric-man-2','wild-ones-world','rota-conference']);
+const IDS=["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town","iki-milyarin-golgesi","sisli-yokus","solstice-swell","kar","modern-age-2026","ambermere","element","subterra","hayat-oyunu","futbol","career","draft","istiklal1919","vadi","runaway-cheese","sis-hatti","living-island","koy","surus","pelagos","serpentia","yasam","akvaryum","dune","mudafi","mete-cubugu","kartal","astra-orbit","operasyon-hatti","simitci","yelken","geko-bahcesi","lanternlight","yayla-savunmasi","amsterdam-coffeeshop","kafa-topu","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","yilan-arenasi","gta-vice-city","tekken-3","hungry-shark","rota-conference","dsan-shipyard","2048","sudoku","mines","blocks"];
+const SVG = new Set(["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town","solstice-swell","kar","ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
 for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
   test.use({viewport:vp});
   test('hero, kapaklar, filtre, arama, vitrin ve son oynanan', async ({page}) => {
@@ -38,4 +38,19 @@ for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe
     await expect(page.locator('body')).not.toHaveClass(/lib-mode/);
     expect(errs).toEqual([]);
   });
+});
+
+// The six new imports have explicit, official external launch links. No third-party network is needed to test routing.
+test('November import launchers and four local games', async ({page}) => {
+  await page.goto(BASE+'#oyunlar');
+  const demos = {"offroad":"https://offroad-indol.vercel.app/","velocity-rush":"https://prashant371.github.io/velocity-rush/","threejs-fish-tank":"https://maxlibin.com/living-room-fish-tank/","empires-of-the-ages":"https://empires.razzrohith.com/","nordschleife-racer":"https://yassin.app/","ai-town":"https://www.convex.dev/ai-town"};
+  for (const [id,url] of Object.entries(demos)) {
+    await expect(page.locator('.lb-card[data-id="'+id+'"]')).toBeVisible();
+    await page.locator('.lb-card[data-id="'+id+'"]').click();
+    await expect(page.locator('.game-page a[href="'+url+'"]')).toBeVisible();
+    await page.locator('.game-page a[href="#oyunlar"]').click();
+  }
+  for (const id of ['sisli-yokus','iki-milyarin-golgesi','kar','solstice-swell']) {
+    await expect(page.locator('.lb-card[data-id="'+id+'"]')).toBeVisible();
+  }
 });
