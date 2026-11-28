@@ -6,12 +6,18 @@
    ===================================================================== */
 const BABALibrary = (() => {
   const reduce = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
-  const IMPORTED_ARCADE = new Set(["solstice-swell","kar","ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
+  const IMPORTED_ARCADE = new Set(["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town","solstice-swell","kar","ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
   const COVER = (id, w) => id === 'modern-age-2026' ? `img/library/modern-age-2026-${w <= 640 ? 640 : 1280}.webp` : IMPORTED_ARCADE.has(id) ? `img/library/${id}-1280.svg` : `img/library/${id}-${w}.webp`;
   const SRCSET = id => id === 'modern-age-2026' ? `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w` : IMPORTED_ARCADE.has(id) ? `${COVER(id, 1280)} 1280w` : `${COVER(id, 640)} 640w, ${COVER(id, 1280)} 1280w, ${COVER(id, 1920)} 1920w`;
 
   // Kategori ve kısa tanıtım metinleri (kart, vitrin ve şeritler)
   const META = {
+    "offroad":{"cat":"sim","accent":"#a5c178","time":["4×4 · 3D","4×4 · 3D"],"isNew":true,"blurb":["Açık arazide dört araçla fizik tabanlı sürüş.","Physics-based off-road driving with four vehicles."]},
+    "velocity-rush":{"cat":"arc","accent":"#fb7848","time":["20 araç · 9 pist","20 cars · 9 tracks"],"isNew":true,"blurb":["Drift, yarış, kariyer ve garaj.","Drift, racing, career and garage."]},
+    "threejs-fish-tank":{"cat":"sim","accent":"#66c7c8","time":["Kurulum gerekli","Setup required"],"isNew":true,"blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. Yerel sürüm henüz derlenmedi.","Realistic WebGPU aquarium with 132 fish and 8 species. Local build pending."]},
+    "empires-of-the-ages":{"cat":"str","accent":"#dbbd7c","time":["3D RTS","3D RTS"],"isNew":true,"blurb":["Kaynak topla, üs kur ve rakip imparatorluklarla mücadele et.","Gather resources, build bases and fight rival empires."]},
+    "nordschleife-racer":{"cat":"arc","accent":"#a8bbc6","time":["Yarış · 3D","Racing · 3D"],"isNew":true,"blurb":["Nürburgring pistinde zamana karşı yarış ve hayalet tur.","Time attack and ghost laps on the Nürburgring."]},
+    "ai-town":{"cat":"sim","accent":"#9fb4ec","time":["AI yaşam sim","AI life sim"],"isNew":true,"blurb":["Yapay zekâ karakterlerinin yaşadığı ve sohbet ettiği sanal kasaba.","A virtual town inhabited by conversational AI characters."]},
     'iki-milyarin-golgesi':{cat:'sim',accent:'#e0a96d',time:['24 bölüm','24 chapters'],isNew:true,blurb:['Doğum ve ölüm sayıları neden birbirini tutuyor? Gerçeği ararken kime güveneceğine karar ver.','Why do births and deaths match? Decide whom to trust as you search for the truth.']},
     'sisli-yokus':{cat:'sim',accent:'#e8b365',time:['35 bölüm','35 chapters'],isNew:true,blurb:['Erdoğdu’dan Maçka’ya, Kerem’in 60 yıllık hayatına seçimlerinle yön ver.','Shape sixty years of Kerem’s life, from Erdoğdu to Maçka.']},
     'solstice-swell':{cat:'sim',accent:'#55c8cc',time:['4 kıyı · 3D','4 coasts · 3D'],isNew:true,blurb:['Gün batımında dalgalarla dans et, dört kıyıyı keşfet ve okyanusun ritmini hisset.','Ride sunset waves, explore four coastlines and find the rhythm of the ocean.']},
