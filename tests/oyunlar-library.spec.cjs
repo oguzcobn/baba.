@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test');
 const BASE = process.env.BABA_TEST_URL || 'http://127.0.0.1:4173/';
-const IDS=["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town","iki-milyarin-golgesi","sisli-yokus","solstice-swell","kar","modern-age-2026","ambermere","element","subterra","hayat-oyunu","futbol","career","draft","istiklal1919","vadi","runaway-cheese","sis-hatti","living-island","koy","surus","pelagos","serpentia","yasam","akvaryum","dune","mudafi","mete-cubugu","kartal","astra-orbit","operasyon-hatti","simitci","yelken","geko-bahcesi","lanternlight","yayla-savunmasi","amsterdam-coffeeshop","kafa-topu","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","yilan-arenasi","gta-vice-city","tekken-3","hungry-shark","rota-conference","dsan-shipyard","2048","sudoku","mines","blocks"];
-const SVG = new Set(["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town","solstice-swell","kar","ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
+const IDS=["iki-milyarin-golgesi","sisli-yokus","solstice-swell","kar","modern-age-2026","ambermere","element","subterra","hayat-oyunu","futbol","career","draft","istiklal1919","vadi","runaway-cheese","sis-hatti","living-island","koy","surus","pelagos","serpentia","yasam","akvaryum","dune","mudafi","mete-cubugu","kartal","astra-orbit","operasyon-hatti","simitci","yelken","geko-bahcesi","lanternlight","yayla-savunmasi","amsterdam-coffeeshop","kafa-topu","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","yilan-arenasi","gta-vice-city","tekken-3","hungry-shark","rota-conference","dsan-shipyard","2048","sudoku","mines","blocks"];
+const SVG = new Set(["solstice-swell","kar","ambermere","element","surus","living-island","age-of-war","gunblood","warfare-1917","the-waitress","fancy-pants-3","territory-war","electric-man-2","wild-ones-world","rota-conference","runaway-cheese","sis-hatti"]);
 for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe(`Oyun kütüphanesi ${vp.width}`, () => {
   test.use({viewport:vp});
   test('hero, kapaklar, filtre, arama, vitrin ve son oynanan', async ({page}) => {
@@ -40,13 +40,8 @@ for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe
   });
 });
 
-// Standalone imports never launch external demo websites.
-test('November import routes', async ({page})=>{
-  await page.goto(BASE+'#velocity-rush');
-  await expect(page.locator('.game-page iframe')).toHaveAttribute('src','games/velocity-rush/index.html');
-  for(const id of ['offroad','threejs-fish-tank','empires-of-the-ages','nordschleife-racer','ai-town']) {
-    await page.goto(BASE+'#'+id);
-    await expect(page.locator('.game-page')).toBeVisible();
-    await expect(page.locator('.game-page a[href^="https://"]')).toHaveCount(0);
-  }
+
+test('Removed imports are absent from the public catalogue', async ({page}) => {
+  await page.goto(BASE+'#oyunlar');
+  for (const id of ["offroad","velocity-rush","threejs-fish-tank","empires-of-the-ages","nordschleife-racer","ai-town"]) await expect(page.locator('.lb-card[data-id="'+id+'"]')).toHaveCount(0);
 });

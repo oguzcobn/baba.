@@ -164,12 +164,6 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
-    {id:"offroad",name:"Offroad",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("4×4 · 3D","4×4 · 3D")},
-    {id:"velocity-rush",name:"Velocity Rush",tags:[["Yarış","Racing"],["BABA içi","On BABA"]],best:()=>T("20 araç · 9 pist","20 cars · 9 tracks")},
-    {id:"threejs-fish-tank",name:"Three.js Fish Tank",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("WebGPU · 3D","WebGPU · 3D")},
-    {id:"empires-of-the-ages",name:"Empires of the Ages",tags:[["Strateji","Strategy"],["Kurulum bekliyor","Setup pending"]],best:()=>T("3D RTS","3D RTS")},
-    {id:"nordschleife-racer",name:"Nordschleife Racer",tags:[["Yarış","Racing"],["Kurulum bekliyor","Setup pending"]],best:()=>T("Yarış · 3D","Racing · 3D")},
-    {id:"ai-town",name:"AI Town",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("AI yaşam sim","AI life sim")},
     {id:'iki-milyarin-golgesi',name:['İki Milyarın Gölgesi','İki Milyarın Gölgesi'],tags:[['Yaşam simülasyonu','Life simulation'],['Bilimkurgu','Science fiction']],best:()=>T('24 bölüm','24 chapters')},
     {id:'sisli-yokus',name:['Sisli Yokuş','Sisli Yokuş'],tags:[['Görsel roman','Visual novel'],['Trabzon','Trabzon']],best:()=>T('35 bölüm','35 chapters')},
     {id:'solstice-swell',name:['Solstice Swell — 3D Sörf','Solstice Swell — 3D Ocean Surfing'],tags:[['Simülasyon','Simulation'],['Sörf','Surfing'],['Huzur','Relaxing']],best:()=>T('4 kıyı · 3D','4 coastlines · 3D')},
@@ -276,12 +270,6 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
-    'offroad':'img/library/offroad-1280.svg',
-    'velocity-rush':'img/library/velocity-rush-1280.svg',
-    'threejs-fish-tank':'img/library/threejs-fish-tank-1280.svg',
-    'empires-of-the-ages':'img/library/empires-of-the-ages-1280.svg',
-    'nordschleife-racer':'img/library/nordschleife-racer-1280.svg',
-    'ai-town':'img/library/ai-town-1280.svg',
     'iki-milyarin-golgesi':'img/library/iki-milyarin-golgesi-1280.webp',
     'sisli-yokus':'img/library/sisli-yokus-1280.webp',
     'solstice-swell':'img/library/solstice-swell-1280.svg',
@@ -395,58 +383,6 @@ const App = (() => {
   }
 
   /* ==================== YENİ ARCADE & HARİCİ OYUNLAR ==================== */
-  const NOV_IMPORTED = {
-  "offroad": {
-    "name": "Offroad",
-    "notice": [
-      "Offroad Vite derlemesi gerekli.",
-      "Offroad requires a Vite build."
-    ]
-  },
-  "velocity-rush": {
-    "name": "Velocity Rush",
-    "notice": [
-      "20 araç, 9 pist, drift ve kariyer.",
-      "20 cars, 9 tracks, drift and career."
-    ]
-  },
-  "threejs-fish-tank": {
-    "name": "Three.js Fish Tank",
-    "notice": [
-      "WebGPU ve model dosyalarının derlenmesi gerekli.",
-      "Requires WebGPU and a complete asset build."
-    ]
-  },
-  "empires-of-the-ages": {
-    "name": "Empires of the Ages",
-    "notice": [
-      "Yayın izni ve Vite derlemesi gerekli.",
-      "Requires redistribution permission and a Vite build."
-    ]
-  },
-  "nordschleife-racer": {
-    "name": "Nordschleife Racer",
-    "notice": [
-      "Eksik uygulama iskeleti ve araç modelleri gerekli.",
-      "Requires missing host application and car models."
-    ]
-  },
-  "ai-town": {
-    "name": "AI Town",
-    "notice": [
-      "Bağımsız Convex sunucusu ve yapay zekâ servisi gerekli.",
-      "Requires an independent Convex backend and AI provider."
-    ]
-  }
-};
-  function openNovemberImport(id) {
-    const g = NOV_IMPORTED[id];
-    if (id === 'velocity-rush') return openEmbeddedGame({title:g.name,url:'games/velocity-rush/index.html',tag:T('BABA. · Yarış','BABA. · Racing'),lead:T(...g.notice),tip:T('Kaynak ZIP’in özgün sürümü; ilerleme oyun içi tarayıcı kaydında tutulur.','Original ZIP version; progression uses the game’s browser storage.')});
-    const b = shell(g.name, `<p class="bb-tip" data-import-status="pending">${T(...g.notice)}</p><p class="bb-tip">${T('Bağımsız BABA sürümü henüz hazır değil. Harici demo kullanılmaz.','The standalone BABA version is not ready. No external demo is used.')}</p>`,T('BABA. · Kurulum','BABA. · Setup'));
-    if (!['offroad','threejs-fish-tank'].includes(id)) return;
-    const url = 'games/'+id+'/index.html';
-    fetch('games/'+id+'/baba-build.json',{cache:'no-store'}).then(async response=>{if(!response.ok)return;const marker=await response.json();if(marker.id!==id || !b.isConnected || location.hash!=='#'+id)return;openEmbeddedGame({title:g.name,url,tag:T('BABA. · Simülasyon','BABA. · Simulation'),lead:T('Özgün kaynak sürümü BABA üzerinde çalışır.','Original source version hosted on BABA.'),tip:T('Oyun içi kontrolleri kullan.','Use the in-game controls.')});}).catch(()=>{});
-  }
   function openEmbeddedGame(cfg) {
     const b = shell(cfg.title, `<div class="vd-bar"><p class="bb-tip">${cfg.lead}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${cfg.url}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
       <div class="dsan-frame"><iframe src="${cfg.url}" title="${esc(cfg.title)}" allow="fullscreen; autoplay; gamepad" allowfullscreen loading="eager"></iframe></div>
@@ -1153,7 +1089,6 @@ const App = (() => {
     else if (r === 'mudafi') mudafi();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'modern-age-2026') openEmbeddedGame({title:'Modern Age: 2026',url:'games/modern-age-2026/index.html',tag:T('BABA. · Strateji','BABA. · Strategy'),lead:T('Altı ülkeden birini seç, üssünü geliştir ve rakibinle ticaret yap veya savaş.','Lead one of six nations, build your base and trade or fight with your rival.'),tip:T('B ile işçileri seç, kaynaklara sağ tıkla. H ile karargâha dön.','Press B to select workers, right-click a resource and press H to return to headquarters.')});
-    else if (Object.prototype.hasOwnProperty.call(NOV_IMPORTED,r)) openNovemberImport(r);
     else if (r === 'iki-milyarin-golgesi') openEmbeddedGame({
       title:'İki Milyarın Gölgesi',url:'games/iki-milyarin-golgesi/index.html',tag:T('Yaşam simülasyonu','Life simulation'),
       lead:T('2030 yılında küresel nüfus verilerindeki tuhaf bir örüntüyü araştır.','Investigate a strange pattern in global population data in 2030.'),
