@@ -1,0 +1,3616 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sisli Yokuş: Erdoğdu'dan Boğaz'a</title>
+  <link rel="stylesheet" href="game.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,500;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-ink: #0c1118;
+      --glass: rgba(12, 17, 24, 0.84);
+      --glass-soft: rgba(15, 22, 32, 0.74);
+      --amber: #e8b365;
+      --amber-soft: rgba(232, 179, 101, 0.18);
+      --border: rgba(255, 244, 224, 0.14);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--bg-ink);
+      color: #f4efe6;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      overflow-x: hidden;
+    }
+    .font-story { font-family: 'Crimson Pro', Georgia, serif; }
+
+    /* Scene background & gentle Ghibli Ken Burns motion */
+    .scene-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center 22%;
+      transition: opacity 0.9s ease;
+      animation: kenBurns 28s ease-in-out infinite alternate;
+      will-change: transform, opacity;
+    }
+    @keyframes kenBurns {
+      0% { transform: scale(1.0) translate3d(0, 0, 0); }
+      100% { transform: scale(1.07) translate3d(-1.2%, -0.8%, 0); }
+    }
+    .mobile-ken-burns {
+      animation: kenBurns 22s ease-in-out infinite alternate;
+      will-change: transform, opacity;
+    }
+
+    .scene-vignette {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at center, rgba(10,14,20,0.06) 35%, rgba(8,12,18,0.72) 100%),
+        linear-gradient(to bottom, rgba(8,12,18,0.68) 0%, rgba(8,12,18,0.08) 26%, rgba(8,12,18,0.25) 58%, rgba(8,12,18,0.94) 100%);
+      pointer-events: none;
+    }
+
+    .glass-panel {
+      background: var(--glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+    }
+
+    .choice-btn {
+      background: rgba(20, 28, 40, 0.86);
+      border: 1px solid rgba(232, 179, 101, 0.28);
+      transition: transform 0.16s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+    }
+    .choice-btn:hover:not(:disabled) {
+      background: rgba(38, 48, 66, 0.94);
+      border-color: rgba(232, 179, 101, 0.78);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    }
+    .choice-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .choice-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .toast-float {
+      animation: toastSlide 2.6s ease forwards;
+    }
+    @keyframes toastSlide {
+      0% { opacity: 0; transform: translateY(10px) scale(0.96); }
+      12% { opacity: 1; transform: translateY(0) scale(1); }
+      82% { opacity: 1; transform: translateY(-4px) scale(1); }
+      100% { opacity: 0; transform: translateY(-16px) scale(0.96); }
+    }
+
+    .fade-in-up {
+      animation: fadeUp 0.45s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes filmPan {
+      0% { transform: scale(1.02) translate3d(0, 0, 0); }
+      100% { transform: scale(1.12) translate3d(-2%, -1.5%, 0); }
+    }
+    .film-pan-active {
+      animation: filmPan 5.5s ease-in-out forwards;
+    }
+
+    /* Custom subtle scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+    ::-webkit-scrollbar-thumb { background: rgba(232,179,101,0.35); border-radius: 999px; }
+  </style>
+</head>
+<body class="min-h-screen w-full relative select-none">
+
+  <!-- Full-viewport visual stage -->
+  <div id="stage" class="fixed inset-0 overflow-hidden bg-[#0c1118]">
+    <div id="bgLayerA" class="scene-bg opacity-100"></div>
+    <div id="bgLayerB" class="scene-bg opacity-0"></div>
+    <canvas id="weatherCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+    <div class="scene-vignette"></div>
+  </div>
+
+  <!-- Floating Stat Change Toasts -->
+  <div id="toastContainer" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- TITLE SCREEN -->
+  <section id="titleScreen" class="relative z-30 min-h-screen flex flex-col items-center justify-center p-5 text-center">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 sm:p-10 shadow-2xl fade-in-up">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-xs font-medium tracking-wider uppercase mb-4">
+        <span>Erdoğdu · İstanbul · Amerika · Maçka</span>
+        <span>•</span>
+        <span>16 – 76 Yaş</span>
+      </div>
+      <h1 class="font-story text-4xl sm:text-6xl font-bold tracking-tight text-amber-50 leading-tight mb-3">
+        Sisli Yokuş
+      </h1>
+      <p class="font-story italic text-lg sm:text-xl text-amber-200/90 mb-5">
+        "Erdoğdu'nun yağmurlu taşlarından Boğaz'ın soğuk ışıklarına Amerika'nın taşrasından dönüp Maçka'da annesinin köyünde son bulan altmış yıllık gerçek bir ömür..."
+      </p>
+      <p class="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl mx-auto mb-7">
+        On altı yaşında, annesinin yorgun omuzlarını hafifletmek için ilk kez arka sokağa adım atan Kerem'in hikayesi.
+        Her kararın <span class="text-amber-300 font-medium">cüzdanını, vicdanını, aileni, aşkını ve kaderini</span> şekillendirir.
+        On altıdan yetmiş altı yaşına kadar verdiğin her karar; Erdoğdu'dan İstanbul'a, Amerika taşrasından Maçka'ya uzanan eksiksiz bir insan ömrü yazacak.
+      </p>
+      <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button id="btnStartNew" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-base shadow-lg shadow-amber-900/30 transition cursor-pointer">
+          Hikayeye Başla (16 Yaş)
+        </button>
+        <button id="btnContinue" class="hidden w-full sm:w-auto px-6 py-3.5 rounded-xl bg-slate-800/90 hover:bg-slate-700/90 border border-amber-400/40 text-amber-200 font-medium text-base transition cursor-pointer">
+          Kaldığın Yerden Devam Et
+        </button>
+      </div>
+      <div class="mt-6 pt-5 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-400">
+        <span>35 Bölüm · 60 Yıllık Ömür</span>
+        <span>•</span>
+        <span>Bilinçli Karakterler</span>
+        <span>•</span>
+        <span>10 Farklı Son</span>
+        <span>•</span>
+        <span>Maddi & Duygusal Hayat Yönetimi</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN GAME HUD & DIALOGUE -->
+  <div id="gameScreen" class="hidden relative z-20 min-h-screen flex flex-col md:justify-between bg-[#0c1118] md:bg-transparent">
+
+    <!-- Top Compact HUD Bar -->
+    <header class="w-full p-2 sm:p-3 md:p-4 shrink-0">
+      <div class="max-w-6xl mx-auto glass-panel rounded-xl md:rounded-2xl px-2.5 py-1.5 sm:px-4 sm:py-2.5 flex items-center justify-between gap-2">
+        <!-- Left: Chapter & Age -->
+        <div class="flex items-center gap-2 min-w-0">
+          <div class="w-8 h-8 md:w-9 md:h-9 rounded-lg md:rounded-xl bg-amber-500/20 border border-amber-400/40 flex flex-col items-center justify-center shrink-0">
+            <span id="hudAge" class="text-xs md:text-sm font-bold text-amber-300 leading-none">16</span>
+            <span class="text-[8px] md:text-[9px] text-amber-200/80 uppercase">Yaş</span>
+          </div>
+          <div class="min-w-0">
+            <div id="hudChapter" class="text-xs sm:text-sm font-semibold text-amber-100 truncate">Bölüm 1: Erdoğdu'nun Yokuşu</div>
+            <div id="hudLocation" class="text-[10px] sm:text-[11px] text-slate-300 truncate">Erdoğdu Mahallesi, Trabzon</div>
+          </div>
+        </div>
+
+        <!-- Center: Core Life Stats (Desktop inline, Mobile shown in slim bar below image) -->
+        <div class="hidden md:flex items-center gap-2.5 text-xs">
+          <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/60 border border-emerald-500/30" title="Nakit Bakiye">
+            <span class="text-emerald-400 font-bold">₺</span>
+            <span id="statMoney" class="font-semibold text-emerald-200">150</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10" title="Vicdan ve Ruh Hali">
+            <span class="text-sky-300">Vicdan</span>
+            <span id="statConscience" class="font-semibold text-white">80</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10" title="Aile ve Aşk Bağı">
+            <span class="text-rose-300">Aile</span>
+            <span id="statFamily" class="font-semibold text-white">85</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10" title="Yeraltı İtibarı">
+            <span class="text-amber-300">İtibar</span>
+            <span id="statRep" class="font-semibold text-white">10</span>
+          </div>
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-900/70 border border-white/10" title="Polis ve Takip Riski">
+            <span class="text-red-400">Risk</span>
+            <span id="statRisk" class="font-semibold text-white">5</span>
+          </div>
+        </div>
+
+        <!-- Right: Utility Buttons (Single line on mobile & desktop) -->
+        <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+          <button id="btnLifeDrawer" class="px-2 py-1.5 sm:px-2.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/40 text-amber-200 text-[11px] sm:text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            Hayat<span class="hidden sm:inline"> &amp; Finans</span>
+          </button>
+          <button id="btnLogModal" class="px-2 py-1.5 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-[11px] sm:text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            Günlük
+          </button>
+          <button id="btnCinemaMode" class="hidden md:inline-block px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-xs font-medium transition cursor-pointer" title="Görseli Tam Ekran İzle">
+            Görsel
+          </button>
+          <button id="btnAudioToggle" class="hidden md:inline-block px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-xs font-medium transition cursor-pointer" title="Atmosferik Ses">
+            Ses: Açık
+          </button>
+          <button id="btnMenuToggle" class="px-2 py-1.5 sm:px-2.5 rounded-lg bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 text-[11px] sm:text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            Menü
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MOBILE UNOBSTRUCTED 16:9 SCENE VISUAL STAGE -->
+    <div id="mobileVisualWrap" class="md:hidden w-full px-2 shrink-0">
+      <div class="relative w-full aspect-video rounded-xl overflow-hidden border border-white/15 shadow-xl bg-slate-950">
+        <img id="mobileSceneImg" src="" alt="Sahne Görseli" class="w-full h-full object-cover mobile-ken-burns transition-opacity duration-500" />
+        <canvas id="mobileWeatherCanvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+        <div class="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-black/70 to-transparent pointer-events-none"></div>
+        <button id="btnMobileAudio" class="absolute top-2 right-2 px-2 py-1 rounded-lg bg-black/55 backdrop-blur-md border border-white/15 text-[10px] text-amber-200 font-medium cursor-pointer">
+          Ses: Açık
+        </button>
+      </div>
+      <!-- Mobile Slim 1-Line Stat Strip -->
+      <div class="mt-2 grid grid-cols-5 gap-1 text-center text-[10px]">
+        <div class="py-1 px-1 rounded-lg bg-emerald-950/70 border border-emerald-500/30">
+          <div class="text-emerald-400 font-bold leading-none">₺<span id="mStatMoney">150</span></div>
+          <div class="text-[9px] text-emerald-200/70 mt-0.5">Nakit</div>
+        </div>
+        <div class="py-1 px-1 rounded-lg bg-slate-900/80 border border-white/10">
+          <div id="mStatConscience" class="text-sky-300 font-bold leading-none">80</div>
+          <div class="text-[9px] text-slate-400 mt-0.5">Vicdan</div>
+        </div>
+        <div class="py-1 px-1 rounded-lg bg-slate-900/80 border border-white/10">
+          <div id="mStatFamily" class="text-rose-300 font-bold leading-none">85</div>
+          <div class="text-[9px] text-slate-400 mt-0.5">Aile</div>
+        </div>
+        <div class="py-1 px-1 rounded-lg bg-slate-900/80 border border-white/10">
+          <div id="mStatRep" class="text-amber-300 font-bold leading-none">10</div>
+          <div class="text-[9px] text-slate-400 mt-0.5">İtibar</div>
+        </div>
+        <div class="py-1 px-1 rounded-lg bg-slate-900/80 border border-white/10">
+          <div id="mStatRisk" class="text-red-400 font-bold leading-none">5</div>
+          <div class="text-[9px] text-slate-400 mt-0.5">Risk</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Dialogue & Choice Panel -->
+    <main id="dialogueDock" class="w-full px-2 pt-2 pb-24 sm:px-3 md:p-5 md:mt-auto transition-opacity duration-300 flex-1 md:flex-none flex flex-col justify-start md:justify-end">
+      <div class="max-w-4xl w-full mx-auto">
+        <!-- Chapter Transition Banner (hidden by default) -->
+        <div id="chapterBanner" class="hidden mb-2 px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-200 text-[11px] sm:text-sm font-medium text-center backdrop-blur-md"></div>
+
+        <div class="glass-panel rounded-xl md:rounded-2xl p-3.5 sm:p-5 md:p-6 shadow-2xl">
+          <!-- Speaker Header -->
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <div class="flex items-center gap-2">
+              <div id="speakerAvatar" class="w-8 h-8 md:w-9 md:h-9 rounded-full flex items-center justify-center text-xs md:text-sm font-bold border border-white/25 shrink-0 bg-amber-500/25 text-amber-200">
+                K
+              </div>
+              <div>
+                <div id="speakerName" class="text-xs sm:text-sm md:text-base font-bold text-amber-300 leading-tight">Anlatıcı</div>
+                <div id="speakerRole" class="text-[10px] sm:text-[11px] text-slate-400 leading-tight">Erdoğdu, Trabzon</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="sceneProgress" class="text-[11px] text-slate-400 hidden sm:inline">Sahne 1</span>
+              <button id="btnSkipType" class="text-[11px] text-amber-300/80 hover:text-amber-200 px-2 py-0.5 rounded bg-white/5 cursor-pointer">
+                Hızlandır
+              </button>
+            </div>
+          </div>
+
+          <!-- Story Text -->
+          <div id="dialogueText" class="font-story text-[16px] sm:text-lg md:text-[20px] leading-relaxed text-slate-100 min-h-[60px] md:min-h-[82px] mb-3.5 cursor-pointer"></div>
+
+          <!-- Choices Container -->
+          <div id="choicesBox" class="grid grid-cols-1 gap-2"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ENDING SCREEN OVERLAY -->
+  <section id="endingScreen" class="hidden fixed inset-0 z-40 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md overflow-y-auto">
+    <div class="glass-panel max-w-2xl w-full rounded-2xl p-6 sm:p-8 shadow-2xl my-auto fade-in-up">
+      <div class="text-xs font-semibold uppercase tracking-widest text-amber-300 mb-2">60 Yıllık Bir Ömrün Sonu · 76 Yaş · Maçka</div>
+      <h2 id="endingTitle" class="font-story text-3xl sm:text-4xl font-bold text-amber-50 mb-3"></h2>
+      <p id="endingText" class="font-story text-lg text-slate-200 leading-relaxed mb-6"></p>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div class="text-[11px] text-slate-400">Toplam Servet</div>
+          <div id="endMoney" class="text-base font-bold text-emerald-300 mt-0.5">₺0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div class="text-[11px] text-slate-400">Vicdan</div>
+          <div id="endConscience" class="text-base font-bold text-sky-300 mt-0.5">0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div class="text-[11px] text-slate-400">Aile & Aşk</div>
+          <div id="endFamily" class="text-base font-bold text-rose-300 mt-0.5">0</div>
+        </div>
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
+          <div class="text-[11px] text-slate-400">Yeraltı İtibarı</div>
+          <div id="endRep" class="text-base font-bold text-amber-300 mt-0.5">0</div>
+        </div>
+      </div>
+
+      <div id="endingEpilogue" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-5"></div>
+      <div id="endingKeepsakes" class="mb-6 text-xs text-slate-300 bg-white/5 border border-white/10 rounded-xl p-3.5"></div>
+
+      <div class="mb-3">
+        <button id="btnWatchRecap" class="w-full px-5 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-orange-400 hover:brightness-110 text-slate-950 font-bold text-sm sm:text-base shadow-lg shadow-amber-900/40 transition flex items-center justify-center gap-2 cursor-pointer">
+          <span>▶</span>
+          <span>Hayat Özeti Videosunu İzle (16 → 76 Yaş)</span>
+        </button>
+      </div>
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button id="btnRestartFromEnd" class="flex-1 px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-amber-400/35 text-amber-200 font-semibold text-sm transition cursor-pointer">
+          Yeni Bir Kader Yaz (16 Yaşa Dön)
+        </button>
+        <button id="btnViewLogFromEnd" class="px-5 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 font-medium text-sm transition cursor-pointer">
+          Hayat Günlüğünü Oku
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CINEMATIC ENDING RECAP VIDEO MODAL -->
+  <div id="recapModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-5 bg-black/92 backdrop-blur-md">
+    <div class="w-full max-w-3xl bg-[#0a0f16] border border-amber-400/25 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <!-- Top Cinema Bar -->
+      <div class="px-4 py-2.5 bg-black/60 border-b border-white/10 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+          <span class="text-xs sm:text-sm font-semibold text-amber-200 truncate">SİSLİ YOKUŞ · Final Özet Filmi</span>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="recapCounter" class="text-[11px] text-slate-400">1 / 1</span>
+          <button id="btnCloseRecap" class="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">Kapat</button>
+        </div>
+      </div>
+
+      <!-- 16:9 Widescreen Movie Frame -->
+      <div class="relative w-full aspect-video bg-black overflow-hidden">
+        <img id="recapImg" src="" alt="Özet Sahnesi" class="w-full h-full object-cover opacity-100 transition-opacity duration-700" />
+        <!-- Letterbox cinema bars & vignette -->
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/55 pointer-events-none"></div>
+
+        <!-- Top-left Age & Chapter Stamp -->
+        <div class="absolute top-3 left-3 sm:top-4 sm:left-4 flex items-center gap-2">
+          <span id="recapBadge" class="px-2.5 py-1 rounded-full bg-black/65 border border-amber-400/40 text-amber-300 text-[10px] sm:text-xs font-semibold backdrop-blur-md">16 YAŞ</span>
+          <span id="recapChapter" class="text-[10px] sm:text-xs text-slate-200/90 drop-shadow font-medium"></span>
+        </div>
+
+        <!-- Center Title Card (used for Opening & Final Ending slides) -->
+        <div id="recapTitleCard" class="hidden absolute inset-0 flex flex-col items-center justify-center text-center p-5 bg-black/55 backdrop-blur-[2px]">
+          <div id="recapCardKicker" class="text-[10px] sm:text-xs uppercase tracking-[0.22em] text-amber-300 mb-2"></div>
+          <h3 id="recapCardTitle" class="font-story text-2xl sm:text-4xl font-bold text-amber-50 mb-2 drop-shadow-lg"></h3>
+          <p id="recapCardSub" class="font-story italic text-sm sm:text-lg text-slate-200 max-w-xl leading-relaxed"></p>
+        </div>
+
+        <!-- Bottom Cinematic Subtitles (for decision slides) -->
+        <div id="recapSubtitleBox" class="absolute inset-x-0 bottom-0 p-3 sm:p-5">
+          <div id="recapNarration" class="text-[11px] sm:text-xs text-slate-300/95 line-clamp-2 mb-1 drop-shadow"></div>
+          <div id="recapChoiceLine" class="font-story text-sm sm:text-lg font-semibold text-amber-200 drop-shadow-md"></div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="w-full h-1.5 bg-white/10 overflow-hidden">
+        <div id="recapProgressBar" class="h-full bg-amber-400 transition-all duration-300" style="width: 0%"></div>
+      </div>
+
+      <!-- Player Controls -->
+      <div class="px-3 py-2.5 sm:px-4 sm:py-3 bg-black/70 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-1.5">
+          <button id="btnRecapPrev" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">◀ Önceki</button>
+          <button id="btnRecapPlayPause" class="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-xs cursor-pointer">Duraklat</button>
+          <button id="btnRecapNext" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">Sonraki ▶</button>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <button id="btnRecapSpeed" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">Hız: 1x</button>
+          <button id="btnRecapReplay" class="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-amber-200 cursor-pointer">Baştan İzle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIFE & FINANCE DRAWER MODAL -->
+  <div id="lifeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel max-w-2xl w-full max-h-[88vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <div>
+          <h3 class="font-story text-2xl font-bold text-amber-100">Kerem'in Hayatı & Finans</h3>
+          <p class="text-xs text-slate-400">Duygusal bağlarını, birikimini ve sokaktaki dengeni yönet.</p>
+        </div>
+        <button id="btnCloseLife" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">Kapat</button>
+      </div>
+
+      <div class="p-5 overflow-y-auto space-y-5">
+        <!-- Financial Summary -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div class="p-3 rounded-xl bg-emerald-950/50 border border-emerald-500/30">
+            <div class="text-[11px] text-emerald-300/80">Eldeki Nakit</div>
+            <div id="lifeCash" class="text-lg font-bold text-emerald-200 mt-0.5">₺150</div>
+          </div>
+          <div class="p-3 rounded-xl bg-sky-950/50 border border-sky-500/30">
+            <div class="text-[11px] text-sky-300/80">Temiz Birikim</div>
+            <div id="lifeCleanSavings" class="text-lg font-bold text-sky-200 mt-0.5">₺0</div>
+          </div>
+          <div class="p-3 rounded-xl bg-amber-950/50 border border-amber-500/30 col-span-2 sm:col-span-1">
+            <div class="text-[11px] text-amber-300/80">Dönem Eylem Hakkı</div>
+            <div id="lifeActionsLeft" class="text-lg font-bold text-amber-200 mt-0.5">2 / 2</div>
+          </div>
+        </div>
+
+        <!-- Relationships -->
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2.5">İlişkiler & Duygusal Bağlar</h4>
+          <div id="relationsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        </div>
+
+        <!-- Personal Life Actions -->
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2.5">Kişisel Hayat Kararları (Bu Bölüm)</h4>
+          <div id="lifeActionsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5"></div>
+        </div>
+
+        <!-- Keepsakes / Inventory -->
+        <div>
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-amber-300/90 mb-2.5">Hatıralar & Eşyalar</h4>
+          <div id="keepsakesList" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORY LOG MODAL -->
+  <div id="logModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel max-w-2xl w-full max-h-[85vh] rounded-2xl flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+        <h3 class="font-story text-2xl font-bold text-amber-100">Hayat Günlüğü</h3>
+        <button id="btnCloseLog" class="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-slate-200 cursor-pointer">Kapat</button>
+      </div>
+      <div id="logContent" class="p-5 overflow-y-auto space-y-3 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- MENU MODAL -->
+  <div id="menuModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-panel max-w-sm w-full rounded-2xl p-5 shadow-2xl space-y-3">
+      <h3 class="font-story text-2xl font-bold text-amber-100 text-center">Oyun Menüsü</h3>
+      <p class="text-xs text-slate-400 text-center">İlerlemen tarayıcıda otomatik olarak kaydedilir.</p>
+      <button id="btnResumeMenu" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm cursor-pointer">Oyuna Dön</button>
+      <button id="btnRestartMenu" class="w-full py-2.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 border border-red-400/40 text-red-200 font-medium text-sm cursor-pointer">Hikayeyi Baştan Başlat</button>
+      <button id="btnTitleMenu" class="w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/15 text-slate-200 font-medium text-sm cursor-pointer">Ana Ekrana Dön</button>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. GHIBLI SCENE ASSETS (inlined as base64 during build)
+    // =========================================================================
+    const SCENES = {
+      erdogdu_dawn: {
+        img: "assets/images/01_erdogdu_safak_genel.webp",
+        weather: "mist",
+        location: "Erdoğdu Yokuşu, Trabzon"
+      },
+      s_ch1_start: {
+        img: "assets/images/02_kerem_16_erdogdu_yokusu.webp",
+        weather: "mist",
+        location: "Erdoğdu Yokuşu, Trabzon"
+      },
+      s_ch1_home: {
+        img: "assets/images/03_emine_anne_mutfak.webp",
+        weather: "warm_rain",
+        location: "Aksoy Ailesinin Evi, Erdoğdu"
+      },
+      s_ch1_tea: {
+        img: "assets/images/04_tarik_dayi_cay_ocagi.webp",
+        weather: "rain",
+        location: "Tarık Dayı'nın Çay Ocağı, Erdoğdu"
+      },
+      s_ch1_zeynep: {
+        img: "assets/images/05_zeynep_yokus_simit.webp",
+        weather: "light_rain",
+        location: "Erdoğdu Yokuş Başı, Trabzon"
+      },
+      s_ch1_alley: {
+        img: "assets/images/06_meydan_arka_sokak_gece.webp",
+        weather: "patrol_rain",
+        location: "Meydan Arka Sokağı, Trabzon"
+      },
+      s_ch2_backroom: {
+        img: "assets/images/07_mert_boztepe_arka_oda.webp",
+        weather: "rain",
+        location: "Çay Ocağı Arka Odası, Erdoğdu"
+      },
+      s_ch3_orhan: {
+        img: "assets/images/08_orhan_reis_trabzon_limani.webp",
+        weather: "storm",
+        location: "Trabzon Limanı Rıhtımı, Karadeniz"
+      },
+      s_ch3_crisis: {
+        img: "assets/images/09_liman_baskini_yunus.webp",
+        weather: "patrol_rain",
+        location: "Trabzon Limanı Konteyner Sahası"
+      },
+      s_ch3_grocery: {
+        img: "assets/images/10_kerem_21_bakkal_hasan.webp",
+        weather: "mist",
+        location: "Bakkal Hasan Efendi Önü, Erdoğdu"
+      },
+      s_ch4_goodbye: {
+        img: "assets/images/11_anne_ile_veda_23.webp",
+        weather: "warm_rain",
+        location: "Aksoy Ailesinin Evi, Erdoğdu"
+      },
+      s_ch5_ferry: {
+        img: "assets/images/12_istanbul_bogaz_vapuru_24.webp",
+        weather: "sun",
+        location: "İstanbul Boğazı Vapuru, Şafak"
+      },
+      s_ch5_haldun: {
+        img: "assets/images/13_haldun_bey_bogaz_kosku.webp",
+        weather: "light_rain",
+        location: "Haldun Bey'in Boğaz Köşkü, İstanbul"
+      },
+      s_ch5_merchant: {
+        img: "assets/images/14_karakoy_yasli_tuccar.webp",
+        weather: "light_rain",
+        location: "Tarihi Han Ofisi, Karaköy"
+      },
+      s_ch5_defne: {
+        img: "assets/images/15_defne_kutuphane_uyari.webp",
+        weather: "light_rain",
+        location: "Boğaz Köşkü Kütüphanesi, İstanbul"
+      },
+      s_ch6_karakoy: {
+        img: "assets/images/16_karakoy_gece_yagmuru_26.webp",
+        weather: "storm",
+        location: "Karaköy & Galata Sokağı, İstanbul"
+      },
+      s_ch11_tower: {
+        img: "assets/images/17_levent_gokdelen_ofisi_30.webp",
+        weather: "light_rain",
+        location: "Levent Gökdelen Ofisi, İstanbul"
+      },
+      s_ch14_autumn: {
+        img: "assets/images/18_erdogdu_sonbahar_anne_34.webp",
+        weather: "mist",
+        location: "Erdoğdu Sonbahar Yokuşu, Trabzon"
+      },
+      s_ch15_pier: {
+        img: "assets/images/19_bogaz_iskelesi_gun_batimi_36.webp",
+        weather: "sun",
+        location: "İstanbul Boğazı İskelesi, Gün Batımı"
+      },
+      s_ch20_age50: {
+        img: "assets/images/20_kerem_50_sessiz_cay_odasi.webp",
+        weather: "warm_rain",
+        location: "Denize Bakan Sessiz Çay Odası"
+      },
+      s_ch21_us_town: {
+        img: "assets/images/21_amerika_maple_creek_55.webp",
+        weather: "mist",
+        location: "Maple Creek Kasabası, Vermont (ABD)"
+      },
+      s_ch25_us_sunset: {
+        img: "assets/images/22_amerika_sundurma_gun_batimi_60.webp",
+        weather: "sun",
+        location: "Maple Creek Sundurması, Gün Batımı"
+      },
+      s_ch26_macka_road: {
+        img: "assets/images/23_trabzon_macka_anne_koyu_62.webp",
+        weather: "mist",
+        location: "Emine Anne'nin Köy Evi, Maçka · Trabzon"
+      },
+      s_ch30_macka_peace: {
+        img: "assets/images/24_macka_balkon_huzur_66.webp",
+        weather: "sun",
+        location: "Maçka Köy Evi Balkonu, Trabzon"
+      },
+      s_ch35_farewell: {
+        img: "assets/images/25_macka_huzurlu_veda_76.webp",
+        weather: "sun",
+        location: "Maçka Vadisi · Son Gün Batımı"
+      }
+    };
+
+    const SPEAKERS = {
+      anlatici: { name: "Anlatıcı", role: "Zamanın Sesi", initial: "✦", color: "bg-amber-500/20 text-amber-200 border-amber-400/40" },
+      kerem: { name: "Kerem", role: "Sen", initial: "K", color: "bg-sky-500/25 text-sky-200 border-sky-400/40" },
+      anne: { name: "Emine Anne", role: "Annen · Erdoğdu", initial: "E", color: "bg-rose-500/25 text-rose-200 border-rose-400/40" },
+      zeynep: { name: "Zeynep", role: "Çocukluk Aşkın", initial: "Z", color: "bg-pink-500/25 text-pink-200 border-pink-400/40" },
+      tarik: { name: "Tarık Dayı", role: "Çay Ocağı & Mahalle Aracısı", initial: "T", color: "bg-orange-500/25 text-orange-200 border-orange-400/40" },
+      mert: { name: "Mert", role: "Çocukluk Arkadaşın", initial: "M", color: "bg-indigo-500/25 text-indigo-200 border-indigo-400/40" },
+      orhan: { name: "Orhan Reis", role: "Trabzon Limanı Patronu", initial: "O", color: "bg-slate-600/40 text-slate-200 border-slate-400/40" },
+      haldun: { name: "Haldun Bey", role: "İstanbul Boğazı'nın Gölgesi", initial: "H", color: "bg-amber-700/35 text-amber-200 border-amber-500/50" },
+      defne: { name: "Defne", role: "Haldun Bey'in Finans & Hukuk Danışmanı", initial: "D", color: "bg-purple-500/25 text-purple-200 border-purple-400/40" },
+      salih: { name: "Salih Usta", role: "Babanın Eski Çırağı · Erdoğdu", initial: "S", color: "bg-yellow-500/25 text-yellow-200 border-yellow-400/40" },
+      kemal: { name: "Komiser Kemal", role: "Babanın Eski Mahalle Arkadaşı", initial: "K", color: "bg-blue-500/25 text-blue-200 border-blue-400/40" },
+      emre: { name: "Genç Emre", role: "Otobüsteki Trabzonlu Genç", initial: "E", color: "bg-teal-500/25 text-teal-200 border-teal-400/40" },
+      arthur: { name: "Komşu Arthur", role: "Emekli Marangoz · Maple Creek", initial: "A", color: "bg-emerald-500/25 text-emerald-200 border-emerald-400/40" },
+      luke: { name: "Genç Luke", role: "17 Yaş · Kasaba Benzinliği", initial: "L", color: "bg-cyan-500/25 text-cyan-200 border-cyan-400/40" },
+      doktor: { name: "Dr. Selin", role: "Maçka Devlet Hastanesi · Kardiyoloji", initial: "S", color: "bg-emerald-500/25 text-emerald-200 border-emerald-400/40" },
+      muhtar: { name: "Köy Muhtarı", role: "Maçka · Emine Anne'nin Köyü", initial: "M", color: "bg-amber-500/25 text-amber-200 border-amber-400/40" },
+      baris: { name: "Genç Barış", role: "Yeni Nesil Sokak Lideri · Karaköy", initial: "B", color: "bg-red-500/25 text-red-200 border-red-400/40" },
+      cem: { name: "Cem Bey", role: "Haldun Bey'in Oğlu", initial: "C", color: "bg-slate-500/25 text-slate-200 border-slate-400/40" },
+      clara: { name: "Clara", role: "Kasaba Lokantası Sahibi · Maple Creek", initial: "C", color: "bg-orange-500/25 text-orange-200 border-orange-400/40" }
+    };
+
+    // =========================================================================
+    // 2. STORY NODES (16 -> 26 YEARS OLD, 6 CHAPTERS, DEEP BRANCHES)
+    // =========================================================================
+    const STORY = {
+      // ==================== BÖLÜM 1: 16 YAŞ — ERDOĞDU'NUN YOKUŞU ====================
+      ch1_start: {
+        chapter: "Bölüm 1: Erdoğdu'nun Yokuşu",
+        age: 16,
+        dateLabel: "Kasım · 16 Yaş · Yağmurlu Sabah",
+        scene: "s_ch1_start",
+        speaker: "anlatici",
+        text: "Trabzon'un Erdoğdu yokuşuna sabah sisi henüz çökmüş. Taş kaldırımlar geceki Karadeniz yağmurundan ıslak. İki yıl önce marangoz babanı kaybettiğinizden beri evin bütün yükü Emine Anne'nin tek başına tuttuğu omuzlarında. On altı yaşındasın, Kerem. Cebinde 150 lira, okul çantanın fermuarı bozuk; mutfak masasında ise kırmızı mühürlü elektrik ihbarnamesi duruyor.",
+        choices: [
+          {
+            label: "Eve dönüp annenin çayını demle, evin gerçek hesabını açıkça konuş",
+            hint: "+Aile · +Vicdan · Emine Anne'nin direncini gör",
+            effects: { family: 6, conscience: 5, rel: { anne: 8 } },
+            next: "ch1_home"
+          },
+          {
+            label: "Yokuş aşağı inip Tarık Dayı'nın çay ocağına uğra — kayıt dışı iş var demişti",
+            hint: "+İtibar · Kayıt Dışı Ekonomiye İlk Adım",
+            effects: { rep: 6, conscience: -4, rel: { tarik: 8 } },
+            next: "ch1_tea_early"
+          }
+        ]
+      },
+
+      ch1_home: {
+        chapter: "Bölüm 1: Erdoğdu'nun Yokuşu",
+        age: 16,
+        dateLabel: "Kasım · 16 Yaş · Tek Ebeveyn Mücadelesi",
+        scene: "s_ch1_home",
+        speaker: "anne",
+        text: "Emine Anne fırındaki gece vardiyasından yeni dönmüş; önlüğünde un kokusu, ellerinde çatlaklar var. Tek başına bir evi ayakta tutan her anne gibi yorgunluğunu saklayıp gülümsüyor: \"Oğlum, mahalledeki dayanışma bizi bırakmaz, bakkal Hasan Efendi ay sonuna kadar idare eder. Benim tek derdim senin okulunu bitirip kimseye muhtaç olmaman.\"",
+        choices: [
+          {
+            label: "\"Anne artık ben de büyüyorum, babanın saatini takıyorum. Bu yükü tek başına taşımayacaksın.\"",
+            hint: "+Aile · Hatıra: Babanın Eski Saati",
+            effects: { family: 8, conscience: 5, item: "Babanın Eski Saati", rel: { anne: 10 } },
+            next: "ch1_school_wall"
+          },
+          {
+            label: "Sessizce faturanın altına 100 lira bırak ve annenin elini öpüp çık",
+            hint: "-₺100 · ++Aile · +Vicdan",
+            effects: { money: -100, family: 10, conscience: 8, item: "Babanın Eski Saati", rel: { anne: 12 } },
+            next: "ch1_school_wall"
+          }
+        ]
+      },
+
+      ch1_tea_early: {
+        chapter: "Bölüm 1: Erdoğdu'nun Yokuşu",
+        age: 16,
+        dateLabel: "Kasım · 16 Yaş · Arka Sokak",
+        scene: "s_ch1_tea",
+        speaker: "tarik",
+        text: "Çay ocağında tütün ve demli çay kokusu birbirine karışmış. Tarık Dayı, yoksul mahalle gençlerinin umutsuzluğunu yıllardır yakından bilen eski bir aracı: \"Baban rahmetli dürüst adamdı ama dürüstlük kirayı ödemedi delikanlı. Sen gözü açık çocuksun. Akşam ezanından sonra gel, evi kurtaracak bir iş konuşalım.\"",
+        choices: [
+          {
+            label: "\"Akşam gelirim Dayı. Yeter ki annem artık fırında çift vardiya kalmasın.\"",
+            hint: "+İtibar · Tarık seni gözüne kestirir",
+            effects: { rep: 6, rel: { tarik: 8 } },
+            next: "ch1_school_wall"
+          }
+        ]
+      },
+
+      ch1_school_wall: {
+        chapter: "Bölüm 1: Erdoğdu'nun Yokuşu",
+        age: 16,
+        dateLabel: "Aralık · 16 Yaş · Yokuş Başı",
+        scene: "s_ch1_zeynep",
+        speaker: "zeynep",
+        text: "Yokuşun başında Zeynep elinde defterleriyle seni bekliyor. Kendi hayalleri olan, eğitimle bu yoksulluk çemberini kırmaya kararlı bir genç kız. Sana sıcak simidinin yarısını uzatıyor: \"Kerem, iki gündür okulda yoksun. Ben hemşire olup kendi ayaklarım üstünde durmak için gece gündüz çalışıyorum. Ne olur arka sokağın kolay parasına kanma.\"",
+        choices: [
+          {
+            label: "Simidi bölüş: \"Merak etme Zeynep, sadece borçları kapatıp okula döneceğim.\"",
+            hint: "+Aile/Aşk · +Vicdan · Hatıra: Zeynep'in Atkısı",
+            effects: { family: 8, conscience: 5, item: "Zeynep'in Ördüğü Atkı", rel: { zeynep: 14 } },
+            next: "ch1_first_job"
+          },
+          {
+            label: "\"Diplomalar fatura ödemiyor Zeynep. Senin yolun okul, benimki bu yokuş.\"",
+            hint: "-Aile/Aşk · +İtibar · Zeynep'in gözünde ilk kırılma",
+            effects: { family: -8, rep: 8, conscience: -6, rel: { zeynep: -10 } },
+            next: "ch1_first_job"
+          }
+        ]
+      },
+
+      ch1_first_job: {
+        chapter: "Bölüm 1: Erdoğdu'nun Yokuşu",
+        age: 16,
+        dateLabel: "Ocak · 16 Yaş · İlk Zarf",
+        scene: "s_ch1_tea",
+        speaker: "tarik",
+        text: "Yağmur hızlanırken Tarık Dayı masanın altından mühürlü kalın bir zarf uzatıyor: \"Bunu Meydan'daki oto yıkamacıya bırakıp siyah poşeti getireceksin. İçini sorma. Karşılığı 1.200 lira. İki aylık kira ve annenin ilaçları. Ama bil ki bu kapıdan girince eskisi gibi çıkılmaz.\"",
+        choices: [
+          {
+            label: "Zarfı al ve soğukkanlılıkla tek başına göreve çık",
+            hint: "+₺1.200 · +İtibar · +Risk · -Vicdan",
+            effects: { money: 1200, rep: 12, risk: 10, conscience: -8, rel: { tarik: 10 } },
+            next: "ch2_delivery_tense"
+          },
+          {
+            label: "Zarfı al ama çocukluk arkadaşın Mert'i gözcü olarak yanına çağır",
+            hint: "+₺900 · ++Mert · Daha az risk",
+            effects: { money: 900, rep: 10, risk: 6, conscience: -6, rel: { mert: 14, tarik: 6 } },
+            next: "ch2_delivery_tense"
+          },
+          {
+            label: "\"Yasak pakete girmem Dayı, sadece çay ocağının hesabına ve getir-götürüne bakayım.\"",
+            hint: "+₺400 · +Vicdan · Yarı kayıtlı temiz başlangıç",
+            effects: { money: 400, conscience: 8, rep: -2, risk: 0, rel: { tarik: -6 } },
+            next: "ch2_workshop"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 2: 17 YAŞ — BABANIN EMANETİ & İLK GÖLGELER ====================
+      ch2_delivery_tense: {
+        chapter: "Bölüm 2: Babanın Emaneti",
+        age: 17,
+        dateLabel: "Şubat · 17 Yaş · Meydan Arka Sokağı",
+        worldPulse: "ch2",
+        scene: "s_ch1_alley",
+        speaker: "anlatici",
+        text: "Oto yıkamacının arkasındaki dar geçitte poşeti aldığın an köşeden polis feneri parlıyor! Kalbin kulaklarında atıyor. Genç bir memur: \"Hey genç, bu saatte ne işin var burada?\"",
+        choices: [
+          {
+            label: "Soğukkanlıca gülümse: \"Anneme nöbetçi eczaneden ilaç aldım memur bey\" deyip sakin yürü",
+            hint: "+İtibar · Soğukkanlılık · Risk artmaz",
+            effects: { rep: 8, risk: -2, conscience: -3 },
+            next: "ch2_workshop"
+          },
+          {
+            label: "Arka taş merdivenlerden fırlayıp Erdoğdu yokuşuna doğru koş",
+            hint: "+Risk · Poşet güvende, Tarık cesaretini över",
+            effects: { risk: 8, rep: 5, rel: { tarik: 6 } },
+            next: "ch2_workshop"
+          }
+        ]
+      },
+
+      ch2_workshop: {
+        chapter: "Bölüm 2: Babanın Emaneti",
+        age: 17,
+        dateLabel: "Nisan · 17 Yaş · Babanın Marangozhanesi",
+        resetActions: true,
+        worldPulse: "ch2",
+        scene: "s_ch3_grocery",
+        speaker: "salih",
+        text: "Erdoğdu'nun ara sokağında babanın yıllardır kilitli duran küçük marangozhanesinin önünde eski çırağı Salih Usta seni yakalıyor: \"Kerem, vergi borcu yüzünden belediye yarın dükkanı mühürlüyor. Elinde 1.200 lira varsa babanın tezgahını kurtarabilirsin... Ya da Tarık Dayı burayı arka depo yapmak için sana 3.000 lira veriyor.\"",
+        choices: [
+          {
+            label: "Borcu kapat (-₺1.200) ve babanın marangozhanesini temiz bir emanet olarak kurtar",
+            hint: "-₺1.200 · ++Vicdan · Finalde Temiz İş Yolu Açılır",
+            reqMoney: 1200,
+            effects: { money: -1200, conscience: 14, family: 10, flag: "saved_workshop", item: "Marangozhane Anahtarı", rel: { anne: 12 } },
+            next: "ch3_start"
+          },
+          {
+            label: "Dükkanı Tarık Dayı'ya gizli depo olarak kirala (+₺3.000)",
+            hint: "+₺3.000 · +İtibar · +Risk · İleride Dosyada Çıkabilir",
+            effects: { money: 3000, rep: 12, risk: 10, conscience: -10, flag: "workshop_stash", rel: { tarik: 12 } },
+            next: "ch3_start"
+          },
+          {
+            label: "Bırak satılsın... Geçmişin eşyalarına tutunarak büyüyemem",
+            hint: "Duygusal Kopuş",
+            effects: { conscience: -4, family: -6 },
+            next: "ch3_start"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 3: 18 YAŞ — ÇAY OCAĞININ ARKA ODASI ====================
+      ch3_start: {
+        chapter: "Bölüm 3: Arka Odadaki Pazarlık",
+        age: 18,
+        dateLabel: "Ekim · 18 Yaş · Kaçak Bahis Defteri",
+        resetActions: true,
+        worldPulse: "ch3",
+        scene: "s_ch2_backroom",
+        speaker: "mert",
+        text: "On sekiz yaşındasın. Okuldan koptun ama sokakta sözün geçmeye başladı. Mert'in kendi içinde büyük bir statü açlığı var; ailesi onu hep başarısız gördüğü için burada kendini kanıtlamak istiyor: \"Kerem, Tarık mahallenin bahis defterini bize bırakıyor! Haftada 4.500 lira. Ama Boztepe'nin lideri Selim masaya göz dikmiş.\"",
+        choices: [
+          {
+            label: "Defteri devral ve Boztepe ekibiyle masaya oturup bölgeyi barışla bölüş",
+            hint: "+₺4.500 · +İtibar · Diplomatik Çözüm",
+            effects: { money: 4500, rep: 12, risk: 8, conscience: -8, rel: { mert: 8, tarik: 8 } },
+            next: "ch3_boztepe"
+          },
+          {
+            label: "Boztepe ekibine sert gözdağı ver, tüm mahalleyi tek başına al",
+            hint: "+₺7.500 · ++İtibar · ++Risk · --Vicdan",
+            effects: { money: 7500, rep: 20, risk: 18, conscience: -14, rel: { mert: 12, tarik: 12 } },
+            next: "ch3_boztepe"
+          },
+          {
+            label: "Mert'i kenara çek: \"Sen sanayide ustanın yanına gir, bu pisliği sadece ben taşırım.\"",
+            hint: "+₺3.500 · +Vicdan · Mert'in kendi hayatı temiz yola döner",
+            effects: { money: 3500, rep: 8, risk: 6, conscience: 8, flag: "mert_protected", rel: { mert: -2 } },
+            next: "ch3_boztepe"
+          }
+        ]
+      },
+
+      ch3_boztepe: {
+        chapter: "Bölüm 3: Arka Odadaki Pazarlık",
+        age: 18,
+        dateLabel: "Aralık · 18 Yaş · Gece Yüzleşmesi",
+        scene: "s_ch2_backroom",
+        speaker: "tarik",
+        text: "Boztepe'li Selim yağmurlu gecede çay ocağının kapısında beliriyor. Tarık Dayı yaşlandığının farkında; kenarda sessizce seni izliyor. Selim alaycı: \"Erdoğdu'nun yeni ağası sen misin ufaklık? Babanın dükkanı kapandı diye buraları mı sahiplendin?\"",
+        choices: [
+          {
+            label: "Sesini yükseltmeden gözlerinin içine bak: \"Babamın adını bir daha anma. Hesabın varsa masaya otur.\"",
+            hint: "++İtibar · Soğuk Otorite",
+            effects: { rep: 12, risk: 5, rel: { tarik: 8 } },
+            next: "ch4_mother_truth"
+          },
+          {
+            label: "Masaya ₺1.500 koy: \"Kavga polise yarar Selim. Bu payını al, sınırını bil.\"",
+            hint: "-₺1.500 · -Risk · Tüccar Aklı",
+            reqMoney: 1500,
+            effects: { money: -1500, risk: -6, rep: 8, conscience: 4 },
+            next: "ch4_mother_truth"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 4: 19 YAŞ — YARIM KALAN GENÇLİK ====================
+      ch4_mother_truth: {
+        chapter: "Bölüm 4: Yarım Kalan Gençlik",
+        age: 19,
+        dateLabel: "Mart · 19 Yaş · Annenin Direnişi",
+        resetActions: true,
+        worldPulse: "ch4",
+        scene: "s_ch1_home",
+        speaker: "anne",
+        text: "Eve kombi taktırdın, ilaçlar eksiksiz. Ama Emine Anne pasif bir izleyici değil; dün akşam kendi başına Tarık Dayı'nın çay ocağının önünden geçmiş ve her şeyi anlamış. Masaya koyduğun zarfı geri itiyor: \"Kerem... Ben kuru ekmeğe razıyım ama senin karanlıkta kaybolmana razı değilim. Gözümün içine bakıp doğruyu söyle.\"",
+        choices: [
+          {
+            label: "\"Limanda gece vardiyasında çalışıyorum anne, kimseye zararım yok.\"",
+            hint: "+Aile (kısa vade) · -Vicdan · Anne içten içe şüphelenir",
+            effects: { family: 4, conscience: -8, rel: { anne: 4 } },
+            next: "ch4_zeynep_letter"
+          },
+          {
+            label: "\"Sana yalan söyleyemem anne... Yanlış yola girdim ama bizi kurtaracak kadar biriktirip çıkacağım.\"",
+            hint: "+Vicdan · Anne ağlar ama dürüstlüğüne sarılır",
+            effects: { family: -2, conscience: 12, rel: { anne: 6 } },
+            next: "ch4_zeynep_letter"
+          }
+        ]
+      },
+
+      ch4_zeynep_letter: {
+        chapter: "Bölüm 4: Yarım Kalan Gençlik",
+        age: 19,
+        dateLabel: "Ağustos · 19 Yaş · Zeynep'in Kendi Kararı",
+        scene: "s_ch1_zeynep",
+        speaker: "zeynep",
+        text: "Zeynep hemşirelik fakültesini kazandı. Kendi geleceğini kendi emeğiyle kurmaya kararlı; ama kapının altından mavi bir zarf bırakmış: \"Kerem, yarın sabah kayıt için gidiyorum. Beni hâlâ seviyorsan saat 22:00'de Erdoğdu yokuşunda buluşalım.\" Aynı saatte Tarık Dayı da acil bir tahsilat için ₺5.000 teklif ediyor.",
+        choices: [
+          {
+            label: "Telefonu kapat, Zeynep'e koş ve ona ince bir kolye hediye edip söz ver (-₺2.000)",
+            hint: "-₺2.000 · ++Aile/Aşk · Zeynep seni kalbinde bekler",
+            reqMoney: 2000,
+            effects: { money: -2000, family: 16, conscience: 12, flag: "zeynep_promise", item: "Zeynep'in Fotoğrafı", rel: { zeynep: 22, tarik: -6 } },
+            next: "ch5_start"
+          },
+          {
+            label: "Koşup Zeynep'le buluş ama \"Güçlenmek için zamana ihtiyacım var\" de",
+            hint: "+Aşk · +Vicdan · İki dünya arasında",
+            effects: { family: 8, conscience: 6, flag: "zeynep_promise", rel: { zeynep: 10 } },
+            next: "ch5_start"
+          },
+          {
+            label: "Tarık'ın çağrısına git (+₺5.000) — Zeynep kendi yoluna gitsin",
+            hint: "+₺5.000 · +İtibar · Zeynep kendi kararıyla Ankara'ya tayin isteyecek",
+            effects: { money: 5000, rep: 12, family: -14, conscience: -10, flag: "chose_street_over_love", rel: { zeynep: -22, tarik: 10 } },
+            next: "ch5_start"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 5: 20 YAŞ — KARADENİZ'İN SİSLİ LİMANI ====================
+      ch5_start: {
+        chapter: "Bölüm 5: Karadeniz'in Sisli Limanı",
+        age: 20,
+        dateLabel: "Kasım · 20 Yaş · Orhan Reis",
+        resetActions: true,
+        worldPulse: "ch5",
+        scene: "s_ch3_orhan",
+        speaker: "orhan",
+        text: "Fırtınalı bir Karadeniz akşamı. Trabzon Limanı'nda siyah Mercedes'inin yanında duran Orhan Reis, gümrük açıklarını ve sınır ticaretini yöneten tecrübeli bir baron: \"Tarık artık yoruldu Kerem. Bu gece Batum'dan gelen iki konteyneri gümrükten sessizce geçireceğiz. Mahalle defteri bitti; büyük oyuna var mısın?\"",
+        choices: [
+          {
+            label: "İşi kabul et ve gümrükteki sessiz anlaşmayı bizzat yönet",
+            hint: "+₺18.000 · +İtibar · +Risk · Hatıra: Liman Anahtarı",
+            effects: { money: 18000, rep: 16, risk: 14, conscience: -10, item: "Liman Deposu Anahtarı", rel: { orhan: 16 } },
+            next: "ch5_crisis"
+          },
+          {
+            label: "\"Sadece lojistik ve güvenliği alırım, yükün değerine göre pay isterim.\"",
+            hint: "+₺24.000 · ++İtibar · ++Risk · Orhan seni ciddiye alır",
+            effects: { money: 24000, rep: 22, risk: 18, conscience: -12, item: "Liman Deposu Anahtarı", rel: { orhan: 20 } },
+            next: "ch5_crisis"
+          }
+        ]
+      },
+
+      ch5_crisis: {
+        chapter: "Bölüm 5: Karadeniz'in Sisli Limanı",
+        age: 20,
+        dateLabel: "Kasım · 20 Yaş · Gece 02:40 Baskını",
+        scene: "s_ch3_crisis",
+        speaker: "anlatici",
+        text: "Gece yarısı liman kapısında iki polis devriyesi beliriyor! On yedi yaşındaki hamal Yunus ıslak betonda kayıp düşüyor. Orhan Reis telsizden buz gibi emrediyor: \"Çocuğu bırak, kamyonu çıkar Kerem!\"",
+        choices: [
+          {
+            label: "Geri dönüp Yunus'u sırtla, arka depodan kaçırıp hastane masrafını öde (-₺5.000)",
+            hint: "+Vicdan · +Risk · Mahalle seni efsane görür",
+            effects: { money: -5000, conscience: 16, risk: 12, rep: 10, rel: { orhan: -6, mert: 12 } },
+            next: "ch6_aftermath"
+          },
+          {
+            label: "Orhan Reis'in emrine uy, kamyonu çıkar ve arkana bakma",
+            hint: "+₺10.000 Prim · ++Orhan · --Vicdan",
+            effects: { money: 10000, conscience: -18, rep: 14, risk: -4, rel: { orhan: 14, mert: -8 } },
+            next: "ch6_aftermath"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 6: 21 YAŞ — MAHALLEDE BİR YABANCI ====================
+      ch6_aftermath: {
+        chapter: "Bölüm 6: Mahallede Bir Yabancı",
+        age: 21,
+        dateLabel: "Nisan · 21 Yaş · Sınıfsal Yabancılaşma",
+        resetActions: true,
+        worldPulse: "ch6",
+        scene: "s_ch3_grocery",
+        speaker: "anlatici",
+        text: "Yirmi bir yaşında, koyu renkli paltonla Erdoğdu yokuşundan yürüyorsun. Eskiden sana acıyanlar şimdi başıyla selam veriyor ama Bakkal Hasan Efendi seni görünce gözlerini kaçırıyor. Kendi doğduğun sokakta hem güçlü hem yapayalnızsın.",
+        choices: [
+          {
+            label: "Bakkal Hasan Efendi'ye uğra, üç yoksul ailenin veresiye defterini kapat (-₺4.000)",
+            hint: "-₺4.000 · ++Vicdan · +Aile · Eski Kerem yaşıyor",
+            reqMoney: 4000,
+            effects: { money: -4000, conscience: 12, family: 8, rep: 6 },
+            next: "ch6_cop"
+          },
+          {
+            label: "Kimsenin bakışını umursama — saygı korkuyla kazanılır",
+            hint: "+İtibar · -Vicdan · Duvarların yükselir",
+            effects: { rep: 10, conscience: -8 },
+            next: "ch6_cop"
+          }
+        ]
+      },
+
+      ch6_cop: {
+        chapter: "Bölüm 6: Mahallede Bir Yabancı",
+        age: 21,
+        dateLabel: "Haziran · 21 Yaş · Komiser Kemal'in Teklifi",
+        scene: "s_ch1_alley",
+        speaker: "kemal",
+        text: "Yağmurlu bir akşam babanın eski mahalle arkadaşı Komiser Kemal önünü kesiyor: \"Kerem, Orhan Reis'in liman dosyası doldu. Bana sadece bir isim ver, senin adını dosyadan sileyim; yoksa 26'nı görmeden içeri girersin.\"",
+        choices: [
+          {
+            label: "Gizlice rakip sevkiyatın saatini ver — kendi dosyanı temizlet",
+            hint: "--25 Risk · Finalde 'Gizli Tanık' Çıkışı Açılır",
+            effects: { risk: -25, conscience: 4, flag: "informant_deal" },
+            next: "ch7_start"
+          },
+          {
+            label: "₺8.000 uzat: \"Beni görmedin Kemal Abi, emekliliğine destek olsun.\"",
+            hint: "-₺8.000 · --20 Risk · Kirli Anlaşma",
+            reqMoney: 8000,
+            effects: { money: -8000, risk: -20, conscience: -10, rep: 6, flag: "bribed_kemal" },
+            next: "ch7_start"
+          },
+          {
+            label: "\"Beni babanın hatırına uyardın, sağ ol ama kimseyi satmam abi.\"",
+            hint: "++İtibar · Sarsılmaz Sokak Kodu",
+            effects: { rep: 14, risk: 6, conscience: 6, flag: "loyal_code", rel: { orhan: 10 } },
+            next: "ch7_start"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 7: 22–23 YAŞ — BÜYÜK KIRILMA & İÇ GÖÇ ====================
+      ch7_start: {
+        chapter: "Bölüm 7: Büyük Kırılma ve Göç",
+        age: 22,
+        dateLabel: "Eylül · 22 Yaş · Çember Daralıyor",
+        resetActions: true,
+        worldPulse: "ch7",
+        scene: "s_ch2_backroom",
+        speaker: "mert",
+        text: "Savcılık liman dosyalarını açmış, rakip aile çay ocağına gözdağı vermiş. Mert nefes nefese: \"Orhan Reis haber yolladı: 'Kerem artık Trabzon'da kalamaz, İstanbul'da Haldun Bey'in yanına gönderiyorum' dedi. Peki bana ne olacak Kerem?\"",
+        choices: [
+          {
+            label: "\"Önce senin borçlarını ve avukatını halledeceğim Mert.\" (-₺12.000)",
+            hint: "-₺12.000 · -Risk · ++Mert · +Vicdan",
+            reqMoney: 12000,
+            effects: { money: -12000, risk: -15, conscience: 12, rel: { mert: 20 } },
+            next: "ch7_orhan_farewell"
+          },
+          {
+            label: "\"Haldun Bey büyük kapı, herkes kendi başının çaresine baksın.\"",
+            hint: "+İtibar · --Vicdan · Mert kırılır ve kendi karanlık yolunu seçer!",
+            effects: { rep: 12, conscience: -14, risk: -6, flag: "mert_rival_turn", rel: { mert: -25 } },
+            next: "ch7_orhan_farewell"
+          },
+          {
+            label: "\"Bavulunu topla Mert. İstanbul'a birlikte gidiyoruz.\"",
+            hint: "++Mert · İstanbul'da sırtını kollayacak",
+            effects: { rep: 8, risk: 8, flag: "mert_in_istanbul", rel: { mert: 18 } },
+            next: "ch7_orhan_farewell"
+          }
+        ]
+      },
+
+      ch7_orhan_farewell: {
+        chapter: "Bölüm 7: Büyük Kırılma ve Göç",
+        age: 22,
+        dateLabel: "Ekim · 22 Yaş · İstanbul Referansı",
+        scene: "s_ch3_orhan",
+        speaker: "orhan",
+        text: "Trabzon Limanı'nda son görüşme. Orhan Reis mühürlü bir mektup uzatıyor: \"Haldun Bey benim kırk yıllık dostumdur. İstanbul'da kabadayılık sökmez Kerem; orada beyaz yaka, paravan şirket ve soğuk akıl geçer. Başarırsan imparatorluk görürsün.\"",
+        choices: [
+          {
+            label: "Mektubu al: \"Trabzon'da öğrendiklerimi unutmayacağım Reis.\"",
+            hint: "+Orhan · Hatıra: Referans Mektubu",
+            effects: { rep: 8, rel: { orhan: 10 }, item: "Orhan Reis'in Referans Mektubu" },
+            next: "ch7_goodbye"
+          }
+        ]
+      },
+
+      ch7_goodbye: {
+        chapter: "Bölüm 7: Büyük Kırılma ve Göç",
+        age: 23,
+        dateLabel: "Kasım · 23 Yaş · Mutfakta Veda",
+        scene: "s_ch4_goodbye",
+        speaker: "anne",
+        text: "Gece otobüsüne bir saat var. Emine Anne'nin saçlarına aklar düşmüş: \"İstanbul büyük şehir oğlum, insanı öğütür. Kalbini orada bırakma. Ne zaman yorulursan bu kapı, bu çaydanlık hep burada.\"",
+        choices: [
+          {
+            label: "Annene sarıl, birikiminden ₺15.000 bırak ve her Pazar arayacağına söz ver",
+            hint: "-₺15.000 (varsa) · ++Aile · +Vicdan",
+            effects: { money: -15000, family: 16, conscience: 12, rel: { anne: 18 } },
+            next: "ch7_bus_emre"
+          },
+          {
+            label: "Alnından öp: \"Sana Boğaz'dan daha güzel bir hayat kuracağım\" de ve çık",
+            hint: "+Aile · +Hırs",
+            effects: { family: 6, rep: 6, rel: { anne: 6 } },
+            next: "ch7_bus_emre"
+          }
+        ]
+      },
+
+      ch7_bus_emre: {
+        chapter: "Bölüm 7: Büyük Kırılma ve Göç",
+        age: 23,
+        dateLabel: "Kasım · 23 Yaş · Bolu Dağı Molası",
+        scene: "s_ch5_ferry",
+        speaker: "emre",
+        text: "İstanbul otobüsünün sisli molasında, cebinde 200 lirayla iş aramaya giden on yedi yaşındaki Trabzonlu Emre titriyor: \"Abi büyük şehirde kolay iş bulabilir miyim?\" Gözlerinde yedi yıl önceki kendi halini görüyorsun.",
+        choices: [
+          {
+            label: "Cebine ₺3.000 koy: \"Sakın kolay paraya kanma kardeşim, temiz bir işe gir.\"",
+            hint: "-₺3.000 · ++Vicdan · Finalde İyilik Geri Döner",
+            reqMoney: 3000,
+            effects: { money: -3000, conscience: 16, family: 6, flag: "helped_emre" },
+            next: "ch8_arrival"
+          },
+          {
+            label: "Numaranı ver: \"İstanbul'da güvenecek adam lazım, benim yanımda çalış.\"",
+            hint: "+İtibar · Sadık Adam · Finalde Güç Desteği",
+            effects: { rep: 12, conscience: -6, flag: "recruited_emre" },
+            next: "ch8_arrival"
+          },
+          {
+            label: "Sıcak bir çay ısmarla ve \"Kendine dikkat et\" deyip otobüse dön",
+            hint: "+Vicdan",
+            effects: { conscience: 4 },
+            next: "ch8_arrival"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 8: 24 YAŞ — BOĞAZ'IN SOĞUK IŞIKLARI ====================
+      ch8_arrival: {
+        chapter: "Bölüm 8: Boğaz'ın Soğuk Işıkları",
+        age: 24,
+        dateLabel: "Mayıs · 24 Yaş · İstanbul'a Uyum",
+        resetActions: true,
+        worldPulse: "ch8",
+        scene: "s_ch5_ferry",
+        speaker: "anlatici",
+        text: "Boğaz Köprüsü'nde altın şafak... Bir yıldır İstanbul'dasın. Karadeniz'den göçen milyonlar gibi hemşehri ağıyla tutundun ama metropolün soğuk yalnızlığı içine işledi. Artık takım elbise giyiyorsun; bugün Haldun Bey'in köşkünde büyük bir sınavın var.",
+        choices: [
+          {
+            label: "Haldun Bey'in Boğaz kıyısındaki köşküne geç",
+            hint: "Büyük Patronla Görüşme",
+            effects: { rep: 6 },
+            next: "ch8_haldun_office"
+          }
+        ]
+      },
+
+      ch8_haldun_office: {
+        chapter: "Bölüm 8: Boğaz'ın Soğuk Işıkları",
+        age: 24,
+        dateLabel: "Mayıs · 24 Yaş · Beyaz Yakalı Yeraltı",
+        scene: "s_ch5_haldun",
+        speaker: "haldun",
+        text: "Ceviz masanın üstünde sarı banker lambası, pencerede Boğaz'ın ışıkları. Haldun Bey klasik sokak mafyası değil; paravan şirketler ve finansal baskıyla hükmeden soğuk bir kurum gibi: \"Kerem, Karadeniz'in cesaretini İstanbul'un aklıyla birleştirdin. Karaköy ve Levent'teki tahsilat ve şirket ağını sana veriyorum.\"",
+        choices: [
+          {
+            label: "\"Emrinizdeyim Haldun Bey. Bu masaya layık olacağım.\"",
+            hint: "+₺45.000 · ++İtibar · ++Haldun · Hatıra: Boğaz Kartı",
+            effects: { money: 45000, rep: 20, risk: 14, conscience: -10, item: "Boğaz Köşkü Giriş Kartı", rel: { haldun: 20 } },
+            next: "ch8_merchant"
+          },
+          {
+            label: "\"Büyük ticari alacaklara bakarım, küçük esnafa dokunmam.\"",
+            hint: "+₺32.000 · +Vicdan · Haldun saygı duyar ama not alır",
+            effects: { money: 32000, rep: 12, risk: 8, conscience: 10, item: "Boğaz Köşkü Giriş Kartı", rel: { haldun: 8 } },
+            next: "ch8_merchant"
+          }
+        ]
+      },
+
+      ch8_merchant: {
+        chapter: "Bölüm 8: Boğaz'ın Soğuk Işıkları",
+        age: 24,
+        dateLabel: "Ağustos · 24 Yaş · Karaköy'deki Tüccar",
+        scene: "s_ch5_merchant",
+        speaker: "anlatici",
+        text: "İlk büyük İstanbul görevin: Karaköy'de tarihi bir hanın sahibi yaşlı tüccar borcunu ödeyemiyor. Masasında ailesinin fotoğrafı duruyor: \"Oğlum, iki ay süre verin, mülkü satıp kuruşu kuruşuna ödeyeceğim. Ailemi sokağa atmayın.\"",
+        choices: [
+          {
+            label: "Haldun'un emrini uygula — tapuyu bu gece devral ve acıma",
+            hint: "+₺35.000 Prim · ++Haldun · --Vicdan",
+            effects: { money: 35000, rep: 14, conscience: -16, rel: { haldun: 14 } },
+            next: "ch9_defne"
+          },
+          {
+            label: "Kendi cebinden ₺15.000 faizi kapat, adama iki ay gizlice süre tanı",
+            hint: "-₺15.000 · ++Vicdan · Gizli Minnettarlık",
+            reqMoney: 15000,
+            effects: { money: -15000, conscience: 18, rep: -4, flag: "mercy_merchant", rel: { haldun: -4 } },
+            next: "ch9_defne"
+          },
+          {
+            label: "Orta yol bul: Hanın yarısını temiz ticari ortaklıkla devral",
+            hint: "+₺20.000 · +₺15.000 Temiz Birikim · Beyaz Yaka Hamlesi",
+            effects: { money: 20000, cleanSavings: 15000, rep: 10, conscience: 4 },
+            next: "ch9_defne"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 9: 25 YAŞ — BEYAZ YAKALI GÖLGE & İHANET ====================
+      ch9_defne: {
+        chapter: "Bölüm 9: Beyaz Yakalı Gölge",
+        age: 25,
+        dateLabel: "Ocak · 25 Yaş · Defne'nin Bilinçli Planı",
+        resetActions: true,
+        worldPulse: "ch9",
+        scene: "s_ch5_defne",
+        speaker: "defne",
+        text: "Hukuk ve finans danışmanı Defne, parlak bir fakülte mezunuyken yüksek statünün altın kafesine sıkışmış bir beyaz yakalı. Yağmurlu Boğaz camının önünde sana şifreli bir bellek gösteriyor: \"Kerem, Haldun yakında ağı yurtdışına devredip ikimizi de günah keçisi bırakacak. İstersen kazancını temiz şirkete aktaralım ve bu kozla kendi çıkışımızı hazırlayalım.\"",
+        choices: [
+          {
+            label: "Defne'ye güven: ₺25.000 temiz şirkete aktar ve şifreli belleği sakla",
+            hint: "-₺25.000 · +₺25.000 Temiz Birikim · Ortaklık & Mutlak Koz",
+            reqMoney: 25000,
+            effects: { money: -25000, cleanSavings: 25000, conscience: 8, flag: "haldun_blackmail", item: "Haldun'un Şifreli Belleği", rel: { defne: 24 } },
+            next: "ch9_call"
+          },
+          {
+            label: "Defne'yi Haldun Bey'e ihbar et (+₺40.000) — mutlak sadakatini kanıtla",
+            hint: "+₺40.000 · +++Haldun · Defne kaçar · Veliaht Yolu",
+            effects: { money: 40000, rep: 18, conscience: -20, flag: "betrayed_defne", rel: { haldun: 30, defne: -75 } },
+            next: "ch9_call"
+          },
+          {
+            label: "Belleği geri ver: \"Kendi oyunumu kimseyi sırtından vurmadan oynarım.\"",
+            hint: "+Vicdan · Defne kendi çıkış planını sessizce yapar",
+            effects: { conscience: 12, rel: { defne: 12 } },
+            next: "ch9_call"
+          }
+        ]
+      },
+
+      ch9_call: {
+        chapter: "Bölüm 9: Beyaz Yakalı Gölge",
+        age: 25,
+        dateLabel: "Nisan · 25 Yaş · Gece 01:15",
+        scene: "s_ch6_karakoy",
+        speaker: "zeynep",
+        text: "Gece yarısı Karaköy yağmurunda telefonun çalıyor: Zeynep. Sesi hem yorgun hem kararlı: \"Kerem... Emine Teyze'nin tansiyonu yükseldi, hastaneye kaldırdık. Şimdi iyi ama sürekli adını sayıklıyor. Ben de kendi hayatımı kurdum artık; sana son kez soruyorum: O koca şehirde hâlâ içindeki on altı yaşındaki çocuk yaşıyor mu?\"",
+        choices: [
+          {
+            label: "Özel hastane masraflarını anında öde (-₺20.000) ve sabaha kadar Zeynep'le konuş",
+            hint: "-₺20.000 · ++Aile · ++Vicdan · Kalp Bağı Canlanır",
+            reqMoney: 20000,
+            effects: { money: -20000, family: 20, conscience: 14, rel: { anne: 18, zeynep: 18 } },
+            next: "ch10_mole"
+          },
+          {
+            label: "Para gönder (-₺10.000) ama \"İşlerim kritik, gelemem\" deyip kapat",
+            hint: "-₺10.000 · +Aile (az) · -Vicdan",
+            reqMoney: 10000,
+            effects: { money: -10000, family: 4, conscience: -10, rel: { anne: 6, zeynep: -10 } },
+            next: "ch10_mole"
+          },
+          {
+            label: "Açacak yüzü bulama; sadece sessizce mesaj atıp yağmuru izle",
+            hint: "--Aile · --Vicdan · Ağır Yalnızlık",
+            effects: { family: -16, conscience: -14, rel: { anne: -10, zeynep: -14 } },
+            next: "ch10_mole"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 10: 26 YAŞ — BÜYÜK HESAPLAŞMA ====================
+      ch10_mole: {
+        chapter: "Bölüm 10: Büyük Hesaplaşma",
+        age: 26,
+        dateLabel: "Kasım · 26 Yaş · Tüm Hayatlar Kesişiyor",
+        resetActions: true,
+        worldPulse: "ch10",
+        scene: "s_ch5_defne",
+        speaker: "defne",
+        text: "Yirmi altı yaşındasın, Kerem. Erdoğdu'dan ayrılalı tam on yıl oldu. Bu gece herkes kendi kararının bedelini ödeyecek: Emniyet büyük bir operasyon başlattı, köşkte köstebek şüphesi var ve Haldun Bey son sevkiyatı Karaköy'de senin üstüne yazdı.",
+        choices: [
+          {
+            label: "Kendi güvenlik ve hukuk ağını devreye sok (-₺15.000) — hazırlıklı gir",
+            hint: "-₺15.000 · --Risk · Akıllı Savunma",
+            reqMoney: 15000,
+            effects: { money: -15000, risk: -18, rep: 8 },
+            next: "ch10_start"
+          },
+          {
+            label: "\"Haldun Bey'le doğrudan yüzleşeceğim. Kimse benim üzerimden hesap kapatamaz.\"",
+            hint: "+İtibar · Büyük Yüzleşme",
+            effects: { rep: 10 },
+            next: "ch10_start"
+          }
+        ]
+      },
+
+      ch10_start: {
+        chapter: "Bölüm 10: Büyük Hesaplaşma",
+        age: 26,
+        dateLabel: "Kasım · 26 Yaş · Boğaz'daki Son Masa",
+        scene: "s_ch5_haldun",
+        speaker: "haldun",
+        text: "Haldun Bey ceviz masanın arkasında şimşeklerin aydınlattığı Boğaz'a bakıyor: \"Bu gece Karaköy'de son perde kapanıyor Kerem. Ya işi bitirip benim yerime geçersin, ya da masadan kalkıp geçmişine dönersin. Ama unutma: Bu masadan kalkmak, girmekten çok daha zordur.\"",
+        choices: [
+          {
+            label: "Karaköy'e git ve Haldun Bey'in son büyük işini bizzat yönet",
+            hint: "+₺80.000 · ++İtibar · +Risk · Sadakat Yolu",
+            effects: { money: 80000, rep: 22, risk: 18, conscience: -16, rel: { haldun: 20 } },
+            next: "ch10_finale"
+          },
+          {
+            label: "Masadan kalk — dosyaları temizle, karanlığa sırtını dön ve özgürlüğünü seç",
+            hint: "Temiz Çıkış · ++Vicdan · +Aile",
+            effects: { conscience: 22, family: 14, rep: -8, risk: -15, flag: "walked_away" },
+            next: "ch10_finale"
+          },
+          {
+            label: "Haldun'un koltuğunu al: Rakip ekiple ve elindeki kozlarla liderliği ele geçir",
+            hint: "+₺150.000 · +++İtibar · --Vicdan · İmparatorluk Yolu",
+            effects: { money: 150000, rep: 30, risk: 16, conscience: -28, flag: "took_throne", rel: { haldun: -60 } },
+            next: "ch10_finale"
+          }
+        ]
+      },
+
+      ch10_finale: {
+        chapter: "Bölüm 10: Karaköy Gecesi",
+        age: 26,
+        dateLabel: "Kasım · 26 Yaş · İlk On Yılın Kırılması",
+        scene: "s_ch6_karakoy",
+        speaker: "anlatici",
+        text: "Karaköy'ün taş sokağında yağmur sabaha karşı diniyor. O gece hayatta kaldın — ama bu işler filmlerdeki gibi bir gecede kapanmaz. Sabahın ilk ışıklarıyla birlikte geride bıraktığın izler, ödenmesi gereken faturalar ve değişen dengeler hemen kapına dayanacak.",
+        choices: [
+          {
+            label: "Ertesi sabahın hesabıyla yüzleş (27 Yaşa İlerle)",
+            hint: "Bölüm 11 · Karaköy'ün Gerçek Sonuçları",
+            effects: {},
+            next: "ch11_morning_after"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 11: 27–29 YAŞ — KARAKÖY'ÜN BEDELİ VE YENİ NESİL ====================
+      ch11_morning_after: {
+        chapter: "Bölüm 11: Karaköy'ün Ertesi Sabahı",
+        age: 27,
+        dateLabel: "Ocak · 27 Yaş · Gece Yarısı Hesabı",
+        resetActions: true,
+        worldPulse: "ch11",
+        scene: "s_ch11_tower",
+        speaker: "anlatici",
+        text: "Karaköy gecesinin üzerinden iki ay geçti. Yirmi yedi yaşındasın ve ilk kez o gecenin gerçek faturasını görüyorsun: Limandan gelen iki TIR gümrükte takıldı, savcılık paravan şirketlerin banka hareketlerini istedi ve ekipteki bir şoför korkup şehirden kaçtı. Masa sessiz; herkes senin nasıl soğukkanlı bir karar vereceğine bakıyor.",
+        choices: [
+          {
+            label: "Kaçan şoförün ailesine zarar verilmesini engelle, avukatlarla temiz çıkış anlaşması yap (-₺18.000)",
+            hint: "-₺18.000 · --12 Risk · ++Vicdan · Eski Dünya Kurallarını Yumuşat",
+            reqMoney: 18000,
+            effects: { money: -18000, risk: -12, conscience: 10, flag: "spared_driver" },
+            next: "ch11_new_era"
+          },
+          {
+            label: "Şoförün izini sürdür ve ağdaki herkese demir disiplin mesajı ver",
+            hint: "+İtibar · +Risk · --Vicdan · Korkuyla Kontrol",
+            effects: { rep: 14, risk: 10, conscience: -12 },
+            next: "ch11_new_era"
+          }
+        ]
+      },
+
+      ch11_new_era: {
+        chapter: "Bölüm 11: Yeni Düzenin Bedeli",
+        age: 28,
+        dateLabel: "Ekim · 28 Yaş · Gökdelenin Zirvesi",
+        scene: "s_ch11_tower",
+        speaker: "haldun",
+        text: "Yirmi sekiz yaşındasın, şakaklarına ilk hafif gölgeler düşmüş. Altmış sekiz yaşına gelen ve artık bastonla yürüyen Haldun Bey yağmurlu camdan Boğaz'a bakıyor: \"Eski düzen ölüyor Kerem. Kripto ve uluslararası paravan ağlara geçmezsek yeni nesil genç kurtlar bizi yutacak. Dün gece Karaköy'deki depomuza yirmi iki yaşında Barış diye bir çocuk dadanmış.\"",
+        choices: [
+          {
+            label: "Depoya bizzat git ve Genç Barış'la yüz yüze konuş — kiminle karşı karşıya olduğunu gör",
+            hint: "Birebir Yüzleşme · Sonuçları Yıllarca Sürecek",
+            effects: { rep: 6 },
+            next: "ch11_baris_confront"
+          },
+          {
+            label: "Önce ağı yasal şirketlere dönüştürmeye odaklan (-₺30.000), sonra Barış'la görüş",
+            hint: "-₺30.000 · +₺40.000 Temiz Birikim · --Risk",
+            reqMoney: 30000,
+            effects: { money: -30000, cleanSavings: 40000, risk: -10, conscience: 8 },
+            next: "ch11_baris_confront"
+          }
+        ]
+      },
+
+      ch11_baris_confront: {
+        chapter: "Bölüm 11: Yeni Düzenin Bedeli",
+        age: 28,
+        dateLabel: "Kasım · 28 Yaş · Genç Barış'la Masa",
+        scene: "s_ch6_karakoy",
+        speaker: "baris",
+        text: "Yağmurlu Karaköy sokağında, tıpkı senin on yıl önceki halin gibi gözü kara ama çok daha sabırsız yirmi iki yaşındaki Barış karşında duruyor: \"Sizin devriniz bitti abi. Haldun Bey ihtiyarladı. Ya bu sokağın yarısını bize bırakırsınız ya da her hafta bir deponuz yanar.\"",
+        choices: [
+          {
+            label: "Sakin kal: \"Kavga ikimizi de emniyete götürür Barış. Gel seni yasal lojistik ağında ortak yapayım.\"",
+            hint: "+Vicdan · --Risk · Barış İleride Müttefikin Olur",
+            effects: { conscience: 8, risk: -8, rep: 8, flag: "baris_ally" },
+            next: "ch11_defne_30s"
+          },
+          {
+            label: "Sert karşılık ver ve Barış'ı Karaköy'den tamamen sür (+₺55.000)",
+            hint: "+₺55.000 · ++İtibar · +Risk · Barış Kin Tutar (İleride Döner!)",
+            effects: { money: 55000, rep: 18, risk: 14, conscience: -12, flag: "baris_enemy" },
+            next: "ch11_defne_30s"
+          }
+        ]
+      },
+
+      ch11_defne_30s: {
+        chapter: "Bölüm 11: Yeni Düzenin Bedeli",
+        age: 29,
+        dateLabel: "Mayıs · 29 Yaş · Defne (33 Yaş)",
+        scene: "s_ch5_defne",
+        speaker: "defne",
+        text: "Otuz üç yaşına giren Defne artık kendi hukuk bürosunun başında, kendinden emin bir kadın. Yağmurlu bir akşam ofisinde çay koyarken soruyor: \"Barış meselesini nasıl çözdüğünü duydum Kerem. İkimiz de otuzlarımıza dayandık. Gençlik hırsı bitti. Bundan sonra ya temiz sermayeyle gerçek müttefik oluruz ya da bu şehirde tamamen yalnız yaşlanırız.\"",
+        choices: [
+          {
+            label: "Defne'yle yasal danışmanlık ve temiz sermaye ortaklığı kur (-₺20.000)",
+            hint: "-₺20.000 · +₺30.000 Temiz Birikim · ++Defne · +Vicdan",
+            reqMoney: 20000,
+            effects: { money: -20000, cleanSavings: 30000, conscience: 10, rel: { defne: 20 } },
+            next: "ch12_thirty"
+          },
+          {
+            label: "\"Kimseye ortak olmam Defne, kendi yükümü tek başıma taşırım.\"",
+            hint: "+İtibar · Soğuk Yalnızlık",
+            effects: { rep: 10, rel: { defne: -10 } },
+            next: "ch12_thirty"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 12: 30–31 YAŞ — OTUZ YAŞIN AĞIRLIĞI ====================
+      ch12_thirty: {
+        chapter: "Bölüm 12: Otuz Yaşın Ağırlığı",
+        age: 30,
+        dateLabel: "Kasım · 30 Yaş · Zeynep'le İstanbul'da",
+        resetActions: true,
+        worldPulse: "ch12",
+        scene: "s_ch11_tower",
+        speaker: "zeynep",
+        text: "Otuz yaşına bastığın hafta, tıp kongresi için İstanbul'a gelen Zeynep'le Boğaz kıyısında küçük bir çay bahçesinde buluşuyorsunuz. O da artık otuz yaşında; olgun, saygın bir başhemşire. Yağmur camdan süzülürken gülümsüyor: \"On dört yıl önce Erdoğdu'da simit böldüğümüz çocuğu hâlâ gözlerinde görüyorum Kerem. Ama zaman geçiyor... Bir aile, huzurlu bir akşam yemeği hiç aklından geçmiyor mu?\"",
+        choices: [
+          {
+            label: "\"Geçiyor Zeynep... Yıllardır tek hayalim temiz bir sayfa açıp seninle yaşlanmak.\"",
+            hint: "++Aile/Aşk · +Vicdan · Akşam Yemeğine Kal",
+            effects: { family: 14, conscience: 10, flag: "zeynep_30s_bond", rel: { zeynep: 18 } },
+            next: "ch12_zeynep_evening"
+          },
+          {
+            label: "\"Senin kurduğun temiz hayata gölge düşürmek istemem Zeynep, sadece mutlu olmanı isterim.\"",
+            hint: "+Vicdan · Olgun Mesafe",
+            effects: { conscience: 8, family: -4, rel: { zeynep: 6 } },
+            next: "ch12_anne_phone"
+          }
+        ]
+      },
+
+      ch12_zeynep_evening: {
+        chapter: "Bölüm 12: Otuz Yaşın Ağırlığı",
+        age: 30,
+        dateLabel: "Kasım · 30 Yaş · Aynı Akşam, 21:40",
+        scene: "s_ch6_karakoy",
+        speaker: "anlatici",
+        text: "Zeynep'le yıllar sonra ilk kez sakin bir akşam yemeği yerken cebindeki telefon ısrarla titriyor: Liman hattında bir konteyner krizi çıkmış, Haldun Bey'in adamları seni acil çağırıyor. Zeynep masanın karşısında telefonun ışığına bakıp susuyor — cevabını tek kelime etmeden bekliyor.",
+        choices: [
+          {
+            label: "Telefonu tamamen kapatıp masaya ters koy: \"Bu gece dünya dursun, ben buradayım.\"",
+            hint: "++Aile/Aşk · ++Vicdan · -₺15.000 İş Kaybı ama Gerçek Güven",
+            effects: { money: -15000, family: 16, conscience: 12, flag: "stayed_with_zeynep", rel: { zeynep: 18, haldun: -8 } },
+            next: "ch12_anne_phone"
+          },
+          {
+            label: "\"Özür dilerim Zeynep, on dakikaya dönerim\" deyip masadan kalk",
+            hint: "+₺20.000 · --Aile/Aşk · Zeynep O Gece Seni İçinde Bitirir",
+            effects: { money: 20000, family: -16, conscience: -10, rel: { zeynep: -22, haldun: 8 } },
+            next: "ch12_anne_phone"
+          }
+        ]
+      },
+
+      ch12_anne_phone: {
+        chapter: "Bölüm 12: Otuz Yaşın Ağırlığı",
+        age: 31,
+        dateLabel: "Şubat · 31 Yaş · Trabzon'dan Gece Telefonu",
+        scene: "s_ch1_home",
+        speaker: "anne",
+        text: "Otuz bir yaşında bir kış gecesi Trabzon'dan komşunuz arıyor: Emine Anne (63) ıslak Erdoğdu merdivenlerinde ayağı kayıp düşmüş, kolunu incitmiş ama seni üzmemek için telefon etmemiş. Onu aradığında sesi yine her zamanki gibi güçlü çıkmaya çalışıyor: \"Bir şeyim yok oğlum, buz koyduk geçti. Sen işine bak, soğukta üşütme.\"",
+        choices: [
+          {
+            label: "İlk sabah uçağıyla Trabzon'a uç, iki hafta annenin başında kal ve evi tamamen yenilet (-₺15.000)",
+            hint: "-₺15.000 · +++Aile · ++Vicdan · Annenin Yüzü Güler",
+            reqMoney: 15000,
+            effects: { money: -15000, family: 18, conscience: 14, rel: { anne: 20 } },
+            next: "ch13_mert_visit"
+          },
+          {
+            label: "Özel bakıcı ve doktor tut (-₺8.000) ama işler yüzünden İstanbul'dan ayrılamadığını söyle",
+            hint: "-₺8.000 · +Aile (az) · İçinde Sızı Kalır",
+            reqMoney: 8000,
+            effects: { money: -8000, family: 4, conscience: -6, rel: { anne: 4 } },
+            next: "ch13_mert_visit"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 13: 32–33 YAŞ — ESKİ DOSTLAR, YENİ NESİL ====================
+      ch13_mert_visit: {
+        chapter: "Bölüm 13: Eski Dostlar",
+        age: 32,
+        dateLabel: "Ocak · 32 Yaş · Mert'in İstanbul Ziyareti",
+        resetActions: true,
+        worldPulse: "ch13",
+        scene: "s_ch2_backroom",
+        speaker: "mert",
+        text: "Otuz iki yaşındasın. Çocukluk arkadaşın Mert (32) bir akşam İstanbul'daki ofisine geliyor; yüzünde artık gençliğin değil, geçim derdinin çizgileri var: \"Kerem, dükkanın kirası iki katına çıktı, küçük kızımın okul masrafı var. Banka kredi vermedi. Eskisi gibi karanlık iş istemiyorum; sadece temiz bir nefes alacak desteğe ihtiyacım var.\"",
+        choices: [
+          {
+            label: "Mert'e karşılıksız ₺20.000 destek ver ve dükkanın tapusunu almasına yardım et",
+            hint: "-₺20.000 · +++Mert · ++Vicdan · Ömürlük Dostluk",
+            reqMoney: 20000,
+            effects: { money: -20000, conscience: 14, family: 8, rel: { mert: 24 } },
+            next: "ch13_mert_emre"
+          },
+          {
+            label: "Ona İstanbul'daki lojistik ağında maaşlı ama riskli bir görev teklif et",
+            hint: "+İtibar · Mert Tereddüt Eder · +Risk",
+            effects: { rep: 6, risk: 6, rel: { mert: -4 } },
+            next: "ch13_mert_emre"
+          }
+        ]
+      },
+
+      ch13_mert_emre: {
+        chapter: "Bölüm 13: Yeni Neslin Sınavı",
+        age: 32,
+        dateLabel: "Mart · 32 Yaş · Emre (26 Yaş)",
+        scene: "s_ch5_merchant",
+        speaker: "emre",
+        text: "Aynı bahar, yıllar önce Bolu Dağı otobüs molasında tanıdığın Genç Emre artık yirmi altı yaşında — tıpkı senin Karaköy gecesindeki yaşın! Karşına oturmuş, gözlerinde o tanıdık tehlikeli parıltı var: \"Kerem Abi, limandan büyük bir kaçak iş düştü. Bir gecede köşeyi dönebilirim. Ne dersin, gireyim mi?\"",
+        choices: [
+          {
+            label: "Emre'yi durdur, ona Kadıköy'de temiz bir kahve/atölye açması için ₺25.000 sermaye ver — döngüyü kır!",
+            hint: "-₺25.000 · +++Vicdan · Döngü Kırıldı · Sonucunu 1 Yıl Sonra Göreceksin",
+            reqMoney: 25000,
+            effects: { money: -25000, conscience: 20, family: 8, flag: "broke_cycle_emre" },
+            next: "ch13_emre_fallout"
+          },
+          {
+            label: "\"Bu şehirde acıyan kaybeder Emre. İşi akıllı yönet, payını al.\"",
+            hint: "+₺50.000 · ++İtibar · --Vicdan · Döngü Devam Eder",
+            effects: { money: 50000, rep: 16, conscience: -16, risk: 10, flag: "passed_torch_emre" },
+            next: "ch13_emre_fallout"
+          },
+          {
+            label: "Emre'ye kendi hikayeni baştan sona anlat ve kararı kendi vicdanına bırak",
+            hint: "+Vicdan · Olgun Öğüt",
+            effects: { conscience: 10 },
+            next: "ch13_emre_fallout"
+          }
+        ]
+      },
+
+      ch13_emre_fallout: {
+        chapter: "Bölüm 13: Yeni Neslin Sınavı",
+        age: 33,
+        dateLabel: "Haziran · 33 Yaş · Bir Yıl Sonra Emre",
+        scene: "s_ch5_ferry",
+        speaker: "anlatici",
+        text: "Bir yıl sonra, otuz üç yaşındayken Emre'ye verdiğin kararın gerçek sonucu önüne geliyor: Eğer ona temiz sermaye verdiysen bugün Kadıköy'deki küçük dükkanında ilk çayını kendi elleriyle ikram ediyor, gözlerinde korku yok. Eğer karanlık işe ittiysen gece saat üçte emniyetin kapısından avukatla onu çıkarmak zorunda kalıyorsun — ve yüzüne bakarken on yıl önceki kendi pişmanlığını görüyorsun.",
+        choices: [
+          {
+            label: "Derin bir nefes al ve bu dersle Trabzon'a doğru yola çık (34 Yaş)",
+            hint: "Her Seçimin Bir Bedeli Vardır",
+            effects: { conscience: 4 },
+            next: "ch14_tarik_last_tea"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 14: 34–35 YAŞ — ERDOĞDU'NUN SONBAHARI ====================
+      ch14_tarik_last_tea: {
+        chapter: "Bölüm 14: Erdoğdu'nun Sonbaharı",
+        age: 34,
+        dateLabel: "Ekim · 34 Yaş · Tarık Dayı (70 Yaş)",
+        resetActions: true,
+        worldPulse: "ch14",
+        scene: "s_ch1_tea",
+        speaker: "tarik",
+        text: "Otuz dört yaşında Trabzon'a döndüğünde ilk durağın artık el değiştirmiş olan eski çay ocağının karşısındaki bank. Yetmiş yaşına gelen Tarık Dayı bastonuna yaslanmış, yorgun gözlerle sana bakıyor: \"Sana o ilk zarfı uzattığım akşamı hiç unutmadım Kerem. O gün seni kurtardığımı sanmıştım... Meğer hepimiz aynı değirmende öğütülmüşüz.\"",
+        choices: [
+          {
+            label: "Yanına otur, iki çay söyle: \"Kimseyi suçlamıyorum Dayı, o gün başka çarem yoktu.\"",
+            hint: "++Vicdan · Geçmişle Barış",
+            effects: { conscience: 12, rel: { tarik: 12 } },
+            next: "ch14_autumn_return"
+          },
+          {
+            label: "Sadece başınla selam verip yürü — bazı yaralar konuşarak kapanmaz",
+            hint: "Soğuk Mesafe",
+            effects: { rep: 4 },
+            next: "ch14_autumn_return"
+          }
+        ]
+      },
+
+      ch14_autumn_return: {
+        chapter: "Bölüm 14: Erdoğdu'nun Sonbaharı",
+        age: 34,
+        dateLabel: "Ekim · 34 Yaş · Emine Anne (66 Yaş)",
+        scene: "s_ch14_autumn",
+        speaker: "anne",
+        text: "Sonbahar yaprakları Erdoğdu'nun ıslak taşlarını kaplamış. Altmış altı yaşına basan Emine Anne'nin koluna girip yokuştan yavaşça yürüyorsun. Annen gülümseyerek Karadeniz'e bakıyor: \"Çok büyüdün oğlum... Artık bana söyle: Bu on sekiz yılın sonunda kalbin gerçekten huzurlu mu?\"",
+        choices: [
+          {
+            label: "\"Artık yoruldum anne. İstanbul'daki karanlık işleri kapatıp temiz bir düzene geçeceğim.\"",
+            hint: "++Aile · ++Vicdan · Dönüşüm Kararı",
+            effects: { family: 20, conscience: 16, flag: "walked_away", rel: { anne: 20 } },
+            next: "ch14_reckoning"
+          },
+          {
+            label: "\"Sana layık bir hayat kurdum anne ama İstanbul'da yarım bıraktığım son bir miras var.\"",
+            hint: "+İtibar · +Hırs",
+            effects: { rep: 14, family: 4, rel: { anne: 6 } },
+            next: "ch14_reckoning"
+          }
+        ]
+      },
+
+      ch14_reckoning: {
+        chapter: "Bölüm 14: Erdoğdu'nun Sonbaharı",
+        age: 35,
+        dateLabel: "Şubat · 35 Yaş · Büyük Mali Denetim",
+        scene: "s_ch11_tower",
+        speaker: "anlatici",
+        text: "Otuz beş yaşında İstanbul'a döndüğünde büyük bir mali denetim patlak veriyor. Yıllar önce Barış'la yaptığın anlaşma ya da düşmanlık tam burada devreye giriyor: Eğer Barış'ı düşman ettiysen savcılığa isimsiz ihbarı onun ekibi yollamış! Yirmi yıllık bütün defterlerin masada.",
+        choices: [
+          {
+            label: "Tüm yasadışı bağları kapat, kalan servetini temiz ticarete ve vakfa aktar (-₺30.000)",
+            hint: "-₺30.000 · --25 Risk · ++Vicdan · Temiz Miras",
+            reqMoney: 30000,
+            effects: { money: -30000, cleanSavings: 30000, risk: -25, conscience: 16, flag: "walked_away" },
+            next: "ch15_pier_finale"
+          },
+          {
+            label: "Haldun Bey'den kalan tüm ağı tek elde topla — İstanbul'da son sözü sen söyle",
+            hint: "+₺120.000 · +++İtibar · +Risk · --Vicdan",
+            effects: { money: 120000, rep: 25, risk: 15, conscience: -18, flag: "took_throne" },
+            next: "ch15_pier_finale"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 15: 36–37 YAŞ — YİRMİ YILIN EŞİĞİ ====================
+      ch15_pier_finale: {
+        chapter: "Bölüm 15: Yirmi Yılın Eşiği",
+        age: 36,
+        dateLabel: "Kasım · 36 Yaş · Boğaz İskelesi, Gün Batımı",
+        worldPulse: "ch15",
+        scene: "s_ch15_pier",
+        speaker: "anlatici",
+        text: "Otuz altı yaşındasın, Kerem. Boğaz'ın üstünde altın bir sonbahar güneşi batarken beyaz vapurlar martıların arasında süzülüyor. Gençliğin fırtınalı yirmi yılı geride kaldı; artık hiçbir şey eskisi kadar hızlı değil. Önünde orta yaşın sessiz ve gerçek sınavları var.",
+        choices: [
+          {
+            label: "Zamanın akışına devam et (38 Yaşa İlerle)",
+            hint: "Bölüm 16 · Bir Devrin Kapanışı",
+            effects: {},
+            next: "ch16_haldun_funeral"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 16: 38–39 YAŞ — KAYBIN SESSİZLİĞİ ====================
+      ch16_haldun_funeral: {
+        chapter: "Bölüm 16: Kaybın Sessizliği",
+        age: 38,
+        dateLabel: "Aralık · 38 Yaş · Haldun Bey'in Cenazesi",
+        resetActions: true,
+        worldPulse: "ch16",
+        scene: "s_ch5_haldun",
+        speaker: "anlatici",
+        text: "Soğuk bir Aralık sabahı Haldun Bey yetmiş sekiz yaşında özel bir hastanede sessizce vefat ediyor. Bir zamanlar İstanbul'un en korkulan ismi olan adamın cenazesinde yalnızca birkaç avukat, eski tanıdıklar ve mirası bölüşmek için bekleyen çocukları var. Güç ve korku, tabutun kapağı kapandığı an dağılıveriyor.",
+        choices: [
+          {
+            label: "Cenaze sonrası Haldun Bey'in oğlu Cem Bey'in davetiyle köşke son kez uğra",
+            hint: "Haldun Bey Sana Özel Bir Kutu Bırakmış",
+            effects: { conscience: 6 },
+            next: "ch16_estate_room"
+          }
+        ]
+      },
+
+      ch16_estate_room: {
+        chapter: "Bölüm 16: Kaybın Sessizliği",
+        age: 39,
+        dateLabel: "Ocak · 39 Yaş · Boşalan Boğaz Köşkü",
+        scene: "s_ch5_haldun",
+        speaker: "cem",
+        text: "Kütüphanedeki kitaplar kolilenmiş, ceviz masa ilk kez boş. Haldun Bey'in oğlu Cem Bey sana küçük maun bir kutu ve bir gizlilik sözleşmesi uzatıyor: \"Babamın eski dünyasıyla hiçbir bağımız kalsın istemiyoruz Kerem Bey. Ama bu kutuyu özellikle size bırakmamı vasiyet etti.\" İçinde Trabzon'dan eski bir siyah-beyaz fotoğraf ve tek satırlık bir not var: 'Zirve soğuktur, zamanı gelince inmesini bil.'",
+        choices: [
+          {
+            label: "Sözleşmeyi imzala, hiçbir pay talep etmeden köşkten huzurla ayrıl",
+            hint: "++Vicdan · --10 Risk · Eski Devir Tamamen Kapanır",
+            effects: { conscience: 12, risk: -10, item: "Haldun Bey'in Son Notu" },
+            next: "ch17_hospital"
+          },
+          {
+            label: "Hakkın olan gayrimenkul ve ticari hisseyi hukuken devral (-₺20.000 avukat masrafı)",
+            hint: "-₺20.000 · +₺60.000 Temiz Birikim · +İtibar",
+            reqMoney: 20000,
+            effects: { money: -20000, cleanSavings: 60000, rep: 8, item: "Haldun Bey'in Son Notu" },
+            next: "ch17_hospital"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 17: 41 YAŞ — KIRKLARIN GERÇEĞİ ====================
+      ch17_hospital: {
+        chapter: "Bölüm 17: Kırkların Gerçeği",
+        age: 41,
+        dateLabel: "Nisan · 41 Yaş · Gece 03:20 · Hastane Odası",
+        resetActions: true,
+        worldPulse: "ch17",
+        scene: "s_ch11_tower",
+        speaker: "anlatici",
+        text: "Yıllar süren stres, uykusuz geceler ve sürekli tetikte yaşamak kırk bir yaşında vücuduna faturasını kesiyor. Göğsündeki şiddetli sıkışmayla kendini özel bir hastanenin sessiz odasında buluyorsun. Doktor tansiyon ve ritim bozukluğu teşhisi koyuyor: \"Bu tempoyla elliyi göremezsiniz Kerem Bey.\"",
+        choices: [
+          {
+            label: "Sabah gün ağarırken odanın kapısının açılmasını bekle",
+            hint: "Gerçek Hayatta Yanında Kim Kaldı?",
+            effects: {},
+            next: "ch17_hospital_morning"
+          }
+        ]
+      },
+
+      ch17_hospital_morning: {
+        chapter: "Bölüm 17: Kırkların Gerçeği",
+        age: 41,
+        dateLabel: "Nisan · 41 Yaş · Hastane Sabahı",
+        scene: "s_ch11_tower",
+        speaker: "anlatici",
+        text: "Sabah ışığı perdeye vurduğunda gerçek hayatın en dürüst aynasıyla karşılaşıyorsun: Para en iyi odayı satın almış ama koridorda sabaha kadar bekleyen kişi ancak yirmi beş yılda gerçekten kalbini açtığın biri olabilir. O sabah ilk kez sadece daha fazla kazanmanın değil, nefes almanın değerini anlıyorsun.",
+        choices: [
+          {
+            label: "Doktoru dinle: İşlerin yarısını devret, sade bir hayata geç ve sağlığına odaklan",
+            hint: "++Vicdan · ++Aile · --Risk · Sağlıklı Dönüşüm",
+            effects: { conscience: 14, family: 14, risk: -12, flag: "slowed_down_40s" },
+            next: "ch18_audit_emre"
+          },
+          {
+            label: "Taburcu olur olmaz masana dön — durursan her şeyin dağılacağından korkuyorsun",
+            hint: "+₺45.000 · --Aile · Yalnızlık Derinleşir",
+            effects: { money: 45000, rep: 8, family: -10, conscience: -6 },
+            next: "ch18_audit_emre"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 18: 44–45 YAŞ — ESKİ DEFTERLER VE ADLİYE ====================
+      ch18_audit_emre: {
+        chapter: "Bölüm 18: Eski Defterler",
+        age: 44,
+        dateLabel: "Eylül · 44 Yaş · 20 Yıllık Dosya",
+        resetActions: true,
+        worldPulse: "ch18",
+        scene: "s_ch5_merchant",
+        speaker: "emre",
+        text: "Kırk dört yaşındasın. Gerçek hayatta geçmiş hiçbir zaman bir gecede buharlaşmaz: Yirmi yıl önceki paravan şirketlerden biri rutin bir mali incelemeye takılıyor. Tam o hafta artık otuz sekiz yaşında, evli bir adam olan Emre karşına çıkıyor. Geçmişte ona temiz yol açtıysan bugün saygın bir esnaf olarak sana kefil oluyor; karanlığa ittiysen o da aynı dosyanın içinde çırpınıyor.",
+        choices: [
+          {
+            label: "Vergi uzlaşması ve avukatlarla dosyayı mahkemede tamamen kapatmaya hazırlan (-₺40.000)",
+            hint: "-₺40.000 · --25 Risk · ++Vicdan",
+            reqMoney: 40000,
+            effects: { money: -40000, risk: -25, conscience: 12, flag: "settled_past_cleanly" },
+            next: "ch18_court_day"
+          },
+          {
+            label: "Eski bağlantıları devreye sokup incelemeyi örtbas etmeye çalış",
+            hint: "+Risk · -Vicdan · Eski Dünya Peşini Bırakmaz",
+            effects: { risk: 14, conscience: -10, rep: 6 },
+            next: "ch18_court_day"
+          }
+        ]
+      },
+
+      ch18_court_day: {
+        chapter: "Bölüm 18: Eski Defterler",
+        age: 45,
+        dateLabel: "Mart · 45 Yaş · Çağlayan Adliyesi Önü",
+        scene: "s_ch15_pier",
+        speaker: "defne",
+        text: "Kırk beş yaşında, serin bir Mart sabahı adliye merdivenlerinden iniyorsun. Yanında kırk dokuz yaşındaki Defne dosyayı kapatıyor: \"Bitti Kerem. Yirmi dokuz yıl sonra ilk kez devletin hiçbir kayıt defterinde üstünde kara bir bulut yok. Artık ne yapmak istiyorsan gerçekten özgürsün.\"",
+        choices: [
+          {
+            label: "Defne'ye teşekkür et — omuzlarından koca bir yük kalktığını hissediyorsun",
+            hint: "++Vicdan · Gerçek Özgürlük",
+            effects: { conscience: 10, rel: { defne: 12 } },
+            next: "ch19_mother_box"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 19: 47–48 YAŞ — EMİNE ANNE'NİN KUTUSU ====================
+      ch19_mother_box: {
+        chapter: "Bölüm 19: Emine Anne'nin Kutusu",
+        age: 47,
+        dateLabel: "Kasım · 47 Yaş · Erdoğdu'ya Son Dönüş",
+        resetActions: true,
+        worldPulse: "ch19",
+        scene: "s_ch14_autumn",
+        speaker: "anlatici",
+        text: "Kırk yedi yaşındasın. Yetmiş dokuz yaşına ulaşan Emine Anne, Erdoğdu'daki evinde huzur içinde son nefesini veriyor. Cenazenin ardından sessiz mutfakta annenin yıllardır sakladığı küçük ahşap kutuyu açıyorsun: İçinde 16 yaşındayken masada gördüğün o kırmızı mühürlü elektrik faturası, babanın saati ve senin gönderdiğin her mektup özenle katlanmış duruyor.",
+        choices: [
+          {
+            label: "Mahalledeki yoksul gençler için Emine Anne adına kalıcı bir eğitim bursu kur (-₺25.000)",
+            hint: "-₺25.000 · +++Vicdan · ++Aile · Kalıcı İnsanlık Mirası",
+            reqMoney: 25000,
+            effects: { money: -25000, conscience: 20, family: 14, flag: "emine_anne_legacy" },
+            next: "ch19_erdogdu_rain"
+          },
+          {
+            label: "Kutuyu göğsüne bastır ve sessizce annenin çaydanlığını son kez yerine koy",
+            hint: "+Vicdan · +Aile · Sessiz Yas",
+            effects: { conscience: 10, family: 8 },
+            next: "ch19_erdogdu_rain"
+          }
+        ]
+      },
+
+      ch19_erdogdu_rain: {
+        chapter: "Bölüm 19: Emine Anne'nin Kutusu",
+        age: 48,
+        dateLabel: "Nisan · 48 Yaş · Değişen Yokuş",
+        scene: "s_ch3_grocery",
+        speaker: "anlatici",
+        text: "Kırk sekiz yaşında, yağmurlu bir Nisan sabahı Erdoğdu yokuşundan son kez iniyorsun. Eski taş evlerin yerini yüksek apartmanlar almış; Bakkal Hasan Efendi'nin dükkanında artık oğlu duruyor. Seni çocukluğundan tanıyan kimse kalmamış gibi. Artık ne İstanbul'un gürültüsü ne de bu değişen sokaklar seni tutabiliyor.",
+        choices: [
+          {
+            label: "İstanbul'daki son işlerini tasfiye et ve elli yaşına doğru yeni bir sayfa aç",
+            hint: "Yarım Asra Doğru",
+            effects: { conscience: 6 },
+            next: "ch20_fifty_mirror"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 20: 50 YAŞ — YARIM ASRIN AYNASI ====================
+      ch20_fifty_mirror: {
+        chapter: "Bölüm 20: Yarım Asrın Aynası",
+        age: 50,
+        dateLabel: "Kasım · 50 Yaş · Yeni Bir Kıta Kararı",
+        worldPulse: "ch20",
+        scene: "s_ch20_age50",
+        speaker: "anlatici",
+        text: "Elli yaşındasın, Kerem. Denize bakan sessiz bir masada ince belli çayın ve babanın eski saati duruyor. Yıllardır aklının bir köşesinde duran o sade hayali gerçekleştirme vakti: Her şeyi temizce kapatıp kimsenin geçmişini bilmediği, yeşil tepeleri Trabzon'u andıran sakin bir Amerikan taşra kasabasına taşınmak.",
+        choices: [
+          {
+            label: "Okyanusu aş — Amerika'nın sisli taşra kasabası Maple Creek'te yeni bir hayata başla (52 Yaş)",
+            hint: "Bölüm 21 · Amerika Taşrasına Göç",
+            effects: { risk: -20, conscience: 10 },
+            next: "ch21_us_move"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 21: 52–53 YAŞ — OKYANUSUN ÖTESİNDE ====================
+      ch21_us_move: {
+        chapter: "Bölüm 21: Okyanusun Ötesinde",
+        age: 52,
+        dateLabel: "Ekim · 52 Yaş · Maple Creek, Vermont",
+        resetActions: true,
+        worldPulse: "ch21",
+        scene: "s_ch21_us_town",
+        speaker: "anlatici",
+        text: "Elli iki yaşındasın. Vermont'un kuzeyinde, akçaağaçların kızıl ve sarıya boyandığı sisli bir Amerikan taşra kasabası: Maple Creek. Sabah sisi tepelerden inerken kokusu şaşırtıcı biçimde Trabzon'u andırıyor. Mütevazı ahşap bir ev, yanında eski bir ahır ve kırmızı eski bir pikap aldın. Burada kimse geçmişini bilmiyor; sen sadece 'Bay Kerem'sin.",
+        choices: [
+          {
+            label: "Eski ahırı temizle ve babanın hatırasına küçük bir marangoz atölyesi kur (-₺15.000)",
+            hint: "-₺15.000 · ++Vicdan · Babanın Mirası Amerika'da Yaşar",
+            reqMoney: 15000,
+            effects: { money: -15000, conscience: 14, family: 8, flag: "us_woodshop", item: "Maple Creek Atölye Anahtarı" },
+            next: "ch21_first_snow"
+          },
+          {
+            label: "Kimseyle fazla yakınlaşma — sadece bahçeyle ilgilenip sessiz bir emeklilik sür",
+            hint: "+Huzur · Mesafeli Taşra Hayatı",
+            effects: { conscience: 6 },
+            next: "ch21_first_snow"
+          }
+        ]
+      },
+
+      ch21_first_snow: {
+        chapter: "Bölüm 21: Okyanusun Ötesinde",
+        age: 53,
+        dateLabel: "Ocak · 53 Yaş · İlk Vermont Kışı",
+        scene: "s_ch21_us_town",
+        speaker: "arthur",
+        text: "İlk kış sert geliyor; eksi on beş derecede eski pikabın aküsü bitiyor ve su boruları donuyor. Yabancı bir ülkede ilk kez çaresiz kalmışken, yan parseldeki emekli marangoz Arthur elinde akü kablosu ve sıcak çorba termosuyla karları yararak kapına geliyor: \"Hoş geldin komşu. Vermont kışında kimse tek başına kalamaz.\"",
+        choices: [
+          {
+            label: "Arthur'u içeri davet et, ona hayatında ilk kez demli Türk çayı ikram et",
+            hint: "++Vicdan · Çıkarsız Gerçek Komşuluk",
+            effects: { conscience: 10, family: 8 },
+            next: "ch22_us_neighbors"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 22: 54–55 YAŞ — KASABA VE YENİ KOMŞULAR ====================
+      ch22_us_neighbors: {
+        chapter: "Bölüm 22: Maple Creek Komşuları",
+        age: 54,
+        dateLabel: "Mayıs · 54 Yaş · Kütüphane Rafları",
+        resetActions: true,
+        worldPulse: "ch22",
+        scene: "s_ch21_us_town",
+        speaker: "arthur",
+        text: "Elli dört yaşındasın. Arthur bir bahar sabahı sundurmana uğruyor: \"İki yıldır buradasın Kerem, ellerin ahşaba şefkatle dokunuyor. Kasabanın eski kütüphanesi için yeni meşe raflar lazım; birlikte yapalım mı?\"",
+        choices: [
+          {
+            label: "Kasaba kütüphanesinin raflarını ücretsiz yap ve çocukların okuma köşesini kur",
+            hint: "++Vicdan · Kasaba Seni Bağrına Basar",
+            effects: { conscience: 12, family: 10, flag: "town_beloved" },
+            next: "ch22_diner_evening"
+          },
+          {
+            label: "İşi kabul et ama normal ücretini al — temiz emeğinle dürüst ticaret kur",
+            hint: "+₺12.000 · +Vicdan · Temiz Kazanç",
+            effects: { money: 12000, cleanSavings: 12000, conscience: 6 },
+            next: "ch22_diner_evening"
+          }
+        ]
+      },
+
+      ch22_diner_evening: {
+        chapter: "Bölüm 22: Maple Creek Komşuları",
+        age: 55,
+        dateLabel: "Ekim · 55 Yaş · Clara'nın Lokantası",
+        scene: "s_ch21_us_town",
+        speaker: "clara",
+        text: "Elli beş yaşında bir sonbahar akşamı, kasabanın küçük lokantasında Clara önüne sıcak elmalı turta koyup soruyor: \"Bize hiç memleketinden bahsetmedin Kerem. Orada deniz nasıldı?\" İlk kez kırık İngilizcenle Trabzon'un yağmurunu, Erdoğdu yokuşunu ve Emine Anne'nin un kokan önlüğünü anlatırken sesin titriyor.",
+        choices: [
+          {
+            label: "Gülümse: \"Burası bana huzur verdi Clara, ama kalbimin yarısı hep Karadeniz'de kaldı.\"",
+            hint: "+Vicdan · Özlemle Yüzleşme",
+            effects: { conscience: 8, family: 6 },
+            next: "ch23_us_luke"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 23: 56–57 YAŞ — GENÇ LUKE VE İYİLEŞEN GEÇMİŞ ====================
+      ch23_us_luke: {
+        chapter: "Bölüm 23: İyileşen Geçmiş",
+        age: 56,
+        dateLabel: "Kasım · 56 Yaş · Genç Luke (17 Yaş)",
+        resetActions: true,
+        worldPulse: "ch23",
+        scene: "s_ch21_us_town",
+        speaker: "luke",
+        text: "Elli altı yaşındasın. Kasaba benzinliğinde gece vardiyasında çalışan on yedi yaşındaki Luke, hasta annesine bakmak için okulu bırakmak üzere. Bir akşam atölyenin önünde durup sana bakıyor: \"Bay Kerem, kasabanın dışındaki birkaç adam kolay para için paket taşıma işi teklif etti. Sizce yapmalı mıyım?\" Tam kırk yıl önceki kendi sesini duyuyorsun.",
+        choices: [
+          {
+            label: "Luke'u yanına çırak al, okulunu bırakmaması için maaşını üstlen (-₺10.000)",
+            hint: "-₺10.000 · +++Vicdan · 16 Yaşındaki Kendini İyileştirdin",
+            reqMoney: 10000,
+            effects: { money: -10000, conscience: 20, family: 10, flag: "saved_luke" },
+            next: "ch23_luke_lesson"
+          },
+          {
+            label: "Ona babanın saatini gösterip kendi hikayeni anlat: \"O zarfı alırsan bir daha asla uyuyamazsın evlat.\"",
+            hint: "++Vicdan · Bilge Rehberlik",
+            effects: { conscience: 14, flag: "saved_luke" },
+            next: "ch23_luke_lesson"
+          }
+        ]
+      },
+
+      ch23_luke_lesson: {
+        chapter: "Bölüm 23: İyileşen Geçmiş",
+        age: 57,
+        dateLabel: "Nisan · 57 Yaş · Atölye Kapısındaki Gölge",
+        scene: "s_ch21_us_town",
+        speaker: "anlatici",
+        text: "Bir bahar akşamı, Luke'a o kirli işi teklif eden iki serseri atölyenin kapısına gelip çocuğu korkutmaya çalışıyor. Elli yedi yaşındaki Kerem, elindeki rendeyi tezgaha yavaşça bırakıp kapıya çıkıyor. Ne bağırıyorsun ne tehdit ediyorsun; sadece yılların soğukkanlı bakışıyla gözlerinin içine bakıp 'Bu çocuk burada çalışıyor, bir daha bu yola girmeyin' diyorsun. İki adam tek kelime etmeden arabalarına binip uzaklaşıyor.",
+        choices: [
+          {
+            label: "İçeri dön, şaşkın bakan Luke'a gülümseyip ceviz tahtayı zımparalamaya devam et",
+            hint: "++Vicdan · +Vakar · Geçmişin Gücü İlk Kez İyilik İçin Kullanıldı",
+            effects: { conscience: 12, rep: 6 },
+            next: "ch24_us_visitor"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 24: 58 YAŞ — İKİ KITA, TEK KALP ====================
+      ch24_us_visitor: {
+        chapter: "Bölüm 24: İki Kıta, Tek Kalp",
+        age: 58,
+        dateLabel: "Eylül · 58 Yaş · Türkiye'den Gelen Uzun Arama",
+        resetActions: true,
+        worldPulse: "ch24",
+        scene: "s_ch25_us_sunset",
+        speaker: "anlatici",
+        text: "Elli sekiz yaşındasın. Sundurmada akşam çayı içerken Türkiye'den gelen uzun bir görüntülü arama ekrana düşüyor: Saçları ağarmış eski dostların (Zeynep, Mert ve Defne) gülümsüyor. \"Kerem, İstanbul hâlâ aynı telaşta. Bunca yıldan sonra soruyoruz: O koca gücü bırakıp Amerika'nın sessiz taşrasına gittiğine hiç pişman oldun mu?\"",
+        choices: [
+          {
+            label: "\"Hiç pişman değilim. İlk kez kapım çalındığında korkmadan açıyorum; burada yeniden insan oldum.\"",
+            hint: "++Vicdan · ++Aile · Tam Huzur",
+            effects: { conscience: 14, family: 12 },
+            next: "ch25_age60_finale"
+          },
+          {
+            label: "\"İstanbul'u ve Trabzon'u her yağmurda özlüyorum ama artık fırtınadan çıkmam gerekiyordu.\"",
+            hint: "+Vicdan · Buruk Gerçekçilik",
+            effects: { conscience: 10, family: 6 },
+            next: "ch25_age60_finale"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 25: 60 YAŞ — HUZURUN KIYISINDA ====================
+      ch25_age60_finale: {
+        chapter: "Bölüm 25: Huzurun Kıyısında",
+        age: 60,
+        dateLabel: "Ekim · 60 Yaş · Maple Creek, Gün Batımı",
+        worldPulse: "ch25",
+        scene: "s_ch25_us_sunset",
+        speaker: "anlatici",
+        text: "Altmış yaşındasın, Kerem. Maple Creek vadisine altın bir akşam çökerken ateşböcekleri çam ağaçlarının arasında süzülüyor. Amerika sana sessizlik ve şifa verdi; ama her sonbahar yağmurunda kulağında hâlâ Maçka derelerinin sesi ve Emine Anne'nin çocukluğunda anlattığı o yüksek yeşil köy yankılanıyor.",
+        choices: [
+          {
+            label: "Toprağın çağrısını dinle — Trabzon Maçka'ya, annenin köyüne dönmeye hazırlan (61 Yaş)",
+            hint: "Bölüm 26 · Köklerine Son Yolculuk",
+            effects: { conscience: 8, family: 10 },
+            next: "ch26_macka_call"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 26: 61 YAŞ — TOPRAĞIN ÇAĞRISI ====================
+      ch26_macka_call: {
+        chapter: "Bölüm 26: Toprağın Çağrısı",
+        age: 61,
+        dateLabel: "Eylül · 61 Yaş · Maple Creek'e Veda",
+        resetActions: true,
+        worldPulse: "ch26",
+        scene: "s_ch21_us_town",
+        speaker: "luke",
+        text: "Altmış bir yaşındasın. Yıllar önce karanlıktan çekip aldığın Luke artık yirmi iki yaşında, okulunu bitirmiş genç bir usta. Maple Creek'teki ahşap atölyenin anahtarını eline tutuşturduğunda gözleri doluyor: \"Bay Kerem, bana sadece marangozluk değil insan olmayı öğrettiniz. Gerçekten dönüyor musunuz?\" Komşu Arthur ve Clara da bahçe kapısında hüzünle gülümsüyor.",
+        choices: [
+          {
+            label: "Atölyeyi ve kırmızı pikabı Luke'a armağan et, dostlarına sarılıp valizini al",
+            hint: "++Vicdan · Amerika'da Temiz Bir İz Bıraktın",
+            effects: { conscience: 12, flag: "gifted_us_shop" },
+            next: "ch27_macka_arrival"
+          },
+          {
+            label: "Evi satıp birikimini Trabzon'a aktar, dostlarınla vedalaş (+₺40.000)",
+            hint: "+₺40.000 · Temiz Birikimle Dönüş",
+            effects: { money: 40000, cleanSavings: 40000, conscience: 6 },
+            next: "ch27_macka_arrival"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 27: 62 YAŞ — MAÇKA'YA VARIŞ ====================
+      ch27_macka_arrival: {
+        chapter: "Bölüm 27: Maçka'ya Varış",
+        age: 62,
+        dateLabel: "Mayıs · 62 Yaş · Emine Anne'nin Köyü",
+        resetActions: true,
+        worldPulse: "ch27",
+        scene: "s_ch26_macka_road",
+        speaker: "anlatici",
+        text: "Altmış iki yaşındasın. Okyanusu aşıp Trabzon'a indin, oradan çam kokulu virajlı yollardan Maçka'ya tırmandın. Yosun tutmuş taş patikanın ucunda Emine Anne'nin çocukluğunun geçtiği taş-ahşap köy evi duruyor. Bacasından ince bir duman yükseliyor, etrafı kır çiçekleri ve Karadeniz sisi sarmış.",
+        choices: [
+          {
+            label: "Tahta kapıyı aç, annenin çocukluk odasını havalandır ve sobayı yak",
+            hint: "++Aile · ++Vicdan · Evine Hoş Geldin",
+            effects: { family: 14, conscience: 12, item: "Maçka Köy Evi Anahtarı" },
+            next: "ch27_first_night_macka"
+          }
+        ]
+      },
+
+      ch27_first_night_macka: {
+        chapter: "Bölüm 27: Maçka'ya Varış",
+        age: 62,
+        dateLabel: "Mayıs · 62 Yaş · İlk Gece",
+        scene: "s_ch26_macka_road",
+        speaker: "anlatici",
+        text: "İlk gece yağmur çatıdaki saclara ritmik bir ninni gibi vuruyor. Uzaktan derenin sesi geliyor. Yıllarca İstanbul'un gökdelenlerinde, otel odalarında ve yabancı şehirlerde uyuyamayan Kerem, annesinin köy evinde kırk altı yıl sonra ilk kez sabaha kadar deliksiz uyuyor.",
+        choices: [
+          {
+            label: "Sabah gün doğumuyla kalk ve evi onarmaya başla (63 Yaş)",
+            hint: "Bölüm 28 · Köyde Yeni Bir Hayat",
+            effects: { conscience: 6 },
+            next: "ch28_macka_restore"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 28: 63–64 YAŞ — ESKİ EVİN ONARIMI & İMECE ====================
+      ch28_macka_restore: {
+        chapter: "Bölüm 28: Köyde Yeni Bir Hayat",
+        age: 63,
+        dateLabel: "Temmuz · 63 Yaş · Maçka Köyü",
+        resetActions: true,
+        worldPulse: "ch28",
+        scene: "s_ch26_macka_road",
+        speaker: "muhtar",
+        text: "Altmış üç yaşındasın. Babanın öğrettiği marangozlukla evin balkonunu, çatı kirişlerini kendi ellerinle onardın. Köy muhtarı balkona uğrayıp gülümsüyor: \"Emine ablamızın oğlu gelmiş, evi yeniden şenlendirmiş. Köyün eski çeşmesi ve okul kütüphanesi de bakımsız kaldı Kerem Bey, el atmak ister misin?\"",
+        choices: [
+          {
+            label: "Köy çeşmesini ve çocukların okuma odasını annenin adıyla yenile (-₺20.000)",
+            hint: "-₺20.000 · +++Vicdan · Köyün Gönlünde Kalıcı İz",
+            reqMoney: 20000,
+            effects: { money: -20000, conscience: 16, family: 10, flag: "macka_fountain" },
+            next: "ch28_garden_harvest"
+          },
+          {
+            label: "Kendi ellerinle köyün ahşap sıralarını tamir et — alın teriyle katkı sun",
+            hint: "++Vicdan · Sade ve Samimi Yaşam",
+            effects: { conscience: 12, family: 8 },
+            next: "ch28_garden_harvest"
+          }
+        ]
+      },
+
+      ch28_garden_harvest: {
+        chapter: "Bölüm 28: Köyde Yeni Bir Hayat",
+        age: 64,
+        dateLabel: "Ağustos · 64 Yaş · Fındık İmecesi",
+        scene: "s_ch30_macka_peace",
+        speaker: "anlatici",
+        text: "Altmış dört yaşında ilk kez bahçendeki fındıkları köy komşularıyla imece usulü topluyorsun. Akşamüstü taş avluda sıcak mısır ekmeği, kuymak ve semaver çayı paylaşılıyor. Kimse senin geçmişteki servetini ya da korkulan adını bilmiyor; sadece 'Emine ablanın sessiz, iyi kalpli oğlu' olarak seviliyorsun.",
+        choices: [
+          {
+            label: "Bu sade mutluluğa şükret ve yazı uğurla (65 Yaş)",
+            hint: "Gerçek Aidiyet",
+            effects: { conscience: 8, family: 8 },
+            next: "ch29_macka_reunion"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 29: 65 YAŞ — MAÇKA BALKONUNDA ESKİ DOSTLAR ====================
+      ch29_macka_reunion: {
+        chapter: "Bölüm 29: Maçka Sofrası",
+        age: 65,
+        dateLabel: "Ağustos · 65 Yaş · Eski Dostlarla Buluşma",
+        resetActions: true,
+        worldPulse: "ch29",
+        scene: "s_ch30_macka_peace",
+        speaker: "mert",
+        text: "Altmış beş yaşındasın. Bir yaz sabahı Maçka balkonunda çaydanlık kaynarken çocukluk arkadaşın Mert (artık 65 yaşında, saçları bembeyaz, yanında küçük torunuyla) çıkageliyor. Eski dostun sardunyalı balkondan yeşil vadiye bakıp gülümsüyor: \"Erdoğdu'nun arka sokağından buraya, kırk dokuz yıl geçmiş be Kerem... İnanır mısın, seni hiç bu kadar huzurlu görmemiştim.\"",
+        choices: [
+          {
+            label: "Mert'le sabaha kadar eski günleri an, torununa ahşaptan küçük bir oyuncak gemi oy",
+            hint: "++Aile · ++Vicdan · Eski Yaralar Kapanır",
+            effects: { family: 14, conscience: 12, rel: { mert: 20 } },
+            next: "ch30_macka_peace"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 30: 66 YAŞ — MAÇKA'DA HUZURLU HAYAT ====================
+      ch30_macka_peace: {
+        chapter: "Bölüm 30: Maçka'da Huzurlu Hayat",
+        age: 66,
+        dateLabel: "Ekim · 66 Yaş · Huzurun Zirvesi",
+        resetActions: true,
+        worldPulse: "ch30",
+        scene: "s_ch30_macka_peace",
+        speaker: "anlatici",
+        text: "Altmış altı yaşındasın. Maçka'da günlerin dingin bir ritme oturdu: Sabah erken uyanıp semaveri yakmak, bahçedeki sardunyaları sulamak, sisin çamların arasından kalkışını izlemek. On altı yaşında başlayan o uzun fırtına nihayet dindi; ilk kez hiçbir şeyden kaçmadan, hiçbir şeyin peşinden koşmadan yaşıyorsun.",
+        choices: [
+          {
+            label: "Bu huzurlu yılların kıymetini bil ve zamanın akışına teslim ol (68 Yaş)",
+            hint: "Bölüm 31 · Sonbahar Yılları Başlıyor",
+            effects: { conscience: 10 },
+            next: "ch31_health_warning"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 31: 68–69 YAŞ — YORGUN KALP ====================
+      ch31_health_warning: {
+        chapter: "Bölüm 31: Yorgun Kalp",
+        age: 68,
+        dateLabel: "Kasım · 68 Yaş · Maçka Devlet Hastanesi",
+        resetActions: true,
+        worldPulse: "ch31",
+        scene: "s_ch26_macka_road",
+        speaker: "doktor",
+        text: "Altmış sekiz yaşındasın. Bir sonbahar sabahı bahçede odun taşırken göğsünde keskin bir ağrı ve nefes darlığı hissediyorsun. Maçka'daki hastanede genç kardiyolog Dr. Selin tetkiklerine bakarak şefkatle konuşuyor: \"Kerem Bey, kırklı yaşlarınızda başlayan kalp yetmezliği ve damar yorgunluğu ilerlemiş. İlaçlarınızı aksatmadan dinlenmeniz gerekiyor; kalbiniz çok uzun bir yol yürümüş.\"",
+        choices: [
+          {
+            label: "Doktorun sözünü dinle, ağır işleri bırakıp köyde sakin bir dinlenme düzenine geç",
+            hint: "+Huzur · Kabulleniş",
+            effects: { conscience: 8 },
+            next: "ch31_slow_steps"
+          },
+          {
+            label: "Gülümse: \"Benim kalbim Erdoğdu'dan Amerika'ya kadar dayandı doktor hanım, gerisi Allah kerim.\"",
+            hint: "+Vakar · İçsel Güç",
+            effects: { conscience: 6, rep: 4 },
+            next: "ch31_slow_steps"
+          }
+        ]
+      },
+
+      ch31_slow_steps: {
+        chapter: "Bölüm 31: Yorgun Kalp",
+        age: 69,
+        dateLabel: "Mayıs · 69 Yaş · Kendi Yonttuğun Baston",
+        scene: "s_ch26_macka_road",
+        speaker: "anlatici",
+        text: "Altmış dokuz yaşında, kendi ellerinle ceviz ağacından yonttuğun bastonla köy patikasında daha yavaş yürüyorsun. Eskiden yirmi dakikada çıktığın tepe şimdi bir saat sürüyor; ama artık acelen yok. Her mola verdiğinde çiçeklerin kokusunu, dere sesini ve güneşin yapraklardan süzülüşünü izliyorsun.",
+        choices: [
+          {
+            label: "Yetmiş yaşına girerken son emanetlerini düzenle",
+            hint: "Bölüm 32 · Vasiyet Defteri",
+            effects: { conscience: 6 },
+            next: "ch32_will"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 32: 70 YAŞ — SON EMANETLER ====================
+      ch32_will: {
+        chapter: "Bölüm 32: Son Emanetler",
+        age: 70,
+        dateLabel: "Mart · 70 Yaş · Vasiyet Defteri",
+        resetActions: true,
+        worldPulse: "ch32",
+        scene: "s_ch30_macka_peace",
+        speaker: "anlatici",
+        text: "Yetmiş yaşına bastın. Kalbin artık daha çabuk yoruluyor ama zihnin berrak. Balkondaki ahşap masada eski bir defter açıp geride bırakacağın her şeyi tek tek yazıyorsun: Maçka'daki bu evi, kalan birikimini, babanın saatini ve ömrün boyunca öğrendiğin tek gerçeği.",
+        choices: [
+          {
+            label: "Tüm birikimini Maçka ve Erdoğdu'daki yoksul gençlerin eğitim bursu için vakfa bağışla",
+            hint: "+++Vicdan · Kendi 16 Yaşındaki Halin Gibi Gençlere Umut",
+            effects: { conscience: 20, family: 10, flag: "scholarship_will" },
+            next: "ch33_last_winter"
+          },
+          {
+            label: "Maçka'daki evi Mert'in torununa, babanın saatini ise genç dostun Emre'ye emanet et",
+            hint: "++Aile · ++Vicdan · Kişisel Emanetler",
+            effects: { family: 16, conscience: 14, flag: "personal_will" },
+            next: "ch33_last_winter"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 33: 72–73 YAŞ — SON KARADENİZ KIŞI VE YANKILAR ====================
+      ch33_last_winter: {
+        chapter: "Bölüm 33: Son Karadeniz Kışı",
+        age: 72,
+        dateLabel: "Ocak · 72 Yaş · Sobanın Başında",
+        resetActions: true,
+        worldPulse: "ch33",
+        scene: "s_ch20_age50",
+        speaker: "anlatici",
+        text: "Yetmiş iki yaşındasın. Maçka'nın çam ormanlarına sessiz bir kış karı yağıyor. Sağlık sorunların artık seni evin sıcaklığına bağladı; ama yalnız değilsin. Köy komşuları her sabah sıcak çorba bırakıyor, Mert haftada iki kez sobanın odununu getiriyor.",
+        choices: [
+          {
+            label: "Pencereden yağan karı izle, geçmişte kırdığın herkesi kalbinde affet",
+            hint: "++Vicdan · Tam İçsel Barış",
+            effects: { conscience: 14, family: 8 },
+            next: "ch33_echoes_phone"
+          }
+        ]
+      },
+
+      ch33_echoes_phone: {
+        chapter: "Bölüm 33: Son Karadeniz Kışı",
+        age: 73,
+        dateLabel: "Nisan · 73 Yaş · İki Kıtadan Gelen Sesler",
+        scene: "s_ch30_macka_peace",
+        speaker: "luke",
+        text: "Yetmiş üç yaşında bir bahar sabahı, Amerika'dan Luke (artık 34 yaşında, kendi çocuğunu kucağına almış) seni görüntülü arıyor; arkasında ona bıraktığın ahşap atölye görünüyor: \"Bay Kerem, oğluma sizin adınızı veremedik ama ona hep dürüstlüğünüzü anlatıyorum.\" Aynı akşam Emre de İstanbul'dan arayıp halini hatırını soruyor. Karanlık yılların değil, yaptığın sessiz iyilikler senden sonra da yaşayacak.",
+        choices: [
+          {
+            label: "Gözlerin dolarak gülümse — artık hiçbir pişmanlığın kalmadı (74 Yaş)",
+            hint: "Bölüm 34 · Son Mektup",
+            effects: { conscience: 12, family: 10 },
+            next: "ch34_last_letter"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 34: 74 YAŞ — SON MEKTUP ====================
+      ch34_last_letter: {
+        chapter: "Bölüm 34: Son Mektup",
+        age: 74,
+        dateLabel: "Eylül · 74 Yaş · Balkon Masası",
+        resetActions: true,
+        worldPulse: "ch34",
+        scene: "s_ch30_macka_peace",
+        speaker: "kerem",
+        text: "Yetmiş dört yaşındasın. Nefesin artık çok kısa ama yüzünde hafif, dingin bir tebessüm var. Titreyen elinle tek sayfalık bir mektup yazıp babanın eski saatinin yanına bırakıyorsun: \"On altı yaşında yokuştan inerken zengin olursam her şey düzelir sanmıştım. Meğer insanın aradığı tek şey, korkmadan uyuyabildiği bir çatı ve annesinin köyündeki sabah çayıymış. Hakkınızı helal edin.\"",
+        choices: [
+          {
+            label: "Mektubu katla, çam kokulu rüzgara karşı gözlerini dinlendir (76 Yaş)",
+            hint: "Bölüm 35 · Huzurlu Veda",
+            effects: { conscience: 10 },
+            next: "ch35_peaceful_passing"
+          }
+        ]
+      },
+
+      // ==================== BÖLÜM 35: 76 YAŞ — MAÇKA'DA HUZURLU VEDA ====================
+      ch35_peaceful_passing: {
+        chapter: "Bölüm 35: Huzurlu Veda",
+        age: 76,
+        dateLabel: "Ekim · 76 Yaş · Maçka Vadisi, Gün Batımı",
+        worldPulse: "ch35",
+        scene: "s_ch35_farewell",
+        speaker: "anlatici",
+        text: "Yetmiş altı yaşında, altın bir Ekim akşamüstü... Maçka vadisinden esen serin çam rüzgarı balkonun beyaz dantelli tülünü usulca dalgalandırıyor. Küçük ahşap masada yarım kalmış bir ince belli çay, babanın eski saati ve son mektubun duruyor. Kerem Aksoy, yıllardır süren kalp rahatsızlığına yenik düşerek annesinin köy evinde, hiçbir korku ve pişmanlık taşımadan uykusunda huzurla hayata gözlerini yumdu. On altı yaşında Erdoğdu'da başlayan altmış yıllık fırtınalı ömür, nihayet toprağına kavuştu.",
+        choices: [
+          {
+            label: "60 Yıllık Ömrün Finalini ve Hayat Özeti Filmini İzle",
+            hint: "16 → 76 Yaş · Tamamlanmış Bir Hayat",
+            effects: {},
+            next: "ENDING"
+          }
+        ]
+      }
+    };
+
+    // =========================================================================
+    // 3. PERSONAL LIFE ACTIONS (BETWEEN/DURING CHAPTERS)
+    // =========================================================================
+    const LIFE_ACTIONS = [
+      {
+        id: "send_mom",
+        title: "Anneye Para & İlaç Gönder",
+        desc: "Erdoğdu'daki eve düzenli destek yolla.",
+        cost: 1500,
+        effectText: "+10 Aile · +8 Vicdan",
+        apply: (s) => { s.family += 10; s.conscience += 8; s.rel.anne += 10; }
+      },
+      {
+        id: "call_zeynep",
+        title: "Zeynep'i Ara / Hatırını Sor",
+        desc: "Geçmişle ve kalbinle bağını koparma.",
+        cost: 0,
+        effectText: "+8 Aile/Aşk · +6 Vicdan",
+        apply: (s) => { s.family += 8; s.conscience += 6; s.rel.zeynep += 10; }
+      },
+      {
+        id: "clean_save",
+        title: "Temiz Birikime Aktar",
+        desc: "Gelecekte temiz bir hayat için kenara ₺5.000 koy.",
+        cost: 5000,
+        effectText: "+₺5.000 Temiz Birikim · +4 Vicdan",
+        apply: (s) => { s.cleanSavings += 5000; s.conscience += 4; }
+      },
+      {
+        id: "lawyer_bribe",
+        title: "Avukat & Bağlantı Ayarla",
+        desc: "Polis takibini ve dosya riskini azalt.",
+        cost: 4000,
+        effectText: "-18 Polis Riski",
+        apply: (s) => { s.risk -= 18; }
+      },
+      {
+        id: "help_mert",
+        title: "Mert'e Destek Ol",
+        desc: "Çocukluk arkadaşını kollayıp sadakatini koru.",
+        cost: 2000,
+        effectText: "+12 Mert · +6 İtibar",
+        apply: (s) => { s.rep += 6; s.rel.mert += 12; }
+      },
+      {
+        id: "side_hustle",
+        title: "Gece Ek İşi Al",
+        desc: "Ekstra nakit kazan ama risk ve vicdan yükünü göze al.",
+        cost: 0,
+        effectText: "+₺3.500 · +10 Risk · -6 Vicdan",
+        apply: (s) => { s.money += 3500; s.risk += 10; s.conscience -= 6; s.rep += 4; }
+      }
+    ];
+
+    // =========================================================================
+    // 4. GAME STATE & PERSISTENCE
+    // =========================================================================
+    const SAVE_KEY = "sisli_yokus_save_v1";
+
+    function createInitialState() {
+      return {
+        nodeId: "ch1_start",
+        age: 16,
+        money: 150,
+        cleanSavings: 0,
+        conscience: 80,
+        family: 85,
+        rep: 10,
+        risk: 5,
+        actionsLeft: 2,
+        stepCount: 1,
+        items: ["Erdoğdu Ev Anahtarı"],
+        flags: {},
+        rel: {
+          anne: 85,
+          zeynep: 75,
+          mert: 70,
+          tarik: 30,
+          orhan: 0,
+          haldun: 0,
+          defne: 0
+        },
+        minds: {
+          anne: { mood: "Yorgun ama dimdik", act: "Fırında gece vardiyasında çalışıp evi ayakta tutuyor." },
+          zeynep: { mood: "Azimli ve umutlu", act: "Hemşirelik sınavına hazırlanıp kendi geleceğini kuruyor." },
+          mert: { mood: "Hırslı ve arayışta", act: "Mahallede saygı görmek için fırsat kolluyor." },
+          tarik: { mood: "Hesapçı", act: "Erdoğdu'daki kayıt dışı işleri çay ocağından yönetiyor." },
+          orhan: { mood: "Mesafeli", act: "Trabzon Limanı'ndaki Batum hattını büyütüyor." },
+          haldun: { mood: "Soğukkanlı", act: "İstanbul Boğazı'nda paravan şirket ağını genişletiyor." },
+          defne: { mood: "Temkinli", act: "Boğaz köşkünün hukuk ve finans defterlerini tutuyor." }
+        },
+        log: []
+      };
+    }
+
+    let state = createInitialState();
+    let activeBgLayer = "A";
+    let currentSceneKey = null;
+    let typeTimer = null;
+    let fullTextCurrent = "";
+    let isTyping = false;
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function formatTL(num) {
+      return "₺" + Math.max(0, Math.round(num)).toLocaleString("tr-TR");
+    }
+
+    function saveGame() {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function loadSavedGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // =========================================================================
+    // 5. ATMOSPHERIC WEB AUDIO ENGINE (Rain + Soft Melancholic Chimes)
+    // =========================================================================
+    let audioCtx = null;
+    let rainGain = null;
+    let audioEnabled = true;
+    let audioStarted = false;
+
+    function initAudio() {
+      if (audioStarted) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        audioCtx = new AudioContext();
+
+        // Subtle pink-ish noise for Black Sea / Istanbul rain ambience
+        const bufferSize = audioCtx.sampleRate * 2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.997 * b0 + white * 0.029;
+          b1 = 0.985 * b1 + white * 0.032;
+          b2 = 0.950 * b2 + white * 0.048;
+          data[i] = (b0 + b1 + b2) * 0.12;
+        }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        noise.loop = true;
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.value = 650;
+
+        rainGain = audioCtx.createGain();
+        rainGain.gain.value = audioEnabled ? 0.14 : 0.0;
+
+        noise.connect(filter);
+        filter.connect(rainGain);
+        rainGain.connect(audioCtx.destination);
+        noise.start();
+        audioStarted = true;
+      } catch (e) {}
+    }
+
+    function playChime(freq = 329.63) {
+      if (!audioEnabled) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.06, audioCtx.currentTime + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.85);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.9);
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const audioTxt = audioEnabled ? "Ses: Açık" : "Ses: Kapalı";
+      document.getElementById("btnAudioToggle").textContent = audioTxt;
+      const mAudio = document.getElementById("btnMobileAudio");
+      if (mAudio) mAudio.textContent = audioTxt;
+      if (rainGain && audioCtx) {
+        rainGain.gain.setTargetAtTime(audioEnabled ? 0.14 : 0.0, audioCtx.currentTime, 0.2);
+      }
+      if (audioEnabled) playChime(440);
+    }
+
+    // =========================================================================
+    // 6. WEATHER & SCENE ATMOSPHERE ENGINE (Desktop + Mobile 16:9 Stage)
+    // =========================================================================
+    const weatherCanvas = document.getElementById("weatherCanvas");
+    const wCtx = weatherCanvas.getContext("2d");
+    const mobileWeatherCanvas = document.getElementById("mobileWeatherCanvas");
+    const mwCtx = mobileWeatherCanvas ? mobileWeatherCanvas.getContext("2d") : null;
+
+    let particles = [];
+    let fogBands = [];
+    let currentWeather = "mist";
+    let weatherAnimId = null;
+    let lightningAlpha = 0;
+    let fxTick = 0;
+
+    function resizeWeather() {
+      weatherCanvas.width = window.innerWidth;
+      weatherCanvas.height = window.innerHeight;
+      if (mobileWeatherCanvas) {
+        const rect = mobileWeatherCanvas.parentElement.getBoundingClientRect();
+        mobileWeatherCanvas.width = Math.max(320, Math.round(rect.width || 480));
+        mobileWeatherCanvas.height = Math.max(180, Math.round(rect.height || 270));
+      }
+      initParticles();
+    }
+
+    function initParticles() {
+      particles = [];
+      fogBands = [];
+      const isHeavy = currentWeather === "rain" || currentWeather === "storm" || currentWeather === "patrol_rain";
+      const isLight = currentWeather === "light_rain" || currentWeather === "warm_rain";
+      const count = isHeavy ? 130 : isLight ? 75 : 48;
+
+      for (let i = 0; i < count; i++) {
+        // Normalized 0..1 coordinates so the exact same particles scale crisply to both Desktop and Mobile canvases!
+        const isWarmMote = (currentWeather === "warm_rain" && i % 3 === 0) || currentWeather === "sun";
+        particles.push({
+          nx: Math.random(),
+          ny: Math.random(),
+          vx: (isHeavy || (isLight && !isWarmMote)) ? (-0.0018 - Math.random() * 0.0016) : ((Math.random() - 0.5) * 0.0005),
+          vy: isHeavy ? (0.016 + Math.random() * 0.011) : (isLight && !isWarmMote) ? (0.009 + Math.random() * 0.006) : (-0.0004 - Math.random() * 0.0005),
+          len: isHeavy ? (14 + Math.random() * 14) : (isLight && !isWarmMote) ? (9 + Math.random() * 8) : (2.2 + Math.random() * 2.8),
+          alpha: isHeavy ? (0.28 + Math.random() * 0.34) : (0.22 + Math.random() * 0.32),
+          warm: isWarmMote,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
+
+      if (currentWeather === "mist" || currentWeather === "storm") {
+        for (let f = 0; f < 4; f++) {
+          fogBands.push({
+            nx: Math.random(),
+            ny: 0.25 + f * 0.18,
+            r: 0.28 + Math.random() * 0.18,
+            vx: 0.00025 + Math.random() * 0.0003,
+            alpha: currentWeather === "mist" ? 0.14 : 0.08
+          });
+        }
+      }
+    }
+
+    function renderFXOnContext(ctx, W, H, scaleLen) {
+      ctx.clearRect(0, 0, W, H);
+      if (W < 10 || H < 10) return;
+
+      // 1. Drifting morning mist / sea fog clouds
+      for (let i = 0; i < fogBands.length; i++) {
+        const f = fogBands[i];
+        const cx = f.nx * W;
+        const cy = f.ny * H;
+        const rad = f.r * W;
+        const grad = ctx.createRadialGradient(cx, cy, rad * 0.1, cx, cy, rad);
+        grad.addColorStop(0, `rgba(225, 238, 250, ${f.alpha})`);
+        grad.addColorStop(1, "rgba(225, 238, 250, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 2. Raindrops, warm hearth/tea motes, or golden dawn particles
+      const isRainType = currentWeather === "rain" || currentWeather === "storm" || currentWeather === "patrol_rain" || currentWeather === "light_rain" || currentWeather === "warm_rain";
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const px = p.nx * W;
+        const py = p.ny * H;
+
+        if (isRainType && !p.warm) {
+          ctx.strokeStyle = `rgba(218, 236, 255, ${p.alpha})`;
+          ctx.lineWidth = scaleLen < 0.7 ? 0.9 : 1.15;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px - p.len * 0.18 * scaleLen, py + p.len * scaleLen);
+          ctx.stroke();
+        } else {
+          const pulse = 0.65 + 0.35 * Math.sin(fxTick * 0.04 + p.phase);
+          ctx.fillStyle = (p.warm || currentWeather === "sun")
+            ? `rgba(255, 224, 148, ${p.alpha * pulse})`
+            : `rgba(235, 244, 255, ${p.alpha * pulse})`;
+          ctx.beginPath();
+          ctx.arc(px, py, Math.max(1.2, p.len * scaleLen), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 3. Subtle distant police patrol red/blue edge shimmer on chase/raid scenes
+      if (currentWeather === "patrol_rain") {
+        const redPulse = Math.max(0, Math.sin(fxTick * 0.11)) * 0.16;
+        const bluePulse = Math.max(0, Math.sin(fxTick * 0.11 + Math.PI)) * 0.18;
+        if (redPulse > 0.01) {
+          const rg = ctx.createRadialGradient(W * 0.15, H * 0.55, 5, W * 0.15, H * 0.55, W * 0.45);
+          rg.addColorStop(0, `rgba(239, 68, 68, ${redPulse})`);
+          rg.addColorStop(1, "rgba(239, 68, 68, 0)");
+          ctx.fillStyle = rg;
+          ctx.fillRect(0, 0, W, H);
+        }
+        if (bluePulse > 0.01) {
+          const bg = ctx.createRadialGradient(W * 0.85, H * 0.5, 5, W * 0.85, H * 0.5, W * 0.45);
+          bg.addColorStop(0, `rgba(59, 130, 246, ${bluePulse})`);
+          bg.addColorStop(1, "rgba(59, 130, 246, 0)");
+          ctx.fillStyle = bg;
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      // 4. Occasional distant storm lightning flash
+      if (lightningAlpha > 0.01) {
+        ctx.fillStyle = `rgba(220, 235, 255, ${lightningAlpha})`;
+        ctx.fillRect(0, 0, W, H);
+      }
+    }
+
+    function drawWeather() {
+      fxTick += 1;
+
+      // Advance shared normalized particle positions once per frame
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.nx += p.vx;
+        p.ny += p.vy;
+        if (p.ny > 1.05) { p.ny = -0.05; p.nx = Math.random(); }
+        if (p.ny < -0.05) { p.ny = 1.05; p.nx = Math.random(); }
+        if (p.nx < -0.05) p.nx = 1.05;
+        if (p.nx > 1.05) p.nx = -0.05;
+      }
+      for (let i = 0; i < fogBands.length; i++) {
+        const f = fogBands[i];
+        f.nx += f.vx;
+        if (f.nx > 1.35) f.nx = -0.35;
+      }
+
+      // Occasional gentle lightning on storm scenes
+      if (currentWeather === "storm" && lightningAlpha <= 0.01 && Math.random() < 0.0035) {
+        lightningAlpha = 0.24;
+      } else if (lightningAlpha > 0) {
+        lightningAlpha *= 0.86;
+      }
+
+      renderFXOnContext(wCtx, weatherCanvas.width, weatherCanvas.height, 1.0);
+      if (mwCtx && mobileWeatherCanvas && window.innerWidth < 768) {
+        renderFXOnContext(mwCtx, mobileWeatherCanvas.width, mobileWeatherCanvas.height, 0.62);
+      }
+
+      weatherAnimId = requestAnimationFrame(drawWeather);
+    }
+
+    // =========================================================================
+    // 7. SCENE RENDERING & UI UPDATES
+    // =========================================================================
+    function setSceneBackground(sceneKey) {
+      const scene = SCENES[sceneKey] || SCENES.erdogdu_dawn;
+      if (currentSceneKey === sceneKey) return;
+      currentSceneKey = sceneKey;
+      currentWeather = scene.weather;
+      initParticles();
+
+      const layerA = document.getElementById("bgLayerA");
+      const layerB = document.getElementById("bgLayerB");
+      const nextLayer = activeBgLayer === "A" ? layerB : layerA;
+      const prevLayer = activeBgLayer === "A" ? layerA : layerB;
+
+      nextLayer.style.backgroundImage = `url('${scene.img}')`;
+      const mImg = document.getElementById("mobileSceneImg");
+      if (mImg) {
+        mImg.style.opacity = "0.2";
+        mImg.src = scene.img;
+        setTimeout(() => { mImg.style.opacity = "1"; }, 60);
+      }
+      nextLayer.classList.remove("opacity-0");
+      nextLayer.classList.add("opacity-100");
+      prevLayer.classList.remove("opacity-100");
+      prevLayer.classList.add("opacity-0");
+      activeBgLayer = activeBgLayer === "A" ? "B" : "A";
+    }
+
+    function showToast(text, tone = "amber") {
+      const container = document.getElementById("toastContainer");
+      const el = document.createElement("div");
+      const colors = {
+        green: "bg-emerald-950/90 border-emerald-400/50 text-emerald-200",
+        red: "bg-red-950/90 border-red-400/50 text-red-200",
+        blue: "bg-sky-950/90 border-sky-400/50 text-sky-200",
+        rose: "bg-rose-950/90 border-rose-400/50 text-rose-200",
+        amber: "bg-amber-950/90 border-amber-400/50 text-amber-200"
+      };
+      el.className = `toast-float px-3.5 py-1.5 rounded-xl border text-xs font-semibold shadow-lg backdrop-blur-md ${colors[tone] || colors.amber}`;
+      el.textContent = text;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 2700);
+    }
+
+    function updateHUD() {
+      const node = STORY[state.nodeId] || STORY.ch1_start;
+      const scene = SCENES[node.scene] || SCENES.erdogdu_dawn;
+      document.getElementById("hudAge").textContent = state.age;
+      document.getElementById("hudChapter").textContent = node.chapter;
+      document.getElementById("hudLocation").textContent = node.dateLabel ? `${node.dateLabel} · ${scene.location}` : scene.location;
+      document.getElementById("statMoney").textContent = Math.max(0, Math.round(state.money)).toLocaleString("tr-TR");
+      document.getElementById("statConscience").textContent = state.conscience;
+      document.getElementById("statFamily").textContent = state.family;
+      document.getElementById("statRep").textContent = state.rep;
+      document.getElementById("statRisk").textContent = state.risk;
+      document.getElementById("sceneProgress").textContent = `Adım ${state.stepCount}`;
+      const mMoney = document.getElementById("mStatMoney");
+      if (mMoney) {
+        mMoney.textContent = Math.max(0, Math.round(state.money)).toLocaleString("tr-TR");
+        document.getElementById("mStatConscience").textContent = state.conscience;
+        document.getElementById("mStatFamily").textContent = state.family;
+        document.getElementById("mStatRep").textContent = state.rep;
+        document.getElementById("mStatRisk").textContent = state.risk;
+      }
+    }
+
+    function finishTypingImmediately() {
+      if (!isTyping) return;
+      clearInterval(typeTimer);
+      typeTimer = null;
+      isTyping = false;
+      document.getElementById("dialogueText").textContent = fullTextCurrent;
+    }
+
+    function typeText(text) {
+      clearInterval(typeTimer);
+      fullTextCurrent = text;
+      isTyping = true;
+      const box = document.getElementById("dialogueText");
+      box.textContent = "";
+      let idx = 0;
+      typeTimer = setInterval(() => {
+        idx += 2;
+        box.textContent = fullTextCurrent.slice(0, idx);
+        if (idx >= fullTextCurrent.length) {
+          finishTypingImmediately();
+        }
+      }, 18);
+    }
+
+    function applyEffects(eff) {
+      if (!eff) return;
+      if (eff.money) {
+        state.money = Math.max(0, state.money + eff.money);
+        showToast((eff.money > 0 ? "+" : "-") + formatTL(Math.abs(eff.money)), eff.money > 0 ? "green" : "red");
+      }
+      if (eff.cleanSavings) {
+        state.cleanSavings += eff.cleanSavings;
+        showToast("+" + formatTL(eff.cleanSavings) + " Temiz Birikim", "blue");
+      }
+      if (eff.conscience) {
+        state.conscience = clamp(state.conscience + eff.conscience, 0, 100);
+        showToast((eff.conscience > 0 ? "+" : "") + eff.conscience + " Vicdan", eff.conscience > 0 ? "blue" : "red");
+      }
+      if (eff.family) {
+        state.family = clamp(state.family + eff.family, 0, 100);
+        showToast((eff.family > 0 ? "+" : "") + eff.family + " Aile & Aşk", eff.family > 0 ? "rose" : "red");
+      }
+      if (eff.rep) {
+        state.rep = clamp(state.rep + eff.rep, 0, 100);
+        showToast((eff.rep > 0 ? "+" : "") + eff.rep + " İtibar", "amber");
+      }
+      if (eff.risk) {
+        state.risk = clamp(state.risk + eff.risk, 0, 100);
+        showToast((eff.risk > 0 ? "+" : "") + eff.risk + " Risk", eff.risk > 0 ? "red" : "green");
+      }
+      if (eff.item && !state.items.includes(eff.item)) {
+        state.items.push(eff.item);
+        showToast("Hatıra: " + eff.item, "amber");
+      }
+      if (eff.flag) {
+        state.flags[eff.flag] = true;
+      }
+      if (eff.rel) {
+        Object.keys(eff.rel).forEach(k => {
+          state.rel[k] = clamp((state.rel[k] || 0) + eff.rel[k], 0, 100);
+        });
+      }
+    }
+
+    // Autonomous Character Consciousness Updates between Chapters
+    function updateCharacterConsciousness(pulseKey) {
+      if (!state.minds) state.minds = createInitialState().minds;
+      let summary = "";
+
+      if (pulseKey === "ch2") {
+        state.minds.anne = state.conscience < 70
+          ? { mood: "Şüpheli ve endişeli", act: "Kerem'in geç saatlerde eve dönüşünü fark etti, sessizce izliyor." }
+          : { mood: "Minnettar", act: "Oğlunun desteğini hissedince fırında tek vardiyaya düştü." };
+        state.minds.zeynep = { mood: "Kararlı", act: "Kütüphanede sabahlayıp hemşirelik deneme sınavlarında birinci oldu." };
+        summary = "✦ Bu Sırada: Zeynep kendi geleceği için sınavlara odaklandı; Emine Anne evin hesabını tek başına dengede tutmaya çalışıyor.";
+      } else if (pulseKey === "ch3") {
+        state.minds.mert = state.flags.mert_protected
+          ? { mood: "Kırgın ama güvende", act: "Kendi kararıyla oto sanayide çıraklığa başladı." }
+          : { mood: "İddialı", act: "Sokakta adının duyulması hoşuna gidiyor, daha büyük işler istiyor." };
+        state.minds.tarik = { mood: "Yorgun", act: "Yaşlandığını hissediyor; mahalledeki kontrolü gençlere devretmeye hazırlanıyor." };
+        summary = "✦ Bu Sırada: " + (state.flags.mert_protected ? "Mert kendi kararıyla sanayide temiz bir işe girdi." : "Mert mahallede kendi çevresini kurmaya başladı.");
+      } else if (pulseKey === "ch4") {
+        state.minds.anne = { mood: "İnatçı ve onurlu", act: "Kendi başına Tarık Dayı'nın çay ocağına gidip oğlundan uzak durmasını söyledi." };
+        summary = "✦ Bu Sırada: Emine Anne sessiz kalmadı — kendi iradesiyle çay ocağının kapısına kadar gidip Tarık Dayı'yla yüzleşti.";
+      } else if (pulseKey === "ch5") {
+        if (state.flags.chose_street_over_love) {
+          state.flags.zeynep_moved_ankara = true;
+          state.minds.zeynep = { mood: "Kırık ama özgür", act: "Seni beklemekten vazgeçip Ankara'daki eğitim hastanesine kendi isteğiyle gitti." };
+          summary = "✦ Bu Sırada: Zeynep kendi kararını verdi — Trabzon'dan ayrılıp Ankara'da yeni bir hayata başladı.";
+        } else {
+          state.minds.zeynep = { mood: "Umutlu ve sabırlı", act: "Trabzon'da fakülteye devam ediyor, bir gün temiz bir başlangıç umuyor." };
+          summary = "✦ Bu Sırada: Zeynep fakültede dereceye girdi; hâlâ Trabzon'da kendi emeğiyle ayakta duruyor.";
+        }
+        state.minds.orhan = { mood: "Stratejik", act: "Gümrükteki yeni sıkı denetimler yüzünden genç ve cesur bir yardımcı arıyor." };
+      } else if (pulseKey === "ch6") {
+        state.minds.orhan = { mood: "Temkinli", act: "Savcılık sızıntısını sezdi; İstanbul'daki eski dostu Haldun Bey'le gizlice haberleşiyor." };
+        summary = "✦ Bu Sırada: Trabzon'da polis baskısı artarken Orhan Reis İstanbul bağlantısını devreye soktu.";
+      } else if (pulseKey === "ch7") {
+        state.minds.mert = state.flags.mert_rival_turn
+          ? { mood: "Öfkeli ve bağımsız", act: "Yalnız bırakılınca kendi kararıyla rakip ekibe geçti." }
+          : state.flags.mert_protected
+            ? { mood: "Huzurlu", act: "Kendi küçük tamirhanesini açtı, evlilik hazırlığında." }
+            : { mood: "Sadık", act: "Seninle omuz omuza yeni bir şehre adım atmaya hazır." };
+        summary = "✦ Bu Sırada: " + state.minds.mert.act;
+      } else if (pulseKey === "ch8") {
+        state.minds.haldun = { mood: "Gözlemci", act: "Kerem'in İstanbul'daki ilk yılını uzaktan test ediyor." };
+        state.minds.defne = { mood: "İçsel çatışmada", act: "Haldun'un paravan şirketlerini yönetirken kendi gizli çıkış planını hazırlıyor." };
+        summary = "✦ Bu Sırada: Boğaz köşkünde Defne kendi bağımsız dosyasını tutmaya başladı; Haldun Bey her adımını izliyor.";
+      } else if (pulseKey === "ch9") {
+        state.minds.anne = { mood: "Özlem dolu", act: "Tansiyon rahatsızlığıyla mücadele ediyor, her akşam pencereden yokuşa bakıyor." };
+        summary = "✦ Bu Sırada: Defne kendi özgürlüğü için kritik bir hamleye hazırlanıyor; Trabzon'da Emine Anne'nin sağlığı hassaslaştı.";
+      } else if (pulseKey === "ch10") {
+        if (!state.flags.betrayed_defne && state.rel.defne < 15) {
+          state.flags.defne_whistleblower = true;
+          state.minds.defne = { mood: "Kararlı", act: "Kendini kurtarmak için savcılığa isimsiz bir dosya sızdırdı." };
+        } else if (state.flags.betrayed_defne) {
+          state.minds.defne = { mood: "Kayıp", act: "İhbarın ardından sahte pasaportla yurtdışına kaçtı." };
+        } else {
+          state.minds.defne = { mood: "Müttefik", act: "Seninle birlikte temiz bir çıkış ya da yeni bir düzen için hazır." };
+        }
+        summary = "✦ Bu Sırada (Son Perde): " + state.minds.defne.act;
+      } else if (pulseKey === "ch11") {
+        state.minds.haldun = { mood: "Yaşlanmış ve yorgun (68)", act: "Bastonla yürüyen Haldun Bey artık mirasını kime bırakacağını düşünüyor." };
+        state.minds.defne = { mood: "Güçlü ve bağımsız (33)", act: "Kendi hukuk danışmanlığını kurdu; eski gölgelerden sıyrılmaya çalışıyor." };
+        summary = "✦ 28 Yaş · Bu Sırada: Haldun Bey 68 yaşında sağlık sorunlarıyla boğuşuyor; Defne (33) kendi ayakları üstünde yeni bir düzen kurdu.";
+      } else if (pulseKey === "ch12") {
+        state.minds.zeynep = state.flags.zeynep_moved_ankara
+          ? { mood: "Olgun ve başarılı (30)", act: "Ankara'da başhemşire oldu; tıp kongresi için İstanbul'a geldi." }
+          : { mood: "Olgun ve içli (30)", act: "Trabzon'da başhemşire; 30 yaşında artık kalıcı bir yuva kurmak istiyor." };
+        state.minds.anne = { mood: "Ağarmış saçlı (62)", act: "Fırından emekli oldu, mahallede herkesin saygı duyduğu bilge bir anne." };
+        summary = "✦ 30 Yaş · Bu Sırada: Emine Anne (62) emekli oldu; Zeynep (30) mesleğinde zirveye ulaştı.";
+      } else if (pulseKey === "ch13") {
+        state.minds.mert = state.flags.mert_protected
+          ? { mood: "Baba oldu (32)", act: "Trabzon'daki dükkanını büyüttü, küçük kızına senin adını değil ama hikayeni anlatıyor." }
+          : { mood: "Sertleşmiş (32)", act: "Sokakların yıprattığı bir adam; artık eski gençlik ateşi söndü." };
+        summary = "✦ 32 Yaş · Bu Sırada: Mert 32 yaşında; yıllar önce otobüste tanıdığın Genç Emre ise artık 26 yaşında kendi kader eşiğinde.";
+      } else if (pulseKey === "ch14") {
+        state.minds.tarik = { mood: "Emekli (70)", act: "Çay ocağını devretti; sabahları parkta sadece gazete okuyor." };
+        state.minds.orhan = { mood: "Çekilmiş (68)", act: "Liman işlerini bıraktı, Karadeniz kıyısında sessiz bir evde yaşıyor." };
+        state.minds.anne = { mood: "Huzur arıyor (66)", act: "Sonbaharda Erdoğdu yokuşunda oğlunun koluna girip denizi izliyor." };
+        summary = "✦ 34 Yaş · Bu Sırada: Tarık Dayı (70) ve Orhan Reis (68) artık sahneden çekildi; Erdoğdu yokuşunda yeni bir nesil büyüyor.";
+      } else if (pulseKey === "ch15") {
+        state.minds.anne = { mood: "Bilge ve huzurlu (68)", act: "Altmış sekiz yaşında, yirmi yıllık fırtınanın ardından dinleniyor." };
+        state.minds.haldun = { mood: "Münzevi (76)", act: "Yetmiş altı yaşında Boğaz köşkünde geçmişin sessizliğini dinliyor." };
+        summary = "✦ 36 Yaş · Yirmi yıl geride kaldı; şimdi zamanın en gerçek sınavı başlıyor.";
+      } else if (pulseKey === "ch16") {
+        state.minds.haldun = { mood: "Vefat etti (78)", act: "Boğaz köşkü satıldı; bir dönemin en güçlü ismi sessizce tarihe karıştı." };
+        state.minds.tarik = { mood: "Çok yaşlı (74)", act: "Erdoğdu'da bastonuyla yaşıyor, eski günlerden sadece hüzünle bahsediyor." };
+        summary = "✦ 38 Yaş · Haldun Bey 78 yaşında vefat etti; güç ve korku zamanın karşısında sessizce dağıldı.";
+      } else if (pulseKey === "ch17") {
+        state.minds.zeynep = state.flags.zeynep_30s_bond
+          ? { mood: "Yanında (41)", act: "Hastane odasında sabaha kadar elini tuttu; gerçek sevgi zor günde belli oldu." }
+          : { mood: "Olgun (41)", act: "Kendi ailesini ve kariyerini kurdu; haberini alınca kısa ama içten bir geçmiş olsun mesajı attı." };
+        state.minds.defne = { mood: "Dengeli (45)", act: "Kendi hukuk bürosunda saygın bir avukat; eski gölgeleri tamamen geride bıraktı." };
+        summary = "✦ 41 Yaş · Sağlık uyarısı hayatın ne kadar kırılgan olduğunu hatırlattı.";
+      } else if (pulseKey === "ch18") {
+        state.minds.orhan = { mood: "Vefat etti (78)", act: "Karadeniz kıyısındaki sessiz evinde yaşlılıktan hayata gözlerini yumdu." };
+        state.minds.mert = state.flags.mert_protected
+          ? { mood: "Aile babası (44)", act: "Kızı üniversiteye hazırlanıyor; Trabzon'da kendi halinde mutlu bir esnaf." }
+          : { mood: "Yorgun (44)", act: "Zor yılların ardından nihayet duruldu, küçük bir kahvehane işletiyor." };
+        summary = "✦ 44 Yaş · Orhan Reis yaşlılıktan vefat etti; eski kuşak birer birer dünyadan çekiliyor.";
+      } else if (pulseKey === "ch19") {
+        state.minds.anne = { mood: "Rahmetle anılıyor (79)", act: "Erdoğdu'da huzur içinde veda etti; geride onurlu bir hayat ve ahşap bir hatıra kutusu bıraktı." };
+        state.minds.tarik = { mood: "Rahmetle anılıyor (83)", act: "Mahallenin eski yüzlerinden biri olarak sessizce aramızdan ayrıldı." };
+        summary = "✦ 47 Yaş · Emine Anne 79 yaşında huzurla veda etti. Çocukluğunun Erdoğdu'su artık hatıralarda yaşıyor.";
+      } else if (pulseKey === "ch20") {
+        state.minds.zeynep = { mood: "50 Yaşında", act: "Yarım asırlık bir ömrün dinginliğinde; mesleğinde yüzlerce hayat kurtardı." };
+        state.minds.mert = { mood: "50 Yaşında", act: "Saçları ağarmış, çocukluk günlerini hâlâ tebessümle hatırlayan eski bir dost." };
+        state.minds.defne = { mood: "54 Yaşında", act: "İstanbul'da saygın bir hukukçu; geçmişin derslerini genç avukatlara anlatıyor." };
+        summary = "✦ 50 Yaş · Yarım asır tamamlandı; yeni bir kıtada sessiz bir sayfa açılıyor.";
+      } else if (pulseKey === "ch21") {
+        summary = "✦ 52 Yaş · Maple Creek, Vermont: İlk kez kimsenin geçmişini bilmediği sisli bir taşra kasabasındasın.";
+      } else if (pulseKey === "ch22") {
+        state.minds.zeynep = { mood: "54 Yaşında · Huzurlu", act: "Türkiye'de emekliliğe hazırlanıyor; arada sırada okyanus aşırı mektuplaşıyorsunuz." };
+        summary = "✦ 54 Yaş · Kasaba halkı aksanlı ama güvenilir 'Bay Kerem'e alışmaya başladı.";
+      } else if (pulseKey === "ch23") {
+        state.minds.mert = { mood: "56 Yaşında · Dede oldu", act: "Trabzon'da torununu kucağına aldı; sana fotoğrafını yolladı." };
+        summary = "✦ 56 Yaş · Genç Luke'ta kendi on altı yaşındaki halini gördün; Trabzon'da Mert artık dede oldu.";
+      } else if (pulseKey === "ch24") {
+        state.minds.defne = { mood: "62 Yaşında · Emekli Hukukçu", act: "Ege kıyısında sakin bir eve yerleşti; geçmişin bütün fırtınaları dindi." };
+        summary = "✦ 58 Yaş · Türkiye'deki eski dostların da seninle birlikte yaşlandı; herkes kendi limanına sığındı.";
+      } else if (pulseKey === "ch25") {
+        summary = "✦ 60 Yaş · Amerika'nın sessizliği kalbini iyileştirdi; şimdi memleket özlemi ağır basıyor.";
+      } else if (pulseKey === "ch26") {
+        summary = "✦ 61 Yaş · Genç Luke (22) artık kendi ayakları üstünde; Maple Creek'e veda vakti.";
+      } else if (pulseKey === "ch27") {
+        summary = "✦ 62 Yaş · Trabzon Maçka: Emine Anne'nin doğduğu yeşil vadi seni bağrına bastı.";
+      } else if (pulseKey === "ch28") {
+        summary = "✦ 63 Yaş · Eski taş ev kendi ellerinle yeniden hayat buldu.";
+      } else if (pulseKey === "ch29") {
+        state.minds.mert = { mood: "65 Yaşında · Emekli", act: "Torunuyla birlikte Maçka'ya çıkıp eski dostunu ziyaret etti." };
+        summary = "✦ 65 Yaş · Kırk dokuz yıllık dostluk Maçka balkonunda yeniden canlandı.";
+      } else if (pulseKey === "ch30") {
+        summary = "✦ 66 Yaş · İlk kez hiçbir gölgenin ulaşamadığı sade ve huzurlu bir ömür sürüyorsun.";
+      } else if (pulseKey === "ch31") {
+        summary = "✦ 68 Yaş · Yılların yorgunluğu kalbinde kendini hissettirmeye başladı.";
+      } else if (pulseKey === "ch32") {
+        state.minds.zeynep = { mood: "70 Yaşında · Emekli Başhemşire", act: "Huzurlu bir emeklilik sürüyor; geçmişi tatlı bir tebessümle hatırlıyor." };
+        summary = "✦ 70 Yaş · Geride bırakacağın manevi ve maddi mirası kaleme aldın.";
+      } else if (pulseKey === "ch33") {
+        summary = "✦ 72 Yaş · Maçka'da kar yağarken köyün sevgisi ve dostların sıcaklığı yanında.";
+      } else if (pulseKey === "ch34") {
+        summary = "✦ 74 Yaş · Son mektup yazıldı; geriye sadece huzur ve helallik kaldı.";
+      } else if (pulseKey === "ch35") {
+        summary = "✦ 76 Yaş · Kerem Aksoy, Maçka'daki anne köyünde huzurla hayata veda etti.";
+      }
+      return summary;
+    }
+
+    function renderNode(nodeId) {
+      if (nodeId === "ENDING") {
+        showEnding();
+        return;
+      }
+      const node = STORY[nodeId];
+      if (!node) return;
+
+      state.nodeId = nodeId;
+      state.age = node.age;
+      if (node.resetActions) {
+        state.actionsLeft = 2;
+      }
+
+      setSceneBackground(node.scene);
+      updateHUD();
+
+      const pulseMsg = node.worldPulse ? updateCharacterConsciousness(node.worldPulse) : "";
+      const banner = document.getElementById("chapterBanner");
+      const bannerTxt = pulseMsg || node.banner || "";
+      if (bannerTxt) {
+        banner.textContent = bannerTxt;
+        banner.classList.remove("hidden");
+      } else {
+        banner.classList.add("hidden");
+      }
+
+      const sp = SPEAKERS[node.speaker] || SPEAKERS.anlatici;
+      const avatar = document.getElementById("speakerAvatar");
+      avatar.textContent = sp.initial;
+      avatar.className = `w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold border shrink-0 ${sp.color}`;
+      document.getElementById("speakerName").textContent = sp.name;
+      document.getElementById("speakerRole").textContent = sp.role;
+
+      typeText(node.text);
+
+      // Render Choices
+      const choicesBox = document.getElementById("choicesBox");
+      choicesBox.innerHTML = "";
+      node.choices.forEach((ch, idx) => {
+        const btn = document.createElement("button");
+        const cantAfford = ch.reqMoney && state.money < ch.reqMoney;
+        btn.className = "choice-btn w-full text-left px-4 py-3 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 cursor-pointer";
+        btn.disabled = !!cantAfford;
+        btn.innerHTML = `
+          <span class="text-sm sm:text-[15px] font-medium text-amber-50 leading-snug">${idx + 1}. ${ch.label}</span>
+          <span class="text-[11px] font-medium ${cantAfford ? 'text-red-400' : 'text-amber-300/85'} shrink-0">${cantAfford ? 'Yetersiz Bakiye (' + formatTL(ch.reqMoney) + ')' : (ch.hint || '')}</span>
+        `;
+        btn.addEventListener("click", () => {
+          initAudio();
+          playChime(293.66 + idx * 45);
+          state.log.push({
+            age: state.age,
+            chapter: node.chapter,
+            dateLabel: node.dateLabel || "",
+            scene: node.scene,
+            speaker: sp.name,
+            text: node.text,
+            choice: ch.label
+          });
+          applyEffects(ch.effects);
+          state.stepCount += 1;
+          saveGame();
+
+          // Check emergency high-risk arrest event before finale
+          if (state.risk >= 95 && ch.next !== "ENDING") {
+            showEnding("prison");
+            return;
+          }
+          renderNode(ch.next);
+        });
+        choicesBox.appendChild(btn);
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      saveGame();
+    }
+
+    // =========================================================================
+    // 8. FIVE DISTINCT ENDINGS (26 YEARS OLD)
+    // =========================================================================
+    function showEnding(forcedType = null) {
+      const totalWealth = state.money + state.cleanSavings;
+      let title = "";
+      let desc = "";
+
+      const effectiveRisk = state.risk
+        + (state.flags.workshop_stash ? 10 : 0)
+        + (state.flags.defne_whistleblower ? 18 : 0)
+        - (state.flags.haldun_blackmail ? 15 : 0);
+
+      if (forcedType === "prison" || (effectiveRisk >= 85 && !state.flags.informant_deal)) {
+        title = "1. Demir Parmaklıklar Ardında";
+        desc = "Karaköy'ün yağmurlu gecesinde sirenler taş duvarlarda yankılandı." +
+          (state.flags.defne_whistleblower ? " Defne'nin kendi kurtuluşu için savcılığa sızdırdığı belgeler" : " On yılda biriken risk ve dosyalar") +
+          (state.flags.workshop_stash ? " ile Erdoğdu'daki eski marangozhane deposu" : "") +
+          " seni yakaladı. Hücrede elinde yalnızca Emine Anne'nin Trabzon'dan yolladığı mektup var; ama belki ilk kez başını yastığa koyduğunda arkana bakmıyorsun.";
+      } else if (state.flags.mert_rival_turn && state.conscience <= 45 && !state.flags.walked_away) {
+        title = "2. Eski Dostun Bedeli";
+        desc = "Karaköy'deki karanlık geçitte karşına çıkan kişi rakip ekibin yeni yüzü Mert'ti. Yıllar önce onu geride bıraktığında kendi yolunu seçmişti. İkiniz de tetiğe basamadınız ama o gece İstanbul'un bütün parlaklığı gözünde söndü; kazandığın para artık sadece bir ağırlık.";
+      } else if (state.flags.walked_away && state.flags.informant_deal && state.conscience >= 45) {
+        title = "3. Gizli Tanık · Yeni Kimlik";
+        desc = "Yirmi bir yaşında Komiser Kemal'le kurduğun o gizli köprü hayatını kurtardı. Haldun Bey'in ağı dağılırken dosyan tek kalemde kapandı. Temiz birikiminle Karadeniz'in sakin bir kıyı kasabasında, yeni bir isimle huzurlu bir sabaha uyandın.";
+      } else if (state.flags.walked_away && state.flags.haldun_blackmail && state.cleanSavings >= 25000 && !state.flags.betrayed_defne) {
+        title = "4. Beyaz Yakalı Gölge (Defne ile Ortaklık)";
+        desc = "Defne'yle birlikte kurduğun temiz şirketler ve şifreli bellek sayesinde Haldun Bey'in masasından tek çizik almadan çıktın. Artık İstanbul'da tamamen yasal bir finans ve denizcilik danışmanlık ofisinin ortağısın; karanlık geçmişi ardında bırakıp kendi kurallarınla yeni bir sınıf kurdun.";
+      } else if (state.flags.walked_away && state.flags.saved_workshop && state.flags.zeynep_promise && !state.flags.zeynep_moved_ankara) {
+        title = "5. Erdoğdu'da Yeni Bir Hayat (Babanın Atölyesi & Zeynep)";
+        desc = "Boğaz'ın soğuk ışıklarını arkanda bırakıp Trabzon'a döndün. On yedi yaşında kurtardığın babanın eski marangozhanesini yenileyip temiz bir atölye ve fırın açtın. Yağmurlu bir sabah kapı çalındı; on dokuz yaşında verdiğin sözü unutmayan Zeynep gülümseyerek eşikte duruyordu. Zengin değilsin ama tamamen özgür ve mutlusun.";
+      } else if (state.flags.walked_away && (state.conscience >= 50 || state.family >= 60)) {
+        title = "6. Erdoğdu'ya Sessiz Dönüş";
+        desc = "İstanbul'un dev çarkından çekilip ilk sabah otobüsüyle Erdoğdu'nun sisli yokuşuna döndün. Temiz birikiminle annene huzurlu bir ev ve küçük bir mahalle fırını kurdun. Geçmişin yaraları hâlâ sızlıyor ama Emine Anne'nin çaydanlık sesi her şeye değer.";
+      } else if (state.flags.betrayed_defne && state.rel.haldun >= 60 && !state.flags.took_throne) {
+        title = "7. Haldun Bey'in Veliahtı";
+        desc = "Defne'yi feda edip mutlak sadakatini kanıtladın. Haldun Bey emekliye çekilirken Boğaz köşkünün anahtarlarını sana devretti. Artık İstanbul'un en güçlü beyaz yakalı gölge ağının başındasın — ama etrafında güvenebileceğin tek bir dost bile kalmadı.";
+      } else if (state.flags.took_throne || (state.flags.haldun_blackmail && state.rep >= 70) || (state.rep >= 78 && state.conscience <= 40)) {
+        title = "8. Boğaz'ın Yeni İmparatoru";
+        desc = "Haldun Bey'in ceviz masasına artık sen oturuyorsun." +
+          (state.flags.haldun_blackmail ? " Elindeki şifreli bellek sayesinde tek kurşun sıkmadan tüm ağı devraldın." : "") +
+          (state.flags.recruited_emre ? " Bolu Dağı'nda yanına aldığın Genç Emre artık en sadık sağ kolun." : "") +
+          " Servetin hayal edemeyeceğin boyutlara ulaştı; ama her yağmurlu gecede Erdoğdu'daki on altı yaşındaki Kerem'i özlüyorsun.";
+      } else if (state.conscience <= 30 && state.family <= 35 && !state.flags.helped_emre) {
+        title = "9. Karanlıkta Kaybolanlar";
+        desc = "Karaköy'deki hesaplaşma sabaha kadar sürdü. Ne ailenden bir haber alabildin ne de sırtını dayayacak bir dostun kaldı. Büyük şehir, Erdoğdu'dan gelen o genci yuttu; geriye sadece ıslak kaldırımlarda yankılanan ayak sesleri kaldı.";
+      } else {
+        title = "10. İki Dünya Arasında";
+        desc = "Ne karanlığa tamamen teslim oldun ne de geçmişe dönebildin." +
+          (state.flags.helped_emre ? " En sıkıştığın gece, yıllar önce otobüs molasında el uzattığın Genç Emre karşına çıkıp sana temiz bir çıkış yolu açtı." : "") +
+          " İstanbul'da kendi küçük ticaretini kurdun; her ayın başında Erdoğdu'ya zarfın düzenli gider. Bir ayağın Boğaz'da, kalbin hâlâ Karadeniz'in sisli yokuşunda.";
+      }
+
+      lastEndingMeta = { title, desc, totalWealth };
+      document.getElementById("endingTitle").textContent = title;
+      document.getElementById("endingText").textContent = desc;
+      document.getElementById("endMoney").textContent = formatTL(totalWealth);
+      document.getElementById("endConscience").textContent = state.conscience + " / 100";
+      document.getElementById("endFamily").textContent = state.family + " / 100";
+      document.getElementById("endRep").textContent = state.rep + " / 100";
+
+      const epBox = document.getElementById("endingEpilogue");
+      const fates = [
+        {
+          name: "Emine Anne",
+          tone: "text-rose-300",
+          text: state.rel.anne >= 75
+            ? "Erdoğdu'daki evde sağlığına kavuştu; kendi onurundan hiç ödün vermeden huzurla yaşıyor."
+            : state.rel.anne >= 45
+              ? "Gönderdiğin destekle rahat yaşıyor ama gözü hâlâ pencereden yokuşa bakıyor."
+              : "Mutfak masasında tek başına çayını içiyor; İstanbul'daki oğlundan tek bir telefon bekliyor."
+        },
+        {
+          name: "Zeynep",
+          tone: "text-pink-300",
+          text: state.flags.zeynep_moved_ankara
+            ? "Kendi kararıyla Ankara'ya yerleşti, başhemşire oldu ve kendi ayakları üstünde gururlu bir hayat kurdu."
+            : (state.flags.walked_away && (state.flags.zeynep_promise || state.rel.zeynep >= 65))
+              ? "Trabzon'da hemşire olarak çalışıyor; yağmurlu bir sabah yeniden elini tuttu."
+              : "Kendi kariyerini kurup saygın bir hemşire oldu; seni uzak bir gençlik hatırası olarak saklıyor."
+        },
+        {
+          name: "Mert",
+          tone: "text-indigo-300",
+          text: state.flags.mert_protected
+            ? "Kendi kararıyla karanlıktan uzak kaldı; Trabzon'da temiz bir oto tamirhanesi ve aile kurdu."
+            : state.flags.mert_rival_turn
+              ? "Yalnız bırakılınca kendi yolunu rakip ekipte çizdi; artık mahallede kendi kurallarıyla yaşıyor."
+              : state.flags.mert_in_istanbul
+                ? "İstanbul'da son ana kadar sırtını kolladı; seninle birlikte bu şehrin gölgesinde büyüdü."
+                : "Erdoğdu'da kendi hayatını kurdu; eski günleri hâlâ saygıyla anıyor."
+        },
+        {
+          name: "Haldun Bey & Defne",
+          tone: "text-amber-300",
+          text: state.flags.betrayed_defne
+            ? "Defne sahte pasaportla yurtdışına kaçtı; Haldun Bey ise seni tek varisi ilan etti."
+            : state.flags.defne_whistleblower
+              ? "Defne kendi özgürlüğü için savcılığa gizli dosya verdi ve yeni bir şehirde kayboldu."
+              : state.flags.took_throne
+                ? "Haldun Bey köşkten çekildi; Defne yeni düzenin hukuk mimarı oldu."
+                : "Defne kendi çıkış planını sessizce tamamladı; Boğaz köşkünde ışıklar yanmaya devam ediyor."
+        }
+      ];
+      epBox.innerHTML = fates.map(f => `
+        <div class="p-3 rounded-xl bg-white/5 border border-white/10">
+          <div class="text-xs font-semibold ${f.tone} mb-1">${f.name}</div>
+          <p class="text-[11px] sm:text-xs text-slate-300 leading-relaxed">${f.text}</p>
+        </div>
+      `).join("");
+
+      const flagLabels = {
+        saved_workshop: "Babanın Marangozhanesi Kurtarıldı",
+        workshop_stash: "Dükkan Gizli Depo Yapıldı",
+        zeynep_promise: "Zeynep'le Yağmur Altında Söz",
+        zeynep_moved_ankara: "Zeynep Kendi Kararıyla Ankara'ya Gitti",
+        informant_deal: "Komiser Kemal'le Gizli Anlaşma",
+        bribed_kemal: "Komiser Kemal Susturuldu",
+        loyal_code: "Sarsılmaz Sokak Kodu",
+        mert_protected: "Mert Temiz Hayata Yöneldi",
+        mert_rival_turn: "Mert Rakip Ekibe Geçti",
+        helped_emre: "Otobüsteki Genç Emre'ye İyilik",
+        recruited_emre: "Genç Emre Ekibe Katıldı",
+        haldun_blackmail: "Haldun'un Şifreli Kozu Alındı",
+        betrayed_defne: "Defne Haldun'a İhbar Edildi",
+        defne_whistleblower: "Defne Savcılığa Dosya Sızdırdı",
+        zeynep_30s_bond: "30 Yaşında Zeynep'le Yeniden Bağ",
+        broke_cycle_emre: "Emre'yi Kurtarıp Döngüyü Kırdın",
+        passed_torch_emre: "Emre'ye Karanlık Bayrağı Devrettin",
+        slowed_down_40s: "41 Yaşında Hayatı Sadeleştirdin",
+        settled_past_cleanly: "Eski Mali Dosyaları Yasal Yoldan Kapattın",
+        emine_anne_legacy: "Emine Anne Adına Destek Fonu Kurdun",
+        us_woodshop: "Vermont'ta Babanın Adına Marangoz Atölyesi Kurdun",
+        town_beloved: "Maple Creek Kasabasının Sevilen Komşusu Oldun",
+        saved_luke: "17 Yaşındaki Luke'u Karanlıktan Kurtardın",
+        gifted_us_shop: "Vermont Atölyesini Luke'a Armağan Ettin",
+        macka_fountain: "Maçka'da Annenin Adına Köy Çeşmesi & Okuma Odası",
+        scholarship_will: "Yoksul Gençler İçin Eğitim Bursu Vasiyeti",
+        personal_will: "Emanetleri Mert'in Torununa ve Emre'ye Bıraktın",
+        baris_ally: "Genç Barış'ı Yasal Lojistiğe Kazandırdın",
+        baris_enemy: "Genç Barış'la Düşman Oldun (35 Yaşında İhbar Döndü)",
+        stayed_with_zeynep: "30 Yaşında İşi Bırakıp Zeynep'le Masada Kaldın",
+        spared_driver: "Karaköy Sonrası Kaçan Şoförün Ailesini Korudun"
+      };
+      const triggered = Object.keys(state.flags).filter(k => flagLabels[k]).map(k => flagLabels[k]);
+      const turningHtml = triggered.length
+        ? `<div class="mt-2 pt-2 border-t border-white/10"><span class="text-sky-300 font-semibold">Kaderi Belirleyen Kırılma Anları:</span> ${triggered.join(" • ")}</div>`
+        : "";
+
+      document.getElementById("endingKeepsakes").innerHTML =
+        `<div><span class="text-amber-300 font-semibold">Bir Ömürden Kalan Hatıralar:</span> ${state.items.join(" • ")}</div>` + turningHtml;
+
+      document.getElementById("endingScreen").classList.remove("hidden");
+      playChime(220);
+    }
+
+    // =========================================================================
+    // 8B. PERSONALIZED ENDING RECAP VIDEO PLAYER + SYNTH FILM SCORE
+    // =========================================================================
+    let lastEndingMeta = { title: "Sisli Yokuş", desc: "", totalWealth: 0 };
+    let recapSlides = [];
+    let recapIndex = 0;
+    let recapPlaying = false;
+    let recapTimer = null;
+    let recapSpeedFast = false;
+    let scoreTimer = null;
+    let scoreStep = 0;
+
+    function playScoreChord() {
+      if (!audioEnabled || !recapPlaying) return;
+      initAudio();
+      if (!audioCtx) return;
+      try {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        // Nostalgic D-minor Ghibli-inspired progression: Dm -> Bb -> F -> C -> Gm -> A7
+        const chords = [
+          [293.66, 349.23, 440.00],
+          [233.08, 293.66, 349.23],
+          [261.63, 349.23, 440.00],
+          [261.63, 329.63, 392.00],
+          [196.00, 293.66, 349.23],
+          [220.00, 277.18, 329.63]
+        ];
+        const notes = chords[scoreStep % chords.length];
+        scoreStep += 1;
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = idx === 0 ? "triangle" : "sine";
+          osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+          const start = audioCtx.currentTime + idx * 0.08;
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(0.032, start + 0.35);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + 2.8);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(start);
+          osc.stop(start + 2.9);
+        });
+      } catch (e) {}
+    }
+
+    function stopRecapTimers() {
+      clearTimeout(recapTimer);
+      recapTimer = null;
+      clearInterval(scoreTimer);
+      scoreTimer = null;
+    }
+
+    function buildRecapSlides() {
+      const slides = [];
+      // Opening Title Slide
+      slides.push({
+        type: "title",
+        img: SCENES.erdogdu_dawn.img,
+        badge: "16 → 76 YAŞ",
+        chapter: "60 Yıllık Gerçek İnsan Ömrü",
+        kicker: "TRABZON ERDOĞDU'DAN İSTANBUL BOĞAZI'NA",
+        title: "Sisli Yokuş: Senin Hikayen",
+        sub: "Verdiğin her karar seni bu geceye getirdi..."
+      });
+
+      // Pick key highlights from player's actual log (up to 12 vivid milestones, always preserving special stories & chapters)
+      const entries = state.log || [];
+      let picked = entries;
+      if (entries.length > 12) {
+        const step = entries.length / 12;
+        picked = [];
+        for (let i = 0; i < 12; i++) {
+          picked.push(entries[Math.min(entries.length - 1, Math.floor(i * step))]);
+        }
+      }
+
+      picked.forEach(item => {
+        const sc = (item.scene && SCENES[item.scene]) ? SCENES[item.scene] : SCENES.s_ch1_start;
+        slides.push({
+          type: "scene",
+          img: sc.img,
+          badge: `${item.age} YAŞ`,
+          chapter: item.chapter || "",
+          narration: `${item.speaker}: ${item.text}`,
+          choice: `▸ ${item.choice}`
+        });
+      });
+
+      // Final Ending Slide
+      slides.push({
+        type: "title",
+        img: SCENES.s_ch35_farewell.img,
+        badge: "76 YAŞ · HUZURLU VEDA",
+        chapter: `Servet: ${formatTL(lastEndingMeta.totalWealth)} · Vicdan: ${state.conscience} · Aile: ${state.family}`,
+        kicker: "SENİN KADERİN",
+        title: lastEndingMeta.title,
+        sub: lastEndingMeta.desc
+      });
+
+      return slides;
+    }
+
+    function renderRecapSlide() {
+      if (!recapSlides.length) return;
+      const slide = recapSlides[recapIndex];
+      const img = document.getElementById("recapImg");
+      const titleCard = document.getElementById("recapTitleCard");
+      const subBox = document.getElementById("recapSubtitleBox");
+
+      // Restart smooth Ken Burns pan on each slide
+      img.classList.remove("film-pan-active");
+      img.style.opacity = "0.15";
+      img.src = slide.img;
+      void img.offsetWidth;
+      img.classList.add("film-pan-active");
+      setTimeout(() => { img.style.opacity = "1"; }, 60);
+
+      document.getElementById("recapBadge").textContent = slide.badge;
+      document.getElementById("recapChapter").textContent = slide.chapter;
+      document.getElementById("recapCounter").textContent = `${recapIndex + 1} / ${recapSlides.length}`;
+      const pct = Math.round(((recapIndex + 1) / recapSlides.length) * 100);
+      document.getElementById("recapProgressBar").style.width = `${pct}%`;
+
+      if (slide.type === "title") {
+        titleCard.classList.remove("hidden");
+        subBox.classList.add("hidden");
+        document.getElementById("recapCardKicker").textContent = slide.kicker;
+        document.getElementById("recapCardTitle").textContent = slide.title;
+        document.getElementById("recapCardSub").textContent = slide.sub;
+      } else {
+        titleCard.classList.add("hidden");
+        subBox.classList.remove("hidden");
+        document.getElementById("recapNarration").textContent = slide.narration;
+        document.getElementById("recapChoiceLine").textContent = slide.choice;
+      }
+
+      clearTimeout(recapTimer);
+      if (recapPlaying) {
+        const baseMs = slide.type === "title" ? 4800 : 4200;
+        const duration = recapSpeedFast ? Math.round(baseMs * 0.55) : baseMs;
+        recapTimer = setTimeout(() => {
+          if (recapIndex < recapSlides.length - 1) {
+            recapIndex += 1;
+            renderRecapSlide();
+          } else {
+            recapPlaying = false;
+            document.getElementById("btnRecapPlayPause").textContent = "Tekrar Oynat";
+            clearInterval(scoreTimer);
+          }
+        }, duration);
+      }
+    }
+
+    function openRecapVideo() {
+      recapSlides = buildRecapSlides();
+      recapIndex = 0;
+      recapPlaying = true;
+      scoreStep = 0;
+      document.getElementById("btnRecapPlayPause").textContent = "Duraklat";
+      document.getElementById("recapModal").classList.remove("hidden");
+      stopRecapTimers();
+      playScoreChord();
+      scoreTimer = setInterval(playScoreChord, 3000);
+      renderRecapSlide();
+    }
+
+    function closeRecapVideo() {
+      recapPlaying = false;
+      stopRecapTimers();
+      document.getElementById("recapModal").classList.add("hidden");
+    }
+
+    // =========================================================================
+    // 9. LIFE & FINANCE DRAWER + LOG MODAL
+    // =========================================================================
+    function renderLifeModal() {
+      document.getElementById("lifeCash").textContent = formatTL(state.money);
+      document.getElementById("lifeCleanSavings").textContent = formatTL(state.cleanSavings);
+      document.getElementById("lifeActionsLeft").textContent = `${state.actionsLeft} / 2`;
+
+      const relMeta = [
+        { key: "anne", label: "Emine Anne", ageOffset: 32, color: "bg-rose-400" },
+        { key: "zeynep", label: "Zeynep", ageOffset: 0, color: "bg-pink-400" },
+        { key: "mert", label: "Mert", ageOffset: 0, color: "bg-indigo-400" },
+        { key: "tarik", label: "Tarık Dayı", ageOffset: 36, color: "bg-orange-400" },
+        { key: "orhan", label: "Orhan Reis", ageOffset: 34, color: "bg-slate-400" },
+        { key: "haldun", label: "Haldun Bey", ageOffset: 40, color: "bg-amber-400" },
+        { key: "defne", label: "Defne", ageOffset: 4, color: "bg-purple-400" }
+      ];
+
+      const relBox = document.getElementById("relationsList");
+      relBox.innerHTML = "";
+      relMeta.forEach(r => {
+        const val = state.rel[r.key] || 0;
+        const card = document.createElement("div");
+        card.className = "p-2.5 rounded-xl bg-white/5 border border-white/10";
+        const mind = (state.minds && state.minds[r.key]) ? state.minds[r.key] : { mood: "Sakin", act: "Kendi hayatına devam ediyor." };
+        card.innerHTML = `
+          <div class="flex justify-between text-xs mb-1">
+            <span class="font-semibold text-slate-100">${r.label} <span class="text-[10px] font-normal text-slate-400">(${(mind.mood.includes("Vefat") || mind.mood.includes("Rahmet")) ? "Hatıralarda" : (state.age + r.ageOffset) + " Yaş"})</span></span>
+            <span class="text-[10px] text-amber-300/90">${mind.mood} · ${val}/100</span>
+          </div>
+          <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden mb-1.5">
+            <div class="h-full ${r.color} rounded-full transition-all" style="width:${val}%"></div>
+          </div>
+          <p class="text-[10px] text-slate-300 leading-snug">${mind.act}</p>
+        `;
+        relBox.appendChild(card);
+      });
+
+      const actBox = document.getElementById("lifeActionsList");
+      actBox.innerHTML = "";
+      LIFE_ACTIONS.forEach(act => {
+        const disabled = state.actionsLeft <= 0 || state.money < act.cost;
+        const btn = document.createElement("button");
+        btn.disabled = disabled;
+        btn.className = "choice-btn text-left p-3 rounded-xl flex flex-col justify-between gap-1 cursor-pointer";
+        btn.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs sm:text-sm font-semibold text-amber-100">${act.title}</span>
+            <span class="text-[11px] font-semibold ${act.cost > 0 ? 'text-emerald-300' : 'text-sky-300'}">${act.cost > 0 ? formatTL(act.cost) : 'Ücretsiz'}</span>
+          </div>
+          <p class="text-[11px] text-slate-300">${act.desc}</p>
+          <span class="text-[11px] text-amber-300/90 font-medium">${act.effectText}</span>
+        `;
+        btn.addEventListener("click", () => {
+          if (state.actionsLeft <= 0 || state.money < act.cost) return;
+          state.money -= act.cost;
+          state.actionsLeft -= 1;
+          act.apply(state);
+          state.conscience = clamp(state.conscience, 0, 100);
+          state.family = clamp(state.family, 0, 100);
+          state.rep = clamp(state.rep, 0, 100);
+          state.risk = clamp(state.risk, 0, 100);
+          Object.keys(state.rel).forEach(k => { state.rel[k] = clamp(state.rel[k], 0, 100); });
+          playChime(392);
+          showToast(act.title + " tamamlandı", "amber");
+          updateHUD();
+          renderLifeModal();
+          saveGame();
+        });
+        actBox.appendChild(btn);
+      });
+
+      const keepBox = document.getElementById("keepsakesList");
+      keepBox.innerHTML = "";
+      state.items.forEach(item => {
+        const chip = document.createElement("span");
+        chip.className = "px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-200 text-xs";
+        chip.textContent = item;
+        keepBox.appendChild(chip);
+      });
+    }
+
+    function renderLogModal() {
+      const box = document.getElementById("logContent");
+      if (!state.log.length) {
+        box.innerHTML = `<p class="text-slate-400 text-center py-6">Henüz kaydedilmiş bir kararın yok. Hikayeye devam et.</p>`;
+        return;
+      }
+      box.innerHTML = "";
+      state.log.forEach(entry => {
+        const div = document.createElement("div");
+        div.className = "p-3.5 rounded-xl bg-white/5 border border-white/10 space-y-1";
+        div.innerHTML = `
+          <div class="text-[11px] text-amber-300 font-semibold">${entry.age} Yaş · ${entry.chapter} · ${entry.speaker}</div>
+          <p class="font-story text-base text-slate-200">${entry.text}</p>
+          <div class="text-xs text-emerald-300 pt-1">▸ Kararın: ${entry.choice}</div>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    // =========================================================================
+    // 10. EVENT WIRING & INITIALIZATION
+    // =========================================================================
+    function startGame(fromSave = false) {
+      initAudio();
+      playChime(329.63);
+      if (fromSave) {
+        const saved = loadSavedGame();
+        if (saved && STORY[saved.nodeId]) state = saved;
+      } else {
+        state = createInitialState();
+        saveGame();
+      }
+      document.getElementById("titleScreen").classList.add("hidden");
+      document.getElementById("endingScreen").classList.add("hidden");
+      document.getElementById("menuModal").classList.add("hidden");
+      document.getElementById("gameScreen").classList.remove("hidden");
+      setTimeout(resizeWeather, 30);
+      renderNode(state.nodeId);
+    }
+
+    window.addEventListener("load", () => {
+      resizeWeather();
+      drawWeather();
+      setSceneBackground("erdogdu_dawn");
+
+      const saved = loadSavedGame();
+      if (saved && STORY[saved.nodeId]) {
+        document.getElementById("btnContinue").classList.remove("hidden");
+      }
+
+      document.getElementById("btnStartNew").addEventListener("click", () => startGame(false));
+      document.getElementById("btnContinue").addEventListener("click", () => startGame(true));
+      document.getElementById("dialogueText").addEventListener("click", finishTypingImmediately);
+      document.getElementById("btnSkipType").addEventListener("click", finishTypingImmediately);
+      document.getElementById("btnAudioToggle").addEventListener("click", toggleAudio);
+      document.getElementById("btnMobileAudio").addEventListener("click", toggleAudio);
+      let cinemaHidden = false;
+      document.getElementById("btnCinemaMode").addEventListener("click", () => {
+        cinemaHidden = !cinemaHidden;
+        const dock = document.getElementById("dialogueDock");
+        dock.classList.toggle("opacity-0", cinemaHidden);
+        dock.classList.toggle("pointer-events-none", cinemaHidden);
+        document.getElementById("btnCinemaMode").textContent = cinemaHidden ? "Diyalog" : "Görsel";
+      });
+
+      document.getElementById("btnLifeDrawer").addEventListener("click", () => {
+        renderLifeModal();
+        document.getElementById("lifeModal").classList.remove("hidden");
+      });
+      document.getElementById("btnCloseLife").addEventListener("click", () => {
+        document.getElementById("lifeModal").classList.add("hidden");
+      });
+
+      document.getElementById("btnLogModal").addEventListener("click", () => {
+        renderLogModal();
+        document.getElementById("logModal").classList.remove("hidden");
+      });
+      document.getElementById("btnCloseLog").addEventListener("click", () => {
+        document.getElementById("logModal").classList.add("hidden");
+      });
+
+      document.getElementById("btnMenuToggle").addEventListener("click", () => {
+        document.getElementById("menuModal").classList.remove("hidden");
+      });
+      document.getElementById("btnResumeMenu").addEventListener("click", () => {
+        document.getElementById("menuModal").classList.add("hidden");
+      });
+      document.getElementById("btnRestartMenu").addEventListener("click", () => startGame(false));
+      document.getElementById("btnTitleMenu").addEventListener("click", () => {
+        document.getElementById("menuModal").classList.add("hidden");
+        document.getElementById("gameScreen").classList.add("hidden");
+        document.getElementById("titleScreen").classList.remove("hidden");
+        document.getElementById("btnContinue").classList.remove("hidden");
+        setSceneBackground("erdogdu_dawn");
+      });
+
+      document.getElementById("btnRestartFromEnd").addEventListener("click", () => startGame(false));
+      document.getElementById("btnViewLogFromEnd").addEventListener("click", () => {
+        renderLogModal();
+        document.getElementById("logModal").classList.remove("hidden");
+      });
+      document.getElementById("btnWatchRecap").addEventListener("click", openRecapVideo);
+      document.getElementById("btnCloseRecap").addEventListener("click", closeRecapVideo);
+      document.getElementById("btnRecapPrev").addEventListener("click", () => {
+        if (recapIndex > 0) { recapIndex -= 1; renderRecapSlide(); }
+      });
+      document.getElementById("btnRecapNext").addEventListener("click", () => {
+        if (recapIndex < recapSlides.length - 1) { recapIndex += 1; renderRecapSlide(); }
+      });
+      document.getElementById("btnRecapPlayPause").addEventListener("click", () => {
+        if (recapIndex >= recapSlides.length - 1 && !recapPlaying) {
+          openRecapVideo();
+          return;
+        }
+        recapPlaying = !recapPlaying;
+        document.getElementById("btnRecapPlayPause").textContent = recapPlaying ? "Duraklat" : "Devam Et";
+        if (recapPlaying) {
+          playScoreChord();
+          clearInterval(scoreTimer);
+          scoreTimer = setInterval(playScoreChord, 3000);
+          renderRecapSlide();
+        } else {
+          stopRecapTimers();
+        }
+      });
+      document.getElementById("btnRecapSpeed").addEventListener("click", () => {
+        recapSpeedFast = !recapSpeedFast;
+        document.getElementById("btnRecapSpeed").textContent = recapSpeedFast ? "Hız: 1.8x" : "Hız: 1x";
+        if (recapPlaying) renderRecapSlide();
+      });
+      document.getElementById("btnRecapReplay").addEventListener("click", openRecapVideo);
+    });
+
+    window.addEventListener("resize", resizeWeather);
+  </script>
+</body>
+</html>
