@@ -10,3 +10,5 @@ This is a catalogue-only integration with external demos, not a redistribution o
 - AI Town: 5c91ce6f83cc62e1bc5bf2e3f51732c455064b9d
 
 Nordschleife lacks host application and meshes; AI Town requires a backend. Fish Tank is ~335 MB compressed and requires Node/WebGPU. Offroad and Empires require Vite builds; Empires has no source license in the supplied archive. No original assets were redistributed. External demo functionality not browser-tested.
+
+Follow-up: Fish Tank now links to the author's published demo at https://maxlibin.com/living-room-fish-tank/ (author's PR maxlibin/maxlibin.com#101). Offroad URL corrected to the official repository homepage https://offroad-indol.vercel.app/. All six are external demo links, not standalone BABA builds. Browser gameplay has not been verified.

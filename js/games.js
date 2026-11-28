@@ -166,7 +166,7 @@ const App = (() => {
   const GAMES = [
     {id:"offroad",name:"Offroad",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("4×4 · 3D","4×4 · 3D")},
     {id:"velocity-rush",name:"Velocity Rush",tags:[["Yarış","Racing"],["Harici demo","External demo"]],best:()=>T("20 araç · 9 pist","20 cars · 9 tracks")},
-    {id:"threejs-fish-tank",name:"Three.js Fish Tank",tags:[["Simülasyon","Simulation"],["Kurulum gerekli","Setup required"]],best:()=>T("Kurulum gerekli","Setup required")},
+    {id:"threejs-fish-tank",name:"Three.js Fish Tank",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("WebGPU · 3D","WebGPU · 3D")},
     {id:"empires-of-the-ages",name:"Empires of the Ages",tags:[["Strateji","Strategy"],["Harici demo","External demo"]],best:()=>T("3D RTS","3D RTS")},
     {id:"nordschleife-racer",name:"Nordschleife Racer",tags:[["Yarış","Racing"],["Harici demo","External demo"]],best:()=>T("Yarış · 3D","Racing · 3D")},
     {id:"ai-town",name:"AI Town",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("AI yaşam sim","AI life sim")},
@@ -396,9 +396,9 @@ const App = (() => {
 
   /* ==================== YENİ ARCADE & HARİCİ OYUNLAR ==================== */
   const NOV_IMPORTED = {
-    "offroad":{"name":"Offroad","url":"https://offroad-game.vercel.app/","source":null,"blurb":["Açık arazide dört araçla fizik tabanlı sürüş.","Physics-based off-road driving with four vehicles."]},
+    "offroad":{"name":"Offroad","url":"https://offroad-indol.vercel.app/","source":null,"blurb":["Açık arazide dört araçla fizik tabanlı sürüş.","Physics-based off-road driving with four vehicles."]},
     "velocity-rush":{"name":"Velocity Rush","url":"https://prashant371.github.io/velocity-rush/","source":null,"blurb":["Drift, yarış, kariyer ve garaj.","Drift, racing, career and garage."]},
-    "threejs-fish-tank":{"name":"Three.js Fish Tank","url":null,"source":"https://github.com/maxlibin/threejs-fish-tank","blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. Yerel sürüm henüz derlenmedi.","Realistic WebGPU aquarium with 132 fish and 8 species. Local build pending."]},
+    "threejs-fish-tank":{"name":"Three.js Fish Tank","url":"https://maxlibin.com/living-room-fish-tank/","source":"https://github.com/maxlibin/threejs-fish-tank","blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. WebGPU destekli tarayıcı gerekir.","Realistic aquarium with 132 fish and 8 species. Requires a WebGPU-compatible browser."]},
     "empires-of-the-ages":{"name":"Empires of the Ages","url":"https://empires.razzrohith.com/","source":null,"blurb":["Kaynak topla, üs kur ve rakip imparatorluklarla mücadele et.","Gather resources, build bases and fight rival empires."]},
     "nordschleife-racer":{"name":"Nordschleife Racer","url":"https://yassin.app/","source":null,"blurb":["Nürburgring pistinde zamana karşı yarış ve hayalet tur.","Time attack and ghost laps on the Nürburgring."]},
     "ai-town":{"name":"AI Town","url":"https://www.convex.dev/ai-town","source":null,"blurb":["Yapay zekâ karakterlerinin yaşadığı ve sohbet ettiği sanal kasaba.","A virtual town inhabited by conversational AI characters."]},

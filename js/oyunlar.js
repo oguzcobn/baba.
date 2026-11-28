@@ -14,7 +14,7 @@ const BABALibrary = (() => {
   const META = {
     "offroad":{"cat":"sim","accent":"#a5c178","time":["4×4 · 3D","4×4 · 3D"],"isNew":true,"blurb":["Açık arazide dört araçla fizik tabanlı sürüş.","Physics-based off-road driving with four vehicles."]},
     "velocity-rush":{"cat":"arc","accent":"#fb7848","time":["20 araç · 9 pist","20 cars · 9 tracks"],"isNew":true,"blurb":["Drift, yarış, kariyer ve garaj.","Drift, racing, career and garage."]},
-    "threejs-fish-tank":{"cat":"sim","accent":"#66c7c8","time":["Kurulum gerekli","Setup required"],"isNew":true,"blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. Yerel sürüm henüz derlenmedi.","Realistic WebGPU aquarium with 132 fish and 8 species. Local build pending."]},
+    "threejs-fish-tank":{"cat":"sim","accent":"#66c7c8","time":["WebGPU · 3D","WebGPU · 3D"],"isNew":true,"blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. WebGPU destekli tarayıcı gerekir.","Realistic aquarium with 132 fish and 8 species. Requires a WebGPU-compatible browser."]},
     "empires-of-the-ages":{"cat":"str","accent":"#dbbd7c","time":["3D RTS","3D RTS"],"isNew":true,"blurb":["Kaynak topla, üs kur ve rakip imparatorluklarla mücadele et.","Gather resources, build bases and fight rival empires."]},
     "nordschleife-racer":{"cat":"arc","accent":"#a8bbc6","time":["Yarış · 3D","Racing · 3D"],"isNew":true,"blurb":["Nürburgring pistinde zamana karşı yarış ve hayalet tur.","Time attack and ghost laps on the Nürburgring."]},
     "ai-town":{"cat":"sim","accent":"#9fb4ec","time":["AI yaşam sim","AI life sim"],"isNew":true,"blurb":["Yapay zekâ karakterlerinin yaşadığı ve sohbet ettiği sanal kasaba.","A virtual town inhabited by conversational AI characters."]},
