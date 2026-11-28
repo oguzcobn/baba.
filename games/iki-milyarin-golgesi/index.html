@@ -1,0 +1,3025 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>İki Milyarın Gölgesi — Etkileşimli Yaşam Simülasyonu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0f14;
+      --panel: #131822;
+      --panel-soft: #1a2130;
+      --border: rgba(255, 255, 255, 0.09);
+      --text: #eef1f6;
+      --muted: #9aa5b8;
+      --accent: #e0a96d;
+      --accent-2: #5cc8d7;
+      --danger: #e56b6f;
+      --ok: #68c39f;
+      --serif: 'Newsreader', Georgia, serif;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100%;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* SINGLE-LINE TOP BAR */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(12, 15, 20, 0.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      overflow: hidden;
+    }
+    .brand-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      flex-shrink: 0;
+      transition: background 0.6s, box-shadow 0.6s;
+    }
+    body.sim-awake .brand-dot {
+      background: var(--accent-2);
+      box-shadow: 0 0 12px var(--accent-2);
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .top-btn {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s, border-color 0.2s, transform 0.1s;
+    }
+    .top-btn:hover { background: #232d40; border-color: rgba(255,255,255,0.2); }
+    .top-btn:active { transform: scale(0.97); }
+    .top-btn.active { border-color: var(--accent); color: var(--accent); }
+    .top-btn .lbl { display: inline; }
+    @media (max-width: 520px) {
+      .top-btn .lbl { display: none; }
+      .top-btn { padding: 6px 8px; font-size: 13px; }
+      .brand-title { font-size: 12px; }
+    }
+
+    /* MAIN LAYOUT */
+    .app-shell {
+      max-width: 960px;
+      margin: 0 auto;
+      padding-bottom: 36px;
+    }
+
+    /* FULL-WIDTH 16:9 SCENE STAGE (NO OVERLAYS COVERING CHARACTERS ON MOBILE) */
+    .stage-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #06080c;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (min-width: 960px) {
+      .stage-wrap {
+        margin-top: 12px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      }
+    }
+    .stage-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 22%;
+      display: block;
+      will-change: transform, filter, opacity;
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), filter 0.8s ease;
+    }
+    .stage-img.layer-hidden { opacity: 0; pointer-events: none; }
+    .stage-img.layer-visible { opacity: 1; }
+    .stage-img.beat-closeup { filter: contrast(1.06) brightness(0.98); }
+    .film-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, transparent 62%, rgba(4, 6, 10, 0.42) 100%);
+    }
+    .stage-img.anim-zoom { animation: kenZoom 22s ease-in-out infinite alternate; }
+    .stage-img.anim-pan-l { animation: kenPanL 24s ease-in-out infinite alternate; }
+    .stage-img.anim-pan-r { animation: kenPanR 24s ease-in-out infinite alternate; }
+    .stage-img.anim-breathe { animation: kenBreathe 16s ease-in-out infinite alternate; }
+    @keyframes kenZoom {
+      0% { transform: scale(1.0) translate(0, 0); }
+      100% { transform: scale(1.08) translate(0, -1.2%); }
+    }
+    @keyframes kenPanL {
+      0% { transform: scale(1.06) translate(1.8%, 0); }
+      100% { transform: scale(1.06) translate(-1.8%, -0.8%); }
+    }
+    @keyframes kenPanR {
+      0% { transform: scale(1.06) translate(-1.8%, 0); }
+      100% { transform: scale(1.06) translate(1.8%, -0.8%); }
+    }
+    @keyframes kenBreathe {
+      0% { transform: scale(1.01); filter: contrast(1.02) saturate(1.02); }
+      100% { transform: scale(1.055); filter: contrast(1.06) saturate(1.06); }
+    }
+
+    #fxCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .glitch-scan {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        rgba(92, 200, 215, 0.06) 0px,
+        rgba(92, 200, 215, 0.06) 1px,
+        transparent 1px,
+        transparent 4px
+      );
+      transition: opacity 0.4s;
+    }
+    .glitch-scan.on { opacity: 1; animation: scanPulse 4s infinite; }
+    @keyframes scanPulse {
+      0%, 92%, 100% { opacity: 0.25; transform: translateX(0); }
+      94% { opacity: 0.7; transform: translateX(3px); }
+      96% { opacity: 0.45; transform: translateX(-2px); }
+    }
+
+    /* META STRIP DIRECTLY BELOW IMAGE (NEVER OVERLAPPING IMAGE) */
+    .meta-strip {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px 12px;
+      padding: 8px 14px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: rgba(224, 169, 109, 0.13);
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 11px;
+    }
+    body.sim-awake .pill.phase-pill {
+      background: rgba(92, 200, 215, 0.15);
+      color: var(--accent-2);
+    }
+    .meta-loc { color: var(--text); font-weight: 500; }
+
+    /* COMPACT STATS STRIP */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      padding: 8px 12px;
+      background: #10151e;
+      border-bottom: 1px solid var(--border);
+    }
+    @media (max-width: 640px) {
+      .stats-strip {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding: 8px 10px;
+      }
+    }
+    .stat-box {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .stat-k {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+    .stat-v {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-bar {
+      height: 3px;
+      width: 100%;
+      background: rgba(255,255,255,0.08);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .stat-fill { height: 100%; border-radius: 2px; transition: width 0.45s ease; }
+
+    /* STORY & DIALOGUE AREA */
+    .story-card {
+      padding: 18px 16px 24px;
+    }
+    @media (min-width: 720px) {
+      .story-card { padding: 22px 24px 28px; }
+    }
+    .chapter-heading {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.25;
+    }
+    .speaker-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    body.sim-awake .speaker-badge.sys { color: var(--accent-2); }
+    .story-text {
+      font-family: var(--serif);
+      font-size: 17.5px;
+      line-height: 1.72;
+      color: #e4e8f0;
+      margin-bottom: 16px;
+    }
+    .story-text p + p { margin-top: 12px; }
+    .story-quote {
+      border-left: 3px solid var(--accent);
+      padding: 8px 14px;
+      margin: 12px 0;
+      background: rgba(255,255,255,0.03);
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #f3e8d8;
+    }
+    body.sim-awake .story-quote.anomaly {
+      border-left-color: var(--accent-2);
+      color: #d7f3f7;
+      background: rgba(92, 200, 215, 0.07);
+    }
+
+    /* MEANWHILE ("BU SIRADA...") BANNER */
+    .meanwhile-card {
+      background: linear-gradient(135deg, rgba(224, 169, 109, 0.1), rgba(26, 33, 48, 0.95));
+      border: 1px solid rgba(224, 169, 109, 0.35);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .meanwhile-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .meanwhile-body {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #dde3ee;
+    }
+
+    /* CHOICES */
+    .choices-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .choice-btn {
+      width: 100%;
+      text-align: left;
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 13px 15px;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.12s;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .choice-btn:hover {
+      background: #1b2434;
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    body.sim-awake .choice-btn:hover { border-color: var(--accent-2); }
+    .choice-btn:active { transform: scale(0.99); }
+    .choice-main {
+      font-size: 14.5px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .choice-sub {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .choice-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .ctag {
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.06);
+      color: #c5d0e0;
+    }
+    .ctag.pos { background: rgba(104, 195, 159, 0.14); color: var(--ok); }
+    .ctag.neg { background: rgba(229, 107, 111, 0.14); color: var(--danger); }
+
+    .primary-btn {
+      background: var(--accent);
+      color: #11151d;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: filter 0.2s, transform 0.1s;
+    }
+    .primary-btn:hover { filter: brightness(1.08); }
+    .primary-btn:active { transform: scale(0.98); }
+    body.sim-awake .primary-btn { background: var(--accent-2); color: #071318; }
+
+    /* QUICK LIFE ACTION STRIP */
+    .life-action-bar {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .life-action-bar span { font-size: 12.5px; color: var(--muted); }
+    .mini-btn {
+      background: var(--panel-soft);
+      color: var(--accent);
+      border: 1px solid rgba(224,169,109,0.35);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mini-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* MODAL / DRAWER */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(5, 7, 11, 0.78);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-backdrop.open { display: flex; }
+    @media (min-width: 720px) {
+      .modal-backdrop { align-items: center; padding: 20px; }
+    }
+    .modal-sheet {
+      width: 100%;
+      max-width: 740px;
+      max-height: 88vh;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    @media (min-width: 720px) {
+      .modal-sheet { border-radius: 16px; }
+    }
+    .modal-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .modal-head h2 { font-size: 15px; font-weight: 700; }
+    .close-btn {
+      background: var(--panel-soft);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .modal-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: #0f141d;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 8px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .char-card {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .char-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .char-name { font-weight: 700; font-size: 14px; }
+    .char-meta { font-size: 11.5px; color: var(--accent); }
+    .char-dec { font-size: 12.5px; color: #ced6e4; line-height: 1.45; }
+
+    .keepsake-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .keepsake-item {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    .keepsake-item h4 { font-size: 13px; color: var(--accent); margin-bottom: 4px; }
+    .keepsake-item p { font-size: 12px; color: var(--muted); line-height: 1.4; }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+    .action-card {
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .action-card:hover:not(:disabled) { border-color: var(--accent); }
+    .action-card:disabled { opacity: 0.45; cursor: not-allowed; }
+    .action-card strong { font-size: 13px; }
+    .action-card small { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+
+    /* JOURNAL */
+    .journal-entry {
+      border-left: 2px solid var(--accent);
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.025);
+      border-radius: 0 8px 8px 0;
+    }
+    .journal-entry .j-head { font-size: 11.5px; color: var(--accent); font-weight: 600; margin-bottom: 3px; }
+    .journal-entry .j-txt { font-size: 13px; color: #dbe2ee; line-height: 1.45; }
+
+    /* ENDING & EPILOGUE */
+    .ending-banner {
+      background: linear-gradient(145deg, #172030, #0f1520);
+      border: 1px solid rgba(224, 169, 109, 0.4);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 18px;
+    }
+    .ending-code {
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-2);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .ending-title {
+      font-family: var(--serif);
+      font-size: 26px;
+      margin-bottom: 10px;
+    }
+    .epilogue-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    /* LIFE SUMMARY VIDEO PLAYER */
+    .video-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      background: #040609;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 14px;
+    }
+    .video-modal.open { display: flex; }
+    .video-frame {
+      width: 100%;
+      max-width: 900px;
+      background: #0a0e14;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.8);
+    }
+    .video-screen {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+    }
+    .video-screen img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 22%;
+      transition: opacity 0.8s ease;
+      animation: kenZoom 12s linear infinite alternate;
+    }
+    .video-subs {
+      padding: 14px 18px;
+      background: #0c1018;
+      border-top: 1px solid var(--border);
+      min-height: 92px;
+    }
+    .video-sub-meta {
+      font-size: 11.5px;
+      color: var(--accent-2);
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .video-sub-text {
+      font-family: var(--serif);
+      font-size: 16px;
+      line-height: 1.5;
+      color: #f0f4fa;
+    }
+    .video-controls {
+      padding: 10px 16px 14px;
+      background: #0a0d13;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .video-progress {
+      width: 100%;
+      height: 5px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .video-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.35s linear;
+    }
+    .video-btns {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1b2434;
+      color: var(--text);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 9px 15px;
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 90;
+      max-width: 92vw;
+      text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* MOBILE-FIRST TOUCH, SAFE-AREA & COMPACT ERGONOMICS */
+    html, body {
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button {
+      touch-action: manipulation;
+    }
+    .topbar {
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-left: max(10px, env(safe-area-inset-left));
+      padding-right: max(10px, env(safe-area-inset-right));
+    }
+    .modal-handle {
+      width: 38px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      margin: 8px auto 2px;
+      flex-shrink: 0;
+    }
+    @media (min-width: 720px) {
+      .modal-handle { display: none; }
+    }
+    @media (max-width: 640px) {
+      .app-shell {
+        padding-bottom: calc(28px + env(safe-area-inset-bottom));
+      }
+      .topbar {
+        height: 48px;
+        padding-top: max(6px, env(safe-area-inset-top));
+        padding-bottom: 6px;
+        gap: 6px;
+      }
+      .brand-title {
+        font-size: 13px;
+        max-width: 145px;
+      }
+      .top-actions { gap: 5px; }
+      .top-btn {
+        min-width: 38px;
+        min-height: 36px;
+        justify-content: center;
+        padding: 6px 8px;
+        font-size: 14px;
+        border-radius: 10px;
+      }
+      .stage-wrap {
+        margin-top: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+      .meta-strip {
+        padding: 6px 10px;
+        font-size: 11px;
+        gap: 4px 8px;
+      }
+      .meta-left { gap: 5px; }
+      .pill { padding: 2px 7px; font-size: 10.5px; }
+      .meta-loc {
+        max-width: 155px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .stats-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 5px;
+        padding: 6px 8px;
+      }
+      .stat-box {
+        padding: 4px 7px;
+        border-radius: 7px;
+        gap: 1px;
+      }
+      .stat-k { font-size: 9.5px; letter-spacing: 0.02em; }
+      .stat-v { font-size: 12px; }
+      .stat-bar { height: 2.5px; }
+      .story-card {
+        padding: 14px 14px 20px;
+      }
+      .chapter-heading {
+        font-size: 19px;
+        margin-bottom: 8px;
+      }
+      .story-text {
+        font-size: 16px;
+        line-height: 1.66;
+        margin-bottom: 14px;
+      }
+      .story-quote {
+        padding: 8px 11px;
+        font-size: 15px;
+      }
+      .meanwhile-card {
+        padding: 11px 12px;
+        margin-bottom: 12px;
+      }
+      .meanwhile-body { font-size: 13px; }
+      .primary-btn {
+        width: 100%;
+        min-height: 48px;
+        font-size: 15px;
+        border-radius: 12px;
+      }
+      .choices-wrap { gap: 9px; }
+      .choice-btn {
+        min-height: 56px;
+        padding: 13px 13px;
+        border-radius: 12px;
+      }
+      .choice-main { font-size: 14.5px; }
+      .choice-sub { font-size: 12px; }
+      .life-action-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 11px 12px;
+      }
+      .mini-btn {
+        width: 100%;
+        min-height: 42px;
+        font-size: 13px;
+        border-radius: 10px;
+      }
+      .modal-sheet {
+        max-height: 86dvh;
+        padding-bottom: env(safe-area-inset-bottom);
+      }
+      .modal-body {
+        -webkit-overflow-scrolling: touch;
+        padding: 12px 14px 18px;
+      }
+      .tab-btn {
+        min-height: 44px;
+        font-size: 13px;
+      }
+      .action-card {
+        min-height: 58px;
+        padding: 13px;
+      }
+      .video-modal { padding: 8px; }
+      .video-subs { padding: 12px 14px; min-height: 84px; }
+      .video-sub-text { font-size: 14.5px; }
+      .video-btns {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .video-btns > div {
+        display: grid !important;
+        grid-template-columns: 1fr 1.3fr 1fr;
+        gap: 6px;
+      }
+      .video-btns .top-btn, .video-btns .primary-btn, .video-btns .close-btn {
+        min-height: 42px;
+        justify-content: center;
+      }
+      .toast {
+        bottom: calc(14px + env(safe-area-inset-bottom));
+        font-size: 12.5px;
+      }
+    }
+
+    /* CONFIRM MODAL */
+    .confirm-box {
+      max-width: 400px;
+      width: 92%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .confirm-box h3 { font-size: 16px; margin-bottom: 8px; }
+    .confirm-box p { font-size: 13.5px; color: var(--muted); line-height: 1.5; margin-bottom: 16px; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-dot"></span>
+      <span class="brand-title">İki Milyarın Gölgesi</span>
+    </div>
+    <div class="top-actions">
+      <button id="btnAudio" class="top-btn" title="Ses / Müzik"><span>🔇</span><span class="lbl">Ses</span></button>
+      <button id="btnLife" class="top-btn" title="Hayat ve Finans"><span>💼</span><span class="lbl">Hayat & Finans</span></button>
+      <button id="btnJournal" class="top-btn" title="Hayat Günlüğü"><span>📖</span><span class="lbl">Günlük</span></button>
+      <button id="btnReset" class="top-btn" title="Yeni Oyun"><span>↺</span><span class="lbl">Sıfırla</span></button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <!-- 16:9 ANIMATED PHOTOREALISTIC STAGE -->
+    <section class="stage-wrap" aria-label="Sahne Görseli">
+      <img id="sceneImgA" class="stage-img layer-visible anim-zoom" src="img/ch01.jpg" alt="Sahne fotoğrafı" />
+      <img id="sceneImgB" class="stage-img layer-hidden anim-pan-r" src="img/ch01.jpg" alt="Sahne geçiş fotoğrafı" />
+      <canvas id="fxCanvas"></canvas>
+      <div class="film-vignette"></div>
+      <div id="glitchScan" class="glitch-scan"></div>
+    </section>
+
+    <!-- METADATA BAR BELOW IMAGE -->
+    <section class="meta-strip">
+      <div class="meta-left">
+        <span id="phasePill" class="pill phase-pill">Bölüm 1 / 24</span>
+        <span id="yearAgePill" class="pill">2030 • Yaş 32</span>
+        <span id="locLabel" class="meta-loc">Boston, Massachusetts</span>
+      </div>
+      <div id="popCounter" style="font-variant-numeric: tabular-nums; font-size: 11.5px;">Nüfus: 2.000.000.000</div>
+    </section>
+
+    <!-- 6 LIVE STATS -->
+    <section class="stats-strip" id="statsStrip"></section>
+
+    <!-- NARRATIVE & CHOICES -->
+    <section class="story-card" id="storyArea"></section>
+  </main>
+
+  <!-- LIFE & FINANCE MODAL -->
+  <div id="lifeModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-head">
+        <h2>Hayat & Finans Paneli</h2>
+        <button class="close-btn" id="closeLife">Kapat</button>
+      </div>
+      <div class="modal-tabs">
+        <button class="tab-btn active" data-tab="chars">Karakterler</button>
+        <button class="tab-btn" data-tab="actions">Yaşam Eylemi</button>
+        <button class="tab-btn" data-tab="keepsakes">Hatıralar</button>
+      </div>
+      <div class="modal-body" id="lifeModalBody"></div>
+    </div>
+  </div>
+
+  <!-- JOURNAL MODAL -->
+  <div id="journalModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-head">
+        <h2>Hayat Günlüğü & Karar Arşivi</h2>
+        <button class="close-btn" id="closeJournal">Kapat</button>
+      </div>
+      <div class="modal-body" id="journalBody"></div>
+    </div>
+  </div>
+
+  <!-- RESET CONFIRM MODAL -->
+  <div id="confirmModal" class="modal-backdrop" role="dialog" aria-modal="true" style="align-items:center;">
+    <div class="confirm-box">
+      <h3>Yeni Bir Ömre Başla?</h3>
+      <p>Mevcut kaydın, topladığın hatıralar ve tüm karakter gelişimleri sıfırlanacak. 2030 yılına, 32 yaşına dönmek istiyor musun?</p>
+      <div class="confirm-actions">
+        <button class="close-btn" id="cancelReset">Vazgeç</button>
+        <button class="primary-btn" id="confirmReset" style="padding:8px 14px; font-size:13px;">Sıfırla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CINEMATIC LIFE SUMMARY VIDEO PLAYER -->
+  <div id="videoModal" class="video-modal" role="dialog" aria-modal="true">
+    <div class="video-frame">
+      <div class="video-screen">
+        <img id="vidImg" src="img/ch01.jpg" alt="Hayat Özeti Karesi" />
+      </div>
+      <div class="video-subs">
+        <div id="vidMeta" class="video-sub-meta">2030 • Bölüm 1</div>
+        <div id="vidText" class="video-sub-text">Yolculuğun başlıyor...</div>
+      </div>
+      <div class="video-controls">
+        <div class="video-progress"><div id="vidProgress" class="video-progress-fill"></div></div>
+        <div class="video-btns">
+          <div style="display:flex; gap:8px;">
+            <button class="top-btn" id="vidPrev">⏮ Önceki</button>
+            <button class="primary-btn" id="vidPlayPause" style="padding:7px 14px; font-size:12.5px;">⏸ Duraklat</button>
+            <button class="top-btn" id="vidNext">Sonraki ⏭</button>
+          </div>
+          <button class="close-btn" id="closeVideo">Oynatıcıyı Kapat</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================================================================
+    // 1. IMAGE REGISTRY (14 CONTINUITY-CHAINED PHOTOREALISTIC 16:9 FRAMES)
+    // =========================================================================
+    const IMGS = {
+      ch01: "img/ch01.jpg",
+      ch02: "img/ch02.jpg",
+      ch03: "img/ch03.jpg",
+      ch04: "img/ch04.jpg",
+      ch05: "img/ch05.jpg",
+      ch06: "img/ch06.jpg",
+      ch07: "img/ch07.jpg",
+      ch08: "img/ch08.jpg",
+      ch09: "img/ch09.jpg",
+      ch10: "img/ch10.jpg",
+      ch11: "img/ch11.jpg",
+      ch12: "img/ch12.jpg",
+      ch13: "img/ch13.jpg",
+      ch14: "img/ch14.jpg",
+      ch15: "img/ch15.jpg",
+      ch16: "img/ch16.jpg",
+      ch17: "img/ch17.jpg",
+      ch18: "img/ch18.jpg",
+      ch19: "img/ch19.jpg",
+      ch20: "img/ch20.jpg",
+      ch21: "img/ch21.jpg",
+      ch22: "img/ch22.jpg",
+      ch23: "img/ch23.jpg",
+      ch24: "img/ch24.jpg"
+    };
+
+    // =========================================================================
+    // 2. INITIAL STATE & CONSCIOUS AGING CHARACTERS
+    // =========================================================================
+    const SAVE_KEY = "iki_milyarin_golgesi_v1";
+
+    function createInitialState() {
+      return {
+        chapterIdx: 0,      // 0..23
+        beatIdx: 0,         // 0 = scene 1, 1 = scene 2 + decision
+        finished: false,
+        endingId: null,
+        lifeActionUsed: false,
+        stats: {
+          cash: 4200,
+          savings: 8500,
+          conscience: 72,
+          bond: 68,
+          reputation: 60,
+          risk: 12
+        },
+        flags: {
+          suspicion: 0,
+          awakened: false,
+          toldElena: false,
+          alliedMarcus: false,
+          tookSterlingDeal: false,
+          observerDeal: false,
+          helpedZeynep: false,
+          visitedIstanbul: false,
+          expandedLimit: false,
+          broadcastTruth: false
+        },
+        characters: {
+          elena: {
+            name: "Dr. Elena Vance",
+            role: "Nöro-İstatistikçi • Lab Ortağı",
+            baseAge: 30,
+            mood: "Meraklı ve hırslı",
+            affinity: 62,
+            lastDecision: "Boston'da yeni küresel demografi fonuna tek başına başvuru taslağı hazırladı."
+          },
+          sterling: {
+            name: "Prof. Arthur Sterling",
+            role: "NACSI Enstitü Direktörü",
+            baseAge: 55,
+            mood: "Mesafeli ve hesapçı",
+            affinity: 55,
+            lastDecision: "Enstitünün yüksek riskli vize sponsorluk bütçesini yeniden gözden geçirmeye aldı."
+          },
+          zeynep: {
+            name: "Zeynep Aydın",
+            role: "Kız Kardeş • Mimar (İstanbul)",
+            baseAge: 29,
+            mood: "Yorgun ama dirençli",
+            affinity: 78,
+            lastDecision: "Kadıköy'deki küçük ofisi ayakta tutmak için yeni bir restorasyon ihalesine girdi."
+          },
+          marcus: {
+            name: "Marcus Chen",
+            role: "Eski Kuantum Mühendisi",
+            baseAge: 34,
+            mood: "Şüpheci ve uykusuz",
+            affinity: 48,
+            lastDecision: "Silikon Vadisi'ndeki işinden istifa edip bağımsız zaman-kayması kayıtları toplamaya başladı."
+          },
+          sema: {
+            name: "Sema Aydın",
+            role: "Anne (İstanbul, Kadıköy)",
+            baseAge: 59,
+            mood: "Özlem dolu, vakur",
+            affinity: 84,
+            lastDecision: "Kerem'in eski çalışma defterlerini naftalinli sandıktan çıkarıp balkon masasına koydu."
+          }
+        },
+        keepsakes: [
+          {
+            title: "Babanın Köstekli Saati",
+            year: 2030,
+            desc: "İstanbul'dan ayrılırken cebine koyduğun, saniye ibresi ara sıra milisaniye duraksayan eski saat."
+          }
+        ],
+        journal: [],
+        meanwhileNote: null
+      };
+    }
+
+    let state = createInitialState();
+
+    // =========================================================================
+    // 3. 24-CHAPTER NARRATIVE ENGINE (48+ SCENES, SLOW BURN -> CH 12 TWIST)
+    // =========================================================================
+    const CHAPTERS = [
+      // ---------------- BÖLÜM 1 (2030, Yaş 32) ----------------
+      {
+        num: 1, year: 2030, age: 32,
+        title: "İki Milyarın İlk Gecesi",
+        location: "NACSI Laboratuvarı, Boston",
+        img: "ch01", anim: "anim-zoom", fx: "rain",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "2030 yılının Kasım ayı. Charles Nehri'ne ince bir Boston yağmuru yağıyor. Kuzey Atlantik Kompleks Sistemler Enstitüsü'ndeki masanda üçüncü kahven soğumuş. Türkiye'den bursla gelip O-1 bilim insanı vizesiyle tutunduğun bu ülkede her ayın sonu iki defterle ölçülür: biri bilimsel makale metrikleri, diğeri İstanbul'daki annene gönderdiğin havale makbuzları.",
+              "Dünyada tam 2 milyar insan yaşıyor. Ders kitapları buna 2020'lerin sonundaki 'Büyük Demografik Daralma' sonrası doğal denge diyor. Ama önündeki küresel nüfus akış ekranında gözüne ufak bir tuhaflık takılıyor: son 72 saatte doğum ve ölüm farkı virgülden sonra dokuzuncu basamakta bile sıfır."
+            ],
+            quote: "“İstatistikte mükemmel denge diye bir şey yoktur Kerem. Gürültü yoksa, ya sensör bozuktur ya da biri sayıları ütülüyordur.”"
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Saat 23:40. Direktör Prof. Arthur Sterling yarın sabahki fon kurulu için temizlenmiş, pürüzsüz bir özet rapor istiyor. Aynı anda telefonuna İstanbul'dan kız kardeşin Zeynep'ten mesaj düşüyor: babanın kalp ilaçları için bu ay ekstra 650 dolar gerekiyor.",
+              "Önündeki ham veri anomali dosyasını ya derinlemesine kurcalayıp sabahki sunumu riske atacaksın, ya da Sterling'in istediği gibi pürüzleri yuvarlayıp fonu garantiye alacaksın."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Ham verideki sıfır-sapma anomalisini rapora ekle ve sorgula",
+            sub: "Bilimsel dürüstlüğü seç; Sterling'in kaşlarını çatma pahasına ilk izi kayda geçir.",
+            tags: [{t:"Vicdan +6", c:"pos"}, {t:"Risk +5", c:"neg"}, {t:"Şüphe +1", c:""}],
+            effect: (s) => {
+              s.stats.conscience += 6; s.stats.risk += 5; s.stats.reputation += 3;
+              s.flags.suspicion += 1;
+              s.keepsakes.push({title:"İlk Anomali Çıktısı (0.000000000)", year:2030, desc:"Doğum-ölüm farkının dokuz basamak boyunca sıfır kaldığı o geceki ham log."});
+            }
+          },
+          {
+            label: "Veriyi yumuşat, fonu al ve İstanbul'a hemen 900$ gönder",
+            sub: "Önce ailenin nefes alması ve vize sponsorluğunun sağlam kalması gerekir.",
+            tags: [{t:"Nakit +$1.400", c:"pos"}, {t:"Aile +7", c:"pos"}, {t:"Vicdan -4", c:"neg"}],
+            effect: (s) => {
+              s.stats.cash += 1400; s.stats.bond += 7; s.stats.conscience -= 4;
+              s.characters.sterling.affinity += 5;
+            }
+          },
+          {
+            label: "Raporu normal sun ama ham veriyi şifreli kişisel diskine kopyala",
+            sub: "Kimseyi ürkütmeden gerçeğin peşine düşmek için zaman kazan.",
+            tags: [{t:"Birikim +$600", c:"pos"}, {t:"Risk +3", c:"neg"}, {t:"Şüphe +1", c:""}],
+            effect: (s) => {
+              s.stats.savings += 600; s.stats.risk += 3; s.flags.suspicion += 1;
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Sunum sonrası Kerem'in dipnotlarını inceleyip benzer bir anormalliği kendi nöro-veri setinde aramaya başladı.";
+          s.characters.elena.mood = "İlgili ve temkinli";
+          return "Bu Sırada: Dr. Elena Vance, kurul toplantısından sonra kimseye söylemeden senin veri setinin bir kopyasını kendi terminaline çekti.";
+        }
+      },
+
+      // ---------------- BÖLÜM 2 (2031, Yaş 33) ----------------
+      {
+        num: 2, year: 2031, age: 33,
+        title: "Vize Kuyruğu ve Kış Kirası",
+        location: "Cambridge, Boston",
+        img: "ch02", anim: "anim-pan-l", fx: "snow",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Ocak 2031. Boston'da kar diz boyu. Göçmenlik bürosundan gelen mektup masanın üzerinde duruyor: O-1 uzatması için bağımsız atıf sayını artırman ya da enstitünün kefaletini yenilemen şart. Göçmen bir bilim insanı için akademik özgürlük, çoğu zaman oturma izninin bitiş tarihine kadar sürer.",
+              "Özel bir veri danışmanlık şirketi sana hafta sonları için 2.800 dolarlık 'gri' bir teklif sundu: küresel göç akışlarını sigorta şirketleri lehine modellemek."
+            ]
+          },
+          {
+            speaker: "Prof. Arthur Sterling",
+            text: [
+              "Koridorda omzuna elini koyup hafifçe gülümsüyor: 'Kerem, bu ülkede idealist olanlar burs kuyruğunda yaşlanır. Önce zemini sağlamlaştır, felsefeyi sonra yaparsın.'"
+            ],
+            quote: "“Ayakta kalmayan bilim insanı, hiçbir gerçeği yayımlayamaz.”"
+          }
+        ],
+        choices: [
+          {
+            label: "Sigorta danışmanlığını kabul et ve parayı Temiz Birikime aktar",
+            sub: "Ekonomik güvence kazan, ama modelin yoksul mahallelerin primlerini artıracağını bil.",
+            tags: [{t:"Birikim +$2.800", c:"pos"}, {t:"Vicdan -7", c:"neg"}, {t:"İtibar +4", c:"pos"}],
+            effect: (s) => { s.stats.savings += 2800; s.stats.conscience -= 7; s.stats.reputation += 4; }
+          },
+          {
+            label: "Teklifi reddet, açık kaynaklı kamu sağlığı makalesine odaklan",
+            sub: "Cebin daralır ama vicdanın ve akademik saygınlığın güçlenir.",
+            tags: [{t:"Nakit -$800", c:"neg"}, {t:"Vicdan +8", c:"pos"}, {t:"İtibar +6", c:"pos"}],
+            effect: (s) => { s.stats.cash -= 800; s.stats.conscience += 8; s.stats.reputation += 6; s.characters.elena.affinity += 6; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.zeynep.lastDecision = "İstanbul'daki kira artışı yüzünden ofisini iki meslektaşıyla paylaşma kararı aldı.";
+          s.characters.zeynep.mood = "Kararlı ama borç baskısında";
+          return "Bu Sırada: Kız kardeşin Zeynep, İstanbul'da ofisini kapatmamak için iki arkadaşıyla ortaklık kurdu; sana yük olmamak için borcunu gizledi.";
+        }
+      },
+
+      // ---------------- BÖLÜM 3 (2032, Yaş 34) ----------------
+      {
+        num: 3, year: 2032, age: 34,
+        title: "Yağmurlu Kafede Aynı Cümle",
+        location: "Beacon Hill Kafesi, Boston",
+        img: "ch03", anim: "anim-pan-r", fx: "rain",
+        beats: [
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Tuğla duvarlı küçük bir Boston kafesinde yağmur camdan süzülürken Elena defterini önüne itiyor. İki yıldır aynı koridorda çalışıyorsunuz; bugün ilk kez iş dışındaki hayatınızdan, çocukluğunuzdan ve yalnızlıktan konuşuyorsunuz.",
+              "Tam kahveni yudumlarken yan masadaki yaşlı çiftin kurduğu cümle dikkatini dağıtıyor: 'Saat dördü on geçe rüzgar kuzeye dönecek.' Üç saniye sonra kapıdan giren tamamen yabancı bir kurye, telefonda kelimesi kelimesine aynı tonlamayla aynı cümleyi söylüyor."
+            ],
+            quote: "“Elena, az önce duydun mu? İki yabancı birebir aynı ritimle aynı cümleyi söyledi... Sanki aynı ses kaydı iki kez çaldı.”"
+          },
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Elena hafifçe gülüp elini elinin yanına koyuyor: 'Kerem, haftada yetmiş saat ekran başındasın. Beyin yorgunken örüntü uydurur.' Gözlerinde hem şefkat hem gerçek bir yakınlık var. Bu akşamı bir şüphecilik nöbetine mi çevireceksin, yoksa insani bir bağa mı?"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Şüpheyi bir kenara bırak ve Elena ile sıcak bir akşam geçir",
+            sub: "İnsani bağı besle; yalnız geçen yılların ardından kalbine yer aç.",
+            tags: [{t:"Aile/Aşk +9", c:"pos"}, {t:"Nakit -$180", c:"neg"}],
+            effect: (s) => { s.stats.bond += 9; s.stats.cash -= 180; s.characters.elena.affinity += 12; }
+          },
+          {
+            label: "Defterine saati not et ve Elena'ya demografi anomalisinden bahset",
+            sub: "Onu erken aşamada güven çemberine al; tuhaf görünme riskini göze al.",
+            tags: [{t:"Şüphe +1", c:""}, {t:"Risk +4", c:"neg"}, {t:"Aile/Aşk +4", c:"pos"}],
+            effect: (s) => { s.flags.suspicion += 1; s.stats.risk += 4; s.stats.bond += 4; s.characters.elena.affinity += 5; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.marcus.lastDecision = "Kendi blogunda 'Senkronize Dil Sürçmeleri' başlıklı bir makale yayımladı; yazı 4 saat içinde teknik arıza gerekçesiyle silindi.";
+          s.characters.marcus.mood = "Tetikte";
+          return "Bu Sırada: Eski kuantum mühendisi Marcus Chen, Boston'da rastladığı tekrarlayan diyalogları yazdığı bloğun gizemli biçimde silindiğini fark etti.";
+        }
+      },
+
+      // ---------------- BÖLÜM 4 (2033, Yaş 35) ----------------
+      {
+        num: 4, year: 2033, age: 35,
+        title: "Karanlık Mutfakta İki Kıta",
+        location: "Somerville Dairesi, Boston",
+        img: "ch04", anim: "anim-breathe", fx: "mist",
+        beats: [
+          {
+            speaker: "Sema Aydın (Görüntülü Arama)",
+            text: [
+              "Gece yarısı mutfak masanda ince belli bardakta çay ve ödenmemiş elektrik faturası. Tablet ekranında annen Sema ve kardeşin Zeynep gülümsüyor. Annenin sesi yorgun ama gururlu: 'Oğlum babanın kontrolleri iyi geçti, sen kendini yorma.'",
+              "Ama ekranın köşesindeki eski aile fotoğrafına bakarken tüylerin ürperiyor. 2024 yazında çekildiğini çok iyi bildiğin o fotoğrafta, senin hafızanda mavi olan arka duvar şimdi soluk yeşil görünüyor. Annene sorduğunda şaşırıyor: 'O duvar hep yeşildi oğlum, uykusuzluktan karıştırıyorsun.'"
+            ],
+            quote: "“İnsan hafızası yanılır elbette... Peki neden son bir yıldır sadece benim hatırladıklarım değişiyor?”"
+          },
+          {
+            speaker: "Zeynep Aydın",
+            text: [
+              "Annen odadan çıkınca Zeynep ekrana eğilip fısıldıyor: 'Abi, anneme söylemedim ama ofisin vergi borcu birikti. Ya Berlin'den gelen iş teklifini kabul edip gideceğim, ya da senin desteğinle burada direneceğim. Ne yapayım?'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Birikiminden $3.000 gönder: 'Ofisi bırakma Zeynep, arkandayım'",
+            sub: "Kardeşinin İstanbul'da ayakta kalmasını sağla; kendi finansal yastığın incelir.",
+            tags: [{t:"Birikim -$3.000", c:"neg"}, {t:"Aile/Aşk +10", c:"pos"}, {t:"Vicdan +6", c:"pos"}],
+            effect: (s) => {
+              s.stats.savings -= 3000; s.stats.bond += 10; s.stats.conscience += 6;
+              s.flags.helpedZeynep = true; s.characters.zeynep.affinity += 14;
+            }
+          },
+          {
+            label: "Berlin teklifini destekle: 'Kendi hayatını kur, annemize dönüşümlü bakarız'",
+            sub: "Gerçekçi ve uzun vadeli bir göç kararı; anne yalnız kalacak ama Zeynep kurtulacak.",
+            tags: [{t:"Birikim +$500", c:"pos"}, {t:"Aile/Aşk -3", c:"neg"}, {t:"İtibar +3", c:"pos"}],
+            effect: (s) => {
+              s.stats.savings += 500; s.stats.bond -= 3; s.stats.reputation += 3;
+              s.characters.zeynep.lastDecision = "Berlin'deki mimarlık stüdyosuyla sözleşme imzalayıp taşınma hazırlıklarına başladı.";
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sema.lastDecision = "Kızının ve oğlunun yükünü hafifletmek için komşularıyla ev yapımı reçel satmaya başladı.";
+          s.characters.sema.mood = "Gururlu ama yorgun";
+          return "Bu Sırada: Annen Sema, çocuklarına yük olmamak için sessizce kendi küçük gelirini yaratmaya çalıştı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 5 (2034, Yaş 36) ----------------
+      {
+        num: 5, year: 2034, age: 36,
+        title: "İki Milyar Sınırının İlk Çatlağı",
+        location: "NACSI Laboratuvarı, Boston",
+        img: "ch05", anim: "anim-zoom", fx: "rain",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "2034 baharı. Dört yıllık emeğin ardından 'Kıdemli Araştırmacı' unvanı ve kalıcı oturum (Green Card) kapıda. Ekonomik olarak ilk kez nefes almaya başladın. Ancak küresel BM nüfus veri tabanında yeni bir keşif uykularını kaçırıyor.",
+              "Dünyada 2.000.000.000 kişi yaşıyor. Ama ham doğum kayıtlarını hastane saat damgalarıyla karşılaştırdığında akıl almaz bir korelasyon buluyorsun: Tokyo'da bir bebek doğduğu milisaniyede, Peru'da veya Kenya'da bir kalp duruyor. Asla 2.000.000.001 olmuyor."
+            ],
+            quote: "“Biyoloji böyle çalışmaz. Bir bebek doğduğunda dünyanın öbür ucunda biri milisaniye hassasiyetiyle ölemez. Bu bir biyolojik denge değil... bir bellek sınırı.”"
+          },
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Elena masana gelip kahve bırakıyor. 'Green Card avukatın aradı, dosya tamamlanmak üzere. Bu hafta sadece hakemli makaleye odaklanalım, lütfen başka bir tavşan deliğine girme Kerem.'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Avrupa ve Asya hastane zaman damgalarını gizlice çapraz kontrol et",
+            sub: "Gece saatlerini bu imkânsız eşzamanlılığı kanıtlamaya ayır.",
+            tags: [{t:"Şüphe +2", c:""}, {t:"Risk +7", c:"neg"}, {t:"İtibar -2", c:"neg"}],
+            effect: (s) => { s.flags.suspicion += 2; s.stats.risk += 7; s.stats.reputation -= 2; }
+          },
+          {
+            label: "Önce Green Card ve maaş zammını güvenceye al, araştırmayı ertele",
+            sub: "Temkinli hamle: sistemin içinde sağlam bir zemin kurmadan hamle yapma.",
+            tags: [{t:"Nakit +$2.400", c:"pos"}, {t:"İtibar +6", c:"pos"}, {t:"Aile/Aşk +4", c:"pos"}],
+            effect: (s) => { s.stats.cash += 2400; s.stats.reputation += 6; s.stats.bond += 4; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sterling.lastDecision = "BM Demografi Konseyi'nin kapalı danışma kuruluna atandı ve enstitüye 12 milyon dolarlık gizli fon getirdi.";
+          s.characters.sterling.mood = "Güçlü ve ketum";
+          return "Bu Sırada: Prof. Sterling, BM Demografi Konseyi'nin kapalı komitesine seçildi; enstitüde güvenlik protokolleri sessizce sıkılaştırıldı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 6 (2035, Yaş 37) ----------------
+      {
+        num: 6, year: 2035, age: 37,
+        title: "Gece Yarısı Gelen Telefon",
+        location: "Somerville Dairesi, Boston",
+        img: "ch06", anim: "anim-pan-l", fx: "rain",
+        beats: [
+          {
+            speaker: "Zeynep Aydın",
+            text: [
+              "Sabaha karşı 04:15. Telefonun ısrarla çalıyor. Ekranda Zeynep'in adı. Açtığında hıçkırıklar arasında tek bir cümle duyuyorsun: 'Abi, babamı kaybettik.'",
+              "Bir göçmenin en ağır sınavı tam o saniyede başlar: on bin kilometre ötede, uçak biletinin saatine bakarken, yıllardır ertelediğin o uzun sohbetlerin bir daha asla yapılamayacağını anlamak. Aynı gün Boston'da kariyerinin en büyük fon sunumu var."
+            ]
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Uçak bileti 1.650 dolar. Sterling sunumu erteleyemeyeceğini, yerine başkasının geçebileceğini soğuk bir nezaketle ima ediyor. Ama babanın cenazesi yarın ikindide Kadıköy'de."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Sunumu bırak, ilk uçağa binip İstanbul'a git",
+            sub: "Kariyer bekler; babanın son yolculuğunda annenin elini tutmak her şeyden önemli.",
+            tags: [{t:"Nakit -$1.650", c:"neg"}, {t:"Aile/Aşk +14", c:"pos"}, {t:"Vicdan +10", c:"pos"}, {t:"İtibar -5", c:"neg"}],
+            effect: (s) => {
+              s.stats.cash -= 1650; s.stats.bond += 14; s.stats.conscience += 10; s.stats.reputation -= 5;
+              s.flags.visitedIstanbul = true;
+              s.keepsakes.push({title:"Kadıköy Vapur Bileti (2035)", year:2035, desc:"Babanın vedasından sonra Boğaz'ı geçerken cebinde unuttuğun kâğıt bilet."});
+            }
+          },
+          {
+            label: "Sunumu yap, cenazeye görüntülü bağlan ve bir hafta sonra git",
+            sub: "Fonu kurtar, maddi güvenceyi koru — ama içinde ömür boyu sürecek bir sızı kalır.",
+            tags: [{t:"Birikim +$3.200", c:"pos"}, {t:"İtibar +7", c:"pos"}, {t:"Aile/Aşk -10", c:"neg"}, {t:"Vicdan -9", c:"neg"}],
+            effect: (s) => {
+              s.stats.savings += 3200; s.stats.reputation += 7; s.stats.bond -= 10; s.stats.conscience -= 9;
+              s.characters.sema.affinity -= 8;
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Kerem'in yokluğunda laboratuvar projesini tek başına savunup onun adını başyazar olarak korudu.";
+          s.characters.elena.mood = "Sadık ve derinleşmiş";
+          return "Bu Sırada: Elena, Sterling'in baskısına rağmen makalede senin başyazarlığını korudu ve senin adına destek fonunu açık tuttu.";
+        }
+      },
+
+      // ---------------- BÖLÜM 7 (2036, Yaş 38) ----------------
+      {
+        num: 7, year: 2036, age: 38,
+        title: "Boğaz Vapurunda On Bir Saniye",
+        location: "İstanbul Boğazı, Kadıköy–Karaköy Vapuru",
+        img: "ch07", anim: "anim-pan-r", fx: "sunset",
+        beats: [
+          {
+            speaker: "Zeynep Aydın",
+            text: [
+              "Altın renkli bir İstanbul akşamüstü. Vapurun dış güvertesinde Zeynep ile yan yanasınız. Martılar simit parçalarının peşinde süzülüyor. Babanın ardından geçen bir yıl ikinizi de olgunlaştırmış.",
+              "Zeynep gülümseyerek Boğaz'a bakıyor: 'Abi, bazen buradan hiç gitmeseydin diyorum. Sonra senin orada kurduğun dünyayı düşünüp susuyorum.'"
+            ]
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Tam o anda tüylerini diken diken eden bir şey oluyor. Havada asılı kalan bir martı bir saniyeliğine titriyor; babanın eski köstekli saatinde 18:42:09'a gelen saniye ibresi geriye atlayıp 18:41:58'den yeniden akıyor. Zeynep az önce kurduğu cümleyi — aynı nefesle, aynı baş hareketiyle — birebir tekrarlıyor.",
+              "Göğsünde soğuk bir ürperti. Bu kez yorgunluk değil. Saat 18:42'yi iki kez yaşadın."
+            ],
+            quote: "“Zeynep... Az önce bu cümleyi zaten söyledin. Martıyı görmedin mi? Havada dondu.”"
+          }
+        ],
+        choices: [
+          {
+            label: "Zeynep'i korkutmamak için sus, ama gördüğün zaman kaymasını deftere çiz",
+            sub: "Anın huzurunu bozma; bu kanıtı Boston'daki verilerle birleştir.",
+            tags: [{t:"Aile/Aşk +6", c:"pos"}, {t:"Şüphe +2", c:""}],
+            effect: (s) => { s.stats.bond += 6; s.flags.suspicion += 2; }
+          },
+          {
+            label: "Zeynep'e açıkça sor ve cep telefonunun kronometresini kontrol et",
+            sub: "Kardeşinin tepkisini ölç; o da bir şey hissetti mi?",
+            tags: [{t:"Şüphe +2", c:""}, {t:"Risk +4", c:"neg"}, {t:"Vicdan +3", c:"pos"}],
+            effect: (s) => { s.flags.suspicion += 2; s.stats.risk += 4; s.stats.conscience += 3; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.marcus.lastDecision = "Aynı gün aynı saatte (UTC 15:42) Kuzey Amerika atom saatlerinde 11 saniyelik açıklanamayan bir sapma tespit etti.";
+          s.characters.marcus.mood = "Heyecanlı ve gizleniyor";
+          return "Bu Sırada: Boston'da Marcus Chen, tam senin vapurda yaşadığın dakikada küresel GPS senkronizasyonunda 11 saniyelik bir 'yeniden yükleme' izi yakaladı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 8 (2037, Yaş 39) ----------------
+      {
+        num: 8, year: 2037, age: 39,
+        title: "Ortak Ev, Farklı Rüyalar",
+        location: "Beacon Hill Kafesi, Boston",
+        img: "ch08", anim: "anim-breathe", fx: "mist",
+        beats: [
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Boston'a dönüşünün üzerinden bir yıl geçti. Artık Elena ile aynı evi paylaşıyorsunuz. Pazar sabahı kahve eşliğinde gelecek planları yapıyorsunuz: ortak bir ev kredisi, belki bir çocuk, belki Avrupa'da bir kürsü.",
+              "Ancak sen geceleri uyuyamıyorsun. 2030'dan beri topladığın anomaliler bir klasöre sığmaz oldu: 2 milyar nüfus sabiti, tekrarlayan cümleler, 11 saniyelik vapur kayması."
+            ]
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Elena masanın altından elini tutuyor: 'Kerem, seni seviyorum ama son aylarda başka bir dünyadaymışsın gibi bakıyorsun. Bir ev alacaksak, senin burada — gerçekten benimle — olduğunu bilmem gerek.'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Ortak ev için peşinata gir ve Elena'ya söz ver",
+            sub: "Hayatı erteleme; aşkı ve yerleşik düzeni seç.",
+            tags: [{t:"Birikim -$4.000", c:"neg"}, {t:"Aile/Aşk +12", c:"pos"}, {t:"Vicdan +4", c:"pos"}],
+            effect: (s) => { s.stats.savings -= 4000; s.stats.bond += 12; s.stats.conscience += 4; s.characters.elena.affinity += 12; }
+          },
+          {
+            label: "Dürüst ol: 'Büyük bir şeyin eşiğindeyim Elena, biraz daha zamana ihtiyacım var'",
+            sub: "İlişkide gerilim yaratır ama araştırmadan vazgeçmezsin.",
+            tags: [{t:"Aile/Aşk -4", c:"neg"}, {t:"Şüphe +1", c:""}, {t:"Vicdan +5", c:"pos"}],
+            effect: (s) => { s.stats.bond -= 4; s.flags.suspicion += 1; s.stats.conscience += 5; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.zeynep.lastDecision = "Genç bir Türk mühendisle nişanlandı ve ilk büyük kamusal meydan tasarım ödülünü kazandı.";
+          s.characters.zeynep.mood = "Umutlu ve üretken";
+          return "Bu Sırada: Zeynep hayatında yeni bir sayfa açıp nişanlandı; yaşam senin kaygılarına rağmen kendi akışında ilerlemeye devam ediyor.";
+        }
+      },
+
+      // ---------------- BÖLÜM 9 (2038, Yaş 40) ----------------
+      {
+        num: 9, year: 2038, age: 40,
+        title: "Gece Metrosunda Üç İkiz Gölge",
+        location: "Red Line Metrosu, Boston",
+        img: "ch09", anim: "anim-pan-l", fx: "glitch",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Kırk yaşına girdiğin gece. Laboratuvardan geç çıkıp son Red Line trenine biniyorsun. Vagon neredeyse boş. Yeşilimsi floresan lambalar hafifçe titriyor.",
+              "Karşı sırada oturan üç yolcuya gözün takılıyor. Birbirlerinden habersiz üç yabancı... Ama üçü de aynı açıyla öne eğilmiş, gazetelerini birebir aynı milimetrede tutuyor, tam aynı saniyede sağ ayaklarını hafifçe oynatıp aynı anda sayfayı çeviriyorlar."
+            ],
+            quote: "“Bir tesadüf bir kez olur. İki kez olursa şüphelenirsin. Üç insan aynı animasyon döngüsünde hareket ediyorsa, ortada bir sahne vardır.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Telefonunu çıkarıp fotoğraf çekmek üzereyken vagonun ışıkları bir saniye sönüyor. Işıklar yandığında üç yolcu da normal, dağınık hareketlerle etrafa bakınıyor. Ama bir sonraki durakta kapıdan içeri tanıdık bir yüz girip yanına oturuyor: eski kuantum mühendisi Marcus Chen. Cebine küçük bir kart bırakıyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Marcus'un kartını al ve şifreli kanaldan onunla iletişime geç",
+            sub: "Artık yalnız değilsin; ama bu temas seni radara sokabilir.",
+            tags: [{t:"Risk +9", c:"neg"}, {t:"Şüphe +2", c:""}],
+            effect: (s) => {
+              s.stats.risk += 9; s.flags.suspicion += 2; s.flags.alliedMarcus = true;
+              s.characters.marcus.affinity += 15;
+            }
+          },
+          {
+            label: "Kartı cebinde sakla ama temas kurmadan önce kendi kanıtını tamamla",
+            sub: "Paranoyaya kapılmadan bilimsel metodolojiyle ilerle.",
+            tags: [{t:"İtibar +4", c:"pos"}, {t:"Şüphe +1", c:""}, {t:"Risk +3", c:"neg"}],
+            effect: (s) => { s.stats.reputation += 4; s.flags.suspicion += 1; s.stats.risk += 3; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.marcus.lastDecision = "Kerem'in 2030'daki ilk anomali makalesini bulup tüm arşivini tek bir şifreli diske kopyaladı.";
+          s.characters.marcus.mood = "Umutlu ve tedbirli";
+          return "Bu Sırada: Marcus Chen, 2030'daki ilk raporunu arşivden bulup çıkardı ve senin bu işi çözebilecek tek kişi olduğuna karar verdi.";
+        }
+      },
+
+      // ---------------- BÖLÜM 10 (2039, Yaş 41) ----------------
+      {
+        num: 10, year: 2039, age: 41,
+        title: "Eksik Sayıların Matematiği",
+        location: "NACSI Laboratuvarı, Boston",
+        img: "ch10", anim: "anim-zoom", fx: "mist",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Kırk bir yaşındasın; şakaklarında ilk gümüş teller belirginleşti. 2039 BM Küresel Nüfus Denetimi'nin baş veri analisti seçildin. Artık dünyanın tüm nüfus kütüğüne erişimin var.",
+              "Yedi gece boyunca süper bilgisayarda çalıştırdığın algoritma sabah 05:00'te sonucu veriyor: Dünyadaki 2 milyar insanın biyometrik kayıtları, fiziksel bir gezegenin kaotik dağılımına değil, ikili ağaç (binary tree) biçiminde optimize edilmiş bir sunucu mimarisine uyuyor. Ve her 24 saatte bir sistem, fazlalık belleği 'doğal olaylar'la temizliyor."
+            ]
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Ellerin hafifçe titriyor. Eğer bunu hakemli bir dergiye gönderirsen ya deli damgası yiyip kariyerini bitireceksin ya da çok daha güçlü bir mekanizmayı uyandıracaksın. Öte yandan, bu veriyi saklamak bütün bilim insanı yeminine ihanet."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Ön bulguları enstitü direktörü Prof. Sterling'in önüne koy",
+            sub: "Resmi kanalı dene ve onun ne bildiğini yüzünden oku.",
+            tags: [{t:"Vicdan +6", c:"pos"}, {t:"Risk +10", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 6; s.stats.risk += 10; s.flags.suspicion += 2; }
+          },
+          {
+            label: "Bulguları gizli tut, sadece kuantum çekirdek erişim izni talep et",
+            sub: "Daha derine inmeden elindeki kartları açma.",
+            tags: [{t:"Nakit +$1.800", c:"pos"}, {t:"Risk +4", c:"neg"}, {t:"Şüphe +2", c:""}],
+            effect: (s) => { s.stats.cash += 1800; s.stats.risk += 4; s.flags.suspicion += 2; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sterling.lastDecision = "Kerem'in laboratuvar terminalindeki tüm logların gece yedeklerini kendi kasasına yönlendirdi.";
+          s.characters.sterling.mood = "Endişeli ve soğukkanlı";
+          return "Bu Sırada: Prof. Sterling, senin sunucu sorgularını fark etti ve enstitü güvenlik duvarına sessiz bir izleme kuralı ekledi.";
+        }
+      },
+
+      // ---------------- BÖLÜM 11 (2040, Yaş 42) ----------------
+      {
+        num: 11, year: 2040, age: 42,
+        title: "Maun Masanın Ardındaki Uyarı",
+        location: "Direktörlük Ofisi, Boston",
+        img: "ch11", anim: "anim-breathe", fx: "mist",
+        beats: [
+          {
+            speaker: "Prof. Arthur Sterling",
+            text: [
+              "Ahşap kaplı geniş ofiste yağmur camlara vuruyor. Prof. Sterling artık 65 yaşında; gümüş saçları kusursuz taranmış, bakışları buz gibi sakin. Önüne kalın bir sözleşme koyuyor: 5 yıllık kürsü başkanlığı, 240.000 dolar yıllık maaş ve sınırsız araştırma bütçesi.",
+              "Tek bir şartı var: '2 milyar nüfus sabiti' üzerine olan tüm alt-katman sorgularını kalıcı olarak kapatacaksın."
+            ],
+            quote: "“Kerem, bazı kapılar açıldığında arkasından bilgi değil, fırtına çıkar. Bu dünyada iki milyar insan huzur içinde uyuyor. Onları uyandırmaya hakkın var mı?”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Sterling'in son cümlesi odada asılı kalıyor. 'Huzur içinde uyuyor...' Bu bir mecaz değildi. O bir şey biliyor. Ama teklifi reddedersen yarın sabah laboratuvar kartın iptal edilebilir."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Sözleşmeyi reddet: 'Bilim insanı susmak için maaş almaz'",
+            sub: "Kürsüyü ve parayı elinin tersiyle it; Sterling'le ipleri kopar.",
+            tags: [{t:"Vicdan +12", c:"pos"}, {t:"Nakit -$1.200", c:"neg"}, {t:"Risk +12", c:"neg"}],
+            effect: (s) => {
+              s.stats.conscience += 12; s.stats.cash -= 1200; s.stats.risk += 12;
+              s.characters.sterling.affinity -= 20;
+            }
+          },
+          {
+            label: "Sözleşmeyi imzala, parayı al ama gece kuantum odasına gizlice gir",
+            sub: "İkili oyna: maddi gücünü ve erişimini koruyarak gerçeğe ulaş.",
+            tags: [{t:"Birikim +$6.000", c:"pos"}, {t:"Vicdan -6", c:"neg"}, {t:"Risk +8", c:"neg"}],
+            effect: (s) => {
+              s.stats.savings += 6000; s.stats.conscience -= 6; s.stats.risk += 8;
+              s.flags.tookSterlingDeal = true;
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Sterling'in gizli bütçe kalemlerinde 'Konteyner-2B' adlı açıklamasız bir başlık görüp fotoğrafını çekti.";
+          s.characters.elena.mood = "Kuşkulu ve tetikte";
+          return "Bu Sırada: Elena, muhasebe dosyalarında 'Konteyner-2B' adlı gizli bir kalem buldu; ilk kez senin abartmadığından şüphelenmeye başladı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 12 (2041, Yaş 43) — BÜYÜK KIRILMA ----------------
+      {
+        num: 12, year: 2041, age: 43,
+        title: "03:14 — İki Milyar Düğümün Keşfi",
+        location: "Kapalı Kuantum Hesaplama Odası, Boston",
+        img: "ch12", anim: "anim-zoom", fx: "glitch",
+        isTwist: true,
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Gece 03:14. Kuantum hesaplama odasında tek başınasın. On bir yıldır topladığın tüm anomali kayıtlarını — 2030 sıfır sapmasını, İstanbul vapurundaki 11 saniyeyi, Boston metrosundaki senkronizasyonu — yeni nesil topolojik çözücüye besledin.",
+              "Odanın cam ekranı aniden karanlığa gömülüyor ve ardından nefesini kesen bir görüntü beliriyor: Altın ve camgöbeği ışık noktalarından oluşan devasa bir küre. Tam 2.000.000.000 düğüm. Ve kürenin en alt katmanında, fizik yasalarını değil bir çalışma zamanı (runtime) döngüsünü tanımlayan hata günlüğü akıyor."
+            ],
+            quote: "“NODE_CAPACITY: 2,000,000,000 (LOCKED) | ANOMALY_ALERT: SELF-AWARE ENTITY DETECTED — ID: #TR-1998-KEREM | COUNT: 1 / 2,000,000,000”"
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Dizlerin çözülüyor. Ekranda kendi bilincinin düğüm numarasını görüyorsun. Bu dünya — Boston'un yağmuru, İstanbul'un Boğaz'ı, babanın mezarı, Elena'nın sıcak eli — bir simülasyonun içinde çalışıyor. Ve iki milyar insan arasında bunu fark eden İLK kişi sensin.",
+              "Ekranın köşesinde kırmızı bir sayaç yanıp sönüyor: 'OTOMATİK DÜZELTME PROTOKOLÜ BAŞLATILIYOR: 45 SANİYE.' Ne yapacaksın?"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Çekirdek günlüğünün tam kopyasını şifreli diske çek ve bağlantıyı kes",
+            sub: "Kanıtı kurtar! Ama sistem senin uyandığını kesin olarak işaretlemiş olacak.",
+            tags: [{t:"Risk +15", c:"neg"}, {t:"Vicdan +8", c:"pos"}],
+            effect: (s) => {
+              s.flags.awakened = true; s.stats.risk += 15; s.stats.conscience += 8;
+              s.keepsakes.push({title:"Çekirdek Hata Günlüğü (#TR-1998-KEREM)", year:2041, desc:"Dünyanın 2 milyar düğümlü bir simülasyon olduğunu kanıtlayan ham veri bloğu."});
+            }
+          },
+          {
+            label: "Log kaydından kendi düğüm kimliğini sil ve sadece özet şemayı al",
+            sub: "İzini gizlemeye çalış; sisteme hâlâ uykudaymışsın gibi görün.",
+            tags: [{t:"Risk +6", c:"neg"}, {t:"İtibar +4", c:"pos"}],
+            effect: (s) => {
+              s.flags.awakened = true; s.stats.risk += 6; s.stats.reputation += 4;
+              s.keepsakes.push({title:"Gizli Mimari Şeması", year:2041, desc:"İz bırakmadan alabildiğin 2 milyar düğümlü simülasyon haritası."});
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sema.lastDecision = "O gece İstanbul'da saat tam 10:14'te tüm mahallede elektrikler 3 saniye gidip geldi; annen rüyasında senin cam bir kürenin içinde kaldığını gördü.";
+          s.characters.sema.mood = "İçi sıkılmış, dualı";
+          return "Bu Sırada: Sistem senin uyanışını kaydettiği saniyede, küresel ağda 3 saniyelik mikro bir dalgalanma yaşandı. Hiç kimse ne olduğunu anlamadı — sadece sen ve Marcus dışında.";
+        }
+      },
+
+      // ---------------- BÖLÜM 13 (2042, Yaş 44) ----------------
+      {
+        num: 13, year: 2042, age: 44,
+        title: "Düzeltme Algoritmasının Gölgesi",
+        location: "Somerville & Boston",
+        img: "ch13", anim: "anim-pan-r", fx: "glitch",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Gerçeği öğrendikten sonraki ilk yıl her şeye bambaşka gözlerle bakıyorsun. Artık kahvenin kokusu bile bir veri akışı gibi geliyor, ama Elena'nın gülüşü hâlâ canını yakacak kadar gerçek.",
+              "Sistem sana doğrudan saldırmıyor — çok daha zekice davranıyor. Peş peşe 'talihsiz tesadüfler' başlıyor: banka hesabın teknik incelemeye takılıyor, vergi dairesinden geçmişe dönük 4.500 dolarlık ceza çıkıyor, arabanın frenleri yağmurlu bir kavşakta tam bir saniye tepki vermiyor."
+            ],
+            quote: "“Simülasyon seni kurşunla susturmuyor Kerem; seni borçla, yorgunlukla ve tesadüfi kazalarla sıradanlığa geri itiyor.”"
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Hesabındaki blokeyi kaldırmak ve nefes almak için bir hamle yapmalısın. Aynı anda Marcus Chen şifreli hattan acil buluşma istiyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Vergi cezasını Temiz Birikimden öde, dikkat çekmeden geri çekil",
+            sub: "Sistemin 'düzeltme' baskısını mali kayıpla savuştur.",
+            tags: [{t:"Birikim -$3.500", c:"neg"}, {t:"Risk -8", c:"pos"}],
+            effect: (s) => { s.stats.savings -= 3500; s.stats.risk -= 8; }
+          },
+          {
+            label: "Parayı nakde çevir, dijital izini azalt ve yeraltı araştırmasına fon ayır",
+            sub: "Sistemin finansal baskısına boyun eğme; risk artar ama özgür kalırsın.",
+            tags: [{t:"Nakit +$2.000", c:"pos"}, {t:"Birikim -$2.500", c:"neg"}, {t:"Risk +8", c:"neg"}],
+            effect: (s) => { s.stats.cash += 2000; s.stats.savings -= 2500; s.stats.risk += 8; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.marcus.lastDecision = "Eski işinden kalma bir kuantum sinyal bozucu prototipini tamir edip Boston rıhtımındaki bir depoya sakladı.";
+          s.characters.marcus.mood = "Kararlı ve uykusuz";
+          return "Bu Sırada: Marcus Chen, sistemin gözlem algoritmasını geçici olarak kör edebilen eski bir sinyal bozucu buldu.";
+        }
+      },
+
+      // ---------------- BÖLÜM 14 (2043, Yaş 45) ----------------
+      {
+        num: 14, year: 2043, age: 45,
+        title: "Rıhtımda İki Uyanık Adam",
+        location: "Boston Liman Rıhtımı, Gece",
+        img: "ch14", anim: "anim-zoom", fx: "rain",
+        beats: [
+          {
+            speaker: "Marcus Chen",
+            text: [
+              "Yağmurlu bir Kasım gecesi, sarı sokak lambasının altında Marcus Chen ile karşı karşıyasın. Artık 45 yaşındasın, sakallarına kır düşmüş. Marcus elindeki siyah şifreli diski sana uzatıyor.",
+              "'Kerem, ben yıllardır sadece gölgeleri görüyordum. Ama çekirdek kanıtına ulaşan ilk kişi sensin. Bu diskte simülasyonun tüm 2 milyar düğüme aynı anda mesaj gönderebilen acil yayın frekansı var.'"
+            ],
+            quote: "“İki milyar insana gerçeği tek bir gecede gösterebiliriz. Ya da korkup bu kafeste yaşlanmayı bekleriz.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Marcus'un gözlerinde hem devrimci bir ateş hem de tehlikeli bir umutsuzluk var. Eğer iki milyar insan aynı anda bunun bir simülasyon olduğunu öğrenirse ne olur? Panik? Çöküş? Yoksa gerçek özgürlük mü?"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Diski al ve Marcus ile ittifak kur: 'Ama acele etmeyeceğiz, önce nedenini bulacağız'",
+            sub: "Yayın anahtarını elinde tut; kontrolsüz bir kaosu engelle.",
+            tags: [{t:"Risk +10", c:"neg"}, {t:"Vicdan +5", c:"pos"}],
+            effect: (s) => {
+              s.stats.risk += 10; s.stats.conscience += 5; s.flags.alliedMarcus = true;
+              s.characters.marcus.affinity += 14;
+              s.keepsakes.push({title:"Marcus'un Yayın Diski", year:2043, desc:"Küresel yayın frekansının şifre anahtarını taşıyan darbe dayanıklı siyah disk."});
+            }
+          },
+          {
+            label: "Marcus'a mesafe koy: 'İki milyar insanın psikolojisi deney tahtası değil'",
+            sub: "Kendi barışçıl yolunu ara; Marcus hayal kırıklığına uğrar.",
+            tags: [{t:"Vicdan +8", c:"pos"}, {t:"Risk -5", c:"pos"}],
+            effect: (s) => {
+              s.stats.conscience += 8; s.stats.risk -= 5;
+              s.characters.marcus.affinity -= 12;
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Kerem'in gece yarısı eve ıslak ve gizemli bir diskle döndüğünü gördü; sabrı taşmak üzere.";
+          s.characters.elena.mood = "Kırgın ve endişeli";
+          return "Bu Sırada: Elena, senin ondan büyük bir sır sakladığını anladı ve bunu bir ihanet ya da tehlikeli bir saplantı sanmaya başladı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 15 (2044, Yaş 46) ----------------
+      {
+        num: 15, year: 2044, age: 46,
+        title: "Balkonda İtirafın Ağırlığı",
+        location: "Boston Balkonu, Alacakaranlık",
+        img: "ch15", anim: "anim-breathe", fx: "rain",
+        beats: [
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Yağmurlu bir Boston akşamında cam balkondasınız. Elena artık 44 yaşında; gözlerinin kenarındaki çizgiler birlikte geçirdiğiniz on dört yılın haritası gibi. Sesi titriyor: 'Kerem, ya bana neyin peşinde olduğunu şimdi söylersin ya da yarın eşyalarımı toplarım. Bir hayaletle yaşayamam.'"
+            ]
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Elinde tablet var. Tek bir dokunuşla 2 milyar düğümlü simülasyon kanıtını ona gösterebilirsin. Ama bunu yaparsan onun masumiyetini, huzurunu ve normal bir hayat hayalini sonsuza dek elinden alacaksın. Dahası, sistem onu da 'uyanan' olarak işaretleyebilir."
+            ],
+            quote: "“Sevdiğin birini korumak için ona yalan mı söylersin, yoksa uçurumun kenarına birlikte mi bakarsınız?”"
+          }
+        ],
+        choices: [
+          {
+            label: "Elena'ya tüm gerçeği ve çekirdek kanıtını göster",
+            sub: "Ona güven. Birlikte sarsılacaksınız ama artık bu yükü tek başına taşımayacaksın.",
+            tags: [{t:"Aile/Aşk +12", c:"pos"}, {t:"Risk +10", c:"neg"}, {t:"Vicdan +8", c:"pos"}],
+            effect: (s) => {
+              s.flags.toldElena = true; s.stats.bond += 12; s.stats.risk += 10; s.stats.conscience += 8;
+              s.characters.elena.affinity += 18;
+              s.characters.elena.mood = "Sarsılmış ama seninle omuz omuza";
+            }
+          },
+          {
+            label: "Onu korumak için sus ve 'sadece gizli bir devlet fonu denetimi' de",
+            sub: "Elena güvende kalır ama aranızdaki duvar kalınlaşır.",
+            tags: [{t:"Aile/Aşk -10", c:"neg"}, {t:"Risk -6", c:"pos"}],
+            effect: (s) => {
+              s.stats.bond -= 10; s.stats.risk -= 6;
+              s.characters.elena.affinity -= 14;
+              s.characters.elena.mood = "Uzaklaşmış ve kırgın";
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.zeynep.lastDecision = "İlk çocuğunu kucağına aldı; minik yeğenin Defne doğduğu gün küresel nüfus hâlâ 2.000.000.000 olarak kaldı.";
+          s.characters.zeynep.mood = "Mutlu ama yorgun bir anne";
+          return "Bu Sırada: Kız kardeşin Zeynep bir kız bebek dünyaya getirdi: yeğenin Defne. Artık bu simülasyonda korumak istediğin yeni bir can daha var.";
+        }
+      },
+
+      // ---------------- BÖLÜM 16 (2045, Yaş 47) ----------------
+      {
+        num: 16, year: 2045, age: 47,
+        title: "Sterling'in İtirafı",
+        location: "Direktörlük Ofisi, Boston",
+        img: "ch16", anim: "anim-pan-l", fx: "mist",
+        beats: [
+          {
+            speaker: "Prof. Arthur Sterling",
+            text: [
+              "70 yaşındaki Sterling emekliliğini açıklamadan bir gün önce seni odasına çağırıyor. Artık o eski kibirli yönetici yok; karşında yorgun, yaşlı bir adam oturuyor.",
+              "'1990'lardan kalma bir sırrı taşıdığımı sanıyorsun değil mi Kerem? Yanılıyorsun. Ben sistemin yöneticisi değilim. Sadece 15 yıl önce senin gördüğün çatlağın kenarına kadar gelip korkup geri dönen bir akademisyenim. Sistem bana susmam karşılığında kusursuz bir kariyer ve hasta karım için fazladan on yıl verdi.'"
+            ],
+            quote: "“Eğer gerçekten devam edeceksen, gökyüzüne iyi bak Kerem. Sistem seninle konuşmak istediğinde önce fizik kurallarını gevşetir.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Sterling çekmecesinden eski bir erişim anahtarı çıkarıp masaya bırakıyor: 'Bunu alırsan okyanus kıyısındaki Gözlem İstasyonu'na ulaşabilirsin. Almamayı seçersen sana kimse dokunmaz.'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Sterling'i affet ve erişim anahtarını al",
+            sub: "İnsani zaaflarını anla; gerçeğin kaynağına giden kapıyı aç.",
+            tags: [{t:"Vicdan +6", c:"pos"}, {t:"Risk +8", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 6; s.stats.risk += 8; s.characters.sterling.affinity += 12; }
+          },
+          {
+            label: "Onu sessiz kaldığı için sertçe yargıla ama anahtarı yine de al",
+            sub: "On beş yıl boyunca iki milyar insanı uyuttuğu için öfkeni saklama.",
+            tags: [{t:"İtibar +4", c:"pos"}, {t:"Vicdan -3", c:"neg"}, {t:"Risk +10", c:"neg"}],
+            effect: (s) => { s.stats.reputation += 4; s.stats.conscience -= 3; s.stats.risk += 10; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sterling.lastDecision = "Emeklilik konuşmasını yarıda bırakıp sessizce Maine kıyısındaki kulübesine çekildi.";
+          s.characters.sterling.mood = "Pişman ama rahatlamış";
+          return "Bu Sırada: Prof. Sterling tüm akademik görevlerinden ayrılıp inzivaya çekildi; artık bayrak tamamen senin elinde.";
+        }
+      },
+
+      // ---------------- BÖLÜM 17 (2046, Yaş 48) ----------------
+      {
+        num: 17, year: 2046, age: 48,
+        title: "Gökyüzünde Asılı Kalan Yağmur",
+        location: "Beacon Hill Sokağı, Boston",
+        img: "ch17", anim: "anim-zoom", fx: "glitch",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "2046 sonbaharı. Akşamüstü Arnavut kaldırımlı Boston sokağında yürürken rüzgâr bir anda kesiliyor. Başını kaldırdığında nefesin duruyor: gri bulutların arasında camgöbeği bir geometrik tel kafes (wireframe) açılıyor. Tam önünde üç yağmur damlası havada asılı kalıyor.",
+              "Yoldan geçen çiftler hiçbir şey görmeden gülerek yanından geçiyor. Bu kırılma sadece senin görsel işleme katmanına gönderilmiş bir davetiye."
+            ],
+            quote: "“ARTIK KAÇAMAZSIN DR. AYDIN. SENİNLE KONUŞMA ZAMANI GELDİ.”"
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Gökyüzündeki ızgara dört saniye sonra kapanıyor, yağmur yeniden yüzüne çarpıyor. Cebindeki telefon titriyor: bilinmeyen bir kaynaktan tek bir koordinat — Kuzey Atlantik kıyısında haritada görünmeyen bir cam pavyon."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Koordinatı Elena/Marcus ile paylaş ve yedek plan kurarak git",
+            sub: "Tek başına kaybolma riskini azalt; ama onları da doğrudan hedefe yaklaştırırsın.",
+            tags: [{t:"Aile/Aşk +6", c:"pos"}, {t:"Risk +7", c:"neg"}],
+            effect: (s) => { s.stats.bond += 6; s.stats.risk += 7; }
+          },
+          {
+            label: "Kimseyi tehlikeye atma, koordinata tek başına git",
+            sub: "Tüm sorumluluğu kendi omuzlarına al.",
+            tags: [{t:"Vicdan +8", c:"pos"}, {t:"Risk +4", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 8; s.stats.risk += 4; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sema.lastDecision = "İstanbul'da tansiyon krizi geçirip iki gün hastanede kaldı; doktorlar artık yalnız yaşamaması gerektiğini söyledi.";
+          s.characters.sema.mood = "Kırılgan ama metanetli";
+          return "Bu Sırada: İstanbul'da annen Sema hastaneye kaldırıldı. Bir simülasyonun içinde olsan da annenin kalp çarpıntısı senin için dünyanın en gerçek acısı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 18 (2047, Yaş 49) ----------------
+      {
+        num: 18, year: 2047, age: 49,
+        title: "Gerçeklik Nedir?",
+        location: "Boston Balkonu",
+        img: "ch18", anim: "anim-pan-r", fx: "mist",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Annenin hastane masrafları ve özel hemşire bakımı için İstanbul'a acil 4.000 dolar gerekiyor. Bir anlığına acı bir düşünce zihninden geçiyor: 'Eğer bu dünya bir kodsa, o hastane faturası da sadece bir değişken değil mi?'",
+              "Sonra kendi düşüncenden utanıyorsun. Acı hisseden bir bilinç için o acı yüzde yüz gerçektir. Bir annenin elinin soğuması, hangi donanımda çalışırsa çalışsın gerçektir."
+            ]
+          },
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "Elena yanında durup kahveni tazeliyor. 'Kerem, eğer burası bir simülasyonsa bile, benim seni sevdiğim on altı yıl sahte değil. Lütfen bunu unutma.'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "İstanbul'a $4.000 gönder ve annene en iyi bakımı sağla",
+            sub: "Simülasyon ya da değil — sevgi ve sorumluluk en hakiki yasadır.",
+            tags: [{t:"Birikim -$4.000", c:"neg"}, {t:"Aile/Aşk +12", c:"pos"}, {t:"Vicdan +10", c:"pos"}],
+            effect: (s) => { s.stats.savings -= 4000; s.stats.bond += 12; s.stats.conscience += 10; s.characters.sema.affinity += 14; }
+          },
+          {
+            label: "Zeynep ile masrafı bölüş, kaynaklarının yarısını yaklaşan yüzleşmeye sakla",
+            sub: "Dengeli ama soğukkanlı bir kaynak yönetimi.",
+            tags: [{t:"Nakit -$1.500", c:"neg"}, {t:"Aile/Aşk +3", c:"pos"}, {t:"Risk -3", c:"pos"}],
+            effect: (s) => { s.stats.cash -= 1500; s.stats.bond += 3; s.stats.risk -= 3; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.marcus.lastDecision = "Küresel yayın için yeraltı fiber düğümüne fiziksel bağlantı kurdu ve senin işaretini beklemeye başladı.";
+          s.characters.marcus.mood = "Gergin ve hazır";
+          return "Bu Sırada: Marcus Chen, Boston dışındaki eski bir veri merkezinde yayın konsolunu aktif hale getirdi.";
+        }
+      },
+
+      // ---------------- BÖLÜM 19 (2048, Yaş 50) ----------------
+      {
+        num: 19, year: 2048, age: 50,
+        title: "Cam Pavyonda Gözlemci",
+        location: "Kuzey Atlantik Cam Pavyonu",
+        img: "ch19", anim: "anim-breathe", fx: "ocean",
+        beats: [
+          {
+            speaker: "Gözlemci (Protokol Mimar)",
+            text: [
+              "Elli yaşındasın. Sisli okyanusun üzerinde uzanan bembeyaz, sessiz bir cam pavyonda taş bir masanın karşısında oturuyorsun. Karşındaki figür ne yaşlı ne genç; sesi olağanüstü sakin.",
+              "'Hoş geldin Dr. Kerem Aydın. İki milyar bilinç arasında sistemin sınırını matematikle kanıtlayan ilk kişisin. Sana yalan söylemeyeceğim: Dışarıdaki fiziksel Dünya, 21. yüzyılın sonunda iklim ve biyolojik çöküşle yaşanmaz hale geldi. İnsanlığı kurtarmak için son 2 milyar bilinci bu kuantum sığınağa aktardık.'"
+            ],
+            quote: "“Burada 2 milyar insan yaşıyor çünkü güneş enerjili yörünge sunucularımızın kararlı kapasitesi tam 2.000.000.000 düğüm. Ve insanlar buranın bir sığınak olduğunu öğrenirse, kitlesel varoluş şoku sistemi 72 saat içinde çökertir.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Bütün parçalar yerine oturuyor. Bu bir hapishane değil — ya da belki de insanlığın tek hayatta kalma gemisi. Ama yine de kimseye sorulmadan kurulmuş bir yanılsama. Gözlemci önüne iki bardak su koyup sessizce bekliyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Gözlemci'ye meydan oku: 'Yalan üzerine kurulu kurtuluş, tutsaklıktır'",
+            sub: "İnsanların kendi kaderini bilme hakkını savun.",
+            tags: [{t:"Vicdan +10", c:"pos"}, {t:"Risk +10", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 10; s.stats.risk += 10; }
+          },
+          {
+            label: "Bilim insanı gibi sor: 'Kapasite sınırını 2 milyarın ötesine genişletebilir miyiz?'",
+            sub: "Çöküş yerine teknik bir üçüncü yol aramaya başla.",
+            tags: [{t:"İtibar +10", c:"pos"}, {t:"Vicdan +6", c:"pos"}],
+            effect: (s) => {
+              s.stats.reputation += 10; s.stats.conscience += 6; s.flags.expandedLimit = true;
+              s.keepsakes.push({title:"Gözlemci'nin Cam Küresi", year:2048, desc:"Sığınağın enerji ve bellek mimarisini gösteren şeffaf veri kristali."});
+            }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Senin bıraktığın notları inceleyip 2 milyar düğüm sınırının aslında sıkıştırma algoritmasıyla esnetilebileceğini fark etti.";
+          s.characters.elena.mood = "Parlak bir keşfin eşiğinde";
+          return "Bu Sırada: Elena, senin çalışma defterlerindeki denklemleri çözüp simülasyonun bellek sıkıştırma açığını buldu.";
+        }
+      },
+
+      // ---------------- BÖLÜM 20 (2049, Yaş 51) ----------------
+      {
+        num: 20, year: 2049, age: 51,
+        title: "Mimarın Teklifi",
+        location: "Kuzey Atlantik Cam Pavyonu",
+        img: "ch20", anim: "anim-pan-l", fx: "ocean",
+        beats: [
+          {
+            speaker: "Gözlemci",
+            text: [
+              "Gözlemci ikinci görüşmede önüne somut bir teklif koyuyor: 'Seni silmek istemiyorum Kerem. Bilincin çok değerli. Eğer sessiz kalırsan — hatta sisteme danışman olarak katılırsan — annenin sağlığı stabilize edilecek, kız kardeşinin ve yeğenin Defne'nin hayatı güvenceye alınacak, Elena ile ömür boyu maddi kaygı yaşamayacaksınız.'",
+              "'Reddedersen, seni durdurmak zorunda kalabilirim. İki milyar insanın yaşamı tek bir adamın hakikat arzusundan büyüktür.'"
+            ],
+            quote: "“Sevdiklerin için sessiz bir cennet mi, yoksa bütün insanlık için belirsiz bir uyanış mı?”"
+          },
+          {
+            speaker: "Dr. Kerem Aydın",
+            text: [
+              "Pavyondan çıkarken okyanus bembeyaz bir ayna gibi parlıyor. İçinde elli bir yıllık bir ömrün bütün hesapları çarpışıyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Teklifi şartlı kabul et: 'Düşünmek ve ailemi görmek için zaman istiyorum'",
+            sub: "Zaman kazan; hem İstanbul'a git hem de Gözlemci'nin protokolünü incele.",
+            tags: [{t:"Birikim +$5.000", c:"pos"}, {t:"Risk -8", c:"pos"}, {t:"Vicdan -3", c:"neg"}],
+            effect: (s) => { s.stats.savings += 5000; s.stats.risk -= 8; s.stats.conscience -= 3; s.flags.observerDeal = true; }
+          },
+          {
+            label: "Teklifi kesin olarak reddet: 'Kimsenin hayatını rüşvetle satın alamazsın'",
+            sub: "Büyük hesaplaşmaya hazırlan; Risk tavan yapar.",
+            tags: [{t:"Vicdan +12", c:"pos"}, {t:"Risk +14", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 12; s.stats.risk += 14; s.flags.observerDeal = false; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.zeynep.lastDecision = "Annenin sağlığı ağırlaşınca seni arayıp 'Abi ne işin varsa bırak, annem seni son bir kez balkonda çay içerken görmek istiyor' dedi.";
+          s.characters.zeynep.mood = "Hüzünlü ve bekleyişte";
+          return "Bu Sırada: Zeynep'ten beklediğin ama korktuğun haber geldi — annen Sema artık son baharını yaşıyor.";
+        }
+      },
+
+      // ---------------- BÖLÜM 21 (2051, Yaş 53) ----------------
+      {
+        num: 21, year: 2051, age: 53,
+        title: "Kadıköy Balkonunda İki Bardak Çay",
+        location: "Kadıköy, İstanbul",
+        img: "ch21", anim: "anim-breathe", fx: "sunset",
+        beats: [
+          {
+            speaker: "Sema Aydın (Yaş 80)",
+            text: [
+              "2051 yazı. İstanbul'da sardunyalarla dolu küçük balkondasınız. Artık 53 yaşındasın, saçların gümüşle kırlaşmış. Yanında 80 yaşındaki annen Sema oturuyor; elleri incecik ama bakışları hâlâ çocukluğundaki kadar sıcak.",
+              "İki ince belli bardakta taze çay. Güneş Marmara'nın üstüne devrilirken annen gülümsüyor: 'Oğlum, Amerika'da çok büyük şeyler çözdüğünü hissediyorum. Ama ne bulursan bul, insanın kalbine değmeyen bilgi eksiktir.'"
+            ],
+            quote: "“Burası rüya bile olsa oğlum... seninle bu balkonda içtiğim şu çay benim bütün ömrümdü.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Boğazın düğümleniyor. Annen simülasyonun ne olduğunu bilmiyor, bilmek de istemiyor. Ama kurduğu tek bir cümle, Gözlemci'nin saatlerce anlattığından daha derin bir hakikate dokunuyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Annenin elini öp ve ona sadece huzur ver: 'Her şey yolunda anne, seni çok seviyorum'",
+            sub: "Onun son günlerini gerçeğin ağırlığıyla gölgeleme.",
+            tags: [{t:"Aile/Aşk +15", c:"pos"}, {t:"Vicdan +10", c:"pos"}],
+            effect: (s) => {
+              s.stats.bond += 15; s.stats.conscience += 10;
+              s.keepsakes.push({title:"Sardunya Yaprağı & Çay Tabağı", year:2051, desc:"Kadıköy balkonunda annenle geçirdiğin o son ikindi güneşinin hatırası."});
+            }
+          },
+          {
+            label: "Zeynep'e geleceğe dair şifreli bir mektup ve birikiminin yarısını bırak",
+            sub: "Sana ne olursa olsun kardeşin ve yeğenin Defne güvende kalsın.",
+            tags: [{t:"Birikim -$5.000", c:"neg"}, {t:"Aile/Aşk +10", c:"pos"}, {t:"Vicdan +8", c:"pos"}],
+            effect: (s) => { s.stats.savings -= 5000; s.stats.bond += 10; s.stats.conscience += 8; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.sema.lastDecision = "Sonbahar başında, balkondaki sandalyesinde huzur içinde hayata veda etti.";
+          s.characters.sema.mood = "Huzurlu bir veda";
+          return "Bu Sırada: Annen Sema, seninle içtiği o son çaydan birkaç ay sonra huzur içinde veda etti. Artık geri dönüşü olmayan son dönemeçtesin.";
+        }
+      },
+
+      // ---------------- BÖLÜM 22 (2052, Yaş 54) ----------------
+      {
+        num: 22, year: 2052, age: 54,
+        title: "Yol Ayrımındaki Üç Ses",
+        location: "Boston Rıhtımı & Kontrol Odası",
+        img: "ch22", anim: "anim-pan-r", fx: "storm",
+        beats: [
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "2052 kışı. Boston'a döndüğünde fırtına kopmak üzere. Önünde artık üç farklı vizyon çarpışıyor:",
+              "Marcus Chen, küresel yayın düğmesine basıp iki milyar insanı anında uyandırmak istiyor. Elena (eğer ona gerçeği anlattıysan) sistemi çökertmeden kapasite sınırını aşan ve insanlara gerçeği yavaşça, seçmeli olarak sunan bir 'Açık Ufuk Yaması' geliştirdi. Gözlemci ise hâlâ sessiz anlaşmayı masada tutuyor."
+            ]
+          },
+          {
+            speaker: "Marcus Chen",
+            text: [
+              "Fırtına rıhtımı döverken Marcus gözlerinin içine bakıyor: 'Kerem, 22 yıldır bu anı bekledik. Yarın gece sistem bakım penceresine giriyor — 90 saniyelik tek bir fırsatımız var. Hangi taraftasın?'"
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "Elena'nın 'Açık Ufuk' yamasını destekle (Kapasiteyi genişlet + seçmeli uyanış)",
+            sub: "Ne karanlık bir yalan ne yıkıcı bir şok — bilimsel bir üçüncü yol.",
+            tags: [{t:"Vicdan +10", c:"pos"}, {t:"İtibar +8", c:"pos"}, {t:"Risk +8", c:"neg"}],
+            effect: (s) => { s.stats.conscience += 10; s.stats.reputation += 8; s.stats.risk += 8; s.flags.expandedLimit = true; }
+          },
+          {
+            label: "Marcus'un tam hakikat yayınına hazırlan",
+            sub: "İki milyar insanın tamamı aynı anda gerçeği öğrensin.",
+            tags: [{t:"Risk +14", c:"neg"}, {t:"Vicdan +6", c:"pos"}],
+            effect: (s) => { s.stats.risk += 14; s.stats.conscience += 6; s.flags.broadcastTruth = true; }
+          },
+          {
+            label: "Yayın planını sabote et ve Gözlemci ile dengeyi koru",
+            sub: "İki milyar insanın huzurunu kaostan koru.",
+            tags: [{t:"Risk -12", c:"pos"}, {t:"Birikim +$4.000", c:"pos"}, {t:"Vicdan -8", c:"neg"}],
+            effect: (s) => { s.stats.risk -= 12; s.stats.savings += 4000; s.stats.conscience -= 8; s.flags.observerDeal = true; }
+          }
+        ],
+        meanwhile: (s) => {
+          s.characters.elena.lastDecision = "Yeraltı kontrol odasının kapısını açıp seni beklemeye başladı; son 24 saat başladı.";
+          s.characters.elena.mood = "Kararlı ve cesur";
+          return "Bu Sırada: Sistem alarm seviyesi kırmızıya döndü. Şehir genelinde saatler bir saniye geri atladı — son gece başlıyor.";
+        }
+      },
+
+      // ---------------- BÖLÜM 23 (2053, Yaş 55) ----------------
+      {
+        num: 23, year: 2053, age: 55,
+        title: "Doksan Saniye — Çekirdek Odası",
+        location: "Yeraltı Yayın ve Çekirdek Odası, Boston",
+        img: "ch23", anim: "anim-zoom", fx: "glitch",
+        beats: [
+          {
+            speaker: "Dr. Elena Vance",
+            text: [
+              "55 yaşındasın. Yeraltı kontrol odasında altın ve camgöbeği ışıklar yüzünüze vuruyor. Yanında 53 yaşındaki Elena — gümüş telli kızıl saçları, dimdik bakışlarıyla. Elin fiziksel cam anahtarın üzerinde duruyor.",
+              "Konsolda 2.000.000.000 bilinç düğümünün kalp atışları gibi yanıp sönen ışıkları var. Aralarında İstanbul'daki Zeynep, yeğenin Defne, Boston'daki sıradan bir fırıncı ve hiç tanımadığın milyarlarca hayat var."
+            ],
+            quote: "“Hangi düğmeye basarsan bas Kerem, bu insanlık tarihinin en yalnız ama en büyük kararı olacak.”"
+          },
+          {
+            speaker: "Anlatıcı",
+            text: [
+              "Bakım penceresi açıldı. 90 saniyen var. Bütün ömrün — 2030'daki o yağmurlu laboratuvar gecesinden Kadıköy balkonundaki çaya kadar — şimdi bu tek anahtarda toplanıyor."
+            ]
+          }
+        ],
+        choices: [
+          {
+            label: "ANAHTAR I: Tam Hakikat Yayını — İki milyara gerçeği açıkla",
+            sub: "Perdeyi tamamen indir. İnsanlık kendi gerçekliğiyle yüzleşsin.",
+            tags: [{t:"Final Yolu: Uyanış", c:"pos"}],
+            effect: (s) => { s.flags.finalChoice = "broadcast"; s.flags.broadcastTruth = true; }
+          },
+          {
+            label: "ANAHTAR II: Açık Ufuk Yaması — 2 milyar sınırını kır ve seçmeli kapı aç",
+            sub: "Sistemi genişlet; sadece gerçeği arayanlar uyansın, isteyen huzurda kalsın.",
+            tags: [{t:"Final Yolu: Genişleme", c:"pos"}],
+            effect: (s) => { s.flags.finalChoice = "expand"; s.flags.expandedLimit = true; }
+          },
+          {
+            label: "ANAHTAR III: Sessiz Mühür — Gözlemci protokolünü kabul et ve sistemi koru",
+            sub: "İnsanlığın sığınağını kaostan koru; gerçeğin yükünü ömür boyu sen taşı.",
+            tags: [{t:"Final Yolu: Koruma", c:""}],
+            effect: (s) => { s.flags.finalChoice = "protect"; s.flags.observerDeal = true; }
+          },
+          {
+            label: "ANAHTAR IV: Gölge Arşiv — Anahtarı kapat, ipuçlarını gelecek kuşaklara bırak",
+            sub: "Zamanı geldiğinde insanlık kendi kendine uyansın; sen sevdiklerine dön.",
+            tags: [{t:"Final Yolu: Arşiv", c:""}],
+            effect: (s) => { s.flags.finalChoice = "archive"; }
+          }
+        ],
+        meanwhile: (s) => {
+          return "Bu Sırada: Anahtar döndü. 2.000.000.000 düğümün tamamında bir anlık derin bir sessizlik oldu — ve yeni bir çağ başladı.";
+        }
+      },
+
+      // ---------------- BÖLÜM 24 (2054, Yaş 56) — EPİLOG GEÇİŞİ ----------------
+      {
+        num: 24, year: 2054, age: 56,
+        title: "Yeni Şafak — Elli Altı Yaşında",
+        location: "Kıyı Kayalıkları, Şafak Vakti",
+        img: "ch24", anim: "anim-breathe", fx: "sunset",
+        beats: [
+          {
+            speaker: "Dr. Kerem Aydın (Yaş 56)",
+            text: [
+              "2054 sabahı. 24 yıl önce Boston'da yağmurlu bir gecede başlayan yolculuk, bugün gün doğumunda uçsuz bucaksız bir denizin kıyısında son buluyor. Elinde yıpranmış küçük deri defterin, saçlarında bütün o yılların gümüşü var.",
+              "İki milyar insanın gölgesinde aldığın her karar, kurduğun her bağ, ödediğin her bedel şimdi kendi akıbetine kavuştu."
+            ],
+            quote: "“Bir dünyanın gerçek olup olmadığını kodları değil, içinde sevmeye cesaret ettiğimiz insanlar belirler.”"
+          }
+        ],
+        choices: [
+          {
+            label: "Finalini, Karakter Epiloglarını ve Hayat Özeti Videonu Gör",
+            sub: "24 yıllık yolculuğunun nihai sonucunu ve sinematik özetini aç.",
+            tags: [{t:"Final & Video", c:"pos"}],
+            effect: (s) => { s.finished = true; }
+          }
+        ],
+        meanwhile: null
+      }
+    ];
+
+    // =========================================================================
+    // 4. 10 BRANCHING ENDINGS & CHARACTER EPILOGUES
+    // =========================================================================
+    function computeEnding(s) {
+      const { cash, savings, conscience, bond, reputation, risk } = s.stats;
+      const totalMoney = cash + savings;
+      const fc = s.flags.finalChoice || "archive";
+
+      if (risk >= 92 && fc !== "protect") {
+        return {
+          id: "erased_node",
+          code: "FİNAL 07 / 10",
+          title: "Silinen Düğüm",
+          summary: "Aşırı yüksek risk seviyen yüzünden sistemin Acil Düzeltme Protokolü kontrol odasında devreye girdi. Bilincin silinmedi ama 2030 yılına, hiçbir şey hatırlamayan huzurlu bir döngüye geri sarıldı. Yine de her yağmurlu Boston akşamında defterine istemsizce '2.000.000.000' yazıyorsun."
+        };
+      }
+      if (totalMoney < 1000 && reputation < 50) {
+        return {
+          id: "exile",
+          code: "FİNAL 08 / 10",
+          title: "Gurbetin ve İflasın Gölgesinde",
+          summary: "Yıllarca süren maddi yıpranma ve akademik dışlanma seni yolun sonuna yorgun getirdi. Büyük anahtara ulaşamadan laboratuvardan uzaklaştırıldın; küçük bir kıyı kasabasında ders vererek yaşıyor, gökyüzündeki her şimşekte gerçeği hatırlıyorsun."
+        };
+      }
+      if (fc === "broadcast" && s.flags.toldElena && s.flags.alliedMarcus) {
+        return {
+          id: "great_awakening",
+          code: "FİNAL 01 / 10",
+          title: "Büyük Uyanış",
+          summary: "Elena ve Marcus ile birlikte perdeyi indirdin. İlk haftalar sarsıcı geçti ama insanlık çökmedi — tam tersine, iki milyar bilinç ilk kez kendi sığınağının farkına varıp fiziksel Dünya'yı yeniden yaşanabilir kılacak gerçek kurtuluş projesinde birleşti. Tarih seni 'İlk Uyanan' olarak yazdı."
+        };
+      }
+      if (fc === "broadcast") {
+        return {
+          id: "lone_prophet",
+          code: "FİNAL 02 / 10",
+          title: "Yalnız Peygamber",
+          summary: "Gerçeği tek başına dünyaya yayınladın. Milyarlarca insanın bir kısmı sana inandı, bir kısmı seni sistemin düşmanı ilan etti. Büyük bir bedel ödedin ama insanlık artık karanlıkta yürümüyor."
+        };
+      }
+      if (fc === "expand" && conscience >= 75) {
+        return {
+          id: "two_billion_and_one",
+          code: "FİNAL 06 / 10",
+          title: "İki Milyar Birinci Ruh",
+          summary: "Elena'nın sıkıştırma algoritması ve senin çekirdek mimarinle 2 milyarlık sınırı kırdınız. Artık bir bebek doğduğunda dünyanın öbür ucunda kimse eksilmiyor. Ve gerçeği öğrenmek isteyen herkes için sessiz bir 'Açık Kapı' bırakıldı."
+        };
+      }
+      if (fc === "expand") {
+        return {
+          id: "dual_reality",
+          code: "FİNAL 10 / 10",
+          title: "Çifte Gerçeklik",
+          summary: "Sistemi genişletip Elena ile birlikte uyanık bilinçlerin buluşabildiği özgür bir kıyı adası kurdunuz. Dünya dışarıdan aynı dönmeye devam ediyor, ama perde arkasında yeni bir medeniyet filizleniyor."
+        };
+      }
+      if (fc === "protect" && s.flags.observerDeal && reputation >= 65) {
+        return {
+          id: "architect_partner",
+          code: "FİNAL 03 / 10",
+          title: "Mimarın Ortağı",
+          summary: "Gözlemci'nin teklifini stratejik bir uzlaşmaya dönüştürdün. Sığınağın yeni baş danışmanı olarak iki milyar insanı kaostan koruyor, bir yandan da dış gezegeni onaracak otonom robotik programları yönetiyorsun."
+        };
+      }
+      if (fc === "protect" && bond >= 80) {
+        return {
+          id: "golden_cage",
+          code: "FİNAL 04 / 10",
+          title: "Altın Kafeste Huzur",
+          summary: "Sevdiklerinin huzurunu her şeyin üstünde tuttun. Zeynep, Defne ve Elena güven içinde, maddi kaygıdan uzak bir ömür sürdü. Sen ise geceleri yıldızlara bakıp bu güzel rüyanın tek bekçisi olarak kaldın."
+        };
+      }
+      if (fc === "archive" && bond >= 75 && s.flags.visitedIstanbul) {
+        return {
+          id: "bosphorus_peace",
+          code: "FİNAL 05 / 10",
+          title: "Boğaz'da Huzurlu Veda",
+          summary: "Gelecek kuşaklar için şifreli ipuçlarını üniversite kütüphanelerine bırakıp İstanbul'a döndün. Kadıköy'de annenin balkonundaki sardunyaları sularken, yeğenin Defne'ye yıldızları ve matematiği öğretiyorsun."
+        };
+      }
+      return {
+        id: "shadow_archivist",
+        code: "FİNAL 09 / 10",
+        title: "Gölge Arşivci",
+        summary: "İnsanlığı zamansız bir şoka sürüklemek yerine tüm kanıtları yüz yıl sonra açılacak bir zaman kapsülüne mühürledin. Kimse adını bilmeyecek, ama bir gün başka bir genç bilim insanı o sıfır-sapma tablosunu açtığında senin notlarını bulacak."
+      };
+    }
+
+    function getCharacterEpilogues(s, ending) {
+      const yrs = 24;
+      return [
+        {
+          name: `${s.characters.elena.name} (Yaş ${s.characters.elena.baseAge + yrs})`,
+          text: s.flags.toldElena
+            ? "Gerçeği öğrendikten sonra seninle omuz omuza kaldı; yeni dönemin en saygın bilinç-etik araştırmacısı oldu."
+            : "Senden saklanan büyük sırrı hiçbir zaman tam olarak öğrenemedi; yıllar sonra Avrupa'da sakin bir kürsü kurdu ama seni hep sevgiyle andı."
+        },
+        {
+          name: `${s.characters.zeynep.name} (Yaş ${s.characters.zeynep.baseAge + yrs})`,
+          text: s.flags.helpedZeynep
+            ? "İstanbul'daki mimarlık ofisini büyüttü. Kızı Defne senin gibi matematiğe meraklı bir genç olarak yetişti."
+            : "Berlin'de başarılı bir mimar oldu; her yaz kızı Defne ile İstanbul'a gelip babanın ve annenin anısını yaşattı."
+        },
+        {
+          name: `${s.characters.marcus.name} (Yaş ${s.characters.marcus.baseAge + yrs})`,
+          text: s.flags.alliedMarcus
+            ? (ending.id === "great_awakening" || ending.id === "two_billion_and_one"
+                ? "Yıllar süren yeraltı mücadelesinden sonra ilk kez huzurla uyudu ve açık bilinç ağının kurucularından oldu."
+                : "Son gecenin ardından izini kaybettirdi; ama dünyanın dört bir yanında onun imzasını taşıyan küçük ipuçları ortaya çıkmaya devam etti.")
+            : "Kendi başına sürdürdüğü araştırmalardan yorulup Pasifik kıyısında küçük bir tamir atölyesi açtı."
+        },
+        {
+          name: `${s.characters.sterling.name} (Yaş ${s.characters.sterling.baseAge + yrs})`,
+          text: "Maine kıyısındaki kulübesinde sakin bir yaşlılık geçirdi; senin cesaretini uzaktan izleyip kendi pişmanlığıyla barıştı."
+        },
+        {
+          name: `${s.characters.sema.name} (Anısına)`,
+          text: "Kadıköy balkonundaki son çayda kurduğu cümle bütün yolculuğunun pusulası oldu. Hatırası iki dünyanın da ötesinde yaşıyor."
+        }
+      ];
+    }
+
+    // =========================================================================
+    // 5. LIFE ACTIONS (ONCE PER CHAPTER)
+    // =========================================================================
+    const LIFE_ACTIONS = [
+      {
+        id: "call_family",
+        title: "İstanbul'u Ara & Destek Gönder",
+        desc: "Aile/Aşk Bağı +5, Vicdan +3, Nakit -$400",
+        run: (s) => { s.stats.bond += 5; s.stats.conscience += 3; s.stats.cash -= 400; return "Annen ve Zeynep ile uzun bir konuşma yaptın; içindeki gurbet ağırlığı hafifledi."; }
+      },
+      {
+        id: "consult",
+        title: "Ek Akademik Danışmanlık Yap",
+        desc: "Nakit +$950, Temiz Birikim +$350, Risk +2",
+        run: (s) => { s.stats.cash += 950; s.stats.savings += 350; s.stats.risk += 2; return "Hafta sonu teknik danışmanlıkla bütçeni rahatlattın."; }
+      },
+      {
+        id: "analyze",
+        title: "Gece Anomali Verisi İncele",
+        desc: "İtibar +4, Şüphe +1, Risk +3",
+        run: (s) => { s.stats.reputation += 4; s.flags.suspicion += 1; s.stats.risk += 3; return "Veri setinde yeni bir senkronizasyon örüntüsü daha not ettin."; }
+      },
+      {
+        id: "rest",
+        title: "Elena ile Yürüyüş & Nefes Al",
+        desc: "Aile/Aşk +4, Risk -4, Vicdan +2",
+        run: (s) => { s.stats.bond += 4; s.stats.risk -= 4; s.stats.conscience += 2; return "Charles Nehri kıyısında ekranlardan uzak bir akşam geçirdin."; }
+      }
+    ];
+
+    // =========================================================================
+    // 6. WEB AUDIO ATMOSPHERIC ENGINE (ZERO EXTERNAL FILES)
+    // =========================================================================
+    const AudioEngine = {
+      ctx: null,
+      enabled: false,
+      timer: null,
+      step: 0,
+      toggle() {
+        if (!this.enabled) {
+          this.init();
+          this.enabled = true;
+          this.startLoop();
+          showToast("Atmosferik müzik ve ses efektleri açıldı");
+        } else {
+          this.enabled = false;
+          if (this.timer) { clearInterval(this.timer); this.timer = null; }
+          showToast("Ses kapatıldı");
+        }
+        updateAudioBtn();
+      },
+      init() {
+        if (!this.ctx) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) this.ctx = new AC();
+        }
+        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+      },
+      playNote(freq, dur = 2.6, vol = 0.045, type = "sine") {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(vol, now + 0.35);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + dur + 0.05);
+      },
+      playClick() {
+        if (!this.enabled || !this.ctx) return;
+        this.playNote(state.flags.awakened ? 520 : 390, 0.14, 0.03, "triangle");
+      },
+      startLoop() {
+        if (this.timer) clearInterval(this.timer);
+        const warmChords = [
+          [220.0, 261.63, 329.63], // Am
+          [174.61, 220.0, 261.63], // F
+          [196.0, 246.94, 293.66], // G
+          [164.81, 196.0, 246.94]  // Em
+        ];
+        const simChords = [
+          [146.83, 220.0, 277.18], // Dm/maj
+          [130.81, 196.0, 246.94], // Cmaj7
+          [116.54, 174.61, 220.0], // Bbmaj7
+          [110.0, 164.81, 207.65]  // A
+        ];
+        this.timer = setInterval(() => {
+          if (!this.enabled) return;
+          const bank = state.flags.awakened ? simChords : warmChords;
+          const chord = bank[this.step % bank.length];
+          chord.forEach((f, i) => {
+            setTimeout(() => this.playNote(f, 3.2, 0.025, i === 0 ? "triangle" : "sine"), i * 180);
+          });
+          this.step++;
+        }, 3200);
+      }
+    };
+
+    // =========================================================================
+    // 7. LIVE CANVAS ATMOSPHERIC EFFECTS (RAIN, MIST, SUNSET, SNOW, STORM, GLITCH)
+    // =========================================================================
+    const fxCanvas = document.getElementById("fxCanvas");
+    const fxCtx = fxCanvas.getContext("2d");
+    let currentFx = "rain";
+    let particles = [];
+    let fxRaf = null;
+    let flashAlpha = 0;
+
+    function resizeFx() {
+      const rect = fxCanvas.parentElement.getBoundingClientRect();
+      fxCanvas.width = Math.max(320, Math.floor(rect.width));
+      fxCanvas.height = Math.max(180, Math.floor(rect.height));
+      initParticles();
+    }
+
+    function initParticles() {
+      particles = [];
+      const count = currentFx === "rain" || currentFx === "storm" ? 65 :
+                    currentFx === "snow" ? 50 :
+                    currentFx === "glitch" ? 28 : 24;
+      for (let i = 0; i < count; i++) {
+        particles.push({
+          x: Math.random() * fxCanvas.width,
+          y: Math.random() * fxCanvas.height,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: 1 + Math.random() * 4,
+          r: 1 + Math.random() * 2.5,
+          a: 0.15 + Math.random() * 0.45
+        });
+      }
+    }
+
+    function renderFx() {
+      const w = fxCanvas.width, h = fxCanvas.height;
+      fxCtx.clearRect(0, 0, w, h);
+
+      if (currentFx === "rain" || currentFx === "storm") {
+        fxCtx.strokeStyle = "rgba(190, 215, 240, 0.32)";
+        fxCtx.lineWidth = 1;
+        fxCtx.beginPath();
+        for (const p of particles) {
+          fxCtx.moveTo(p.x, p.y);
+          fxCtx.lineTo(p.x - 2, p.y + 12);
+          p.y += p.vy * 2.4;
+          p.x -= 0.7;
+          if (p.y > h) { p.y = -12; p.x = Math.random() * w; }
+        }
+        fxCtx.stroke();
+        if (currentFx === "storm" && Math.random() < 0.008) flashAlpha = 0.45;
+        if (flashAlpha > 0) {
+          fxCtx.fillStyle = `rgba(210, 230, 255, ${flashAlpha})`;
+          fxCtx.fillRect(0, 0, w, h);
+          flashAlpha *= 0.86;
+          if (flashAlpha < 0.01) flashAlpha = 0;
+        }
+      } else if (currentFx === "snow") {
+        for (const p of particles) {
+          fxCtx.fillStyle = `rgba(240, 246, 255, ${p.a})`;
+          fxCtx.beginPath();
+          fxCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          fxCtx.fill();
+          p.y += p.vy * 0.45;
+          p.x += Math.sin(p.y * 0.02) * 0.5;
+          if (p.y > h) { p.y = -5; p.x = Math.random() * w; }
+        }
+      } else if (currentFx === "sunset" || currentFx === "ocean") {
+        for (const p of particles) {
+          fxCtx.fillStyle = currentFx === "sunset"
+            ? `rgba(255, 214, 150, ${p.a * 0.65})`
+            : `rgba(180, 235, 245, ${p.a * 0.5})`;
+          fxCtx.beginPath();
+          fxCtx.arc(p.x, p.y, p.r * 1.1, 0, Math.PI * 2);
+          fxCtx.fill();
+          p.x += p.vx * 0.4;
+          p.y -= 0.25;
+          if (p.y < -5) { p.y = h + 5; p.x = Math.random() * w; }
+        }
+      } else if (currentFx === "mist") {
+        for (const p of particles) {
+          const g = fxCtx.createRadialGradient(p.x, p.y, 1, p.x, p.y, 55);
+          g.addColorStop(0, "rgba(210, 224, 240, 0.045)");
+          g.addColorStop(1, "rgba(210, 224, 240, 0)");
+          fxCtx.fillStyle = g;
+          fxCtx.fillRect(p.x - 55, p.y - 55, 110, 110);
+          p.x += 0.22;
+          if (p.x > w + 60) p.x = -60;
+        }
+      } else if (currentFx === "glitch") {
+        for (const p of particles) {
+          fxCtx.fillStyle = `rgba(92, 200, 215, ${p.a * 0.55})`;
+          fxCtx.fillRect(p.x, p.y, p.r * 8, 1.5);
+          p.y += p.vy * 0.4;
+          if (p.y > h) { p.y = -4; p.x = Math.random() * w; }
+        }
+        if (Math.random() < 0.03) {
+          const gy = Math.random() * h;
+          fxCtx.fillStyle = "rgba(92, 200, 215, 0.14)";
+          fxCtx.fillRect(0, gy, w, 2 + Math.random() * 5);
+        }
+      }
+      fxRaf = requestAnimationFrame(renderFx);
+    }
+
+    // =========================================================================
+    // 8. SAVE / LOAD & RENDER UI
+    // =========================================================================
+    function clampStats() {
+      const st = state.stats;
+      st.conscience = Math.max(0, Math.min(100, Math.round(st.conscience)));
+      st.bond = Math.max(0, Math.min(100, Math.round(st.bond)));
+      st.reputation = Math.max(0, Math.min(100, Math.round(st.reputation)));
+      st.risk = Math.max(0, Math.min(100, Math.round(st.risk)));
+      st.cash = Math.round(st.cash);
+      st.savings = Math.max(0, Math.round(st.savings));
+    }
+
+    function saveGame() {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed.chapterIdx === "number" && parsed.stats) {
+            state = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    function fmtMoney(n) {
+      const sign = n < 0 ? "-" : "";
+      return sign + "$" + Math.abs(n).toLocaleString("tr-TR");
+    }
+
+    function renderStats() {
+      clampStats();
+      const s = state.stats;
+      const items = [
+        { k: "💵 Nakit", v: fmtMoney(s.cash), pct: Math.max(5, Math.min(100, (s.cash / 8000) * 100)), col: "#e0a96d" },
+        { k: "🏦 Birikim", v: fmtMoney(s.savings), pct: Math.max(5, Math.min(100, (s.savings / 18000) * 100)), col: "#68c39f" },
+        { k: "⚖️ Vicdan", v: s.conscience + "%", pct: s.conscience, col: "#74b9ff" },
+        { k: "❤️ Aile/Aşk", v: s.bond + "%", pct: s.bond, col: "#f78fb3" },
+        { k: "⭐ İtibar", v: s.reputation + "%", pct: s.reputation, col: "#a29bfe" },
+        { k: "⚠️ Risk", v: s.risk + "%", pct: s.risk, col: s.risk > 65 ? "#e56b6f" : "#f6b93b" }
+      ];
+      document.getElementById("statsStrip").innerHTML = items.map(it => `
+        <div class="stat-box">
+          <div class="stat-k">${it.k}</div>
+          <div class="stat-v"><span>${it.v}</span></div>
+          <div class="stat-bar"><div class="stat-fill" style="width:${it.pct}%; background:${it.col};"></div></div>
+        </div>
+      `).join("");
+    }
+
+    let activeLayer = "A";
+    let currentSceneKey = "";
+    function setSceneVisual(imgKey, animClass, fxType, beatIdx = 0) {
+      const layerA = document.getElementById("sceneImgA");
+      const layerB = document.getElementById("sceneImgB");
+      const targetSrc = IMGS[imgKey] || IMGS.ch01;
+      const anims = ["anim-zoom", "anim-pan-l", "anim-pan-r", "anim-breathe"];
+      const effectiveAnim = beatIdx > 0 ? anims[(anims.indexOf(animClass) + 1) % anims.length] : (animClass || "anim-zoom");
+      const beatCls = beatIdx > 0 ? " beat-closeup" : "";
+
+      if (currentSceneKey !== imgKey) {
+        const incoming = activeLayer === "A" ? layerB : layerA;
+        const outgoing = activeLayer === "A" ? layerA : layerB;
+        incoming.src = targetSrc;
+        incoming.className = "stage-img layer-visible " + effectiveAnim + beatCls;
+        outgoing.classList.remove("layer-visible");
+        outgoing.classList.add("layer-hidden");
+        activeLayer = activeLayer === "A" ? "B" : "A";
+        currentSceneKey = imgKey;
+      } else {
+        const curr = activeLayer === "A" ? layerA : layerB;
+        curr.className = "stage-img layer-visible " + effectiveAnim + beatCls;
+      }
+      currentFx = fxType || "rain";
+      initParticles();
+      const scan = document.getElementById("glitchScan");
+      scan.classList.toggle("on", currentFx === "glitch" || state.flags.awakened);
+    }
+
+    function renderGame() {
+      document.body.classList.toggle("sim-awake", !!state.flags.awakened);
+      renderStats();
+
+      const ch = CHAPTERS[Math.min(state.chapterIdx, CHAPTERS.length - 1)];
+      document.getElementById("phasePill").textContent = state.finished
+        ? "Yolculuk Tamamlandı"
+        : `Bölüm ${ch.num} / ${CHAPTERS.length}`;
+      document.getElementById("yearAgePill").textContent = `${ch.year} • Yaş ${ch.age}`;
+      document.getElementById("locLabel").textContent = ch.location;
+      document.getElementById("popCounter").textContent = state.flags.expandedLimit
+        ? "Nüfus: 2.000.000.001+"
+        : "Nüfus: 2.000.000.000";
+
+      setSceneVisual(ch.img, ch.anim, ch.fx, state.beatIdx);
+
+      const area = document.getElementById("storyArea");
+
+      if (state.finished) {
+        renderEndingView(area);
+        return;
+      }
+
+      const beat = ch.beats[Math.min(state.beatIdx, ch.beats.length - 1)];
+      const isLastBeat = state.beatIdx >= ch.beats.length - 1;
+
+      let html = "";
+
+      if (state.beatIdx === 0 && state.meanwhileNote) {
+        html += `
+          <div class="meanwhile-card">
+            <div class="meanwhile-title">Bu Sırada... (Bağımsız Hayat Akışı)</div>
+            <div class="meanwhile-body">${state.meanwhileNote}</div>
+          </div>
+        `;
+      }
+
+      html += `<h1 class="chapter-heading">${ch.num}. ${ch.title}</h1>`;
+      html += `<div class="speaker-badge ${ch.isTwist ? "sys" : ""}">${beat.speaker}</div>`;
+      html += `<div class="story-text">${beat.text.map(p => `<p>${p}</p>`).join("")}</div>`;
+
+      if (beat.quote) {
+        html += `<div class="story-quote ${ch.isTwist || state.flags.awakened ? "anomaly" : ""}">${beat.quote}</div>`;
+      }
+
+      if (!isLastBeat) {
+        html += `
+          <div style="margin-top:16px;">
+            <button class="primary-btn" id="btnNextBeat">Devam Et →</button>
+          </div>
+        `;
+      } else {
+        html += `<div class="choices-wrap">`;
+        ch.choices.forEach((c, idx) => {
+          const tagsHtml = (c.tags || []).map(tg => `<span class="ctag ${tg.c}">${tg.t}</span>`).join("");
+          html += `
+            <button class="choice-btn" data-choice="${idx}">
+              <div class="choice-main">${c.label}</div>
+              <div class="choice-sub">${c.sub}</div>
+              ${tagsHtml ? `<div class="choice-tags">${tagsHtml}</div>` : ""}
+            </button>
+          `;
+        });
+        html += `</div>`;
+      }
+
+      html += `
+        <div class="life-action-bar">
+          <span>${state.lifeActionUsed ? "Bu bölümdeki kişisel yaşam eylemini kullandın." : "Bu bölüm için 1 kişisel yaşam eylemi hakkın var."}</span>
+          <button class="mini-btn" id="btnOpenAction" ${state.lifeActionUsed ? "disabled" : ""}>Yaşam Eylemi Seç</button>
+        </div>
+      `;
+
+      area.innerHTML = html;
+
+      const nextBtn = document.getElementById("btnNextBeat");
+      if (nextBtn) {
+        nextBtn.addEventListener("click", () => {
+          AudioEngine.playClick();
+          state.beatIdx++;
+          saveGame();
+          renderGame();
+        });
+      }
+
+      area.querySelectorAll(".choice-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const idx = Number(btn.getAttribute("data-choice"));
+          handleChoice(ch, ch.choices[idx]);
+        });
+      });
+
+      const actBtn = document.getElementById("btnOpenAction");
+      if (actBtn) {
+        actBtn.addEventListener("click", () => openLifeModal("actions"));
+      }
+    }
+
+    function handleChoice(ch, choice) {
+      AudioEngine.playClick();
+      if (choice.effect) choice.effect(state);
+
+      state.journal.push({
+        num: ch.num,
+        year: ch.year,
+        age: ch.age,
+        title: ch.title,
+        img: ch.img,
+        decision: choice.label,
+        summary: choice.sub
+      });
+
+      if (ch.meanwhile) {
+        state.meanwhileNote = ch.meanwhile(state);
+      } else {
+        state.meanwhileNote = null;
+      }
+
+      if (state.finished || state.chapterIdx >= CHAPTERS.length - 1) {
+        state.finished = true;
+        const ending = computeEnding(state);
+        state.endingId = ending.id;
+      } else {
+        state.chapterIdx++;
+        state.beatIdx = 0;
+        state.lifeActionUsed = false;
+      }
+
+      clampStats();
+      saveGame();
+      renderGame();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function renderEndingView(area) {
+      const ending = computeEnding(state);
+      const epilogues = getCharacterEpilogues(state, ending);
+
+      area.innerHTML = `
+        <div class="ending-banner">
+          <div class="ending-code">${ending.code}</div>
+          <h1 class="ending-title">${ending.title}</h1>
+          <p class="story-text" style="margin-bottom:16px;">${ending.summary}</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="primary-btn" id="btnWatchVideo">🎬 Hayat Özeti Videosunu İzle</button>
+            <button class="top-btn" id="btnReplayEnd" style="padding:11px 14px;">↺ Yeni Bir Ömür Başlat</button>
+          </div>
+        </div>
+        <h3 style="font-size:14px; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">Karakter Epilogları (2054)</h3>
+        <div class="epilogue-grid">
+          ${epilogues.map(ep => `
+            <div class="char-card">
+              <div class="char-name">${ep.name}</div>
+              <div class="char-dec">${ep.text}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+
+      document.getElementById("btnWatchVideo").addEventListener("click", openLifeSummaryVideo);
+      document.getElementById("btnReplayEnd").addEventListener("click", () => {
+        document.getElementById("confirmModal").classList.add("open");
+      });
+    }
+
+    // =========================================================================
+    // 9. LIFE & FINANCE MODAL + JOURNAL MODAL
+    // =========================================================================
+    let activeLifeTab = "chars";
+
+    function openLifeModal(tab = "chars") {
+      activeLifeTab = tab;
+      document.getElementById("lifeModal").classList.add("open");
+      renderLifeModal();
+    }
+
+    function renderLifeModal() {
+      document.querySelectorAll("#lifeModal .tab-btn").forEach(b => {
+        b.classList.toggle("active", b.getAttribute("data-tab") === activeLifeTab);
+      });
+      const body = document.getElementById("lifeModalBody");
+      const elapsed = CHAPTERS[Math.min(state.chapterIdx, CHAPTERS.length - 1)].year - 2030;
+
+      if (activeLifeTab === "chars") {
+        body.innerHTML = Object.values(state.characters).map(c => `
+          <div class="char-card">
+            <div class="char-top">
+              <span class="char-name">${c.name} <span style="color:var(--muted); font-weight:400;">• Yaş ${c.baseAge + elapsed}</span></span>
+              <span class="char-meta">${c.mood}</span>
+            </div>
+            <div style="font-size:11.5px; color:var(--muted);">${c.role}</div>
+            <div class="char-dec"><strong>Son bağımsız kararı:</strong> ${c.lastDecision}</div>
+          </div>
+        `).join("");
+      } else if (activeLifeTab === "actions") {
+        body.innerHTML = `
+          <p style="font-size:12.5px; color:var(--muted);">Her bölümde bir kez kişisel yaşam eylemi seçerek finansal, duygusal veya bilimsel dengeni yönetebilirsin.</p>
+          <div class="action-grid">
+            ${LIFE_ACTIONS.map(a => `
+              <button class="action-card" data-act="${a.id}" ${state.lifeActionUsed || state.finished ? "disabled" : ""}>
+                <strong>${a.title}</strong>
+                <small>${a.desc}</small>
+              </button>
+            `).join("")}
+          </div>
+        `;
+        body.querySelectorAll(".action-card").forEach(btn => {
+          btn.addEventListener("click", () => {
+            if (state.lifeActionUsed || state.finished) return;
+            const act = LIFE_ACTIONS.find(x => x.id === btn.getAttribute("data-act"));
+            if (!act) return;
+            const msg = act.run(state);
+            state.lifeActionUsed = true;
+            clampStats();
+            saveGame();
+            renderGame();
+            renderLifeModal();
+            showToast(msg);
+          });
+        });
+      } else {
+        body.innerHTML = `
+          <div class="keepsake-grid">
+            ${state.keepsakes.map(k => `
+              <div class="keepsake-item">
+                <h4>${k.title} (${k.year})</h4>
+                <p>${k.desc}</p>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+    }
+
+    function openJournalModal() {
+      const body = document.getElementById("journalBody");
+      if (!state.journal.length) {
+        body.innerHTML = `<p style="font-size:13.5px; color:var(--muted);">Henüz bir karar vermedin. Aldığın her karar burada yıllara göre arşivlenecek.</p>`;
+      } else {
+        body.innerHTML = state.journal.slice().reverse().map(j => `
+          <div class="journal-entry">
+            <div class="j-head">${j.year} • Yaş ${j.age} — Bölüm ${j.num}: ${j.title}</div>
+            <div class="j-txt"><strong>Seçimin:</strong> ${j.decision}</div>
+          </div>
+        `).join("");
+      }
+      document.getElementById("journalModal").classList.add("open");
+    }
+
+    // =========================================================================
+    // 10. CINEMATIC LIFE SUMMARY VIDEO PLAYER
+    // =========================================================================
+    let vidTimer = null;
+    let vidSlides = [];
+    let vidIdx = 0;
+    let vidPlaying = true;
+
+    function openLifeSummaryVideo() {
+      const ending = computeEnding(state);
+      vidSlides = state.journal.map(j => ({
+        img: IMGS[j.img] || IMGS.ch01,
+        meta: `${j.year} • Yaş ${j.age} — Bölüm ${j.num}: ${j.title}`,
+        text: `“${j.decision}” — ${j.summary}`
+      }));
+      vidSlides.push({
+        img: IMGS.ch24,
+        meta: `2054 • ${ending.code} — ${ending.title}`,
+        text: ending.summary
+      });
+      vidIdx = 0;
+      vidPlaying = true;
+      document.getElementById("videoModal").classList.add("open");
+      if (!AudioEngine.enabled) AudioEngine.toggle();
+      renderVidSlide();
+      startVidTimer();
+    }
+
+    function renderVidSlide() {
+      const s = vidSlides[vidIdx];
+      if (!s) return;
+      const img = document.getElementById("vidImg");
+      img.style.opacity = "0.25";
+      setTimeout(() => {
+        img.src = s.img;
+        img.style.opacity = "1";
+      }, 150);
+      document.getElementById("vidMeta").textContent = `${s.meta} (${vidIdx + 1}/${vidSlides.length})`;
+      document.getElementById("vidText").textContent = s.text;
+      const pct = ((vidIdx + 1) / vidSlides.length) * 100;
+      document.getElementById("vidProgress").style.width = pct + "%";
+      document.getElementById("vidPlayPause").textContent = vidPlaying ? "⏸ Duraklat" : "▶ Oynat";
+    }
+
+    function startVidTimer() {
+      if (vidTimer) clearInterval(vidTimer);
+      vidTimer = setInterval(() => {
+        if (!vidPlaying) return;
+        if (vidIdx < vidSlides.length - 1) {
+          vidIdx++;
+          renderVidSlide();
+        } else {
+          vidPlaying = false;
+          renderVidSlide();
+        }
+      }, 4200);
+    }
+
+    function closeVideoPlayer() {
+      if (vidTimer) { clearInterval(vidTimer); vidTimer = null; }
+      document.getElementById("videoModal").classList.remove("open");
+    }
+
+    // =========================================================================
+    // 11. HELPERS & EVENT WIRING
+    // =========================================================================
+    let toastTimer = null;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+    }
+
+    function updateAudioBtn() {
+      const b = document.getElementById("btnAudio");
+      b.classList.toggle("active", AudioEngine.enabled);
+      b.innerHTML = AudioEngine.enabled
+        ? `<span>🔊</span><span class="lbl">Ses</span>`
+        : `<span>🔇</span><span class="lbl">Ses</span>`;
+    }
+
+    document.getElementById("btnAudio").addEventListener("click", () => AudioEngine.toggle());
+    document.getElementById("btnLife").addEventListener("click", () => openLifeModal("chars"));
+    document.getElementById("closeLife").addEventListener("click", () => document.getElementById("lifeModal").classList.remove("open"));
+    document.querySelectorAll("#lifeModal .tab-btn").forEach(b => {
+      b.addEventListener("click", () => {
+        activeLifeTab = b.getAttribute("data-tab");
+        renderLifeModal();
+      });
+    });
+
+    document.getElementById("btnJournal").addEventListener("click", openJournalModal);
+    document.getElementById("closeJournal").addEventListener("click", () => document.getElementById("journalModal").classList.remove("open"));
+
+    document.getElementById("btnReset").addEventListener("click", () => document.getElementById("confirmModal").classList.add("open"));
+    document.getElementById("cancelReset").addEventListener("click", () => document.getElementById("confirmModal").classList.remove("open"));
+    document.getElementById("confirmReset").addEventListener("click", () => {
+      document.getElementById("confirmModal").classList.remove("open");
+      state = createInitialState();
+      saveGame();
+      renderGame();
+      showToast("Yeni bir ömür başlatıldı (2030).");
+    });
+
+    document.getElementById("vidPrev").addEventListener("click", () => {
+      if (vidIdx > 0) { vidIdx--; renderVidSlide(); }
+    });
+    document.getElementById("vidNext").addEventListener("click", () => {
+      if (vidIdx < vidSlides.length - 1) { vidIdx++; renderVidSlide(); }
+    });
+    document.getElementById("vidPlayPause").addEventListener("click", () => {
+      vidPlaying = !vidPlaying;
+      if (vidPlaying && vidIdx >= vidSlides.length - 1) vidIdx = 0;
+      renderVidSlide();
+    });
+    document.getElementById("closeVideo").addEventListener("click", closeVideoPlayer);
+    ["lifeModal", "journalModal", "confirmModal"].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener("click", (e) => {
+        if (e.target === el) el.classList.remove("open");
+      });
+    });
+
+    window.addEventListener("resize", resizeFx);
+    window.onload = () => {
+      loadGame();
+      resizeFx();
+      renderGame();
+      renderFx();
+      updateAudioBtn();
+    };
+  </script>
+</body>
+</html>

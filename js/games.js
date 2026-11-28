@@ -164,6 +164,7 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
+    {id:'iki-milyarin-golgesi',name:['İki Milyarın Gölgesi','İki Milyarın Gölgesi'],tags:[['Yaşam simülasyonu','Life simulation'],['Bilimkurgu','Science fiction']],best:()=>T('24 bölüm','24 chapters')},
     {id:'sisli-yokus',name:['Sisli Yokuş','Sisli Yokuş'],tags:[['Görsel roman','Visual novel'],['Trabzon','Trabzon']],best:()=>T('35 bölüm','35 chapters')},
     {id:'solstice-swell',name:['Solstice Swell — 3D Sörf','Solstice Swell — 3D Ocean Surfing'],tags:[['Simülasyon','Simulation'],['Sörf','Surfing'],['Huzur','Relaxing']],best:()=>T('4 kıyı · 3D','4 coastlines · 3D')},
     {id:'kar',name:['KAR. — Alpin Kayak','KAR. — Alpine Skiing'],tags:[['Simülasyon','Simulation'],['Kayak','Skiing']],best:()=>T('3 kar koşulu · 3D','3 snow conditions · 3D')},
@@ -269,6 +270,7 @@ const App = (() => {
   // Cover artwork for the six featured games. Others retain their original SVG artwork.
   // Oyun kütüphanesi kapakları (img/library/*-1280.webp; 640 px sürümü srcset ile)
   const GAME_COVERS = Object.freeze({
+    'iki-milyarin-golgesi':'img/library/iki-milyarin-golgesi-1280.webp',
     'sisli-yokus':'img/library/sisli-yokus-1280.webp',
     'solstice-swell':'img/library/solstice-swell-1280.svg',
     'kar':'img/library/kar-1280.svg',
@@ -1087,6 +1089,11 @@ const App = (() => {
     else if (r === 'mudafi') mudafi();
     else if (r === 'pelagos') pelagosGame();
     else if (r === 'modern-age-2026') openEmbeddedGame({title:'Modern Age: 2026',url:'games/modern-age-2026/index.html',tag:T('BABA. · Strateji','BABA. · Strategy'),lead:T('Altı ülkeden birini seç, üssünü geliştir ve rakibinle ticaret yap veya savaş.','Lead one of six nations, build your base and trade or fight with your rival.'),tip:T('B ile işçileri seç, kaynaklara sağ tıkla. H ile karargâha dön.','Press B to select workers, right-click a resource and press H to return to headquarters.')});
+    else if (r === 'iki-milyarin-golgesi') openEmbeddedGame({
+      title:'İki Milyarın Gölgesi',url:'games/iki-milyarin-golgesi/index.html',tag:T('Yaşam simülasyonu','Life simulation'),
+      lead:T('2030 yılında küresel nüfus verilerindeki tuhaf bir örüntüyü araştır.','Investigate a strange pattern in global population data in 2030.'),
+      tip:T('Diyalogları oku ve kararını ver. İlerlemen bu tarayıcıda kaydedilir.','Read the dialogue and make your choice. Progress is saved in this browser.'),
+    });
     else if (r === 'sisli-yokus') openEmbeddedGame({
       title:'Sisli Yokuş',url:'games/sisli-yokus/index.html',tag:T('Görsel roman','Visual novel'),
       lead:T('Erdoğdu’da 16 yaşındaki Kerem’in hikâyesine başla.','Begin the story of 16-year-old Kerem in Erdoğdu.'),
