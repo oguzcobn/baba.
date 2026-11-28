@@ -40,17 +40,13 @@ for (const vp of [{width:1440,height:900},{width:390,height:844}]) test.describe
   });
 });
 
-// The six new imports have explicit, official external launch links. No third-party network is needed to test routing.
-test('November import launchers and four local games', async ({page}) => {
-  await page.goto(BASE+'#oyunlar');
-  const demos = {"offroad":"https://offroad-indol.vercel.app/","velocity-rush":"https://prashant371.github.io/velocity-rush/","threejs-fish-tank":"https://maxlibin.com/living-room-fish-tank/","empires-of-the-ages":"https://empires.razzrohith.com/","nordschleife-racer":"https://yassin.app/","ai-town":"https://www.convex.dev/ai-town"};
-  for (const [id,url] of Object.entries(demos)) {
-    await expect(page.locator('.lb-card[data-id="'+id+'"]')).toBeVisible();
-    await page.locator('.lb-card[data-id="'+id+'"]').click();
-    await expect(page.locator('.game-page a[href="'+url+'"]')).toBeVisible();
-    await page.locator('.game-page a[href="#oyunlar"]').click();
-  }
-  for (const id of ['sisli-yokus','iki-milyarin-golgesi','kar','solstice-swell']) {
-    await expect(page.locator('.lb-card[data-id="'+id+'"]')).toBeVisible();
+// Standalone imports never launch external demo websites.
+test('November import routes', async ({page})=>{
+  await page.goto(BASE+'#velocity-rush');
+  await expect(page.locator('.game-page iframe')).toHaveAttribute('src','games/velocity-rush/index.html');
+  for(const id of ['offroad','threejs-fish-tank','empires-of-the-ages','nordschleife-racer','ai-town']) {
+    await page.goto(BASE+'#'+id);
+    await expect(page.locator('.game-page')).toBeVisible();
+    await expect(page.locator('.game-page a[href^="https://"]')).toHaveCount(0);
   }
 });

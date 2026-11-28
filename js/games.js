@@ -164,12 +164,12 @@ const App = (() => {
 
   /* ---------------- menü ---------------- */
   const GAMES = [
-    {id:"offroad",name:"Offroad",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("4×4 · 3D","4×4 · 3D")},
-    {id:"velocity-rush",name:"Velocity Rush",tags:[["Yarış","Racing"],["Harici demo","External demo"]],best:()=>T("20 araç · 9 pist","20 cars · 9 tracks")},
-    {id:"threejs-fish-tank",name:"Three.js Fish Tank",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("WebGPU · 3D","WebGPU · 3D")},
-    {id:"empires-of-the-ages",name:"Empires of the Ages",tags:[["Strateji","Strategy"],["Harici demo","External demo"]],best:()=>T("3D RTS","3D RTS")},
-    {id:"nordschleife-racer",name:"Nordschleife Racer",tags:[["Yarış","Racing"],["Harici demo","External demo"]],best:()=>T("Yarış · 3D","Racing · 3D")},
-    {id:"ai-town",name:"AI Town",tags:[["Simülasyon","Simulation"],["Harici demo","External demo"]],best:()=>T("AI yaşam sim","AI life sim")},
+    {id:"offroad",name:"Offroad",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("4×4 · 3D","4×4 · 3D")},
+    {id:"velocity-rush",name:"Velocity Rush",tags:[["Yarış","Racing"],["BABA içi","On BABA"]],best:()=>T("20 araç · 9 pist","20 cars · 9 tracks")},
+    {id:"threejs-fish-tank",name:"Three.js Fish Tank",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("WebGPU · 3D","WebGPU · 3D")},
+    {id:"empires-of-the-ages",name:"Empires of the Ages",tags:[["Strateji","Strategy"],["Kurulum bekliyor","Setup pending"]],best:()=>T("3D RTS","3D RTS")},
+    {id:"nordschleife-racer",name:"Nordschleife Racer",tags:[["Yarış","Racing"],["Kurulum bekliyor","Setup pending"]],best:()=>T("Yarış · 3D","Racing · 3D")},
+    {id:"ai-town",name:"AI Town",tags:[["Simülasyon","Simulation"],["Kurulum bekliyor","Setup pending"]],best:()=>T("AI yaşam sim","AI life sim")},
     {id:'iki-milyarin-golgesi',name:['İki Milyarın Gölgesi','İki Milyarın Gölgesi'],tags:[['Yaşam simülasyonu','Life simulation'],['Bilimkurgu','Science fiction']],best:()=>T('24 bölüm','24 chapters')},
     {id:'sisli-yokus',name:['Sisli Yokuş','Sisli Yokuş'],tags:[['Görsel roman','Visual novel'],['Trabzon','Trabzon']],best:()=>T('35 bölüm','35 chapters')},
     {id:'solstice-swell',name:['Solstice Swell — 3D Sörf','Solstice Swell — 3D Ocean Surfing'],tags:[['Simülasyon','Simulation'],['Sörf','Surfing'],['Huzur','Relaxing']],best:()=>T('4 kıyı · 3D','4 coastlines · 3D')},
@@ -396,17 +396,56 @@ const App = (() => {
 
   /* ==================== YENİ ARCADE & HARİCİ OYUNLAR ==================== */
   const NOV_IMPORTED = {
-    "offroad":{"name":"Offroad","url":"https://offroad-indol.vercel.app/","source":null,"blurb":["Açık arazide dört araçla fizik tabanlı sürüş.","Physics-based off-road driving with four vehicles."]},
-    "velocity-rush":{"name":"Velocity Rush","url":"https://prashant371.github.io/velocity-rush/","source":null,"blurb":["Drift, yarış, kariyer ve garaj.","Drift, racing, career and garage."]},
-    "threejs-fish-tank":{"name":"Three.js Fish Tank","url":"https://maxlibin.com/living-room-fish-tank/","source":"https://github.com/maxlibin/threejs-fish-tank","blurb":["132 balık, 8 tür ve WebGPU ile gerçekçi akvaryum. WebGPU destekli tarayıcı gerekir.","Realistic aquarium with 132 fish and 8 species. Requires a WebGPU-compatible browser."]},
-    "empires-of-the-ages":{"name":"Empires of the Ages","url":"https://empires.razzrohith.com/","source":null,"blurb":["Kaynak topla, üs kur ve rakip imparatorluklarla mücadele et.","Gather resources, build bases and fight rival empires."]},
-    "nordschleife-racer":{"name":"Nordschleife Racer","url":"https://yassin.app/","source":null,"blurb":["Nürburgring pistinde zamana karşı yarış ve hayalet tur.","Time attack and ghost laps on the Nürburgring."]},
-    "ai-town":{"name":"AI Town","url":"https://www.convex.dev/ai-town","source":null,"blurb":["Yapay zekâ karakterlerinin yaşadığı ve sohbet ettiği sanal kasaba.","A virtual town inhabited by conversational AI characters."]},
-  };
+  "offroad": {
+    "name": "Offroad",
+    "notice": [
+      "Offroad Vite derlemesi gerekli.",
+      "Offroad requires a Vite build."
+    ]
+  },
+  "velocity-rush": {
+    "name": "Velocity Rush",
+    "notice": [
+      "20 araç, 9 pist, drift ve kariyer.",
+      "20 cars, 9 tracks, drift and career."
+    ]
+  },
+  "threejs-fish-tank": {
+    "name": "Three.js Fish Tank",
+    "notice": [
+      "WebGPU ve model dosyalarının derlenmesi gerekli.",
+      "Requires WebGPU and a complete asset build."
+    ]
+  },
+  "empires-of-the-ages": {
+    "name": "Empires of the Ages",
+    "notice": [
+      "Yayın izni ve Vite derlemesi gerekli.",
+      "Requires redistribution permission and a Vite build."
+    ]
+  },
+  "nordschleife-racer": {
+    "name": "Nordschleife Racer",
+    "notice": [
+      "Eksik uygulama iskeleti ve araç modelleri gerekli.",
+      "Requires missing host application and car models."
+    ]
+  },
+  "ai-town": {
+    "name": "AI Town",
+    "notice": [
+      "Bağımsız Convex sunucusu ve yapay zekâ servisi gerekli.",
+      "Requires an independent Convex backend and AI provider."
+    ]
+  }
+};
   function openNovemberImport(id) {
     const g = NOV_IMPORTED[id];
-    const url = g.url || g.source;
-    shell(g.name, `<p class="bb-tip">${T(...g.blurb)}</p><p class="bb-tip">${g.url ? T('Orijinal geliştiricinin harici demosu açılır. BABA içi kayıt ve bağımsız sürüm henüz doğrulanmadı.','Opens the original developer’s external demo. BABA saves and a standalone build are not verified yet.') : T('Bu proje henüz BABA üzerinde oynanabilir değil. WebGPU uyumlu tarayıcı ve derleme gerekli.','Not yet playable on BABA. A WebGPU browser and build are required.')}</p><a class="bb-btn" href="${url}" target="_blank" rel="noopener noreferrer">${g.url ? T('Orijinal oyunu aç ↗','Open original game ↗') : T('Kaynak projeyi aç ↗','Open source project ↗')}</a>`, T('BABA. · Yeni oyunlar','BABA. · New games'));
+    if (id === 'velocity-rush') return openEmbeddedGame({title:g.name,url:'games/velocity-rush/index.html',tag:T('BABA. · Yarış','BABA. · Racing'),lead:T(...g.notice),tip:T('Kaynak ZIP’in özgün sürümü; ilerleme oyun içi tarayıcı kaydında tutulur.','Original ZIP version; progression uses the game’s browser storage.')});
+    const b = shell(g.name, `<p class="bb-tip" data-import-status="pending">${T(...g.notice)}</p><p class="bb-tip">${T('Bağımsız BABA sürümü henüz hazır değil. Harici demo kullanılmaz.','The standalone BABA version is not ready. No external demo is used.')}</p>`,T('BABA. · Kurulum','BABA. · Setup'));
+    if (!['offroad','threejs-fish-tank'].includes(id)) return;
+    const url = 'games/'+id+'/index.html';
+    fetch('games/'+id+'/baba-build.json',{cache:'no-store'}).then(async response=>{if(!response.ok)return;const marker=await response.json();if(marker.id!==id || !b.isConnected || location.hash!=='#'+id)return;openEmbeddedGame({title:g.name,url,tag:T('BABA. · Simülasyon','BABA. · Simulation'),lead:T('Özgün kaynak sürümü BABA üzerinde çalışır.','Original source version hosted on BABA.'),tip:T('Oyun içi kontrolleri kullan.','Use the in-game controls.')});}).catch(()=>{});
   }
   function openEmbeddedGame(cfg) {
     const b = shell(cfg.title, `<div class="vd-bar"><p class="bb-tip">${cfg.lead}</p><div class="vd-acts"><button class="bb-btn" data-a="full">⛶ ${T('Tam ekran', 'Full screen')}</button><a class="bb-btn" href="${cfg.url}" target="_blank" rel="noopener">${T('Yeni sekmede aç', 'Open in a new tab')} ↗</a></div></div>
